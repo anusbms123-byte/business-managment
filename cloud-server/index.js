@@ -520,7 +520,7 @@ app.delete('/api/users/:id', async (req, res) => {
         });
         res.json({ success: true, changes: 1, message: "User deleted permanently" });
     } catch (e) {
-        // If has records (Sale, etc), fall back to soft delete so we don't break database integrity
+       
         if (e.code === 'P2003') {
             await prisma.user.update({
                 where: { id: req.params.id },
