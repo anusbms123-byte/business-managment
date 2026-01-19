@@ -64,12 +64,20 @@ const Purchase = ({ currentUser }) => {
                     window.electronAPI.getVendors(currentUser?.company_id),
                     window.electronAPI.getProducts(currentUser?.company_id)
                 ]);
-                setPurchases(pData || []);
-                setVendors(vData || []);
-                setProducts(prData || []);
+
+                setPurchases(Array.isArray(pData) ? pData : []);
+                setVendors(Array.isArray(vData) ? vData : []);
+                setProducts(Array.isArray(prData) ? prData : []);
+
+                if (pData?.success === false) console.error("Purchase Error:", pData.message);
+                if (vData?.success === false) console.error("Vendor Error:", vData.message);
+                if (prData?.success === false) console.error("Product Error:", prData.message);
             }
         } catch (err) {
             console.error('Error loading purchase data:', err);
+            setPurchases([]);
+            setVendors([]);
+            setProducts([]);
         }
         setLoading(false);
     };
@@ -257,8 +265,8 @@ const Purchase = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${p.paidAmount >= p.totalAmount ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                                p.paidAmount > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                                                    'bg-blue-50 text-blue-600 border border-blue-100'
+                                            p.paidAmount > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                                                'bg-blue-50 text-blue-600 border border-blue-100'
                                             }`}>
                                             <span className={`w-1 h-1 rounded-full ${p.paidAmount >= p.totalAmount ? 'bg-emerald-500' : p.paidAmount > 0 ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
                                             {p.paidAmount >= p.totalAmount ? 'Fully Paid' : p.paidAmount > 0 ? 'Partial' : 'Ordered'}

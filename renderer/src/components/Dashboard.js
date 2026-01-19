@@ -153,11 +153,20 @@ const Dashboard = ({ currentUser }) => {
                 window.electronAPI.getCustomers(currentUser.company_id)
             ]);
 
-            setSummary(reportData || { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
-            setRecentSales(salesData?.slice(0, 5) || []);
-            setTopCustomers(customersData?.slice(0, 4) || []);
+            const summaryData = (reportData && reportData.success !== false) ? reportData : { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] };
+            setSummary(summaryData);
+            setRecentSales(Array.isArray(salesData) ? salesData.slice(0, 5) : []);
+            setTopCustomers(Array.isArray(customersData) ? customersData.slice(0, 4) : []);
+
+            if (reportData?.success === false) console.error("Report Error:", reportData.message);
+            if (salesData?.success === false) console.error("Sales Error:", salesData.message);
+            if (customersData?.success === false) console.error("Customer Error:", customersData.message);
+
         } catch (err) {
             console.error('Error loading dashboard:', err);
+            setSummary({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            setRecentSales([]);
+            setTopCustomers([]);
         }
         setLoading(false);
     };

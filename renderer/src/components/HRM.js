@@ -21,9 +21,11 @@ const HRM = ({ currentUser }) => {
         setLoading(true);
         try {
             const data = await window.electronAPI.getEmployees(currentUser.company_id);
-            setEmployees(data || []);
+            setEmployees(Array.isArray(data) ? data : []);
+            if (data?.success === false) console.error("Employee Error:", data.message);
         } catch (err) {
             console.error('Error loading employees:', err);
+            setEmployees([]);
         }
         setLoading(false);
     };
@@ -255,10 +257,13 @@ const Attendance = ({ employees, currentUser }) => {
         setLoading(true);
         try {
             const existing = await window.electronAPI.getAttendance({ companyId: currentUser.company_id, date });
+            if (existing?.success === false) console.error("Attendance Error:", existing.message);
+
+            const safeExisting = Array.isArray(existing) ? existing : [];
 
             // Map employees with their existing attendance status
             const rows = (employees || []).map(emp => {
-                const att = (existing || []).find(a => a.employeeId === emp.id);
+                const att = safeExisting.find(a => a.employeeId === emp.id);
                 return {
                     employeeId: emp.id,
                     name: `${emp.firstName} ${emp.lastName || ''}`,
@@ -270,6 +275,7 @@ const Attendance = ({ employees, currentUser }) => {
             setAttendanceRows(rows);
         } catch (err) {
             console.error('Error loading attendance:', err);
+            setAttendanceRows([]);
         }
         setLoading(false);
     };

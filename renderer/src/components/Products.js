@@ -50,13 +50,25 @@ const Products = ({ currentUser }) => {
     const fetchData = async () => {
         if (currentUser?.company_id) {
             setLoading(true);
-            const fetchedProducts = await window.electronAPI.getProducts(currentUser.company_id);
-            const fetchedCategories = await window.electronAPI.getCategories(currentUser.company_id);
-            const fetchedBrands = await window.electronAPI.getBrands(currentUser.company_id);
+            try {
+                const fetchedProducts = await window.electronAPI.getProducts(currentUser.company_id);
+                const fetchedCategories = await window.electronAPI.getCategories(currentUser.company_id);
+                const fetchedBrands = await window.electronAPI.getBrands(currentUser.company_id);
 
-            setProducts(fetchedProducts || []);
-            setCategories(fetchedCategories || []);
-            setBrands(fetchedBrands || []);
+                setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
+                setCategories(Array.isArray(fetchedCategories) ? fetchedCategories : []);
+                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
+
+                if (fetchedProducts?.success === false) console.error("Product Error:", fetchedProducts.message);
+                if (fetchedCategories?.success === false) console.error("Category Error:", fetchedCategories.message);
+                if (fetchedBrands?.success === false) console.error("Brand Error:", fetchedBrands.message);
+
+            } catch (err) {
+                console.error('Error in fetchData:', err);
+                setProducts([]);
+                setCategories([]);
+                setBrands([]);
+            }
             setLoading(false);
         }
     };

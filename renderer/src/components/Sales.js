@@ -55,12 +55,25 @@ const Sales = ({ currentUser }) => {
     const fetchData = async () => {
         if (currentUser?.company_id) {
             setLoading(true);
-            const fetchedSales = await window.electronAPI.getSales(currentUser.company_id);
-            const fetchedProducts = await window.electronAPI.getProducts(currentUser.company_id);
-            const fetchedCustomers = await window.electronAPI.getCustomers(currentUser.company_id);
-            setSales(fetchedSales || []);
-            setProducts(fetchedProducts || []);
-            setCustomers(fetchedCustomers || []);
+            try {
+                const fetchedSales = await window.electronAPI.getSales(currentUser.company_id);
+                const fetchedProducts = await window.electronAPI.getProducts(currentUser.company_id);
+                const fetchedCustomers = await window.electronAPI.getCustomers(currentUser.company_id);
+
+                setSales(Array.isArray(fetchedSales) ? fetchedSales : []);
+                setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
+                setCustomers(Array.isArray(fetchedCustomers) ? fetchedCustomers : []);
+
+                if (fetchedSales?.success === false) console.error("Sales Error:", fetchedSales.message);
+                if (fetchedProducts?.success === false) console.error("Product Error:", fetchedProducts.message);
+                if (fetchedCustomers?.success === false) console.error("Customer Error:", fetchedCustomers.message);
+
+            } catch (err) {
+                console.error('Error in fetchData:', err);
+                setSales([]);
+                setProducts([]);
+                setCustomers([]);
+            }
             setLoading(false);
         }
     };
@@ -231,12 +244,12 @@ const Sales = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                sale.paymentStatus === 'PARTIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                    'bg-rose-50 text-rose-600 border-rose-100'
+                                            sale.paymentStatus === 'PARTIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                'bg-rose-50 text-rose-600 border-rose-100'
                                             }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${sale.paymentStatus === 'PAID' ? 'bg-emerald-500' :
-                                                    sale.paymentStatus === 'PARTIAL' ? 'bg-amber-500' :
-                                                        'bg-rose-500'
+                                                sale.paymentStatus === 'PARTIAL' ? 'bg-amber-500' :
+                                                    'bg-rose-500'
                                                 }`}></span>
                                             <span>{sale.paymentStatus || 'PAID'}</span>
                                         </span>

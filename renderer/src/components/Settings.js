@@ -22,7 +22,7 @@ const Settings = ({ currentUser }) => {
         setLoading(true);
         try {
             const company = await window.electronAPI.getCompany(currentUser.company_id);
-            if (company) {
+            if (company && company.success !== false) {
                 setFormData({
                     name: company.name || '',
                     phone: company.phone || '',
@@ -31,6 +31,8 @@ const Settings = ({ currentUser }) => {
                     tax_no: company.taxNumber || '',
                     currency_symbol: company.currency || 'PKR'
                 });
+            } else if (company?.success === false) {
+                console.error("Company Settings Error:", company.message);
             }
         } catch (err) {
             console.error('Error loading company:', err);

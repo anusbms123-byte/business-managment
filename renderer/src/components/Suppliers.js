@@ -57,10 +57,12 @@ const Suppliers = ({ currentUser }) => {
         try {
             if (window.electronAPI) {
                 const data = await window.electronAPI.getVendors(currentUser?.company_id);
-                setSuppliers(data || []);
+                setSuppliers(Array.isArray(data) ? data : []);
+                if (data?.success === false) console.error("Supplier Error:", data.message);
             }
         } catch (err) {
             console.error('Error loading suppliers:', err);
+            setSuppliers([]);
         }
         setLoading(false);
     };

@@ -18,9 +18,11 @@ const Expenses = ({ currentUser }) => {
         setLoading(true);
         try {
             const data = await window.electronAPI.getExpenses(currentUser.company_id);
-            setExpenses(data || []);
+            setExpenses(Array.isArray(data) ? data : []);
+            if (data?.success === false) console.error("Expense Error:", data.message);
         } catch (err) {
             console.error('Error loading expenses:', err);
+            setExpenses([]);
         }
         setLoading(false);
     };

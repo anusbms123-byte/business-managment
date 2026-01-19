@@ -33,9 +33,11 @@ const Reports = ({ currentUser }) => {
                 startDate,
                 endDate
             });
-            setSummary(data || { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            setSummary((data && data.success !== false) ? data : { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            if (data?.success === false) console.error("Report Error:", data.message);
         } catch (err) {
             console.error('Error loading report:', err);
+            setSummary({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
         }
         setLoading(false);
     };
@@ -49,7 +51,8 @@ const Reports = ({ currentUser }) => {
                 startDate: new Date(customRange.start).toISOString(),
                 endDate: new Date(customRange.end).toISOString()
             });
-            setSummary(data || { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            setSummary((data && data.success !== false) ? data : { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            if (data?.success === false) window.alert(data.message || "Error generating report");
         } catch (err) {
             window.alert('Error generating report: ' + err.message);
         }

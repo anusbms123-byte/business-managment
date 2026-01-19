@@ -102,10 +102,20 @@ const CategoriesBrands = ({ currentUser }) => {
     const fetchData = async () => {
         if (currentUser?.company_id) {
             setLoading(true);
-            const fetchedCategories = await window.electronAPI.getCategories(currentUser.company_id);
-            const fetchedBrands = await window.electronAPI.getBrands(currentUser.company_id);
-            setCategories(fetchedCategories || []);
-            setBrands(fetchedBrands || []);
+            try {
+                const fetchedCategories = await window.electronAPI.getCategories(currentUser.company_id);
+                const fetchedBrands = await window.electronAPI.getBrands(currentUser.company_id);
+
+                setCategories(Array.isArray(fetchedCategories) ? fetchedCategories : []);
+                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
+
+                if (fetchedCategories?.success === false) console.error("Category Error:", fetchedCategories.message);
+                if (fetchedBrands?.success === false) console.error("Brand Error:", fetchedBrands.message);
+            } catch (err) {
+                console.error('Error fetching categories/brands:', err);
+                setCategories([]);
+                setBrands([]);
+            }
             setLoading(false);
         }
     };
@@ -267,8 +277,18 @@ const LowStockAlerts = ({ currentUser }) => {
     useEffect(() => {
         const fetchLowStock = async () => {
             if (currentUser?.company_id) {
-                const products = await window.electronAPI.getProducts(currentUser.company_id);
-                setLowStockProducts(products.filter(p => p.stockQty <= (p.alertQty || 5)));
+                try {
+                    const products = await window.electronAPI.getProducts(currentUser.company_id);
+                    if (Array.isArray(products)) {
+                        setLowStockProducts(products.filter(p => p.stockQty <= (p.alertQty || 5)));
+                    } else {
+                        setLowStockProducts([]);
+                        if (products?.success === false) console.error("Low Stock Error:", products.message);
+                    }
+                } catch (err) {
+                    console.error('Error fetching low stock:', err);
+                    setLowStockProducts([]);
+                }
                 setLoading(false);
             }
         };

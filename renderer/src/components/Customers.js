@@ -71,10 +71,12 @@ const Customers = ({ currentUser }) => {
         try {
             if (window.electronAPI) {
                 const data = await window.electronAPI.getCustomers(currentUser?.company_id);
-                setCustomers(data || []);
+                setCustomers(Array.isArray(data) ? data : []);
+                if (data?.success === false) console.error("Customer Error:", data.message);
             }
         } catch (err) {
             console.error('Error loading customers:', err);
+            setCustomers([]);
         }
         setLoading(false);
     };

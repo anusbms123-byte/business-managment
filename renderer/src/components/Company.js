@@ -101,14 +101,16 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
             if (window.electronAPI) {
                 if (isSuperAdmin) {
                     const data = await window.electronAPI.getCompanies();
-                    setCompanies(data || []);
+                    setCompanies(Array.isArray(data) ? data : []);
+                    if (data?.success === false) console.error("Companies Error:", data.message);
                 } else if (currentUser?.company_id) {
                     const data = await window.electronAPI.getCompany(currentUser.company_id);
-                    if (data) setFormData(data);
+                    if (data && data.success !== false) setFormData(data);
+                    else if (data?.success === false) console.error("Company Error:", data.message);
                 }
             }
         } catch (err) {
-            window.alert('Error: ' + err.message);
+            console.error('Error loading company data:', err);
         }
         setLoading(false);
     };
@@ -146,10 +148,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         try {
             if (window.electronAPI) {
                 const users = await window.electronAPI.getUsers(company.id);
-                setCompanyUsers(users || []);
+                setCompanyUsers(Array.isArray(users) ? users : []);
+                if (users?.success === false) console.error("Users Error:", users.message);
             }
         } catch (err) {
-            window.alert('Error loading users: ' + err.message);
+            console.error('Error loading detail users:', err);
+            setCompanyUsers([]);
         }
         setLoadingUsers(false);
     };
