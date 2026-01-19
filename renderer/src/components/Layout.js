@@ -103,13 +103,13 @@ const Layout = ({ children, user, onLogout }) => {
                 {/* Logo */}
                 <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50">
                     <div className="flex items-center space-x-3">
-                        <div className="relative">
-                            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
-                                <span className="text-white font-bold text-lg">B</span>
-                            </div>
-                        </div>
+                        <img
+                            src="/logo.png"
+                            alt="BMS Logo"
+                            className="h-[60px] w-[60px] object-contain rounded-lg p-0.5"
+                        />
                         <div>
-                            <span className="text-lg font-bold tracking-tight text-white">Business</span>
+                            <span className="text-lg font-bold tracking-tight text-white block">Business</span>
                             <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest leading-none">Management</p>
                         </div>
                     </div>
