@@ -142,6 +142,13 @@ model Product {
   imageUrl    String?  @map("image_url")
   barcode     String?
   weight      Float?
+  
+  // New Attributes
+  color       String?
+  size        String?
+  grade       String?
+  condition   String?
+
   expiryDate  DateTime? @map("expiry_date")
   isActive    Boolean  @default(true) @map("is_active")
 

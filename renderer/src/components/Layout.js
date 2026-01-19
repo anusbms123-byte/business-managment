@@ -33,9 +33,9 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
             : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
             }`}
     >
-        <div className="relative flex items-center space-x-3">
-            <Icon size={18} className={active ? 'text-blue-400' : 'text-slate-500 group-hover:text-blue-400 transition-colors'} />
-            <span className="text-[15px]">{label}</span>
+        <div className="relative flex items-center space-x-4">
+            <Icon size={22} className={active ? 'text-blue-400' : 'text-slate-200 group-hover:text-blue-400 transition-colors'} />
+            <span className="text-[15px] text-white">{label}</span>
         </div>
         {hasSubmenu && <ChevronRight size={16} className="relative text-gray-500 group-hover:text-orange-400 transition-colors" />}
     </div>
@@ -97,7 +97,7 @@ const Layout = ({ children, user, onLogout }) => {
     return (
         <div className="flex h-screen bg-gray-50">
             {/* Sidebar */}
-            <div className="w-72 bg-zinc-950 flex flex-col relative overflow-hidden">
+            <div className="w-72 bg-blue-950 flex flex-col relative overflow-hidden">
 
 
                 {/* Logo */}
@@ -118,7 +118,7 @@ const Layout = ({ children, user, onLogout }) => {
                 {/* Menu Label */}
                 {visibleMenuItems.length > 0 && (
                     <div className="relative px-6 py-4 mt-2">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Main Menu</span>
+                        <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Main Menu</span>
                     </div>
                 )}
 
@@ -137,11 +137,11 @@ const Layout = ({ children, user, onLogout }) => {
 
                 {/* Settings Section - Dynamic based on permissions */}
                 {visibleSettingsItems.length > 0 && (
-                    <div className="relative px-4 py-2  border-t border-gray-800">
+                    <div className="relative px-4   border-t border-gray-800">
                         <div className="px-2 py-2">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Settings</span>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 text-xs">
                             {visibleSettingsItems.map((item) => (
                                 <SidebarItem
                                     key={item.key}

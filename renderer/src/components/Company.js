@@ -547,7 +547,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
-                            <FormSelect label="Assigned Privileges" required value={formData.role} onChange={v => setFormData({ ...formData, role: v })} options={roles.map(r => ({ value: r.name.toLowerCase().replace(' ', '_'), label: r.name }))} icon={Shield} />
+                            <FormSelect label="Assigned Privileges" required value={formData.role} onChange={v => setFormData({ ...formData, role: v })} options={roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map(r => ({ value: r.name.toLowerCase().replace(' ', '_'), label: r.name }))} icon={Shield} />
                         </div>
                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200">
                             <input type="checkbox" checked={formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
@@ -639,7 +639,7 @@ const RolesPermissions = ({ currentUser }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {roles.map((role) => (
+                {roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map((role) => (
                     <div key={role.id} className="group relative bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
                         <div className="flex items-start justify-between mb-4">
                             <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">

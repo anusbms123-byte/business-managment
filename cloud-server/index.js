@@ -761,7 +761,7 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { companyId, name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description } = req.body;
+        const { companyId, name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description, color, size, grade, condition } = req.body;
         const product = await prisma.product.create({
             data: {
                 companyId,
@@ -777,7 +777,8 @@ app.post('/api/products', async (req, res) => {
                 expiryDate: expiry_date ? new Date(expiry_date) : null,
                 categoryId: category_id,
                 brandId: brand_id,
-                imageUrl: image_url
+                imageUrl: image_url,
+                color, size, grade, condition
             }
         });
         res.json({ success: true, id: product.id });
@@ -786,7 +787,7 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const { name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description, is_active } = req.body;
+        const { name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description, is_active, color, size, grade, condition } = req.body;
         await prisma.product.update({
             where: { id: req.params.id },
             data: {
@@ -803,7 +804,8 @@ app.put('/api/products/:id', async (req, res) => {
                 categoryId: category_id,
                 brandId: brand_id,
                 imageUrl: image_url,
-                isActive: is_active !== undefined ? (is_active === 1 || is_active === true) : undefined
+                isActive: is_active !== undefined ? (is_active === 1 || is_active === true) : undefined,
+                color, size, grade, condition
             }
         });
         res.json({ success: true, changes: 1 });

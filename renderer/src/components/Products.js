@@ -38,11 +38,12 @@ const Products = ({ currentUser }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Form State
+    // Form State - using category_name and brand_name for inputs
     const [formData, setFormData] = useState({
         id: null, name: '', sku: '', description: '', unit: 'pcs',
         cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
-        weight: '', expiry_date: '', category_id: '', brand_id: ''
+        weight: '', expiry_date: '', category_name: '', brand_name: '',
+        color: '', size: '', grade: '', condition: ''
     });
 
     useEffect(() => { fetchData(); }, [currentUser]);
@@ -58,11 +59,6 @@ const Products = ({ currentUser }) => {
                 setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
                 setCategories(Array.isArray(fetchedCategories) ? fetchedCategories : []);
                 setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
-
-                if (fetchedProducts?.success === false) console.error("Product Error:", fetchedProducts.message);
-                if (fetchedCategories?.success === false) console.error("Category Error:", fetchedCategories.message);
-                if (fetchedBrands?.success === false) console.error("Brand Error:", fetchedBrands.message);
-
             } catch (err) {
                 console.error('Error in fetchData:', err);
                 setProducts([]);
@@ -82,23 +78,89 @@ const Products = ({ currentUser }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const payload = { ...formData, companyId: currentUser.company_id };
 
-        let result = formData.id
-            ? await window.electronAPI.updateProduct(payload)
-            : await window.electronAPI.createProduct(payload);
+        try {
+            // Handle Category Interaction
+            let categoryId = null;
+            if (formData.category_name) {
+                const existingCat = categories.find(c => c.name.toLowerCase() === formData.category_name.toLowerCase());
+                if (existingCat) {
+                    categoryId = existingCat.id;
+                } else {
+                    const newCat = await window.electronAPI.createCategory({ name: formData.category_name, companyId: currentUser.company_id });
+                    if (newCat.success) {
+                        // Refresh categories list and lookup the new ID to be safe
+                        const currentCats = await window.electronAPI.getCategories(currentUser.company_id);
+                        if (Array.isArray(currentCats)) {
+                            setCategories(currentCats);
+                            const created = currentCats.find(c => c.name.toLowerCase() === formData.category_name.toLowerCase());
+                            if (created) categoryId = created.id;
+                        }
+                    } else {
+                        alert("Failed to create category: " + newCat.message);
+                        return;
+                    }
+                }
+            }
 
-        if (result.success) {
-            setIsModalOpen(false);
-            setFormData({
-                id: null, name: '', sku: '', description: '', unit: 'pcs',
-                cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
-                weight: '', expiry_date: '', category_id: '', brand_id: ''
-            });
-            fetchData();
-        } else {
-            alert("Error: " + result.message);
+            // Handle Brand Interaction
+            let brandId = null;
+            if (formData.brand_name) {
+                const existingBrand = brands.find(b => b.name.toLowerCase() === formData.brand_name.toLowerCase());
+                if (existingBrand) {
+                    brandId = existingBrand.id;
+                } else {
+                    const newBrand = await window.electronAPI.createBrand({ name: formData.brand_name, companyId: currentUser.company_id });
+                    if (newBrand.success) {
+                        // Refresh brands list and lookup
+                        const currentBrands = await window.electronAPI.getBrands(currentUser.company_id);
+                        if (Array.isArray(currentBrands)) {
+                            setBrands(currentBrands);
+                            const created = currentBrands.find(b => b.name.toLowerCase() === formData.brand_name.toLowerCase());
+                            if (created) brandId = created.id;
+                        }
+                    } else {
+                        alert("Failed to create brand: " + newBrand.message);
+                        return;
+                    }
+                }
+            }
+
+            const payload = {
+                ...formData,
+                category_id: categoryId,
+                brand_id: brandId,
+                companyId: currentUser.company_id
+            };
+
+            // Remove temporary name fields from payload
+            delete payload.category_name;
+            delete payload.brand_name;
+
+            let result = formData.id
+                ? await window.electronAPI.updateProduct(payload)
+                : await window.electronAPI.createProduct(payload);
+
+            if (result.success) {
+                setIsModalOpen(false);
+                resetForm();
+                fetchData();
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (error) {
+            console.error("Submission Error:", error);
+            alert("An unexpected error occurred.");
         }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            id: null, name: '', sku: '', description: '', unit: 'pcs',
+            cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+            weight: '', expiry_date: '', category_name: '', brand_name: '',
+            color: '', size: '', grade: '', condition: ''
+        });
     };
 
     const handleDelete = async (id) => {
@@ -122,8 +184,12 @@ const Products = ({ currentUser }) => {
             alert_qty: product.alertQty,
             weight: product.weight || '',
             expiry_date: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
-            category_id: product.categoryId || '',
-            brand_id: product.brandId || ''
+            category_name: product.category?.name || '',
+            brand_name: product.brand?.name || '',
+            color: product.color || '',
+            size: product.size || '',
+            grade: product.grade || '',
+            condition: product.condition || ''
         });
         setIsModalOpen(true);
     };
@@ -158,11 +224,7 @@ const Products = ({ currentUser }) => {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({
-                                id: null, name: '', sku: '', description: '', unit: 'pcs',
-                                cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
-                                weight: '', expiry_date: '', category_id: '', brand_id: ''
-                            });
+                            resetForm();
                             setIsModalOpen(true);
                         }}
                         className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
@@ -176,7 +238,9 @@ const Products = ({ currentUser }) => {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4">Product Details</th>
+                                <th className="px-6 py-4">Product Name</th>
+                                <th className="px-6 py-4">Category / Brand</th>
+                                <th className="px-6 py-4">Unit / Expiry</th>
                                 <th className="px-6 py-4">Inventory</th>
                                 <th className="px-6 py-4">Pricing</th>
                                 <th className="px-6 py-4">Status</th>
@@ -193,15 +257,24 @@ const Products = ({ currentUser }) => {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight">{product.name}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SKU: {product.sku || 'N/A'} • {product.brand?.name}</div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SKU: {product.sku || 'N/A'}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-600">
+                                    <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold">{product.stockQty} Units</span>
-                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.category?.name || 'General'}</span>
+                                            <span className="text-sm font-bold text-slate-700">{product.category?.name || 'Uncategorized'}</span>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.brand?.name || 'No Brand'}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-700 uppercase">{product.unit || 'pcs'}</span>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : 'No Expiry'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-bold text-slate-600">
+                                        {product.stockQty}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-bold text-slate-800">PKR {product.sellPrice?.toLocaleString()}</div>
@@ -230,7 +303,7 @@ const Products = ({ currentUser }) => {
                             ))}
                             {filteredProducts.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center">
+                                    <td colSpan="7" className="px-6 py-20 text-center">
                                         <Package size={40} className="mx-auto text-slate-100 mb-3" />
                                         <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No products found</p>
                                     </td>
@@ -294,6 +367,26 @@ const Products = ({ currentUser }) => {
                                 </div>
                             </div>
 
+                            {/* Attributes (Color, Size, Grade, Condition) */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Color</label>
+                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} placeholder="e.g. Red" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Size</label>
+                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} placeholder="e.g. XL" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Grade</label>
+                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })} placeholder="e.g. A+" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Condition</label>
+                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} placeholder="e.g. New" />
+                                </div>
+                            </div>
+
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                     Description
@@ -307,19 +400,25 @@ const Products = ({ currentUser }) => {
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                         <Box size={12} className="text-blue-500" /> Category
                                     </label>
-                                    <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer" value={formData.category_id} onChange={e => setFormData({ ...formData, category_id: e.target.value })}>
-                                        <option value="">Select Category</option>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                                        value={formData.category_name}
+                                        onChange={e => setFormData({ ...formData, category_name: e.target.value })}
+                                        placeholder="Enter category"
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                         <Tag size={12} className="text-blue-500" /> Brand
                                     </label>
-                                    <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer" value={formData.brand_id} onChange={e => setFormData({ ...formData, brand_id: e.target.value })}>
-                                        <option value="">Select Brand</option>
-                                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                                        value={formData.brand_name}
+                                        onChange={e => setFormData({ ...formData, brand_name: e.target.value })}
+                                        placeholder="Enter brand"
+                                    />
                                 </div>
                             </div>
 
