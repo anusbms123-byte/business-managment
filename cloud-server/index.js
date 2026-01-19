@@ -514,7 +514,7 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
     try {
-        // Try hard delete first
+       
         await prisma.user.delete({
             where: { id: req.params.id }
         });
