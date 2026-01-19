@@ -5,7 +5,6 @@ const tabs = [
     { id: 'profile', label: 'Company', icon: Building2, color: 'blue' },
     { id: 'users', label: 'Team', icon: Users, color: 'indigo' },
     { id: 'roles', label: 'Access', icon: Shield, color: 'emerald' },
-    { id: 'audit', label: 'History', icon: ClipboardList, color: 'slate' },
 ];
 
 const MODULES = [
@@ -72,7 +71,6 @@ const Company = () => {
                     {activeTab === 'profile' && <CompanyProfile currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'users' && <UserManagement currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
-                    {activeTab === 'audit' && <AuditLog currentUser={currentUser} />}
                 </div>
             </div>
         </div>

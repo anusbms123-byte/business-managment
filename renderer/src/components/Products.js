@@ -38,6 +38,12 @@ const Products = ({ currentUser }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    // Filter States
+    const [filterUnit, setFilterUnit] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterBrand, setFilterBrand] = useState('');
+    const [filterStockStatus, setFilterStockStatus] = useState(''); // 'instock', 'lowstock', 'outofstock'
+
     // Form State - using category_name and brand_name for inputs
     const [formData, setFormData] = useState({
         id: null, name: '', sku: '', description: '', unit: 'pcs',
@@ -194,10 +200,21 @@ const Products = ({ currentUser }) => {
         setIsModalOpen(true);
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesUnit = filterUnit ? p.unit === filterUnit : true;
+        const matchesCategory = filterCategory ? p.category?.id === filterCategory : true;
+        const matchesBrand = filterBrand ? p.brand?.id === filterBrand : true;
+
+        let matchesStock = true;
+        if (filterStockStatus === 'instock') matchesStock = p.stockQty > (p.alertQty || 5);
+        if (filterStockStatus === 'lowstock') matchesStock = p.stockQty > 0 && p.stockQty <= (p.alertQty || 5);
+        if (filterStockStatus === 'outofstock') matchesStock = p.stockQty <= 0;
+
+        return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock;
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -211,27 +228,81 @@ const Products = ({ currentUser }) => {
 
             {/* Table Section */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20">
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold"
-                            placeholder="Search products..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                <div className="p-6 border-b border-slate-100 bg-slate-50/20">
+
+                    {/* Filters Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        {/* Category Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterCategory}
+                            onChange={(e) => setFilterCategory(e.target.value)}
+                        >
+                            <option value="">All Categories</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+
+                        {/* Brand Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterBrand}
+                            onChange={(e) => setFilterBrand(e.target.value)}
+                        >
+                            <option value="">All Brands</option>
+                            {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+
+                        {/* Unit Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterUnit}
+                            onChange={(e) => setFilterUnit(e.target.value)}
+                        >
+                            <option value="">All Units</option>
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="gram">Gram (g)</option>
+                            <option value="ltr">Liter (ltr)</option>
+                            <option value="mtr">Meter (m)</option>
+                            <option value="box">Box</option>
+                            <option value="pkt">Packet</option>
+                        </select>
+
+                        {/* Stock Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterStockStatus}
+                            onChange={(e) => setFilterStockStatus(e.target.value)}
+                        >
+                            <option value="">All Stock Status</option>
+                            <option value="instock">In Stock</option>
+                            <option value="lowstock">Low Stock</option>
+                            <option value="outofstock">Out of Stock</option>
+                        </select>
                     </div>
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            setIsModalOpen(true);
-                        }}
-                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
-                    >
-                        <Plus size={18} />
-                        <span>Add Product</span>
-                    </button>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="relative w-full md:w-80">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold"
+                                placeholder="Search products..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                setIsModalOpen(true);
+                            }}
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
+                        >
+                            <Plus size={18} />
+                            <span>Add Product</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
