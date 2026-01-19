@@ -184,7 +184,7 @@ const Dashboard = ({ currentUser }) => {
                         <button
                             key={p}
                             onClick={() => setFilter(p)}
-                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {p}
                         </button>
