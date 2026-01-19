@@ -401,7 +401,7 @@ app.post('/api/users', async (req, res) => {
     try {
         const { company_id, username, password, role, fullname } = req.body;
 
-        // More robust role matching (case-insensitive and map local names)
+        
         const roleMap = {
             'super_admin': 'Super Admin',
             'admin': 'Admin',
