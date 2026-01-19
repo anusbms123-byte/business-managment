@@ -106,7 +106,7 @@ const Layout = ({ children, user, onLogout }) => {
                         <img
                             src="/logo.png"
                             alt="BMS Logo"
-                            className="h-[60px] w-[60px] object-contain rounded-lg p-0.5"
+                            className="h-[50px] w-[50px] object-contain rounded-lg"
                         />
                         <div>
                             <span className="text-lg font-bold tracking-tight text-white block">Business</span>
