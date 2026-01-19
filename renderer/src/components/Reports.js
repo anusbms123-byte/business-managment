@@ -14,10 +14,44 @@ const Reports = ({ currentUser }) => {
         if (!currentUser?.company_id) return;
         setLoading(true);
         try {
-            const data = await window.electronAPI.getReportSummary({ companyId: currentUser.company_id, period: filter });
+            let startDate, endDate;
+            const now = new Date();
+
+            if (filter === 'Weekly') {
+                startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
+                endDate = new Date().toISOString();
+            } else if (filter === 'Monthly') {
+                startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+                endDate = new Date().toISOString();
+            } else if (filter === 'Yearly') {
+                startDate = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString();
+                endDate = new Date().toISOString();
+            }
+
+            const data = await window.electronAPI.getReportSummary({
+                companyId: currentUser.company_id,
+                startDate,
+                endDate
+            });
             setSummary(data || { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
         } catch (err) {
             console.error('Error loading report:', err);
+        }
+        setLoading(false);
+    };
+
+    const handleCompileReport = async () => {
+        if (!customRange.start || !customRange.end) return window.alert('Please select date range');
+        setLoading(true);
+        try {
+            const data = await window.electronAPI.getReportSummary({
+                companyId: currentUser.company_id,
+                startDate: new Date(customRange.start).toISOString(),
+                endDate: new Date(customRange.end).toISOString()
+            });
+            setSummary(data || { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+        } catch (err) {
+            window.alert('Error generating report: ' + err.message);
         }
         setLoading(false);
     };
@@ -85,8 +119,12 @@ const Reports = ({ currentUser }) => {
                         <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all" />
                     </div>
                     <div className="flex items-end">
-                        <button className="w-full px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
-                            Compile Report
+                        <button
+                            onClick={handleCompileReport}
+                            disabled={loading}
+                            className="w-full px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
+                        >
+                            {loading ? 'Compiling...' : 'Compile Report'}
                         </button>
                     </div>
                 </div>

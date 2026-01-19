@@ -50,7 +50,19 @@ const Customers = ({ currentUser }) => {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '', creditLimit: 0 });
+    const [formData, setFormData] = useState({
+        id: null,
+        name: '',
+        customerType: 'retail',
+        cnic: '',
+        phone: '',
+        email: '',
+        address: '',
+        city: '',
+        gst_no: '',
+        creditLimit: 0,
+        openingBalance: 0
+    });
 
     useEffect(() => { loadCustomers(); }, [currentUser]);
 
@@ -106,7 +118,31 @@ const Customers = ({ currentUser }) => {
     };
 
     const openModal = (customer = null) => {
-        setFormData(customer ? { ...customer } : { name: '', phone: '', email: '', address: '', creditLimit: 0 });
+        setFormData(customer ? {
+            id: customer.id,
+            name: customer.name,
+            customerType: customer.customerType || 'retail',
+            cnic: customer.cnic || '',
+            phone: customer.phone || '',
+            email: customer.email || '',
+            address: customer.address || '',
+            city: customer.city || '',
+            gst_no: customer.gstNo || '',
+            creditLimit: customer.creditLimit || 0,
+            openingBalance: customer.openingBalance || 0
+        } : {
+            id: null,
+            name: '',
+            customerType: 'retail',
+            cnic: '',
+            phone: '',
+            email: '',
+            address: '',
+            city: '',
+            gst_no: '',
+            creditLimit: 0,
+            openingBalance: 0
+        });
         setShowModal(true);
     };
 
@@ -167,8 +203,9 @@ const Customers = ({ currentUser }) => {
                         <thead>
                             <tr className="bg-slate-50/80">
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Customer</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Type / CNIC</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Contact Info</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Address</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Location</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Balance</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                             </tr>
@@ -287,6 +324,29 @@ const Customers = ({ currentUser }) => {
                                         />
                                     </div>
                                 </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Customer Type</label>
+                                        <select
+                                            value={formData.customerType}
+                                            onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
+                                        >
+                                            <option value="retail">Retail</option>
+                                            <option value="wholesale">Wholesale</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">CNIC / ID Number</label>
+                                        <input
+                                            type="text"
+                                            value={formData.cnic}
+                                            onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                            placeholder="42101-xxxxxxx-x"
+                                        />
+                                    </div>
+                                </div>
                                 <div className="space-y-2 text-left">
                                     <label className="text-xs font-bold text-slate-600 ml-1">Email Address</label>
                                     <div className="relative">
@@ -300,6 +360,19 @@ const Customers = ({ currentUser }) => {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-2 text-left">
+                                    <label className="text-xs font-bold text-slate-600 ml-1">GST Number</label>
+                                    <div className="relative">
+                                        <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                        <input
+                                            type="text"
+                                            value={formData.gst_no}
+                                            onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                            placeholder="GST Registration No"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-6">
@@ -307,16 +380,44 @@ const Customers = ({ currentUser }) => {
                                     <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
                                     Additional Details
                                 </h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Credit Limit (PKR)</label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="number"
+                                                value={formData.creditLimit}
+                                                onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Opening Balance</label>
+                                        <div className="relative">
+                                            <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="number"
+                                                value={formData.openingBalance}
+                                                onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">Credit Limit (PKR)</label>
+                                    <label className="text-xs font-bold text-slate-600 ml-1">City</label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                         <input
-                                            type="number"
-                                            value={formData.creditLimit}
-                                            onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                                            type="text"
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="0.00"
+                                            placeholder="e.g. Karachi"
                                         />
                                     </div>
                                 </div>

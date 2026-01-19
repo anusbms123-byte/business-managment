@@ -45,6 +45,10 @@ const Sales = ({ currentUser }) => {
     const [qty, setQty] = useState(1);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [discount, setDiscount] = useState(0);
+    const [shippingCost, setShippingCost] = useState(0);
+    const [amountPaid, setAmountPaid] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('CASH');
+    const [notes, setNotes] = useState('');
 
     useEffect(() => { fetchData(); }, [currentUser]);
 
@@ -108,7 +112,10 @@ const Sales = ({ currentUser }) => {
     };
 
     const subTotal = cart.reduce((sum, item) => sum + item.total, 0);
-    const grandTotal = subTotal - parseFloat(discount || 0);
+    const tax = 0; // Can be expanded later
+    const grandTotal = subTotal + parseFloat(shippingCost || 0) - parseFloat(discount || 0);
+    const changeAmount = Math.max(0, parseFloat(amountPaid || 0) - grandTotal);
+    const paymentStatus = parseFloat(amountPaid || 0) >= grandTotal ? 'PAID' : (parseFloat(amountPaid || 0) > 0 ? 'PARTIAL' : 'DUE');
 
     const handleSaveSale = async () => {
         if (cart.length === 0) return alert("Please add items to cart!");
@@ -122,6 +129,11 @@ const Sales = ({ currentUser }) => {
             discount: parseFloat(discount),
             tax: 0,
             grandTotal,
+            shippingCost: parseFloat(shippingCost),
+            amountPaid: parseFloat(amountPaid),
+            paymentMethod,
+            paymentStatus,
+            notes,
             items: cart
         };
 
@@ -130,6 +142,10 @@ const Sales = ({ currentUser }) => {
             setIsModalOpen(false);
             setCart([]);
             setDiscount(0);
+            setShippingCost(0);
+            setAmountPaid(0);
+            setPaymentMethod('CASH');
+            setNotes('');
             setSelectedCustomer('');
             fetchData();
         } else {
@@ -181,6 +197,7 @@ const Sales = ({ currentUser }) => {
                                 <th className="px-6 py-4">Customer info</th>
                                 <th className="px-6 py-4">Items</th>
                                 <th className="px-6 py-4">Grand Total</th>
+                                <th className="px-6 py-4">Method / Paid</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -207,9 +224,21 @@ const Sales = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 font-bold text-sm text-slate-800">PKR {sale.grandTotal?.toLocaleString()}</td>
                                     <td className="px-6 py-4">
-                                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-100">
-                                            <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
-                                            <span>Paid</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{sale.paymentMethod || 'CASH'}</span>
+                                            <span className="text-xs font-bold text-slate-800">PKR {sale.amountPaid?.toLocaleString()}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                sale.paymentStatus === 'PARTIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                    'bg-rose-50 text-rose-600 border-rose-100'
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${sale.paymentStatus === 'PAID' ? 'bg-emerald-500' :
+                                                    sale.paymentStatus === 'PARTIAL' ? 'bg-amber-500' :
+                                                        'bg-rose-500'
+                                                }`}></span>
+                                            <span>{sale.paymentStatus || 'PAID'}</span>
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -367,9 +396,20 @@ const Sales = ({ currentUser }) => {
                                             <span>Subtotal</span>
                                             <span className="text-slate-800">PKR {subTotal.toLocaleString()}</span>
                                         </div>
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight text-right">
+                                            <span>Shipping</span>
+                                            <div className="relative w-24">
+                                                <input
+                                                    type="number"
+                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-800 focus:border-blue-500 outline-none transition-all text-sm"
+                                                    value={shippingCost}
+                                                    onChange={(e) => setShippingCost(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Discount</span>
-                                            <div className="relative w-24">
+                                            <div className="relative w-24 text-right">
                                                 <input
                                                     type="number"
                                                     className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-blue-600 focus:border-blue-500 outline-none transition-all text-sm"
@@ -379,13 +419,53 @@ const Sales = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="h-px bg-slate-200 my-4"></div>
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block">Grand Total</span>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-xs font-bold text-slate-400 uppercase">PKR</span>
-                                                <span className="text-3xl font-bold text-slate-800 tracking-tighter">
-                                                    {grandTotal.toLocaleString()}
-                                                </span>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block">Grand Total</span>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase">PKR</span>
+                                                    <span className="text-3xl font-bold text-slate-800 tracking-tighter">
+                                                        {grandTotal.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white rounded-lg p-3 border border-slate-200 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payment Method</label>
+                                                    <select
+                                                        value={paymentMethod}
+                                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                                        className="bg-slate-50 border-none text-[10px] font-bold uppercase focus:ring-0 cursor-pointer"
+                                                    >
+                                                        <option value="CASH">CASH</option>
+                                                        <option value="CARD">CARD</option>
+                                                        <option value="TRANSFER">BANK / EASYPAISA</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Received</label>
+                                                    <input
+                                                        type="number"
+                                                        className="w-24 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-right font-bold text-sm outline-none"
+                                                        value={amountPaid}
+                                                        onChange={(e) => setAmountPaid(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change</label>
+                                                    <span className="text-xs font-bold text-blue-600">PKR {changeAmount.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Order Notes</label>
+                                                <textarea
+                                                    value={notes}
+                                                    onChange={(e) => setNotes(e.target.value)}
+                                                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-16"
+                                                    placeholder="Delivery instructions, customer requests..."
+                                                />
                                             </div>
                                         </div>
                                     </div>

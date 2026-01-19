@@ -133,6 +133,7 @@ model Product {
   name        String
   sku         String?  // Stock Keeping Unit / Barcode
   description String?
+  unit        String   @default("pcs")
   
   costPrice   Float    @default(0) @map("cost_price")
   sellPrice   Float    @default(0) @map("sell_price")
@@ -141,6 +142,9 @@ model Product {
   
   imageUrl    String?  @map("image_url")
   barcode     String?
+  weight      Float?
+  expiryDate  DateTime? @map("expiry_date")
+  isActive    Boolean  @default(true) @map("is_active")
 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -165,15 +169,20 @@ model Product {
 // =========================================================
 
 model Customer {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String?
-  email       String?
-  address     String?
-  creditLimit Float    @default(0) @map("credit_limit")
-  balance     Float    @default(0) // Positive = Receivable
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  name            String
+  customerType    String?  @default("retail") @map("customer_type")
+  phone           String?
+  email           String?
+  address         String?
+  city            String?
+  cnic            String?
+  gstNo           String?  @map("gst_no")
+  creditLimit     Float    @default(0) @map("credit_limit")
+  openingBalance  Float    @default(0) @map("opening_balance")
+  balance         Float    @default(0) // Positive = Receivable
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   companyId   String  @map("company_id")
   company     Company @relation(fields: [companyId], references: [id])
@@ -184,23 +193,26 @@ model Customer {
 }
 
 model Sale {
-  id          String   @id @default(cuid())
-  invoiceNo   String   @map("invoice_no")
-  date        DateTime @default(now())
+  id            String   @id @default(cuid())
+  invoiceNo     String   @map("invoice_no")
+  date          DateTime @default(now())
   
-  subTotal    Float    @map("sub_total")
-  discount    Float    @default(0)
-  tax         Float    @default(0)
-  grandTotal  Float    @map("grand_total")
+  subTotal      Float    @map("sub_total")
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  shippingCost  Float    @default(0) @map("shipping_cost")
+  grandTotal    Float    @map("grand_total")
   
-  paymentType String   @default("CASH") @map("payment_type") // CASH, CARD, CREDIT
-  amountPaid  Float    @default(0) @map("amount_paid")
-  change      Float    @default(0)
+  paymentType   String   @default("CASH") @map("payment_type") // CASH, CARD, CREDIT
+  paymentStatus String   @default("PAID") @map("payment_status") // PAID, PARTIAL, DUE
+  amountPaid    Float    @default(0) @map("amount_paid")
+  change        Float    @default(0)
+  notes         String?
 
-  status      String   @default("COMPLETED") // COMPLETED, RETURNED
+  status        String   @default("COMPLETED") // COMPLETED, RETURNED
 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   companyId   String  @map("company_id")
   company     Company @relation(fields: [companyId], references: [id])
@@ -236,14 +248,18 @@ model SaleItem {
 // =========================================================
 
 model Vendor {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String?
-  email       String?
-  address     String?
-  balance     Float    @default(0) // Positive = Payable
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  name            String
+  companyName     String?  @map("company_name")
+  phone           String?
+  email           String?
+  address         String?
+  city            String?
+  gstNo           String?  @map("gst_no")
+  openingBalance  Float    @default(0) @map("opening_balance")
+  balance         Float    @default(0) // Positive = Payable
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   companyId   String  @map("company_id")
   company     Company @relation(fields: [companyId], references: [id])

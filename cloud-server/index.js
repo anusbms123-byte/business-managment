@@ -209,15 +209,21 @@ app.get('/api/customers', async (req, res) => {
 
 app.post('/api/customers', async (req, res) => {
     try {
-        const { companyId, name, phone, email, address, creditLimit } = req.body;
+        const { companyId, name, customerType, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance } = req.body;
         const customer = await prisma.customer.create({
             data: {
                 companyId,
                 name,
+                customerType,
                 phone,
                 email,
                 address,
-                creditLimit: parseFloat(creditLimit) || 0
+                city,
+                cnic,
+                gstNo: gst_no,
+                creditLimit: parseFloat(creditLimit) || 0,
+                openingBalance: parseFloat(openingBalance) || 0,
+                balance: parseFloat(openingBalance) || 0
             }
         });
         res.json({ success: true, id: customer.id, ...customer });
@@ -226,15 +232,20 @@ app.post('/api/customers', async (req, res) => {
 
 app.put('/api/customers/:id', async (req, res) => {
     try {
-        const { name, phone, email, address, creditLimit } = req.body;
+        const { name, customerType, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance } = req.body;
         await prisma.customer.update({
             where: { id: req.params.id },
             data: {
                 name,
+                customerType,
                 phone,
                 email,
                 address,
-                creditLimit: parseFloat(creditLimit) || 0
+                city,
+                cnic,
+                gstNo: gst_no,
+                creditLimit: parseFloat(creditLimit) || 0,
+                openingBalance: parseFloat(openingBalance) || 0
             }
         });
         res.json({ success: true, changes: 1 });
@@ -268,15 +279,19 @@ app.get('/api/vendors', async (req, res) => {
 
 app.post('/api/vendors', async (req, res) => {
     try {
-        const { companyId, name, phone, email, address } = req.body;
+        const { companyId, name, company_name, phone, email, address, city, gst_no, openingBalance } = req.body;
         const vendor = await prisma.vendor.create({
             data: {
                 companyId,
                 name,
+                companyName: company_name,
                 phone,
                 email,
                 address,
-                balance: 0
+                city,
+                gstNo: gst_no,
+                openingBalance: parseFloat(openingBalance) || 0,
+                balance: parseFloat(openingBalance) || 0
             }
         });
         res.json({ success: true, id: vendor.id, ...vendor });
@@ -285,14 +300,18 @@ app.post('/api/vendors', async (req, res) => {
 
 app.put('/api/vendors/:id', async (req, res) => {
     try {
-        const { name, phone, email, address } = req.body;
+        const { name, company_name, phone, email, address, city, gst_no, openingBalance } = req.body;
         await prisma.vendor.update({
             where: { id: req.params.id },
             data: {
                 name,
+                companyName: company_name,
                 phone,
                 email,
-                address
+                address,
+                city,
+                gstNo: gst_no,
+                openingBalance: parseFloat(openingBalance) || 0
             }
         });
         res.json({ success: true, changes: 1 });
@@ -741,17 +760,20 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { companyId, name, sku, cost_price, sell_price, stock_qty, alert_qty, category_id, brand_id, image_url, description } = req.body;
+        const { companyId, name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description } = req.body;
         const product = await prisma.product.create({
             data: {
                 companyId,
                 name,
                 sku,
+                unit: unit || 'pcs',
                 description,
                 costPrice: parseFloat(cost_price) || 0,
                 sellPrice: parseFloat(sell_price) || 0,
                 stockQty: parseInt(stock_qty) || 0,
                 alertQty: parseInt(alert_qty) || 5,
+                weight: parseFloat(weight) || 0,
+                expiryDate: expiry_date ? new Date(expiry_date) : null,
                 categoryId: category_id,
                 brandId: brand_id,
                 imageUrl: image_url
@@ -763,20 +785,24 @@ app.post('/api/products', async (req, res) => {
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const { name, sku, cost_price, sell_price, stock_qty, alert_qty, category_id, brand_id, image_url, description } = req.body;
+        const { name, sku, unit, cost_price, sell_price, stock_qty, alert_qty, weight, expiry_date, category_id, brand_id, image_url, description, is_active } = req.body;
         await prisma.product.update({
             where: { id: req.params.id },
             data: {
                 name,
                 sku,
+                unit,
                 description,
                 costPrice: cost_price !== undefined ? parseFloat(cost_price) : undefined,
                 sellPrice: sell_price !== undefined ? parseFloat(sell_price) : undefined,
                 stockQty: stock_qty !== undefined ? parseInt(stock_qty) : undefined,
                 alertQty: alert_qty !== undefined ? parseInt(alert_qty) : undefined,
+                weight: weight !== undefined ? parseFloat(weight) : undefined,
+                expiryDate: expiry_date ? new Date(expiry_date) : undefined,
                 categoryId: category_id,
                 brandId: brand_id,
-                imageUrl: image_url
+                imageUrl: image_url,
+                isActive: is_active !== undefined ? (is_active === 1 || is_active === true) : undefined
             }
         });
         res.json({ success: true, changes: 1 });
@@ -1053,6 +1079,44 @@ app.get('/api/reports/summary', async (req, res) => {
         const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
         const netProfit = totalSales - (totalPurchases + totalExpenses);
 
+        // Calculate Daily Summaries
+        const dailyMap = {};
+
+        // Populate with dates in range
+        let curr = new Date(start);
+        while (curr <= end) {
+            const dateStr = curr.toISOString().split('T')[0];
+            dailyMap[dateStr] = { date: dateStr, invoices: 0, sales: 0, expenses: 0, purchases: 0, profit: 0 };
+            curr.setDate(curr.getDate() + 1);
+        }
+
+        sales.forEach(s => {
+            const d = s.date.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].invoices += 1;
+                dailyMap[d].sales += s.grandTotal;
+                dailyMap[d].profit += s.grandTotal;
+            }
+        });
+
+        expenses.forEach(e => {
+            const d = e.date.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].expenses += e.amount;
+                dailyMap[d].profit -= e.amount;
+            }
+        });
+
+        purchases.forEach(p => {
+            const d = p.date.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].purchases += p.totalAmount;
+                dailyMap[d].profit -= p.totalAmount;
+            }
+        });
+
+        const recentDays = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+
         res.json({
             totalSales,
             totalPurchases,
@@ -1060,7 +1124,8 @@ app.get('/api/reports/summary', async (req, res) => {
             netProfit,
             salesCount: sales.length,
             purchaseCount: purchases.length,
-            expenseCount: expenses.length
+            expenseCount: expenses.length,
+            recentDays
         });
     } catch (e) { handleError(res, e); }
 });

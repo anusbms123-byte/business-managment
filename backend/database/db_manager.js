@@ -68,11 +68,17 @@ function initSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER,
       name TEXT NOT NULL,
+      company_name TEXT,
       contact_person TEXT,
       phone TEXT,
       email TEXT,
       address TEXT,
+      city TEXT,
+      gst_no TEXT,
+      opening_balance REAL DEFAULT 0,
+      current_balance REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(company_id) REFERENCES companies(id)
     )`);
 
@@ -80,15 +86,22 @@ function initSchema() {
     db.run(`CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER,
-      code TEXT, -- Barcode/SKU (Unique per company logic needs to be handled in app)
+      code TEXT, -- Barcode/SKU
       name TEXT NOT NULL,
+      description TEXT,
+      unit TEXT DEFAULT 'pcs', -- pcs, kg, m, etc.
       category_id INTEGER,
       vendor_id INTEGER,
       cost_price REAL DEFAULT 0,
       sell_price REAL DEFAULT 0,
       stock_quantity INTEGER DEFAULT 0,
       alert_threshold INTEGER DEFAULT 5,
+      weight REAL,
+      expiry_date DATE,
       image_path TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(company_id) REFERENCES companies(id),
       FOREIGN KEY(category_id) REFERENCES categories(id),
       FOREIGN KEY(vendor_id) REFERENCES vendors(id)
@@ -99,12 +112,18 @@ function initSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id INTEGER,
       name TEXT NOT NULL,
+      customer_type TEXT DEFAULT 'retail', -- retail, wholesale
+      cnic TEXT,
       phone TEXT,
       email TEXT,
       address TEXT,
+      city TEXT,
+      gst_no TEXT,
       credit_limit REAL DEFAULT 0,
+      opening_balance REAL DEFAULT 0,
       current_balance REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(company_id) REFERENCES companies(id)
     )`);
 
@@ -118,10 +137,15 @@ function initSchema() {
       total_amount REAL,
       discount REAL DEFAULT 0,
       tax_amount REAL DEFAULT 0,
+      shipping_cost REAL DEFAULT 0,
       grand_total REAL,
-      payment_method TEXT,
+      amount_paid REAL DEFAULT 0,
+      payment_method TEXT DEFAULT 'cash', -- cash, bank, card, credit
+      payment_status TEXT DEFAULT 'paid', -- paid, partial, due
       sale_date DATETIME DEFAULT CURRENT_TIMESTAMP,
       notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(company_id) REFERENCES companies(id),
       FOREIGN KEY(customer_id) REFERENCES customers(id)
     )`);
@@ -145,8 +169,14 @@ function initSchema() {
       vendor_id INTEGER,
       ref_number TEXT,
       total_amount REAL,
+      paid_amount REAL DEFAULT 0,
+      shipping_cost REAL DEFAULT 0,
       purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      due_date DATE,
+      payment_status TEXT DEFAULT 'received', -- ordered, received, partial
       status TEXT DEFAULT 'received',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(company_id) REFERENCES companies(id),
       FOREIGN KEY(vendor_id) REFERENCES vendors(id)
     )`);

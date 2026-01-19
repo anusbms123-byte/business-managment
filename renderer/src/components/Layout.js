@@ -97,7 +97,7 @@ const Layout = ({ children, user, onLogout }) => {
     return (
         <div className="flex h-screen bg-gray-50">
             {/* Sidebar */}
-            <div className="w-72 bg-gradient-to-b from-gray-900 via-black to-gray-900 flex flex-col relative overflow-hidden">
+            <div className="w-72 bg-zinc-950 flex flex-col relative overflow-hidden">
 
 
                 {/* Logo */}

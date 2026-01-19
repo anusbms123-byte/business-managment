@@ -44,7 +44,12 @@ const Purchase = ({ currentUser }) => {
     const [vendorId, setVendorId] = useState('');
     const [invoiceNo, setInvoiceNo] = useState('');
     const [cart, setCart] = useState([]);
-    const [paidAmount, setPaidAmount] = useState('');
+    const [paidAmount, setPaidAmount] = useState(0);
+    const [shippingCost, setShippingCost] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('CASH');
+    const [paymentStatus, setPaymentStatus] = useState('RECEIVED');
+    const [dueDate, setDueDate] = useState('');
+    const [notes, setNotes] = useState('');
 
     useEffect(() => {
         loadData();
@@ -88,6 +93,8 @@ const Purchase = ({ currentUser }) => {
 
     const calculateSubtotal = () => cart.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
     const subtotal = calculateSubtotal();
+    const grandTotal = subtotal + parseFloat(shippingCost || 0);
+    const balanceDue = grandTotal - parseFloat(paidAmount || 0);
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -100,9 +107,13 @@ const Purchase = ({ currentUser }) => {
                 companyId: currentUser?.company_id,
                 vendorId,
                 invoiceNo,
-                totalAmount: subtotal,
+                totalAmount: grandTotal,
                 paidAmount: parseFloat(paidAmount) || 0,
-                status: 'RECEIVED',
+                shippingCost: parseFloat(shippingCost) || 0,
+                paymentMethod,
+                paymentStatus,
+                dueDate: dueDate || null,
+                notes,
                 items: cart.map(item => ({
                     productId: item.id,
                     quantity: item.quantity,
@@ -129,7 +140,11 @@ const Purchase = ({ currentUser }) => {
         setVendorId('');
         setInvoiceNo('');
         setCart([]);
-        setPaidAmount('');
+        setPaidAmount(0);
+        setShippingCost(0);
+        setDueDate('');
+        setNotes('');
+        setPaymentStatus('RECEIVED');
     };
 
     const filtered = purchases.filter(p =>
@@ -191,6 +206,7 @@ const Purchase = ({ currentUser }) => {
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supplier</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date/Time</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Paid / Method</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
@@ -234,12 +250,18 @@ const Purchase = ({ currentUser }) => {
                                         <span className="font-bold text-sm text-slate-800">PKR {p.totalAmount.toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${p.totalAmount <= p.paidAmount
-                                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                            : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-800">PKR {p.paidAmount?.toLocaleString()}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{p.paymentMethod || 'CASH'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${p.paidAmount >= p.totalAmount ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                                p.paidAmount > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                                                    'bg-blue-50 text-blue-600 border border-blue-100'
                                             }`}>
-                                            <span className={`w-1 h-1 rounded-full ${p.totalAmount <= p.paidAmount ? 'bg-emerald-500' : 'bg-blue-500'}`}></span>
-                                            {p.totalAmount <= p.paidAmount ? 'Fully Paid' : 'Credit'}
+                                            <span className={`w-1 h-1 rounded-full ${p.paidAmount >= p.totalAmount ? 'bg-emerald-500' : p.paidAmount > 0 ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
+                                            {p.paidAmount >= p.totalAmount ? 'Fully Paid' : p.paidAmount > 0 ? 'Partial' : 'Ordered'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -329,6 +351,30 @@ const Purchase = ({ currentUser }) => {
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Due Date</label>
+                                        <input
+                                            type="date"
+                                            value={dueDate}
+                                            onChange={(e) => setDueDate(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:border-blue-500 transition-all outline-none text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Order Status</label>
+                                        <select
+                                            value={paymentStatus}
+                                            onChange={(e) => setPaymentStatus(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:border-blue-500 transition-all outline-none text-xs appearance-none"
+                                        >
+                                            <option value="ORDERED">ORDERED</option>
+                                            <option value="RECEIVED">RECEIVED</option>
+                                            <option value="PARTIAL">PARTIAL</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {/* Cart Items */}
                                 <div className="flex-1 overflow-y-auto pr-2 space-y-3">
                                     {cart.length === 0 ? (
@@ -371,22 +417,66 @@ const Purchase = ({ currentUser }) => {
 
                                 {/* Summary */}
                                 <div className="mt-6 p-6 bg-white rounded-xl shadow-lg border border-slate-200 space-y-4">
+                                    <div className="space-y-2 pb-2 border-b border-slate-50">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                            <span>Subtotal</span>
+                                            <span>PKR {subtotal.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                            <span>Shipping</span>
+                                            <input
+                                                type="number"
+                                                value={shippingCost}
+                                                onChange={(e) => setShippingCost(e.target.value)}
+                                                className="w-20 px-2 py-0.5 bg-slate-50 rounded text-right font-bold text-slate-800 outline-none border border-slate-100"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Grand Total</span>
-                                        <span className="text-2xl font-bold text-slate-800 tracking-tighter">PKR {subtotal.toLocaleString()}</span>
+                                        <span className="text-2xl font-bold text-slate-800 tracking-tighter">PKR {grandTotal.toLocaleString()}</span>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Payment Made</label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-500" size={18} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Payment Made</label>
                                             <input
                                                 type="number"
                                                 value={paidAmount}
                                                 onChange={(e) => setPaidAmount(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg font-bold text-xl text-slate-800 focus:ring-4 focus:ring-blue-500/5 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-lg text-slate-800 focus:border-blue-500 transition-all outline-none"
                                                 placeholder="0.00"
                                             />
                                         </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Balance Due</label>
+                                            <div className="px-4 py-2 bg-rose-50 border border-rose-100 rounded-lg font-bold text-lg text-rose-600">
+                                                {balanceDue.toLocaleString()}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-right">Method</label>
+                                        <select
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-xs appearance-none focus:border-blue-500 outline-none"
+                                        >
+                                            <option value="CASH">CASH</option>
+                                            <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                                            <option value="CHEQUE">CHEQUE</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Order Notes</label>
+                                        <textarea
+                                            value={notes}
+                                            onChange={(e) => setNotes(e.target.value)}
+                                            rows="2"
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-lg font-medium text-xs focus:border-blue-500 transition-all outline-none resize-none"
+                                            placeholder="Additional comments..."
+                                        />
                                     </div>
 
                                     <button

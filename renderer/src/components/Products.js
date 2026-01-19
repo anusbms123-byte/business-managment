@@ -40,8 +40,9 @@ const Products = ({ currentUser }) => {
 
     // Form State
     const [formData, setFormData] = useState({
-        id: null, name: '', sku: '', cost_price: 0, sell_price: 0,
-        stock_qty: 0, alert_qty: 5, category_id: '', brand_id: ''
+        id: null, name: '', sku: '', description: '', unit: 'pcs',
+        cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+        weight: '', expiry_date: '', category_id: '', brand_id: ''
     });
 
     useEffect(() => { fetchData(); }, [currentUser]);
@@ -77,7 +78,11 @@ const Products = ({ currentUser }) => {
 
         if (result.success) {
             setIsModalOpen(false);
-            setFormData({ id: null, name: '', sku: '', cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5, category_id: '', brand_id: '' });
+            setFormData({
+                id: null, name: '', sku: '', description: '', unit: 'pcs',
+                cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+                weight: '', expiry_date: '', category_id: '', brand_id: ''
+            });
             fetchData();
         } else {
             alert("Error: " + result.message);
@@ -94,10 +99,19 @@ const Products = ({ currentUser }) => {
 
     const openEdit = (product) => {
         setFormData({
-            id: product.id, name: product.name, sku: product.sku,
-            cost_price: product.costPrice, sell_price: product.sellPrice,
-            stock_qty: product.stockQty, alert_qty: product.alertQty,
-            category_id: product.categoryId || '', brand_id: product.brandId || ''
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            description: product.description || '',
+            unit: product.unit || 'pcs',
+            cost_price: product.costPrice,
+            sell_price: product.sellPrice,
+            stock_qty: product.stockQty,
+            alert_qty: product.alertQty,
+            weight: product.weight || '',
+            expiry_date: product.expiryDate ? new Date(product.expiryDate).toISOString().split('T')[0] : '',
+            category_id: product.categoryId || '',
+            brand_id: product.brandId || ''
         });
         setIsModalOpen(true);
     };
@@ -132,7 +146,11 @@ const Products = ({ currentUser }) => {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ id: null, name: '', sku: '', cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5, category_id: '', brand_id: '' });
+                            setFormData({
+                                id: null, name: '', sku: '', description: '', unit: 'pcs',
+                                cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+                                weight: '', expiry_date: '', category_id: '', brand_id: ''
+                            });
                             setIsModalOpen(true);
                         }}
                         className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
@@ -240,6 +258,37 @@ const Products = ({ currentUser }) => {
                                 </div>
                             </div>
 
+                            {/* Units & Description */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                        <Package size={12} className="text-blue-500" /> Unit
+                                    </label>
+                                    <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
+                                        <option value="pcs">Pieces (pcs)</option>
+                                        <option value="kg">Kilogram (kg)</option>
+                                        <option value="gram">Gram (g)</option>
+                                        <option value="ltr">Liter (ltr)</option>
+                                        <option value="mtr">Meter (m)</option>
+                                        <option value="box">Box</option>
+                                        <option value="pkt">Packet</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                        <Check size={12} className="text-blue-500" /> Expiry Date
+                                    </label>
+                                    <input type="date" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                    Description
+                                </label>
+                                <textarea className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none min-h-[80px]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
+                            </div>
+
                             {/* Classification */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1.5">
@@ -263,13 +312,13 @@ const Products = ({ currentUser }) => {
                             </div>
 
                             {/* Inventory & Pricing */}
-                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 grid grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Cost (PKR)</label>
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Cost</label>
                                     <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.cost_price} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Sell (PKR)</label>
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Sell</label>
                                     <input required type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.sell_price} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} />
                                 </div>
                                 <div>
@@ -279,6 +328,10 @@ const Products = ({ currentUser }) => {
                                 <div>
                                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Min Alert</label>
                                     <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.alert_qty} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Weight</label>
+                                    <input type="number" step="0.01" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="kg" />
                                 </div>
                             </div>
 

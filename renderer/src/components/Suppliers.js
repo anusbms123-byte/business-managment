@@ -37,7 +37,18 @@ const Suppliers = ({ currentUser }) => {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
+    const [formData, setFormData] = useState({
+        id: null,
+        name: '',
+        company_name: '',
+        contact_person: '',
+        phone: '',
+        email: '',
+        address: '',
+        city: '',
+        gst_no: '',
+        openingBalance: 0
+    });
 
     useEffect(() => { loadSuppliers(); }, [currentUser]);
 
@@ -93,7 +104,29 @@ const Suppliers = ({ currentUser }) => {
     };
 
     const openModal = (supplier = null) => {
-        setFormData(supplier ? { ...supplier } : { name: '', phone: '', email: '', address: '' });
+        setFormData(supplier ? {
+            id: supplier.id,
+            name: supplier.name,
+            company_name: supplier.companyName || '',
+            contact_person: supplier.contactPerson || '',
+            phone: supplier.phone || '',
+            email: supplier.email || '',
+            address: supplier.address || '',
+            city: supplier.city || '',
+            gst_no: supplier.gstNo || '',
+            openingBalance: supplier.openingBalance || 0
+        } : {
+            id: null,
+            name: '',
+            company_name: '',
+            contact_person: '',
+            phone: '',
+            email: '',
+            address: '',
+            city: '',
+            gst_no: '',
+            openingBalance: 0
+        });
         setShowModal(true);
     };
 
@@ -148,7 +181,8 @@ const Suppliers = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/80">
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Vendor Profile</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Vendor / Company</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Contact Person</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Contact Info</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Location</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Outstandings</th>
@@ -187,9 +221,12 @@ const Suppliers = ({ currentUser }) => {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-sm uppercase tracking-tight">{supplier.name}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Partner ID: {supplier.id?.slice(-6).toUpperCase()}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{supplier.companyName || 'Individual'}</p>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="text-xs font-bold text-slate-600">{supplier.contactPerson || 'N/A'}</p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="space-y-1">
@@ -198,23 +235,27 @@ const Suppliers = ({ currentUser }) => {
                                                 {supplier.phone || 'N/A'}
                                             </div>
                                             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                                                <Mail size={12} className="text-slate-300" />
-                                                {supplier.email || 'no-email@vendor.com'}
+                                                GST: {supplier.gstNo || 'N/A'}
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-start gap-2 max-w-[180px]">
-                                            <MapPin size={12} className="text-slate-300 mt-1 shrink-0" />
-                                            <p className="text-xs text-slate-500 font-bold line-clamp-1">{supplier.address || 'No address'}</p>
+                                        <div className="flex flex-col max-w-[180px]">
+                                            <div className="flex items-center gap-1.5 font-bold text-slate-700 text-xs">
+                                                <MapPin size={12} className="text-blue-500" /> {supplier.city || 'No City'}
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 font-bold truncate mt-1">{supplier.address || 'No address'}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded text-xs font-bold border ${(supplier.balance || 0) > 0
-                                            ? 'bg-rose-50 text-rose-600 border-rose-100'
-                                            : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                            }`}>
-                                            PKR {(supplier.balance || 0).toLocaleString()}
+                                        <div className="flex flex-col">
+                                            <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded text-xs font-bold border ${(supplier.balance || 0) > 0
+                                                ? 'bg-rose-50 text-rose-600 border-rose-100'
+                                                : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                }`}>
+                                                PKR {(supplier.balance || 0).toLocaleString()}
+                                            </div>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1">Open: {supplier.openingBalance || 0}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -251,18 +292,33 @@ const Suppliers = ({ currentUser }) => {
 
                         <form onSubmit={handleSave} className="p-8 space-y-5">
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Company Name</label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
-                                            placeholder="e.g. Global Tech Solutions"
-                                        />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Supplier Name</label>
+                                        <div className="relative">
+                                            <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
+                                                placeholder="e.g. Ali Ahmed"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Company Name</label>
+                                        <div className="relative">
+                                            <Truck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                value={formData.company_name}
+                                                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
+                                                placeholder="Business Name"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -281,7 +337,23 @@ const Suppliers = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Email Address</label>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Contact Person</label>
+                                        <div className="relative">
+                                            <Check className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                value={formData.contact_person}
+                                                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                placeholder="Manager Name"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Email</label>
                                         <div className="relative">
                                             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
@@ -293,20 +365,53 @@ const Suppliers = ({ currentUser }) => {
                                             />
                                         </div>
                                     </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">GST Number</label>
+                                        <input
+                                            type="text"
+                                            value={formData.gst_no}
+                                            onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                            placeholder="GST Registration"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">City</label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                value={formData.city}
+                                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                placeholder="Karachi"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Opening Balance</label>
+                                        <input
+                                            type="number"
+                                            value={formData.openingBalance}
+                                            onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                            placeholder="0.00"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Business Address</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3.5 top-3 text-slate-400" size={16} />
-                                        <textarea
-                                            value={formData.address}
-                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                            rows="2"
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none resize-none"
-                                            placeholder="Physical address..."
-                                        />
-                                    </div>
+                                    <textarea
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        rows="2"
+                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none resize-none"
+                                        placeholder="Physical address..."
+                                    />
                                 </div>
                             </div>
 
