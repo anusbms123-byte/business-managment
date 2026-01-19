@@ -430,7 +430,7 @@ app.post('/api/users', async (req, res) => {
         });
 
         if (!roleRec) {
-            // Fallback: search just by name if company match fails
+           
             roleRec = await prisma.role.findFirst({
                 where: { name: { equals: searchRole, mode: 'insensitive' } }
             });
