@@ -1,12 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
+const { withAccelerate } = require('@prisma/extension-accelerate');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient().$extends(withAccelerate());
 const PORT = process.env.PORT || 2000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // TODO: Move to .env
 
