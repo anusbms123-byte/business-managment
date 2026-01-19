@@ -176,8 +176,8 @@ const Dashboard = ({ currentUser }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Organization Overview</h1>
-                    <p className="text-slate-500 text-sm mt-1">Real-time analytical insights for your business.</p>
+                    <h1 className="text-2xl font-medium tracking-tight">Organization Overview</h1>
+                    <p className="text-slate-500 text-lg mt-1">Real-time analytical insights for your business.</p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Weekly', 'Monthly', 'Yearly'].map((p) => (
