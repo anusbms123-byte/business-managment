@@ -813,6 +813,8 @@ const AuditLog = ({ currentUser }) => {
 const CompanyRequests = ({ currentUser }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [rejecting, setRejecting] = useState(null); // { id, notes }
+    const [isRejecting, setIsRejecting] = useState(false);
 
     useEffect(() => { loadRequests(); }, []);
 
@@ -843,18 +845,18 @@ const CompanyRequests = ({ currentUser }) => {
         }
     };
 
-    const handleReject = async (id) => {
-        const notes = prompt('Reason for rejection:');
-        if (notes === null) return;
-
+    const confirmReject = async () => {
+        if (!rejecting.notes?.trim()) return alert('Please provide a reason for rejection.');
+        setIsRejecting(true);
         try {
-            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${id}/reject`, {
+            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${rejecting.id}/reject`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notes })
+                body: JSON.stringify({ notes: rejecting.notes })
             });
             const data = await response.json();
             if (data.success) {
+                setRejecting(null);
                 loadRequests();
             } else {
                 alert(data.message);
@@ -862,12 +864,46 @@ const CompanyRequests = ({ currentUser }) => {
         } catch (err) {
             console.error(err);
         }
+        setIsRejecting(false);
     };
 
     if (loading) return <LoadingSpinner />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Rejection Modal */}
+            {rejecting && (
+                <Modal title="Reject Registration" onClose={() => setRejecting(null)}>
+                    <div className="space-y-6">
+                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg">
+                            <p className="text-xs text-rose-600 font-bold leading-relaxed italic">
+                                "Blocking this request will deactivate the associated user account permanently unless reconsidered."
+                            </p>
+                        </div>
+                        <FormTextarea
+                            label="Reason for Rejection"
+                            placeholder="Specify why this request is being denied..."
+                            value={rejecting.notes}
+                            onChange={(val) => setRejecting({ ...rejecting, notes: val })}
+                        />
+                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+                            <button
+                                onClick={() => setRejecting(null)}
+                                className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmReject}
+                                disabled={isRejecting}
+                                className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-sm shadow-rose-100 disabled:opacity-50"
+                            >
+                                {isRejecting ? 'Rejecting...' : 'Confirm Rejection'}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Requests</h2>
@@ -913,7 +949,7 @@ const CompanyRequests = ({ currentUser }) => {
                                 Approve
                             </button>
                             <button
-                                onClick={() => handleReject(req.id)}
+                                onClick={() => setRejecting({ id: req.id, notes: '' })}
                                 className="py-2 bg-white text-rose-600 border border-rose-100 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-50 transition-colors"
                             >
                                 Reject
