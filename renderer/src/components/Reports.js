@@ -88,8 +88,8 @@ const Reports = ({ currentUser }) => {
                     <p className="text-xl font-bold text-slate-800">PKR {summary.totalSales?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-amber-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Purchases</p>
-                    <p className="text-xl font-bold text-slate-800">PKR {summary.totalPurchases?.toLocaleString() ?? '0'}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Purchase Cost (Sold)</p>
+                    <p className="text-xl font-bold text-slate-800">PKR {summary.totalCOGS?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-rose-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expenses</p>
@@ -155,7 +155,9 @@ const Reports = ({ currentUser }) => {
                                     </>
                                 ) : null}
                                 {category === 'Purchase History' || category === 'Profit & Loss Statement' ? (
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Purchases</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                        {category === 'Profit & Loss Statement' ? 'Purchase Cost (Sold)' : 'Purchases'}
+                                    </th>
                                 ) : null}
                                 {category === 'Expense Audit' || category === 'Profit & Loss Statement' ? (
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Expenses</th>
@@ -184,7 +186,9 @@ const Reports = ({ currentUser }) => {
                                         </>
                                     ) : null}
                                     {category === 'Purchase History' || category === 'Profit & Loss Statement' ? (
-                                        <td className="px-6 py-4 text-xs font-bold text-amber-600 tracking-tight">PKR {row.purchases?.toLocaleString() ?? '0'}</td>
+                                        <td className="px-6 py-4 text-xs font-bold text-amber-600 tracking-tight">
+                                            PKR {(category === 'Profit & Loss Statement' ? row.cogs : row.purchases)?.toLocaleString() ?? '0'}
+                                        </td>
                                     ) : null}
                                     {category === 'Expense Audit' || category === 'Profit & Loss Statement' ? (
                                         <td className="px-6 py-4 text-xs font-bold text-rose-500 tracking-tight">PKR {row.expenses?.toLocaleString() ?? '0'}</td>

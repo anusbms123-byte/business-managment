@@ -105,6 +105,7 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={User}
                                 placeholder="Choose a username"
+                                disabled={loading}
                                 required
                             />
                             <FormInput
@@ -115,6 +116,7 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Mail}
                                 placeholder="your@email.com"
+                                disabled={loading}
                                 required
                             />
                             <FormInput
@@ -125,6 +127,7 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Create a password"
+                                disabled={loading}
                                 required
                             />
                             <FormInput
@@ -135,6 +138,7 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Repeat password"
+                                disabled={loading}
                                 required
                             />
 
@@ -165,7 +169,7 @@ const Signup = () => {
     );
 };
 
-const FormInput = ({ label, icon: Icon, ...props }) => (
+const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
     <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
         <div className="relative group">

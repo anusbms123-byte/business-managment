@@ -232,11 +232,11 @@ const Dashboard = ({ currentUser }) => {
                     icon={TrendingUp}
                 />
                 <StatCard
-                    title="Total Sales"
-                    value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
+                    title="Purchase Cost (Sold)"
+                    value={`PKR ${summary.totalCOGS?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
-                    percentage={summary.totalSales > 0 ? 100 : 0}
+                    percentage={summary.totalCOGS > 0 ? 100 : 0}
                     color="#10b981"
                     icon={FolderKanban}
                 />

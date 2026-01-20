@@ -44,7 +44,7 @@ const Products = ({ currentUser }) => {
     const [filterBrand, setFilterBrand] = useState('');
     const [filterStockStatus, setFilterStockStatus] = useState(''); // 'instock', 'lowstock', 'outofstock'
 
-    // Form State - using category_name and brand_name for inputs
+    const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         id: null, name: '', sku: '', description: '', unit: 'pcs',
         cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
@@ -84,6 +84,7 @@ const Products = ({ currentUser }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
 
         try {
             // Handle Category Interaction
@@ -104,6 +105,7 @@ const Products = ({ currentUser }) => {
                         }
                     } else {
                         alert("Failed to create category: " + newCat.message);
+                        setSaving(false);
                         return;
                     }
                 }
@@ -127,6 +129,7 @@ const Products = ({ currentUser }) => {
                         }
                     } else {
                         alert("Failed to create brand: " + newBrand.message);
+                        setSaving(false);
                         return;
                     }
                 }
@@ -157,6 +160,8 @@ const Products = ({ currentUser }) => {
         } catch (error) {
             console.error("Submission Error:", error);
             alert("An unexpected error occurred.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -517,9 +522,18 @@ const Products = ({ currentUser }) => {
                                 </div>
                             </div>
 
-                            <button type="submit" className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
-                                <Check size={20} />
-                                {formData.id ? 'Save Product' : 'Complete Setup'}
+                            <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
+                                {saving ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>Saving Data...</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Check size={20} />
+                                        <span>{formData.id ? 'Save Product' : 'Complete Setup'}</span>
+                                    </>
+                                )}
                             </button>
                         </form>
                     </div>

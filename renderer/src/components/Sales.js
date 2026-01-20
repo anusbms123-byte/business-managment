@@ -38,6 +38,7 @@ const Sales = ({ currentUser }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     // New Sale Cart State
     const [cart, setCart] = useState([]);
@@ -132,37 +133,45 @@ const Sales = ({ currentUser }) => {
 
     const handleSaveSale = async () => {
         if (cart.length === 0) return alert("Please add items to cart!");
+        setSaving(true);
 
-        const saleData = {
-            companyId: currentUser.company_id,
-            customerId: selectedCustomer || null,
-            userId: currentUser.id,
-            invoiceNo: `INV-${Date.now().toString().slice(-6)}`,
-            subTotal,
-            discount: parseFloat(discount),
-            tax: 0,
-            grandTotal,
-            shippingCost: parseFloat(shippingCost),
-            amountPaid: parseFloat(amountPaid),
-            paymentMethod,
-            paymentStatus,
-            notes,
-            items: cart
-        };
+        try {
+            const saleData = {
+                companyId: currentUser.company_id,
+                customerId: selectedCustomer || null,
+                userId: currentUser.id,
+                invoiceNo: `INV-${Date.now().toString().slice(-6)}`,
+                subTotal,
+                discount: parseFloat(discount),
+                tax: 0,
+                grandTotal,
+                shippingCost: parseFloat(shippingCost),
+                amountPaid: parseFloat(amountPaid),
+                paymentMethod,
+                paymentStatus,
+                notes,
+                items: cart
+            };
 
-        const result = await window.electronAPI.addSale(saleData);
-        if (result.success) {
-            setIsModalOpen(false);
-            setCart([]);
-            setDiscount(0);
-            setShippingCost(0);
-            setAmountPaid(0);
-            setPaymentMethod('CASH');
-            setNotes('');
-            setSelectedCustomer('');
-            fetchData();
-        } else {
-            alert("Error: " + result.message);
+            const result = await window.electronAPI.addSale(saleData);
+            if (result.success) {
+                setIsModalOpen(false);
+                setCart([]);
+                setDiscount(0);
+                setShippingCost(0);
+                setAmountPaid(0);
+                setPaymentMethod('CASH');
+                setNotes('');
+                setSelectedCustomer('');
+                fetchData();
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (error) {
+            console.error("Sale Error:", error);
+            alert("An unexpected error occurred.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -330,7 +339,8 @@ const Sales = ({ currentUser }) => {
                                         <div className="flex items-end">
                                             <button
                                                 onClick={addToCart}
-                                                className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm"
+                                                disabled={saving}
+                                                className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm disabled:opacity-50"
                                             >
                                                 ADD TO CART
                                             </button>
@@ -487,11 +497,20 @@ const Sales = ({ currentUser }) => {
                                 <div className="mt-auto space-y-3">
                                     <button
                                         onClick={handleSaveSale}
-                                        disabled={cart.length === 0}
+                                        disabled={cart.length === 0 || saving}
                                         className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                     >
-                                        <ShoppingCart size={20} />
-                                        CHECKOUT
+                                        {saving ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>Processing...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <ShoppingCart size={20} />
+                                                <span>CHECKOUT</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>

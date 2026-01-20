@@ -93,6 +93,7 @@ const CompanySetup = () => {
                                 icon={Building2}
                                 placeholder="Business Name"
                                 required
+                                disabled={loading}
                             />
 
                             <div className="grid grid-cols-2 gap-5">
@@ -105,6 +106,7 @@ const CompanySetup = () => {
                                     icon={Mail}
                                     placeholder="contact@company.com"
                                     required
+                                    disabled={loading}
                                 />
                                 <FormInput
                                     label="Phone"
@@ -114,6 +116,7 @@ const CompanySetup = () => {
                                     icon={Phone}
                                     placeholder="+92 300..."
                                     required
+                                    disabled={loading}
                                 />
                             </div>
 
@@ -153,7 +156,7 @@ const CompanySetup = () => {
     );
 };
 
-const FormInput = ({ label, icon: Icon, ...props }) => (
+const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
     <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
         <div className="relative group">

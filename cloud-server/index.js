@@ -1109,7 +1109,8 @@ app.get('/api/reports/summary', async (req, res) => {
 
         const [sales, purchases, expenses] = await Promise.all([
             prisma.sale.findMany({
-                where: { companyId, date: { gte: start, lte: end } }
+                where: { companyId, date: { gte: start, lte: end } },
+                include: { items: { include: { product: true } } }
             }),
             prisma.purchase.findMany({
                 where: { companyId, date: { gte: start, lte: end } }
@@ -1122,7 +1123,17 @@ app.get('/api/reports/summary', async (req, res) => {
         const totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
         const totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
         const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
-        const netProfit = totalSales - (totalPurchases + totalExpenses);
+
+        // Calculate COGS - Sum of (item.quantity * product.costPrice) for all sold items
+        const totalCOGS = sales.reduce((acc, s) => {
+            const saleCOGS = s.items.reduce((itemAcc, item) => {
+                return itemAcc + (item.quantity * (item.product?.costPrice || 0));
+            }, 0);
+            return acc + saleCOGS;
+        }, 0);
+
+        // Net Profit = Revenue - COGS - Expenses
+        const netProfit = totalSales - (totalCOGS + totalExpenses);
 
         // Calculate Daily Summaries
         const dailyMap = {};
@@ -1131,16 +1142,21 @@ app.get('/api/reports/summary', async (req, res) => {
         let curr = new Date(start);
         while (curr <= end) {
             const dateStr = curr.toISOString().split('T')[0];
-            dailyMap[dateStr] = { date: dateStr, invoices: 0, sales: 0, expenses: 0, purchases: 0, profit: 0 };
+            dailyMap[dateStr] = { date: dateStr, invoices: 0, sales: 0, expenses: 0, purchases: 0, cogs: 0, profit: 0 };
             curr.setDate(curr.getDate() + 1);
         }
 
         sales.forEach(s => {
             const d = s.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
+                const saleCOGS = s.items.reduce((itemAcc, item) => {
+                    return itemAcc + (item.quantity * (item.product?.costPrice || 0));
+                }, 0);
+
                 dailyMap[d].invoices += 1;
                 dailyMap[d].sales += s.grandTotal;
-                dailyMap[d].profit += s.grandTotal;
+                dailyMap[d].cogs += saleCOGS;
+                dailyMap[d].profit += (s.grandTotal - saleCOGS);
             }
         });
 
@@ -1156,7 +1172,7 @@ app.get('/api/reports/summary', async (req, res) => {
             const d = p.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
                 dailyMap[d].purchases += p.totalAmount;
-                dailyMap[d].profit -= p.totalAmount;
+                // Note: purchases don't subtract from profit in COGS model until sold
             }
         });
 
@@ -1165,6 +1181,7 @@ app.get('/api/reports/summary', async (req, res) => {
         res.json({
             totalSales,
             totalPurchases,
+            totalCOGS,
             totalExpenses,
             netProfit,
             salesCount: sales.length,

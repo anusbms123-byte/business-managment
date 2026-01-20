@@ -315,7 +315,8 @@ const Purchase = ({ currentUser }) => {
                                         <button
                                             key={product.id}
                                             onClick={() => addToCart(product)}
-                                            className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group text-left relative overflow-hidden active:scale-95"
+                                            disabled={saving}
+                                            className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group text-left relative overflow-hidden active:scale-95 disabled:opacity-50"
                                         >
                                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="w-8 h-8 bg-blue-950 text-white rounded-lg flex items-center justify-center shadow-lg"><Plus size={16} /></div>
@@ -436,7 +437,8 @@ const Purchase = ({ currentUser }) => {
                                                 type="number"
                                                 value={shippingCost}
                                                 onChange={(e) => setShippingCost(e.target.value)}
-                                                className="w-20 px-2 py-0.5 bg-slate-50 rounded text-right font-bold text-slate-800 outline-none border border-slate-100"
+                                                disabled={saving}
+                                                className="w-20 px-2 py-0.5 bg-slate-50 rounded text-right font-bold text-slate-800 outline-none border border-slate-100 disabled:opacity-50"
                                             />
                                         </div>
                                     </div>
