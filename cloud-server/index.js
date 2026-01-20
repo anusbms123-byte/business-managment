@@ -44,13 +44,32 @@ app.post('/api/auth/login', async (req, res) => {
             }
         });
 
-        if (!user || !user.isActive) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials or inactive account' });
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Check Company Request Status for non-Super Admins
+        const isSuperAdmin = user.role?.name === 'Super Admin';
+        if (!isSuperAdmin && !user.companyId) {
+            const request = await prisma.companyRequest.findUnique({ where: { userId: user.id } });
+            if (request) {
+                if (request.status === 'PENDING') {
+                    return res.status(403).json({ success: false, message: 'Your company request is pending Super Admin approval.' });
+                }
+                if (request.status === 'REJECTED') {
+                    return res.status(403).json({ success: false, message: 'Your account/company request has been rejected. Please contact support.' });
+                }
+            }
+            // If no request and no company, they might be new - allow login to reach setup page
+        }
+
+        if (!user.isActive) {
+            return res.status(401).json({ success: false, message: 'Your account is deactivated.' });
         }
 
         // Generate Token
@@ -1286,11 +1305,22 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
 app.post('/api/company-requests/:id/reject', async (req, res) => {
     try {
         const { notes } = req.body;
-        await prisma.companyRequest.update({
-            where: { id: req.params.id },
-            data: { status: 'REJECTED', adminNotes: notes }
-        });
-        res.json({ success: true });
+        const requestId = req.params.id;
+
+        const request = await prisma.companyRequest.findUnique({ where: { id: requestId } });
+        if (!request) return res.status(404).json({ message: 'Request not found' });
+
+        await prisma.$transaction([
+            prisma.companyRequest.update({
+                where: { id: requestId },
+                data: { status: 'REJECTED', adminNotes: notes }
+            }),
+            prisma.user.update({
+                where: { id: request.userId },
+                data: { isActive: false }
+            })
+        ]);
+        res.json({ success: true, message: 'Request rejected and user deactivated' });
     } catch (e) { handleError(res, e); }
 });
 
