@@ -16,6 +16,9 @@ import Company from './components/Company';
 import Accounting from './components/Accounting';
 import HRM from './components/HRM';
 import Backup from './components/Backup';
+import Signup from './components/Signup';
+import CompanySetup from './components/CompanySetup';
+import PendingApproval from './components/PendingApproval';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -49,31 +52,42 @@ function App() {
         );
     }
 
-    if (!user) {
-        return <Login onLoginSuccess={handleLoginSuccess} />;
-    }
-
     return (
         <Router>
-            <Layout user={user} onLogout={handleLogout}>
-                <Routes>
-                    <Route path="/" element={<Dashboard currentUser={user} />} />
-                    <Route path="/inventory" element={<Inventory currentUser={user} />} />
-                    <Route path="/purchase" element={<Purchase currentUser={user} />} />
-                    <Route path="/sales" element={<Sales currentUser={user} />} />
-                    <Route path="/customers" element={<Customers currentUser={user} />} />
-                    <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
-                    <Route path="/expenses" element={<Expenses currentUser={user} />} />
-                    <Route path="/reports" element={<Reports currentUser={user} />} />
-                    <Route path="/accounting" element={<Accounting currentUser={user} />} />
-                    <Route path="/hrm" element={<HRM currentUser={user} />} />
-                    <Route path="/backup" element={<Backup currentUser={user} />} />
-                    <Route path="/users" element={<Users currentUser={user} />} />
-                    <Route path="/settings" element={<Settings currentUser={user} />} />
-                    <Route path="/company" element={<Company currentUser={user} />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </Layout>
+            <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} />
+                <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" replace />} />
+                <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to="/" replace />} />
+                <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to="/" replace />} />
+
+                {/* Protected Routes */}
+                {user ? (
+                    <Route path="/*" element={
+                        <Layout user={user} onLogout={handleLogout}>
+                            <Routes>
+                                <Route path="/" element={<Dashboard currentUser={user} />} />
+                                <Route path="/inventory" element={<Inventory currentUser={user} />} />
+                                <Route path="/purchase" element={<Purchase currentUser={user} />} />
+                                <Route path="/sales" element={<Sales currentUser={user} />} />
+                                <Route path="/customers" element={<Customers currentUser={user} />} />
+                                <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
+                                <Route path="/expenses" element={<Expenses currentUser={user} />} />
+                                <Route path="/reports" element={<Reports currentUser={user} />} />
+                                <Route path="/accounting" element={<Accounting currentUser={user} />} />
+                                <Route path="/hrm" element={<HRM currentUser={user} />} />
+                                <Route path="/backup" element={<Backup currentUser={user} />} />
+                                <Route path="/users" element={<Users currentUser={user} />} />
+                                <Route path="/settings" element={<Settings currentUser={user} />} />
+                                <Route path="/company" element={<Company currentUser={user} />} />
+                                <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                        </Layout>
+                    } />
+                ) : (
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                )}
+            </Routes>
         </Router>
     );
 }

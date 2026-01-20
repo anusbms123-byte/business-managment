@@ -72,7 +72,7 @@ const Reports = ({ currentUser }) => {
                         <button
                             key={p}
                             onClick={() => setFilter(p)}
-                            className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-950 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {p}
                         </button>
@@ -125,7 +125,7 @@ const Reports = ({ currentUser }) => {
                         <button
                             onClick={handleCompileReport}
                             disabled={loading}
-                            className="w-full px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
+                            className="w-full px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
                         >
                             {loading ? 'Compiling...' : 'Compile Report'}
                         </button>
@@ -162,7 +162,7 @@ const Reports = ({ currentUser }) => {
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">{row.date}</td>
                                     <td className="px-6 py-4 text-center text-xs font-bold text-slate-800">{row.invoices}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-blue-600 tracking-tight">PKR {row.sales?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-blue-950 tracking-tight">PKR {row.sales?.toLocaleString() ?? '0'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-rose-500 tracking-tight">PKR {row.expenses?.toLocaleString() ?? '0'}</td>
                                     <td className="px-6 py-4">
                                         <span className={`text-xs font-bold tracking-tight ${row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>

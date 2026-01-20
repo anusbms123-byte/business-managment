@@ -297,7 +297,7 @@ const Products = ({ currentUser }) => {
                                 resetForm();
                                 setIsModalOpen(true);
                             }}
-                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
                         >
                             <Plus size={18} />
                             <span>Add Product</span>
@@ -517,7 +517,7 @@ const Products = ({ currentUser }) => {
                                 </div>
                             </div>
 
-                            <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
+                            <button type="submit" className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
                                 <Check size={20} />
                                 {formData.id ? 'Save Product' : 'Complete Setup'}
                             </button>

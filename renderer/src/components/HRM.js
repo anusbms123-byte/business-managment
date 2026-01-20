@@ -135,7 +135,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                         setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', joiningDate: new Date().toISOString().split('T')[0] });
                         setShowModal(true);
                     }}
-                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
                 >
                     <Plus size={16} />
                     <span>Onboard Employee</span>
@@ -232,7 +232,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                             </div>
                             <div className="flex items-center justify-end gap-3 pt-4">
                                 <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest">Discard</button>
-                                <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all disabled:opacity-50 text-xs uppercase tracking-widest">{saving ? 'Saving...' : 'Save Employee'}</button>
+                                <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest">{saving ? 'Saving...' : 'Save Employee'}</button>
                             </div>
                         </form>
                     </div>
@@ -391,7 +391,7 @@ const Attendance = ({ employees, currentUser }) => {
             <button
                 onClick={saveAttendance}
                 disabled={saving || loading}
-                className="flex items-center justify-center px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
+                className="flex items-center justify-center px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
             >
                 {saving ? 'Updating...' : 'Save Attendance Record'}
             </button>
@@ -408,7 +408,7 @@ const Payroll = ({ employees }) => {
                     <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
                         <option>Current Month</option>
                     </select>
-                    <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest">
+                    <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest">
                         <Plus size={16} />
                         <span>Generate Payroll</span>
                     </button>

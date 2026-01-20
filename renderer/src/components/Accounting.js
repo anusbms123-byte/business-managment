@@ -57,7 +57,7 @@ const Accounting = () => {
 const ChartOfAccounts = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-end">
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
                 <Plus size={16} />
                 <span>Add Account</span>
             </button>
@@ -97,7 +97,7 @@ const ChartOfAccounts = () => (
 const JournalEntries = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex justify-end">
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
                 <Plus size={16} />
                 <span>New Journal Entry</span>
             </button>
@@ -143,7 +143,7 @@ const ExpenseTracking = () => (
                 <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
                 Operational Expenditures
             </h3>
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
                 <Plus size={16} />
                 <span>Add Expense</span>
             </button>
@@ -213,7 +213,7 @@ const GeneralLedger = () => (
                     <option>Bank Account</option>
                     <option>Sales Revenue</option>
                 </select>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">Generate</button>
+                <button className="px-6 py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">Generate</button>
             </div>
             <button className="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline decoration-2 underline-offset-4 decoration-blue-200">Export Ledger</button>
         </div>

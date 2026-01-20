@@ -184,7 +184,7 @@ const Dashboard = ({ currentUser }) => {
                         <button
                             key={p}
                             onClick={() => setFilter(p)}
-                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-900 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-950 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {p}
                         </button>
@@ -267,7 +267,7 @@ const Dashboard = ({ currentUser }) => {
                             <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">No clients yet</div>
                         ) : topCustomers?.map((customer, i) => (
                             <div key={i} className="group flex items-center space-x-4 p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer border border-transparent hover:border-slate-100">
-                                <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs border bg-blue-50 text-blue-600 border-blue-100 uppercase">
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs border bg-blue-50 text-blue-950 border-blue-100 uppercase">
                                     {customer.name?.substring(0, 2)}
                                 </div>
                                 <div className="flex-1">

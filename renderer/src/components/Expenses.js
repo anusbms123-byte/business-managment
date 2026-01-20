@@ -108,7 +108,7 @@ const Expenses = ({ currentUser }) => {
                         setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
                         setShowModal(true);
                     }}
-                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
                 >
                     <Plus size={16} />
                     <span>Add Expense</span>
@@ -292,7 +292,7 @@ const Expenses = ({ currentUser }) => {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-blue-700 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
+                                    className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
                                 >
                                     {saving ? 'Saving...' : formData.id ? 'Update Expense' : 'Save Expense'}
                                 </button>

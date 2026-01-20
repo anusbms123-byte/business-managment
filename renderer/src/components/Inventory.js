@@ -67,14 +67,14 @@ const Inventory = ({ currentUser }) => {
                                 }`}
                         >
                             <div className={`p-1.5 rounded-lg transition-all duration-300 ${activeTab === tab.id
-                                ? `bg-blue-600 text-white shadow-sm shadow-blue-100`
+                                ? `bg-blue-950 text-white shadow-sm shadow-blue-100`
                                 : 'bg-white text-slate-400 group-hover:bg-slate-50 border border-slate-100'
                                 }`}>
                                 <tab.icon size={16} />
                             </div>
                             <span className="uppercase tracking-widest">{tab.label}</span>
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-950 rounded-t-full"></div>
                             )}
                         </button>
                     ))}
@@ -208,8 +208,8 @@ const StockTracking = ({ currentUser }) => {
                                 <td className="px-6 py-4 text-center font-bold text-slate-400 text-xs">{p.alertQty || 5}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                            p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                        p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                            'bg-emerald-50 text-emerald-600 border-emerald-100'
                                         }`}>
                                         {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                     </span>
@@ -251,7 +251,7 @@ const BarcodePrinting = () => (
                         <input type="number" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" defaultValue="10" />
                     </div>
                 </div>
-                <button className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
+                <button className="w-full py-2.5 bg-blue-950 text-white font-bold rounded-lg shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
                     <Printer size={18} />
                     <span>Print Labels</span>
                 </button>

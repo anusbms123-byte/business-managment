@@ -12,7 +12,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
         orange: 'bg-white border-l-4 border-l-blue-500',
         emerald: 'bg-white border-l-4 border-l-emerald-500',
         red: 'bg-white border-l-4 border-l-red-500',
-        blue: 'bg-white border-l-4 border-l-blue-600',
+        blue: 'bg-white border-l-4 border-l-blue-950',
         purple: 'bg-white border-l-4 border-l-indigo-500',
         gray: 'bg-white border-l-4 border-l-slate-400'
     };
@@ -165,7 +165,7 @@ const Customers = ({ currentUser }) => {
                 </div>
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-blue-200"
+                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
                 >
                     <Plus size={18} />
                     <span>Add New Customer</span>
@@ -450,7 +450,7 @@ const Customers = ({ currentUser }) => {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="px-5 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm shadow-blue-200"
+                                className="px-5 py-2 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm shadow-blue-200"
                             >
                                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                                 {formData.id ? 'Update Customer' : 'Add Customer'}

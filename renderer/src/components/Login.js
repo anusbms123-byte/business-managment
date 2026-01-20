@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Lock, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Login = ({ onLoginSuccess }) => {
     const [username, setUsername] = useState('');
@@ -107,7 +108,7 @@ const Login = ({ onLoginSuccess }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
+                                className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
                             >
                                 {loading ? (
                                     <div className="flex items-center justify-center gap-2">
@@ -118,6 +119,12 @@ const Login = ({ onLoginSuccess }) => {
                                     <span>Access Control Unit</span>
                                 )}
                             </button>
+                            <div className="text-center mt-4">
+                                <p className="text-xs text-slate-400 font-bold">
+                                    Don't have an account?{' '}
+                                    <Link to="/signup" className="text-blue-600 hover:text-blue-800 transition-colors">Register New Organization</Link>
+                                </p>
+                            </div>
                         </form>
 
                         <div className="mt-12 text-center">

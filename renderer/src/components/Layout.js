@@ -97,7 +97,7 @@ const Layout = ({ children, user, onLogout }) => {
     return (
         <div className="flex h-screen bg-gray-50">
             {/* Sidebar */}
-            <div className="w-72 bg-blue-950 flex flex-col relative overflow-hidden">
+            <div className="w-72 bg-[#0B1033] flex flex-col relative overflow-hidden">
 
 
                 {/* Logo */}
@@ -200,7 +200,7 @@ const Layout = ({ children, user, onLogout }) => {
                             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-500 rounded-full"></span>
                         </button>
                         <div className="flex items-center space-x-3 pl-4 ml-2 border-l border-slate-200">
-                            <div className="relative w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-100">
+                            <div className="relative w-10 h-10 rounded-lg bg-[#0B1033] flex items-center justify-center text-white font-bold shadow-md shadow-blue-100">
                                 {user?.fullname?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>

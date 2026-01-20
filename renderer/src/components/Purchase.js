@@ -11,7 +11,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
         orange: 'bg-white border-l-4 border-l-blue-500',
         emerald: 'bg-white border-l-4 border-l-emerald-500',
         red: 'bg-white border-l-4 border-l-rose-500',
-        blue: 'bg-white border-l-4 border-l-blue-600',
+        blue: 'bg-white border-l-4 border-l-blue-950',
         purple: 'bg-white border-l-4 border-l-indigo-500',
         gray: 'bg-white border-l-4 border-l-slate-400'
     };
@@ -177,7 +177,7 @@ const Purchase = ({ currentUser }) => {
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-blue-200 group"
+                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200 group"
                 >
                     <Plus size={18} />
                     <span>New Purchase Order</span>
@@ -318,7 +318,7 @@ const Purchase = ({ currentUser }) => {
                                             className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group text-left relative overflow-hidden active:scale-95"
                                         >
                                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg"><Plus size={16} /></div>
+                                                <div className="w-8 h-8 bg-blue-950 text-white rounded-lg flex items-center justify-center shadow-lg"><Plus size={16} /></div>
                                             </div>
                                             <p className="font-bold text-slate-800 truncate pr-6 text-sm">{product.name}</p>
                                             <div className="flex items-center justify-between mt-3">
@@ -490,7 +490,7 @@ const Purchase = ({ currentUser }) => {
                                     <button
                                         onClick={handleSave}
                                         disabled={saving}
-                                        className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-md shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg shadow-md shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {saving ? 'Processing...' : 'Complete Procurement'}
                                     </button>

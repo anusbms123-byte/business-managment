@@ -68,7 +68,7 @@ const Settings = ({ currentUser }) => {
                 {/* Company Info */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                        <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
                         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Organization Profile</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -130,7 +130,7 @@ const Settings = ({ currentUser }) => {
                 {/* Currency */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                        <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
                         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Localizations & Currency</h2>
                     </div>
                     <div className="w-full md:w-80">
@@ -154,7 +154,7 @@ const Settings = ({ currentUser }) => {
                 {/* Printer */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                        <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
                         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Hardware Integrations</h2>
                     </div>
                     <div className="w-full md:w-80">
@@ -171,7 +171,7 @@ const Settings = ({ currentUser }) => {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
+                        className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
                     >
                         {saving ? 'Processing...' : 'Commit Global Changes'}
                     </button>

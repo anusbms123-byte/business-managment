@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info } from 'lucide-react';
+import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone } from 'lucide-react';
 
 const tabs = [
     { id: 'profile', label: 'Company', icon: Building2, color: 'blue' },
     { id: 'users', label: 'Team', icon: Users, color: 'indigo' },
     { id: 'roles', label: 'Access', icon: Shield, color: 'emerald' },
+    { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'amber' },
 ];
 
 const MODULES = [
@@ -58,6 +59,9 @@ const Company = () => {
                             >
                                 <tab.icon size={16} />
                                 <span>{label}</span>
+                                {tab.id === 'requests' && isSuperAdmin && (
+                                    <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                                )}
                                 {activeTab === tab.id && (
                                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>
                                 )}
@@ -71,6 +75,7 @@ const Company = () => {
                     {activeTab === 'profile' && <CompanyProfile currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'users' && <UserManagement currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
+                    {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} />}
                 </div>
             </div>
         </div>
@@ -804,13 +809,130 @@ const AuditLog = ({ currentUser }) => {
     );
 };
 
+// ============ COMPANY REQUESTS ============
+const CompanyRequests = ({ currentUser }) => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => { loadRequests(); }, []);
+
+    const loadRequests = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:2000/api/company-requests?status=PENDING');
+            const data = await response.json();
+            setRequests(data);
+        } catch (err) {
+            console.error('Failed to load requests:', err);
+        }
+        setLoading(false);
+    };
+
+    const handleApprove = async (id) => {
+        if (!window.confirm('Approve this company request? This will create a new organization and activate the user.')) return;
+        try {
+            const response = await fetch(`http://localhost:2000/api/company-requests/${id}/approve`, { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                loadRequests();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleReject = async (id) => {
+        const notes = prompt('Reason for rejection:');
+        if (notes === null) return;
+
+        try {
+            const response = await fetch(`http://localhost:2000/api/company-requests/${id}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes })
+            });
+            const data = await response.json();
+            if (data.success) {
+                loadRequests();
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    if (loading) return <LoadingSpinner />;
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Requests</h2>
+                    <p className="text-sm text-slate-500">Review pending organization registration requests</p>
+                </div>
+                <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-widest border border-blue-100">
+                    {requests.length} Pending
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {requests.length === 0 ? (
+                    <div className="col-span-full">
+                        <EmptyState message="No pending requests found" icon={ClipboardList} />
+                    </div>
+                ) : requests.map((req) => (
+                    <div key={req.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center border border-amber-100">
+                                <Building2 size={24} />
+                            </div>
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-100">Pending</span>
+                        </div>
+
+                        <h3 className="font-bold text-slate-800 text-lg mb-1">{req.companyName}</h3>
+                        <div className="space-y-2 mb-6">
+                            <p className="text-xs text-slate-500 flex items-center gap-2">
+                                <Mail size={12} /> {req.companyEmail || 'No Email'}
+                            </p>
+                            <p className="text-xs text-slate-500 flex items-center gap-2">
+                                <Phone size={12} /> {req.companyPhone || 'No Phone'}
+                            </p>
+                            <p className="text-xs text-slate-500 flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
+                                <Users size={12} /> Requested by: <span className="font-bold text-slate-700">@{req.user?.username}</span>
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => handleApprove(req.id)}
+                                className="py-2 bg-blue-950 text-white rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-[#0B1033] transition-colors shadow-sm shadow-blue-100"
+                            >
+                                Approve
+                            </button>
+                            <button
+                                onClick={() => handleReject(req.id)}
+                                className="py-2 bg-white text-rose-600 border border-rose-100 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-50 transition-colors"
+                            >
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 // ============ SHARED COMPONENTS ============
 const StatCard = ({ title, value, icon: Icon, color }) => {
     const colors = {
         orange: 'bg-white border-l-4 border-l-blue-500',
         emerald: 'bg-white border-l-4 border-l-emerald-500',
         red: 'bg-white border-l-4 border-l-rose-500',
-        blue: 'bg-white border-l-4 border-l-indigo-500',
+        blue: 'bg-white border-l-4 border-l-blue-950',
         purple: 'bg-white border-l-4 border-l-indigo-500',
         gray: 'bg-white border-l-4 border-l-slate-400'
     };
@@ -835,7 +957,7 @@ const Button = ({ children, onClick, icon: Icon, type = 'button', disabled, clas
         type={type}
         onClick={onClick}
         disabled={disabled}
-        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 ${className}`}
+        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 ${className}`}
     >
         {Icon && <Icon size={16} />}
         <span>{children}</span>

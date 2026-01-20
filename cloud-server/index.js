@@ -401,7 +401,7 @@ app.post('/api/users', async (req, res) => {
     try {
         const { company_id, username, password, role, fullname } = req.body;
 
-        
+
         const roleMap = {
             'super_admin': 'Super Admin',
             'admin': 'Admin',
@@ -430,7 +430,7 @@ app.post('/api/users', async (req, res) => {
         });
 
         if (!roleRec) {
-           
+
             roleRec = await prisma.role.findFirst({
                 where: { name: { equals: searchRole, mode: 'insensitive' } }
             });
@@ -514,13 +514,13 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
     try {
-       
+
         await prisma.user.delete({
             where: { id: req.params.id }
         });
         res.json({ success: true, changes: 1, message: "User deleted permanently" });
     } catch (e) {
-       
+
         if (e.code === 'P2003') {
             await prisma.user.update({
                 where: { id: req.params.id },
@@ -1154,3 +1154,157 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
+// ==========================================
+// 7. REGISTRATION & APPROVAL FLOW
+// ==========================================
+
+// 7.1 Signup (User Registration)
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { username, password, email } = req.body;
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({ where: { username } });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Username already taken' });
+        }
+
+        // Get 'Admin' role ID (default for new signups)
+        const adminRole = await prisma.role.findFirst({
+            where: { isSystem: true, name: 'Admin' }
+        });
+
+        if (!adminRole) {
+            return res.status(500).json({ success: false, message: 'System configuration error: Admin role not found' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // Create User (Inactive initially, not linked to company yet)
+        const user = await prisma.user.create({
+            data: {
+                username,
+                password: passwordHash,
+                email,
+                roleId: adminRole.id,
+                isActive: true, // User can login but has no company
+                fullName: username // Default
+            }
+        });
+
+        res.json({ success: true, id: user.id, username: user.username });
+    } catch (e) { handleError(res, e); }
+});
+
+// 7.2 Submit Company Request
+app.post('/api/company-requests', async (req, res) => {
+    try {
+        const { userId, companyName, companyEmail, companyPhone, companyAddress } = req.body;
+
+        // Check if user already has a pending or approved request
+        const existingReq = await prisma.companyRequest.findUnique({ where: { userId } });
+        if (existingReq) {
+            return res.status(400).json({ success: false, message: 'You already have a request submitted.' });
+        }
+
+        const request = await prisma.companyRequest.create({
+            data: {
+                userId,
+                companyName,
+                companyEmail,
+                companyPhone,
+                companyAddress,
+                status: 'PENDING'
+            }
+        });
+
+        res.json({ success: true, id: request.id });
+    } catch (e) { handleError(res, e); }
+});
+
+// 7.3 Get All Requests (Super Admin)
+app.get('/api/company-requests', async (req, res) => {
+    try {
+        const { status } = req.query;
+        const where = status ? { status } : {};
+
+        const requests = await prisma.companyRequest.findMany({
+            where,
+            include: { user: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(requests);
+    } catch (e) { handleError(res, e); }
+});
+
+// 7.4 Check My Request Status
+app.get('/api/company-requests/my-status', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) return res.status(400).json({ message: 'UserId required' });
+
+        const request = await prisma.companyRequest.findUnique({ where: { userId } });
+        if (!request) return res.json({ status: 'NONE' });
+
+        res.json({ status: request.status, companyId: request.user?.companyId }); // If approved, might want companyId logic elsewhere
+    } catch (e) { handleError(res, e); }
+});
+
+// 7.5 Approve Request
+app.post('/api/company-requests/:id/approve', async (req, res) => {
+    try {
+        const requestId = req.params.id;
+
+        const request = await prisma.companyRequest.findUnique({ where: { id: requestId }, include: { user: true } });
+        if (!request) return res.status(404).json({ message: 'Request not found' });
+        if (request.status !== 'PENDING') return res.status(400).json({ message: 'Request already processed' });
+
+        // Transaction: Create Company, Update User, Update Request
+        await prisma.$transaction(async (tx) => {
+            // 1. Create Company
+            const company = await tx.company.create({
+                data: {
+                    name: request.companyName,
+                    email: request.companyEmail,
+                    phone: request.companyPhone,
+                    address: request.companyAddress,
+                    currency: 'PKR' // Default
+                }
+            });
+
+            // 2. Update User (Link to company)
+            await tx.user.update({
+                where: { id: request.userId },
+                data: {
+                    companyId: company.id,
+                    isActive: true
+                }
+            });
+
+            // 3. Update Request Status
+            await tx.companyRequest.update({
+                where: { id: requestId },
+                data: { status: 'APPROVED' }
+            });
+
+            // 4. (Optional) Create Default Roles/Data for new company if needed? 
+            // The system seems to share roles or have system roles. 
+            // Assuming 'Admin' role is global system role, which user already has.
+        });
+
+        res.json({ success: true, message: 'Company approved and created' });
+    } catch (e) { handleError(res, e); }
+});
+
+// 7.6 Reject Request
+app.post('/api/company-requests/:id/reject', async (req, res) => {
+    try {
+        const { notes } = req.body;
+        await prisma.companyRequest.update({
+            where: { id: req.params.id },
+            data: { status: 'REJECTED', adminNotes: notes }
+        });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e); }
+});

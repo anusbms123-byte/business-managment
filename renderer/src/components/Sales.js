@@ -10,7 +10,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     const colors = {
         orange: 'bg-white border-l-4 border-l-blue-500',
         emerald: 'bg-white border-l-4 border-l-emerald-500',
-        blue: 'bg-white border-l-4 border-l-blue-600',
+        blue: 'bg-white border-l-4 border-l-blue-950',
         purple: 'bg-white border-l-4 border-l-indigo-500',
         red: 'bg-white border-l-4 border-l-rose-500',
         gray: 'bg-white border-l-4 border-l-slate-400'
@@ -195,7 +195,7 @@ const Sales = ({ currentUser }) => {
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-blue-200"
+                        className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
                     >
                         <Plus size={18} />
                         <span>Create New Sale</span>
@@ -281,7 +281,7 @@ const Sales = ({ currentUser }) => {
                         {/* Header */}
                         <div className="px-8 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
+                                <div className="p-2 bg-blue-950 text-white rounded-lg shadow-sm">
                                     <ShoppingCart size={20} />
                                 </div>
                                 <div>
@@ -330,7 +330,7 @@ const Sales = ({ currentUser }) => {
                                         <div className="flex items-end">
                                             <button
                                                 onClick={addToCart}
-                                                className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm"
+                                                className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm"
                                             >
                                                 ADD TO CART
                                             </button>
@@ -488,7 +488,7 @@ const Sales = ({ currentUser }) => {
                                     <button
                                         onClick={handleSaveSale}
                                         disabled={cart.length === 0}
-                                        className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                        className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                     >
                                         <ShoppingCart size={20} />
                                         CHECKOUT

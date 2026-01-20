@@ -60,6 +60,7 @@ model User {
 
   // Auditing / Relationships
   sales     Sale[]
+  companyRequest CompanyRequest?
 
   @@map("users")
 }
@@ -398,4 +399,27 @@ model Attendance {
   employee    Employee @relation(fields: [employeeId], references: [id])
 
   @@map("attendances")
+}
+
+// =========================================================
+// 7. REGISTRATION & APPROVALS
+// =========================================================
+
+model CompanyRequest {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id") // One request per user
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName     String   @map("company_name")
+  companyEmail    String?  @map("company_email")
+  companyPhone    String?  @map("company_phone")
+  companyAddress  String?  @map("company_address")
+  
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes      String?  @map("admin_notes")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("company_requests")
 }
