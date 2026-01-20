@@ -66,8 +66,14 @@ const Layout = ({ children, user, onLogout }) => {
         const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin';
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
 
-        if (isSuperAdmin || isAdmin) {
-            // Super admin and admin see all
+        if (isSuperAdmin) {
+            // Super Admin only sees Company & Users
+            setVisibleMenuItems([]);
+            setVisibleSettingsItems([
+                { key: 'users', icon: UserCog, label: 'Company & Users', path: '/company' }
+            ]);
+        } else if (isAdmin) {
+            // Regular Admin sees all
             setVisibleMenuItems(ALL_MENU_ITEMS);
             setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
         } else if (permissions.length > 0) {

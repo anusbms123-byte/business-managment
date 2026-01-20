@@ -56,17 +56,22 @@ function App() {
         <Router>
             <Routes>
                 {/* Public Routes */}
-                <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} />
-                <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" replace />} />
-                <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to="/" replace />} />
-                <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to="/" replace />} />
+                <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                <Route path="/signup" element={!user ? <Signup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
 
                 {/* Protected Routes */}
                 {user ? (
                     <Route path="/*" element={
                         <Layout user={user} onLogout={handleLogout}>
                             <Routes>
-                                <Route path="/" element={<Dashboard currentUser={user} />} />
+                                <Route path="/" element={
+                                    // Redirect Super Admin to Company page, regular users to Dashboard
+                                    (user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin')
+                                        ? <Navigate to="/company" replace />
+                                        : <Dashboard currentUser={user} />
+                                } />
                                 <Route path="/inventory" element={<Inventory currentUser={user} />} />
                                 <Route path="/purchase" element={<Purchase currentUser={user} />} />
                                 <Route path="/sales" element={<Sales currentUser={user} />} />
