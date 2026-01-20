@@ -44,7 +44,7 @@ const Signup = () => {
             // BUT, the goal is to implement the flow. I will assume we will update main.js or use fetch.
             // Let's use fetch for now to localhost:2000 (as seen in index.js) or dynamic.
 
-            const API_URL = 'http://localhost:2000/api/auth/signup'; // TODO: Configurable URL
+            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/auth/signup';
 
             const response = await fetch(API_URL, {
                 method: 'POST',

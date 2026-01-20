@@ -37,7 +37,7 @@ const CompanySetup = () => {
         setLoading(true);
 
         try {
-            const API_URL = 'http://localhost:2000/api/company-requests';
+            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/company-requests';
 
             const response = await fetch(API_URL, {
                 method: 'POST',

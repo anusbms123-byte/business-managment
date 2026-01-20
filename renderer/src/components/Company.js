@@ -819,7 +819,7 @@ const CompanyRequests = ({ currentUser }) => {
     const loadRequests = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:2000/api/company-requests?status=PENDING');
+            const response = await fetch('https://businessdevelopment-ten.vercel.app/api/company-requests?status=PENDING');
             const data = await response.json();
             setRequests(data);
         } catch (err) {
@@ -831,7 +831,7 @@ const CompanyRequests = ({ currentUser }) => {
     const handleApprove = async (id) => {
         if (!window.confirm('Approve this company request? This will create a new organization and activate the user.')) return;
         try {
-            const response = await fetch(`http://localhost:2000/api/company-requests/${id}/approve`, { method: 'POST' });
+            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${id}/approve`, { method: 'POST' });
             const data = await response.json();
             if (data.success) {
                 loadRequests();
@@ -848,7 +848,7 @@ const CompanyRequests = ({ currentUser }) => {
         if (notes === null) return;
 
         try {
-            const response = await fetch(`http://localhost:2000/api/company-requests/${id}/reject`, {
+            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${id}/reject`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ notes })
