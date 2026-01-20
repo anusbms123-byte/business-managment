@@ -75,8 +75,8 @@ const CustomTooltip = ({ active, payload, label }) => {
                     </div>
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 rounded-full bg-slate-400"></div>
-                            <span className="text-xs font-bold text-slate-300">Expenses</span>
+                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span className="text-xs font-bold text-slate-300">Net Profit</span>
                         </div>
                         <span className="text-xs font-black">PKR {payload[1]?.value?.toLocaleString() ?? '0'}</span>
                     </div>
@@ -87,43 +87,71 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// Line Chart Component
+// Line Chart Component with Trading-Style Design
 const PerformanceChart = ({ data }) => {
+    // Process data to ensure lines "stop" if data is 0 at the end (optional, based on preference)
+    // For now, we show what backend gives, but we optimize the appearance.
+
     return (
         <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer>
                 <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 10 }}>
+                    <defs>
+                        {/* Gradient for Revenue */}
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                        </linearGradient>
+                        {/* Gradient for Net Profit */}
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                        tickFormatter={(str) => {
+                            // Shorten date if possible (e.g., "Jan 20" instead of full date)
+                            try {
+                                const d = new Date(str);
+                                return isNaN(d) ? str : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                            } catch (e) { return str; }
+                        }}
                     />
                     <YAxis
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(value) => `${(value / 1000).toFixed(1)}k`}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1 }} />
-                    <Line
+
+                    {/* Revenue Area (rendered first so it's behind the line of profit if they cross) */}
+                    <Area
                         type="monotone"
                         dataKey="sales"
                         name="Revenue"
                         stroke="#2563eb"
-                        strokeWidth={3}
+                        strokeWidth={4}
+                        fill="url(#colorRevenue)"
                         dot={false}
                         activeDot={{ r: 6, fill: '#2563eb', stroke: 'white', strokeWidth: 2 }}
                     />
-                    <Line
+
+                    {/* Net Profit Area */}
+                    <Area
                         type="monotone"
-                        dataKey="expenses"
-                        name="Expenses"
-                        stroke="#94a3b8"
-                        strokeWidth={3}
+                        dataKey="profit"
+                        name="Net Profit"
+                        stroke="#10b981"
+                        strokeWidth={4}
+                        fill="url(#colorProfit)"
                         dot={false}
-                        activeDot={{ r: 6, fill: '#94a3b8', stroke: 'white', strokeWidth: 2 }}
+                        activeDot={{ r: 6, fill: '#10b981', stroke: 'white', strokeWidth: 2 }}
                     />
                 </ComposedChart>
             </ResponsiveContainer>
@@ -204,16 +232,16 @@ const Dashboard = ({ currentUser }) => {
                     icon={TrendingUp}
                 />
                 <StatCard
-                    title="Gross Purchases"
-                    value={`PKR ${summary.totalPurchases?.toLocaleString() ?? '0'}`}
+                    title="Total Sales"
+                    value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
-                    percentage={summary.totalPurchases > 0 ? 100 : 0}
+                    percentage={summary.totalSales > 0 ? 100 : 0}
                     color="#10b981"
                     icon={FolderKanban}
                 />
                 <StatCard
-                    title="Operating OpEx"
+                    title="Total Expenses"
                     value={`PKR ${summary.totalExpenses?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
@@ -239,7 +267,7 @@ const Dashboard = ({ currentUser }) => {
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Performance Analytics</h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Revenue vs operational costs</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Revenue vs net profitability</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
@@ -247,15 +275,15 @@ const Dashboard = ({ currentUser }) => {
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Revenue</span>
                             </div>
                             <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 rounded-full bg-slate-400"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expenses</span>
+                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Net Profit</span>
                             </div>
                         </div>
                     </div>
                     {loading ? (
                         <div className="h-[300px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Generating Chart...</div>
                     ) : (
-                        <PerformanceChart data={summary.recentDays} />
+                        <PerformanceChart data={summary.recentDays || []} />
                     )}
                 </div>
 

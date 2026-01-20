@@ -4,6 +4,7 @@ const Reports = ({ currentUser }) => {
     const [summary, setSummary] = useState({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('Weekly');
+    const [category, setCategory] = useState('Sales Performance');
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
@@ -106,11 +107,15 @@ const Reports = ({ currentUser }) => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Module Category</label>
-                        <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all">
-                            <option>Sales Performance</option>
-                            <option>Purchase History</option>
-                            <option>Expense Audit</option>
-                            <option>Profit & Loss Statement</option>
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all font-sans"
+                        >
+                            <option value="Sales Performance">Sales Performance</option>
+                            <option value="Purchase History">Purchase History</option>
+                            <option value="Expense Audit">Expense Audit</option>
+                            <option value="Profit & Loss Statement">Profit & Loss Statement</option>
                         </select>
                     </div>
                     <div>
@@ -143,10 +148,21 @@ const Reports = ({ currentUser }) => {
                         <thead className="bg-slate-50/80">
                             <tr>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Date/Period</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Invoices</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Gross Sales</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Daily Expenses</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Adjusted Profit</th>
+                                {category === 'Sales Performance' || category === 'Profit & Loss Statement' ? (
+                                    <>
+                                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Invoices</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Gross Sales</th>
+                                    </>
+                                ) : null}
+                                {category === 'Purchase History' || category === 'Profit & Loss Statement' ? (
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Purchases</th>
+                                ) : null}
+                                {category === 'Expense Audit' || category === 'Profit & Loss Statement' ? (
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Expenses</th>
+                                ) : null}
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    {category === 'Profit & Loss Statement' ? 'Net Profit' : 'Total'}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -161,12 +177,24 @@ const Reports = ({ currentUser }) => {
                             ) : summary.recentDays?.map((row, i) => (
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">{row.date}</td>
-                                    <td className="px-6 py-4 text-center text-xs font-bold text-slate-800">{row.invoices}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-blue-950 tracking-tight">PKR {row.sales?.toLocaleString() ?? '0'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-rose-500 tracking-tight">PKR {row.expenses?.toLocaleString() ?? '0'}</td>
+                                    {category === 'Sales Performance' || category === 'Profit & Loss Statement' ? (
+                                        <>
+                                            <td className="px-6 py-4 text-center text-xs font-bold text-slate-800">{row.invoices}</td>
+                                            <td className="px-6 py-4 text-xs font-bold text-blue-950 tracking-tight">PKR {row.sales?.toLocaleString() ?? '0'}</td>
+                                        </>
+                                    ) : null}
+                                    {category === 'Purchase History' || category === 'Profit & Loss Statement' ? (
+                                        <td className="px-6 py-4 text-xs font-bold text-amber-600 tracking-tight">PKR {row.purchases?.toLocaleString() ?? '0'}</td>
+                                    ) : null}
+                                    {category === 'Expense Audit' || category === 'Profit & Loss Statement' ? (
+                                        <td className="px-6 py-4 text-xs font-bold text-rose-500 tracking-tight">PKR {row.expenses?.toLocaleString() ?? '0'}</td>
+                                    ) : null}
                                     <td className="px-6 py-4">
                                         <span className={`text-xs font-bold tracking-tight ${row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                            PKR {row.profit?.toLocaleString() ?? '0'}
+                                            PKR {(category === 'Sales Performance' ? row.sales :
+                                                category === 'Purchase History' ? row.purchases :
+                                                    category === 'Expense Audit' ? row.expenses :
+                                                        row.profit)?.toLocaleString() ?? '0'}
                                         </span>
                                     </td>
                                 </tr>
