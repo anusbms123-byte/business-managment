@@ -166,10 +166,38 @@ app.put('/api/companies/:id', async (req, res) => {
 
 app.delete('/api/companies/:id', async (req, res) => {
     try {
-        await prisma.company.delete({ where: { id: req.params.id } });
-        res.json({ success: true, changes: 1 });
+        const companyId = req.params.id;
+
+        // Perform manual cascade delete in a transaction
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete grandchildren/dependent items
+            await tx.saleItem.deleteMany({ where: { sale: { companyId } } });
+            await tx.purchaseItem.deleteMany({ where: { purchase: { companyId } } });
+            await tx.transaction.deleteMany({ where: { account: { companyId } } });
+            await tx.attendance.deleteMany({ where: { employee: { companyId } } });
+
+            // 2. Delete main company-linked records
+            await tx.sale.deleteMany({ where: { companyId } });
+            await tx.purchase.deleteMany({ where: { companyId } });
+            await tx.expense.deleteMany({ where: { companyId } });
+            await tx.product.deleteMany({ where: { companyId } });
+            await tx.category.deleteMany({ where: { companyId } });
+            await tx.brand.deleteMany({ where: { companyId } });
+            await tx.customer.deleteMany({ where: { companyId } });
+            await tx.vendor.deleteMany({ where: { companyId } });
+            await tx.employee.deleteMany({ where: { companyId } });
+            await tx.account.deleteMany({ where: { companyId } });
+
+            // 3. Delete Users and Roles (CompanyRequests and Permissions cascade automatically)
+            await tx.user.deleteMany({ where: { companyId } });
+            await tx.role.deleteMany({ where: { companyId } });
+
+            // 4. Finally delete the Company
+            await tx.company.delete({ where: { id: companyId } });
+        });
+
+        res.json({ success: true, message: "Company and all associated records deleted successfully" });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Company has active records (users, products, etc) and cannot be deleted" });
         handleError(res, e);
     }
 });
