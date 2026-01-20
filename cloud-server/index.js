@@ -1140,21 +1140,6 @@ app.get('/api/audit-logs', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
-// 404 Catch-all
-app.use((req, res) => {
-    console.warn(`[404 Not Found] ${req.method} ${req.url}`);
-    res.status(404).json({ success: false, message: `Route ${req.method} ${req.url} not found` });
-});
-
-// Start Server
-if (require.main === module) {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Cloud Server is running on port ${PORT}`);
-    });
-}
-
-module.exports = app;
-
 // ==========================================
 // 7. REGISTRATION & APPROVAL FLOW
 // ==========================================
@@ -1308,3 +1293,12 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
         res.json({ success: true });
     } catch (e) { handleError(res, e); }
 });
+
+// Start Server
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Cloud Server is running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
