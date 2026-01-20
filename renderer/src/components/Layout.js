@@ -67,11 +67,11 @@ const Layout = ({ children, user, onLogout }) => {
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
 
         if (isSuperAdmin) {
-            // Super Admin only sees Company & Users
-            setVisibleMenuItems([]);
-            setVisibleSettingsItems([
+            // Super Admin only sees Company & Users at the top
+            setVisibleMenuItems([
                 { key: 'users', icon: UserCog, label: 'Company & Users', path: '/company' }
             ]);
+            setVisibleSettingsItems([]);
         } else if (isAdmin) {
             // Regular Admin sees all
             setVisibleMenuItems(ALL_MENU_ITEMS);
