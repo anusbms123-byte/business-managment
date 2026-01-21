@@ -146,7 +146,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             office_phone: data.officePhone,
                             private_phone: data.privatePhone,
                             secondary_address: data.secondaryAddress,
-                            zip_code: data.zipCode
+                            zip_code: data.zipCode,
+                            is_active: data.isActive
                         });
                     }
                     else if (data?.success === false) console.error("Company Error:", data.message);
@@ -188,12 +189,13 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                 office_phone: comp.officePhone,
                 private_phone: comp.privatePhone,
                 secondary_address: comp.secondaryAddress,
-                zip_code: comp.zipCode
+                zip_code: comp.zipCode,
+                is_active: comp.isActive
             });
         } else {
             setFormData({
                 name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR',
-                office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: ''
+                office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: '', is_active: true
             });
         }
         setShowModal(true);
@@ -280,9 +282,14 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         <Building2 size={14} />
                                         <span className="truncate">{c.email || 'No email attached'}</span>
                                     </div>
-                                    <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-widest">
-                                        <Users size={14} />
-                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">Active Tenant</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-widest ${c.isActive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                            {c.isActive ? 'Active' : 'Inactive'}
+                                        </div>
+                                        <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-widest">
+                                            <Users size={14} />
+                                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">Active Tenant</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -295,137 +302,153 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                     )}
                 </div>
 
-                {showModal && (
-                    <Modal title={formData.id ? 'Modify Identity' : 'Register New Business'} onClose={() => setShowModal(false)} size="lg">
-                        <form onSubmit={handleSave} className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                                        Core Information
-                                    </h4>
-                                    <FormInput label="Full Legal Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormInput label="Base Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} placeholder="PKR" />
-                                        <FormInput label="Tax/NTN No" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
+                {
+                    showModal && (
+                        <Modal title={formData.id ? 'Modify Identity' : 'Register New Business'} onClose={() => setShowModal(false)} size="lg">
+                            <form onSubmit={handleSave} className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                            Core Information
+                                        </h4>
+                                        <FormInput label="Full Legal Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormInput label="Base Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} placeholder="PKR" />
+                                            <FormInput label="Tax/NTN No" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
+                                        </div>
+                                        <FormInput label="Official Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
+                                        <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} placeholder="https://www.company.com" icon={Building2} />
                                     </div>
-                                    <FormInput label="Official Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
-                                    <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} placeholder="https://www.company.com" icon={Building2} />
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                            Communications
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormInput label="Support Helpline" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Support No" icon={Phone} />
+                                            <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline" icon={Phone} />
+                                        </div>
+                                        <FormInput label="Private Number" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} placeholder="Confidential No" icon={Phone} />
+                                        <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200 mt-4">
+                                            <input type="checkbox" checked={formData.is_active === true || formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-800 uppercase tracking-tight">Organization Status</p>
+                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{formData.is_active ? 'Account is live and accessible' : 'Account is locked/disabled'}</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div className="col-span-full space-y-6">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                            Headquarters Address (Proper)
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormTextarea label="Primary Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
+                                            <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} placeholder="Apartment, Studio, Floor..." />
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City" />
+                                            <FormInput label="State/Province" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} placeholder="State" />
+                                            <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} placeholder="Postal" />
+                                            <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} placeholder="Pakistan" />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="space-y-6">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                                        Communications
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormInput label="Support Helpline" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Support No" icon={Phone} />
-                                        <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline" icon={Phone} />
-                                    </div>
-                                    <FormInput label="Private Number" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} placeholder="Confidential No" icon={Phone} />
-                                </div>
-                                <div className="col-span-full space-y-6">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                                        Headquarters Address (Proper)
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormTextarea label="Primary Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
-                                        <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} placeholder="Apartment, Studio, Floor..." />
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City" />
-                                        <FormInput label="State/Province" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} placeholder="State" />
-                                        <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} placeholder="Postal" />
-                                        <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} placeholder="Pakistan" />
-                                    </div>
-                                </div>
-                            </div>
-                            <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Configuration' : 'Onboard Organization'} />
-                        </form>
-                    </Modal>
-                )}
+                                <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Configuration' : 'Onboard Organization'} />
+                            </form>
+                        </Modal>
+                    )
+                }
 
-                {showDetailModal && selectedCompany && (
-                    <Modal title="Tenant Overview" onClose={() => setShowDetailModal(false)} size="lg">
-                        <div className="space-y-8">
-                            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                                <div className="flex items-start gap-6">
-                                    <div className="w-20 h-20 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
-                                        {selectedCompany.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase tracking-tight">{selectedCompany.name}</h2>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
-                                            <div>
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Email Endpoint</span>
-                                                <p className="text-slate-700 font-bold">{selectedCompany.email || '—'}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Direct Contact</span>
-                                                <p className="text-slate-700 font-bold">{selectedCompany.phone || '—'}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Office Line</span>
-                                                <p className="text-slate-700 font-bold">{selectedCompany.officePhone || '—'}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Website URL</span>
-                                                <p className="text-blue-600 font-bold truncate">{selectedCompany.website || '—'}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Private Line</span>
-                                                <p className="text-slate-700 font-bold">{selectedCompany.privatePhone || '—'}</p>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">HQ Address</span>
-                                                <p className="text-slate-700 font-bold leading-relaxed">
-                                                    {selectedCompany.address}<br />
-                                                    {selectedCompany.secondaryAddress && <>{selectedCompany.secondaryAddress}<br /></>}
-                                                    {selectedCompany.city}, {selectedCompany.state} {selectedCompany.zipCode}<br />
-                                                    {selectedCompany.country}
-                                                </p>
+                {
+                    showDetailModal && selectedCompany && (
+                        <Modal title="Tenant Overview" onClose={() => setShowDetailModal(false)} size="lg">
+                            <div className="space-y-8">
+                                <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                                    <div className="flex items-start gap-6">
+                                        <div className="w-20 h-20 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
+                                            {selectedCompany.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase tracking-tight">{selectedCompany.name}</h2>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
+                                                <div>
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Email Endpoint</span>
+                                                    <p className="text-slate-700 font-bold">{selectedCompany.email || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Direct Contact</span>
+                                                    <p className="text-slate-700 font-bold">{selectedCompany.phone || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Office Line</span>
+                                                    <p className="text-slate-700 font-bold">{selectedCompany.officePhone || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Website URL</span>
+                                                    <p className="text-blue-600 font-bold truncate">{selectedCompany.website || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Private Line</span>
+                                                    <p className="text-slate-700 font-bold">{selectedCompany.privatePhone || '—'}</p>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">HQ Address</span>
+                                                    <p className="text-slate-700 font-bold leading-relaxed">
+                                                        {selectedCompany.address}<br />
+                                                        {selectedCompany.secondaryAddress && <>{selectedCompany.secondaryAddress}<br /></>}
+                                                        {selectedCompany.city}, {selectedCompany.state} {selectedCompany.zipCode}<br />
+                                                        {selectedCompany.country}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Users size={16} />
-                                        Onboarded Users
-                                    </h3>
-                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100">
-                                        {companyUsers.length} MEMBERS
-                                    </span>
-                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Users size={16} />
+                                            Onboarded Users
+                                        </h3>
+                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold border border-blue-100">
+                                            {companyUsers.length} MEMBERS
+                                        </span>
+                                    </div>
 
-                                {loadingUsers ? <LoadingSpinner /> : (
-                                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-                                        {companyUsers.length === 0 ? (
-                                            <EmptyState message="No users assigned to this tenant" />
-                                        ) : companyUsers.map((user) => (
-                                            <div key={user.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition-all group">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-bold text-sm flex items-center justify-center border border-slate-100 uppercase">
-                                                        {user.fullname?.charAt(0)}
+                                    {loadingUsers ? <LoadingSpinner /> : (
+                                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                                            {companyUsers.length === 0 ? (
+                                                <EmptyState message="No users assigned to this tenant" />
+                                            ) : companyUsers.map((user) => (
+                                                <div key={user.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition-all group">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-bold text-sm flex items-center justify-center border border-slate-100 uppercase">
+                                                            {user.fullname?.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight">{user.fullname}</p>
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">@{user.username}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight">{user.fullname}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">@{user.username}</p>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-bold uppercase tracking-tight border border-indigo-100">
+                                                            {user.role}
+                                                        </span>
+                                                        <StatusBadge active={user.is_active} />
                                                     </div>
                                                 </div>
-                                                <StatusBadge active={user.is_active} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </Modal>
-                )}
-            </div>
+                        </Modal>
+                    )
+                }
+            </div >
         );
     }
 

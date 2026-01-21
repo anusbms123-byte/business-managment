@@ -55,17 +55,23 @@ app.post('/api/auth/login', async (req, res) => {
 
         // Check Company Request Status for non-Super Admins
         const isSuperAdmin = user.role?.name === 'Super Admin';
-        if (!isSuperAdmin && !user.companyId) {
-            const request = await prisma.companyRequest.findUnique({ where: { userId: user.id } });
-            if (request) {
-                if (request.status === 'PENDING') {
-                    return res.status(403).json({ success: false, message: 'Your company request is pending Super Admin approval.' });
-                }
-                if (request.status === 'REJECTED') {
-                    return res.status(403).json({ success: false, message: 'Your account/company request has been rejected. Please contact support.' });
-                }
+        if (!isSuperAdmin) {
+            if (user.company && !user.company.isActive) {
+                return res.status(403).json({ success: false, message: 'Your organization is inactive. Please contact support.' });
             }
-            // If no request and no company, they might be new - allow login to reach setup page
+
+            if (!user.companyId) {
+                const request = await prisma.companyRequest.findUnique({ where: { userId: user.id } });
+                if (request) {
+                    if (request.status === 'PENDING') {
+                        return res.status(403).json({ success: false, message: 'Your company request is pending Super Admin approval.' });
+                    }
+                    if (request.status === 'REJECTED') {
+                        return res.status(403).json({ success: false, message: 'Your account/company request has been rejected. Please contact support.' });
+                    }
+                }
+                // If no request and no company, they might be new - allow login to reach setup page
+            }
         }
 
         if (!user.isActive) {
@@ -132,7 +138,7 @@ app.post('/api/companies', async (req, res) => {
 
         const {
             name, address, phone, email, tax_no, currency_symbol,
-            office_phone, private_phone, secondary_address, city, state, zip_code, country, website
+            office_phone, private_phone, secondary_address, city, state, zip_code, country, website, is_active
         } = req.body;
 
         const company = await prisma.company.create({
@@ -150,7 +156,8 @@ app.post('/api/companies', async (req, res) => {
                 state,
                 zipCode: zip_code,
                 country: country || 'Pakistan',
-                website
+                website,
+                isActive: is_active === undefined ? true : (is_active === 1 || is_active === true)
             }
         });
         res.json({ success: true, id: company.id, ...company });
@@ -161,7 +168,7 @@ app.put('/api/companies/:id', async (req, res) => {
     try {
         const {
             name, address, phone, email, tax_no, currency_symbol,
-            office_phone, private_phone, secondary_address, city, state, zip_code, country, website
+            office_phone, private_phone, secondary_address, city, state, zip_code, country, website, is_active
         } = req.body;
         const company = await prisma.company.update({
             where: { id: req.params.id },
@@ -179,7 +186,8 @@ app.put('/api/companies/:id', async (req, res) => {
                 state,
                 zipCode: zip_code,
                 country,
-                website
+                website,
+                isActive: is_active === undefined ? undefined : (is_active === 1 || is_active === true)
             }
         });
         res.json({ success: true, changes: 1 });
