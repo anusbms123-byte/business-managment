@@ -26,6 +26,7 @@ const MODULES = [
 const Company = () => {
     const [activeTab, setActiveTab] = useState('profile');
     const [currentUser, setCurrentUser] = useState(null);
+    const [counts, setCounts] = useState({ requests: 0, helpline: 0 });
 
     useEffect(() => {
         const savedUser = sessionStorage.getItem('user');
@@ -33,6 +34,28 @@ const Company = () => {
     }, []);
 
     const isSuperAdmin = currentUser?.role?.toLowerCase() === 'super_admin' || currentUser?.role === 'Super Admin';
+
+    const fetchCounts = async () => {
+        if (!isSuperAdmin) return;
+        try {
+            const [reqRes, helpRes] = await Promise.all([
+                fetch('https://businessdevelopment-ten.vercel.app/api/company-requests?status=PENDING'),
+                fetch('https://businessdevelopment-ten.vercel.app/api/support-requests?status=PENDING')
+            ]);
+            const reqData = await reqRes.json();
+            const helpData = await helpRes.json();
+            setCounts({
+                requests: Array.isArray(reqData) ? reqData.length : 0,
+                helpline: Array.isArray(helpData) ? helpData.length : 0
+            });
+        } catch (err) {
+            console.error("Error fetching notification counts:", err);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser) fetchCounts();
+    }, [currentUser, isSuperAdmin]);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -61,7 +84,10 @@ const Company = () => {
                             >
                                 <tab.icon size={16} />
                                 <span>{label}</span>
-                                {tab.id === 'requests' && isSuperAdmin && (
+                                {tab.id === 'requests' && isSuperAdmin && counts.requests > 0 && (
+                                    <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                                )}
+                                {tab.id === 'helpline' && isSuperAdmin && counts.helpline > 0 && (
                                     <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                                 )}
                                 {activeTab === tab.id && (
@@ -77,8 +103,8 @@ const Company = () => {
                     {activeTab === 'profile' && <CompanyProfile currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'users' && <UserManagement currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
-                    {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} />}
-                    {activeTab === 'helpline' && isSuperAdmin && <SupportRequests />}
+                    {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} onAction={fetchCounts} />}
+                    {activeTab === 'helpline' && isSuperAdmin && <SupportRequests onAction={fetchCounts} />}
                 </div>
             </div>
         </div>
@@ -901,7 +927,7 @@ const AuditLog = ({ currentUser }) => {
 };
 
 // ============ COMPANY REQUESTS ============
-const CompanyRequests = ({ currentUser }) => {
+const CompanyRequests = ({ currentUser, onAction }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [rejecting, setRejecting] = useState(null); // { id, notes }
@@ -928,6 +954,7 @@ const CompanyRequests = ({ currentUser }) => {
             const data = await response.json();
             if (data.success) {
                 loadRequests();
+                if (onAction) onAction();
             } else {
                 alert(data.message);
             }
@@ -949,6 +976,7 @@ const CompanyRequests = ({ currentUser }) => {
             if (data.success) {
                 setRejecting(null);
                 loadRequests();
+                if (onAction) onAction();
             } else {
                 alert(data.message);
             }
@@ -1188,14 +1216,14 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
     </div>
 );
 
-const SupportRequests = () => {
+const SupportRequests = ({ onAction }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/support-requests';
+            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/support-requests?status=PENDING';
             const response = await fetch(API_URL);
             const data = await response.json();
             setRequests(Array.isArray(data) ? data : []);
@@ -1214,6 +1242,7 @@ const SupportRequests = () => {
                 body: JSON.stringify({ status })
             });
             loadData();
+            if (onAction) onAction();
         } catch (err) {
             console.error(err);
         }
