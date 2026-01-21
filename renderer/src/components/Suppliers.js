@@ -146,8 +146,8 @@ const Suppliers = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Supplier Directory</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage vendors, supply chain partners and payables.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Vendor List</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your suppliers, track their info, and see what you owe.</p>
                 </div>
                 {canCreate('suppliers') && (
                     <button
@@ -162,10 +162,10 @@ const Suppliers = ({ currentUser }) => {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Vendors" value={suppliers.length} icon={Truck} color="orange" />
-                <StatCard title="Total Payables" value={`PKR ${totalPayable.toLocaleString()}`} icon={DollarSign} color="red" />
-                <StatCard title="Active Orders" value="5" icon={Clock} color="blue" />
-                <StatCard title="Recent Savings" value="8%" icon={TrendingDown} color="emerald" />
+                <StatCard title="Total Suppliers" value={suppliers.length} icon={Truck} color="orange" />
+                <StatCard title="Amount You Owe" value={`PKR ${totalPayable.toLocaleString()}`} icon={DollarSign} color="red" />
+                <StatCard title="Open Buy Orders" value="5" icon={Clock} color="blue" />
+                <StatCard title="Cost Savings" value="8%" icon={TrendingDown} color="emerald" />
             </div>
 
             {/* Main Content Card */}

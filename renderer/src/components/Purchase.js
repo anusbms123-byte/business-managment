@@ -174,8 +174,8 @@ const Purchase = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Purchase Procurement</h1>
-                    <p className="text-slate-500 text-sm mt-1">Record incoming stock, manage vendor invoices and procurement history.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Buying & Stock-In</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your buy orders, stock arrivals, and supplier payments.</p>
                 </div>
                 {canCreate('purchase') && (
                     <button
@@ -190,9 +190,9 @@ const Purchase = ({ currentUser }) => {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Procurement" value={`PKR ${totalStats.total.toLocaleString()}`} icon={ShoppingCart} color="orange" />
-                <StatCard title="Total Paid" value={`PKR ${totalStats.paid.toLocaleString()}`} icon={Check} color="emerald" />
-                <StatCard title="Total Pending" value={`PKR ${totalStats.pending.toLocaleString()}`} icon={DollarSign} color="red" />
+                <StatCard title="Total Bought" value={`PKR ${totalStats.total.toLocaleString()}`} icon={ShoppingCart} color="orange" />
+                <StatCard title="Amount Paid" value={`PKR ${totalStats.paid.toLocaleString()}`} icon={Check} color="emerald" />
+                <StatCard title="Pending Dues" value={`PKR ${totalStats.pending.toLocaleString()}`} icon={DollarSign} color="red" />
             </div>
 
             {/* Main Content Card */}

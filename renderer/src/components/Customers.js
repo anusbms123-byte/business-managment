@@ -162,8 +162,8 @@ const Customers = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Customer Management</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Manage your clients, track balances and credit limits.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Client Directory</h1>
+                    <p className="text-sm text-slate-500 mt-0.5">View client details, manage balances, and set credit limits.</p>
                 </div>
                 {canCreate('customers') && (
                     <button
@@ -178,10 +178,10 @@ const Customers = ({ currentUser }) => {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Customers" value={customers.length} icon={Users} color="orange" />
-                <StatCard title="Total Receivables" value={`PKR ${totalBalance.toLocaleString()}`} icon={DollarSign} color="emerald" />
-                <StatCard title="Active Credit" value={`PKR ${(totalBalance * 0.8).toLocaleString()}`} icon={CreditCard} color="blue" />
-                <StatCard title="New This Month" value="12" icon={TrendingUp} color="purple" />
+                <StatCard title="Total Clients" value={customers.length} icon={Users} color="orange" />
+                <StatCard title="Pending From Clients" value={`PKR ${totalBalance.toLocaleString()}`} icon={DollarSign} color="emerald" />
+                <StatCard title="Current Credit" value={`PKR ${(totalBalance * 0.8).toLocaleString()}`} icon={CreditCard} color="blue" />
+                <StatCard title="Recent Signups" value="12" icon={TrendingUp} color="purple" />
             </div>
 
             {/* Main Content Card */}

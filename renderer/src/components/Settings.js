@@ -62,7 +62,7 @@ const Settings = ({ currentUser }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">System Settings</h1>
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Global Settings</h1>
                 <p className="text-slate-500 text-sm mt-1">Configure your organization's core preferences and hardware.</p>
             </div>
 
@@ -71,11 +71,11 @@ const Settings = ({ currentUser }) => {
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Organization Profile</h2>
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Business Identity</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Company Legal Title</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Official Business Name</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"

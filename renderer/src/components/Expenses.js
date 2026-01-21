@@ -102,8 +102,8 @@ const Expenses = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Expense Tracking</h1>
-                    <p className="text-slate-500 text-sm mt-1">Monitor and manage company operational expenditures.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business Expenses</h1>
+                    <p className="text-slate-500 text-sm mt-1">Track and manage your daily operational spending.</p>
                 </div>
                 {canCreate('expenses') && (
                     <button
@@ -122,15 +122,15 @@ const Expenses = ({ currentUser }) => {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-rose-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Today's Spends</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Spent Today</p>
                     <p className="text-xl font-bold text-slate-800">PKR {stats.today?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-amber-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Weekly Total</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Spent This Week</p>
                     <p className="text-xl font-bold text-slate-800">PKR {stats.weekly?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-blue-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monthly Total</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Spent This Month</p>
                     <p className="text-xl font-bold text-slate-800">PKR {stats.monthly?.toLocaleString() ?? '0'}</p>
                 </div>
             </div>

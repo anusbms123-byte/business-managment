@@ -4,11 +4,11 @@ import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 const tabs = [
-    { id: 'chart', label: 'Chart of Accounts', icon: List },
-    { id: 'journal', label: 'Journal Entries', icon: FileEdit },
-    { id: 'expenses', label: 'Expense Tracking', icon: Receipt },
-    { id: 'ledger', label: 'General Ledger', icon: BookOpen },
-    { id: 'trial', label: 'Trial Balance', icon: Scale },
+    { id: 'chart', label: 'Account List', icon: List },
+    { id: 'journal', label: 'Entry Book', icon: FileEdit },
+    { id: 'expenses', label: 'Expense Log', icon: Receipt },
+    { id: 'ledger', label: 'Ledger Book', icon: BookOpen },
+    { id: 'trial', label: 'Balance Check', icon: Scale },
 ];
 
 const Accounting = () => {
@@ -18,8 +18,8 @@ const Accounting = () => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Accounting & Ledger</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage chart of accounts, journal entries, and financial balances.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Financial Accounts</h1>
+                    <p className="text-slate-500 text-sm mt-1">Record your financial transactions and manage ledger balances.</p>
                 </div>
             </div>
 

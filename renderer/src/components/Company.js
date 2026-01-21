@@ -4,11 +4,11 @@ import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 const tabs = [
-    { id: 'profile', label: 'Company', icon: Building2, color: 'blue' },
-    { id: 'users', label: 'Team', icon: Users, color: 'indigo' },
-    { id: 'roles', label: 'Access', icon: Shield, color: 'emerald' },
-    { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'amber' },
-    { id: 'helpline', label: 'Helpline', icon: Phone, color: 'rose' },
+    { id: 'profile', label: 'Business Profile', icon: Building2, color: 'blue' },
+    { id: 'users', label: 'Manage Team', icon: Users, color: 'indigo' },
+    { id: 'roles', label: 'Staff Access', icon: Shield, color: 'emerald' },
+    { id: 'requests', label: 'Organization Requests', icon: ClipboardList, color: 'amber' },
+    { id: 'helpline', label: 'Customer Support', icon: Phone, color: 'rose' },
 ];
 
 const MODULES = [
@@ -21,6 +21,8 @@ const MODULES = [
     { key: 'suppliers', label: 'Suppliers' },
     { key: 'expenses', label: 'Expenses' },
     { key: 'reports', label: 'Reports' },
+    { key: 'hrm', label: 'HRM' },
+    { key: 'accounting', label: 'Accounting' },
     { key: 'users', label: 'Users' },
     { key: 'settings', label: 'Settings' },
 ];
@@ -64,8 +66,8 @@ const Company = () => {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Organization Settings</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage company identity, team members and access controls.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business & Team Settings</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your company profile, staff members, and system access.</p>
                 </div>
             </div>
 
@@ -596,19 +598,17 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
     const stats = {
         total: users.length,
         active: users.filter(u => u.is_active).length,
-        admins: users.filter(u => u.role?.toLowerCase().includes('admin')).length,
-        staff: users.filter(u => !u.role?.toLowerCase().includes('admin')).length
+        admins: users.filter(u => u.role?.toLowerCase().includes('admin')).length
     };
 
     if (loading) return <LoadingSpinner />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard title="Team Census" value={stats.total} icon={Users} color="blue" />
-                <StatCard title="Active Sessions" value={stats.active} icon={Check} color="emerald" />
-                <StatCard title="Privileged Admins" value={stats.admins} icon={Shield} color="purple" />
-                <StatCard title="Total Personnel" value={stats.staff} icon={Users} color="gray" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard title="Total Members" value={stats.total} icon={Users} color="blue" />
+                <StatCard title="Active Accounts" value={stats.active} icon={Check} color="emerald" />
+                <StatCard title="System Admins" value={stats.admins} icon={Shield} color="purple" />
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -79,9 +79,9 @@ const Products = ({ currentUser }) => {
 
     const stats = useMemo(() => ({
         total: products.length,
-        lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length,
+        lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alert_qty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
-        totalValue: products.reduce((acc, p) => acc + (p.stockQty * p.sellPrice), 0)
+        totalValue: products.reduce((acc, p) => acc + (p.stockQty * p.sell_price), 0)
     }), [products]);
 
     const handleSubmit = async (e) => {
@@ -227,10 +227,10 @@ const Products = ({ currentUser }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Top Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard title="Total Products" value={stats.total} icon={Package} color="blue" />
-                <StatCard title="Total Stock Value" value={`PKR ${stats.totalValue.toLocaleString()}`} icon={DollarSign} color="orange" />
-                <StatCard title="Low Stock Items" value={stats.lowStock} icon={AlertTriangle} color="red" />
-                <StatCard title="Out of Stock" value={stats.outOfStock} icon={X} color="gray" />
+                <StatCard title="Item Count" value={stats.total} icon={Package} color="blue" />
+                <StatCard title="Inventory Value" value={`PKR ${stats.totalValue.toLocaleString()}`} icon={DollarSign} color="orange" />
+                <StatCard title="Low Stock Warning" value={stats.lowStock} icon={AlertTriangle} color="red" />
+                <StatCard title="Sold Out Items" value={stats.outOfStock} icon={X} color="gray" />
             </div>
 
             {/* Table Section */}

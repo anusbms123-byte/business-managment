@@ -185,10 +185,10 @@ const Sales = ({ currentUser }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Top Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard title="Today's Revenue" value={`PKR ${stats.todayRevenue.toLocaleString()}`} icon={DollarSign} color="orange" />
-                <StatCard title="Today's Orders" value={stats.todayCount} icon={ShoppingCart} color="emerald" />
-                <StatCard title="Total Revenue" value={`PKR ${stats.totalRevenue.toLocaleString()}`} icon={TrendingUp} color="blue" />
-                <StatCard title="Avg. Order Value" value={`PKR ${stats.avgTicket.toLocaleString()}`} icon={Calendar} color="purple" />
+                <StatCard title="Today's Income" value={`PKR ${stats.todayRevenue.toLocaleString()}`} icon={DollarSign} color="orange" />
+                <StatCard title="Sales Today" value={stats.todayCount} icon={ShoppingCart} color="emerald" />
+                <StatCard title="Total Income" value={`PKR ${stats.totalRevenue.toLocaleString()}`} icon={TrendingUp} color="blue" />
+                <StatCard title="Average Sale" value={`PKR ${stats.avgTicket.toLocaleString()}`} icon={Calendar} color="purple" />
             </div>
 
             {/* Sales Table Section */}

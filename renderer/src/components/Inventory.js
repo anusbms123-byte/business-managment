@@ -36,9 +36,9 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
 };
 
 const tabs = [
-    { id: 'products', label: 'Products', icon: Package, color: 'orange' },
-    { id: 'stock', label: 'Tracking', icon: BarChart2, color: 'emerald' },
-    { id: 'barcode', label: 'Barcodes', icon: Printer, color: 'blue' },
+    { id: 'products', label: 'Item List', icon: Package, color: 'orange' },
+    { id: 'stock', label: 'Stock Levels', icon: BarChart2, color: 'emerald' },
+    { id: 'barcode', label: 'Print Barcodes', icon: Printer, color: 'blue' },
 ];
 
 const Inventory = ({ currentUser }) => {
@@ -49,8 +49,8 @@ const Inventory = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Inventory Management</h1>
-                    <p className="text-slate-500 text-sm mt-1">Track products, categories, stock levels and generate labels.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Stock & Products</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your stock, product details, and barcode printing.</p>
                 </div>
             </div>
 
@@ -137,7 +137,7 @@ const StockTracking = ({ currentUser }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <StatCard
-                    title="Total Products"
+                    title="Total Items"
                     value={stats.total}
                     icon={Package}
                     color="gray"
@@ -161,7 +161,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('low_stock')}
                 />
                 <StatCard
-                    title="Out of Stock"
+                    title="Empty Stock"
                     value={stats.outOfStock}
                     icon={X}
                     color="gray"
@@ -169,7 +169,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('out_of_stock')}
                 />
                 <StatCard
-                    title="Alerts"
+                    title="Restock Alerts"
                     value={stats.alerts}
                     icon={AlertTriangle}
                     color="red"

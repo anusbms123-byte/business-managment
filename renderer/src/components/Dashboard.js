@@ -204,8 +204,8 @@ const Dashboard = ({ currentUser }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-medium tracking-tight">Organization Overview</h1>
-                    <p className="text-slate-500 text-lg mt-1">Real-time analytical insights for your business.</p>
+                    <h1 className="text-2xl font-medium tracking-tight">Business Dashboard</h1>
+                    <p className="text-slate-500 text-lg mt-1">Quick summary of your business performance.</p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Weekly', 'Monthly', 'Yearly'].map((p) => (
@@ -223,7 +223,7 @@ const Dashboard = ({ currentUser }) => {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Total Revenue"
+                    title="Total Sales"
                     value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
@@ -232,7 +232,7 @@ const Dashboard = ({ currentUser }) => {
                     icon={TrendingUp}
                 />
                 <StatCard
-                    title="Purchase Cost (Sold)"
+                    title="Stock Cost"
                     value={`PKR ${summary.totalCOGS?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
@@ -241,7 +241,7 @@ const Dashboard = ({ currentUser }) => {
                     icon={FolderKanban}
                 />
                 <StatCard
-                    title="Total Expenses"
+                    title="All Expenses"
                     value={`PKR ${summary.totalExpenses?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
@@ -266,13 +266,13 @@ const Dashboard = ({ currentUser }) => {
                 <div className="lg:col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm transition-all">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Performance Analytics</h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Revenue vs net profitability</p>
+                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Sales & Profit Trends</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Income vs profitability over time</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Revenue</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Sales</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -311,8 +311,8 @@ const Dashboard = ({ currentUser }) => {
             {/* Sales Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Recent Transaction Ledger</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latest Invoices</p>
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Latest Sales Activity</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Invoices</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">

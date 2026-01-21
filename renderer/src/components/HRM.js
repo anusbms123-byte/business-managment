@@ -4,9 +4,9 @@ import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 const tabs = [
-    { id: 'employees', label: 'Employee List', icon: Users },
-    { id: 'attendance', label: 'Attendance', icon: Calendar },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign },
+    { id: 'employees', label: 'Staff List', icon: Users },
+    { id: 'attendance', label: 'Daily Attendance', icon: Calendar },
+    { id: 'payroll', label: 'Salary Sheets', icon: DollarSign },
 ];
 
 const HRM = ({ currentUser }) => {
@@ -36,8 +36,8 @@ const HRM = ({ currentUser }) => {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">HRM & Payroll</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage personnel, attendance and payout structures.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Employee Records</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your staff members, track attendance, and handle monthly salaries.</p>
                 </div>
             </div>
 

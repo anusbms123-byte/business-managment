@@ -15,7 +15,7 @@ async function main() {
     ];
 
     const modules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
-        'customers', 'suppliers', 'expenses', 'reports', 'users', 'settings'];
+        'customers', 'suppliers', 'expenses', 'reports', 'users', 'settings', 'hrm', 'accounting'];
 
     for (const role of systemRoles) {
         // Upsert Role (Update if exists, Create if not)
@@ -112,7 +112,7 @@ async function main() {
             username: 'superadmin',
             password: passwordHash,
             fullName: 'System Owner',
-            companyId : null,
+            companyId: null,
             roleId: superAdminRole.id
         }
     });

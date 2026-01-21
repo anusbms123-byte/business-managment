@@ -67,8 +67,8 @@ const Reports = ({ currentUser }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business Reports</h1>
-                    <p className="text-slate-500 text-sm mt-1">Comprehensive analysis of your organization's performance.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Company Insights</h1>
+                    <p className="text-slate-500 text-sm mt-1">Deep dive into your business performance and financial health.</p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Weekly', 'Monthly', 'Yearly'].map((p) => (
@@ -86,15 +86,15 @@ const Reports = ({ currentUser }) => {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-blue-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Sales</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">All Sales</p>
                     <p className="text-xl font-bold text-slate-800">PKR {summary.totalSales?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-amber-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Purchase Cost (Sold)</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Item Costs</p>
                     <p className="text-xl font-bold text-slate-800">PKR {summary.totalCOGS?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-rose-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Expenses</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Spends</p>
                     <p className="text-xl font-bold text-slate-800">PKR {summary.totalExpenses?.toLocaleString() ?? '0'}</p>
                 </div>
                 <div className="bg-white rounded-xl p-5 border-l-4 border-l-emerald-500 border border-slate-200 shadow-sm transition-all hover:shadow-md">
