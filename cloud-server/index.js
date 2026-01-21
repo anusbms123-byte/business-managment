@@ -69,7 +69,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         if (!user.isActive) {
-            return res.status(401).json({ success: false, message: 'Your account is deactivated.' });
+            return res.status(401).json({ success: false, message: 'Your account is deactivated. Please contact to helpline' });
         }
 
         // Generate Token
