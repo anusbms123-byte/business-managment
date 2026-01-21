@@ -130,7 +130,10 @@ app.post('/api/companies', async (req, res) => {
         // Schema has @map("tax_number") so taxNumber or tax_number logic depends on Prisma client input.
         // Prisma Client 'create' expects model field names (camelCase).
 
-        const { name, address, phone, email, tax_no, currency_symbol } = req.body;
+        const {
+            name, address, phone, email, tax_no, currency_symbol,
+            office_phone, private_phone, secondary_address, city, state, zip_code, country, website
+        } = req.body;
 
         const company = await prisma.company.create({
             data: {
@@ -139,7 +142,15 @@ app.post('/api/companies', async (req, res) => {
                 phone,
                 email,
                 taxNumber: tax_no,
-                currency: currency_symbol || 'PKR'
+                currency: currency_symbol || 'PKR',
+                officePhone: office_phone,
+                privatePhone: private_phone,
+                secondaryAddress: secondary_address,
+                city,
+                state,
+                zipCode: zip_code,
+                country: country || 'Pakistan',
+                website
             }
         });
         res.json({ success: true, id: company.id, ...company });
@@ -148,7 +159,10 @@ app.post('/api/companies', async (req, res) => {
 
 app.put('/api/companies/:id', async (req, res) => {
     try {
-        const { name, address, phone, email, tax_no, currency_symbol } = req.body;
+        const {
+            name, address, phone, email, tax_no, currency_symbol,
+            office_phone, private_phone, secondary_address, city, state, zip_code, country, website
+        } = req.body;
         const company = await prisma.company.update({
             where: { id: req.params.id },
             data: {
@@ -157,7 +171,15 @@ app.put('/api/companies/:id', async (req, res) => {
                 phone,
                 email,
                 taxNumber: tax_no,
-                currency: currency_symbol
+                currency: currency_symbol,
+                officePhone: office_phone,
+                privatePhone: private_phone,
+                secondaryAddress: secondary_address,
+                city,
+                state,
+                zipCode: zip_code,
+                country,
+                website
             }
         });
         res.json({ success: true, changes: 1 });
@@ -215,7 +237,20 @@ app.get('/api/users', async (req, res) => {
         const { companyId, activeOnly } = req.query;
         const where = {};
         if (activeOnly === 'true') where.isActive = true;
-        if (companyId) where.companyId = companyId;
+
+        if (companyId && companyId !== 'null' && companyId !== '') {
+            where.companyId = companyId;
+        } else {
+            // For general view (Super Admin), only show users assigned to companies
+            // AND only show those with 'Admin' role (Owner of the company)
+            where.companyId = { not: null };
+            where.role = {
+                name: {
+                    equals: 'Admin',
+                    mode: 'insensitive'
+                }
+            };
+        }
 
         const users = await prisma.user.findMany({
             where,
@@ -1249,7 +1284,10 @@ app.post('/api/auth/signup', async (req, res) => {
 // 7.2 Submit Company Request
 app.post('/api/company-requests', async (req, res) => {
     try {
-        const { userId, companyName, companyEmail, companyPhone, companyAddress } = req.body;
+        const {
+            userId, companyName, companyEmail, companyPhone, companyAddress,
+            officePhone, privatePhone, website, secondaryAddress, city, state, zipCode, country
+        } = req.body;
 
         // Check if user already has a pending or approved request
         const existingReq = await prisma.companyRequest.findUnique({ where: { userId } });
@@ -1264,6 +1302,14 @@ app.post('/api/company-requests', async (req, res) => {
                 companyEmail,
                 companyPhone,
                 companyAddress,
+                officePhone,
+                privatePhone,
+                website,
+                secondaryAddress,
+                city,
+                state,
+                zipCode,
+                country: country || 'Pakistan',
                 status: 'PENDING'
             }
         });
@@ -1318,6 +1364,14 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
                     email: request.companyEmail,
                     phone: request.companyPhone,
                     address: request.companyAddress,
+                    officePhone: request.officePhone,
+                    privatePhone: request.privatePhone,
+                    website: request.website,
+                    secondaryAddress: request.secondaryAddress,
+                    city: request.city,
+                    state: request.state,
+                    zipCode: request.zipCode,
+                    country: request.country,
                     currency: 'PKR' // Default
                 }
             });
@@ -1366,6 +1420,52 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
             })
         ]);
         res.json({ success: true, message: 'Request rejected and user deactivated' });
+    } catch (e) { handleError(res, e); }
+});
+
+// ==========================================
+// 8. SUPPORT & HELPLINE ROUTES
+// ==========================================
+
+// Submit Support Request
+app.post('/api/support-requests', async (req, res) => {
+    try {
+        const { fullName, email, whatsapp, description } = req.body;
+        const request = await prisma.supportRequest.create({
+            data: {
+                fullName,
+                email,
+                whatsapp,
+                description,
+                status: 'PENDING'
+            }
+        });
+        res.json({ success: true, id: request.id });
+    } catch (e) { handleError(res, e); }
+});
+
+// Get All Support Requests (Super Admin)
+app.get('/api/support-requests', async (req, res) => {
+    try {
+        const { status } = req.query;
+        const where = status ? { status } : {};
+        const requests = await prisma.supportRequest.findMany({
+            where,
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(requests);
+    } catch (e) { handleError(res, e); }
+});
+
+// Update Support Request Status
+app.put('/api/support-requests/:id', async (req, res) => {
+    try {
+        const { status } = req.body;
+        await prisma.supportRequest.update({
+            where: { id: req.params.id },
+            data: { status }
+        });
+        res.json({ success: true });
     } catch (e) { handleError(res, e); }
 });
 

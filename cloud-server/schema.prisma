@@ -23,6 +23,13 @@ model Company {
   taxNumber   String?  @map("tax_number")
   logoUrl     String?  @map("logo_url")
   currency    String   @default("PKR")
+  officePhone String?  @map("office_phone")
+  privatePhone String?  @map("private_phone")
+  secondaryAddress String? @map("secondary_address")
+  city        String?
+  state       String?
+  zipCode     String?  @map("zip_code")
+  country     String?  @default("Pakistan")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -414,6 +421,14 @@ model CompanyRequest {
   companyEmail    String?  @map("company_email")
   companyPhone    String?  @map("company_phone")
   companyAddress  String?  @map("company_address")
+  officePhone     String?  @map("office_phone")
+  privatePhone    String?  @map("private_phone")
+  website         String?
+  secondaryAddress String? @map("secondary_address")
+  city            String?
+  state           String?
+  zipCode         String?  @map("zip_code")
+  country         String?  @default("Pakistan")
   
   status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
   adminNotes      String?  @map("admin_notes")
@@ -422,4 +437,21 @@ model CompanyRequest {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("company_requests")
+}
+
+// =========================================================
+// 8. SUPPORT & HELPLINE
+// =========================================================
+
+model SupportRequest {
+  id          String   @id @default(cuid())
+  fullName    String   @map("full_name")
+  email       String
+  whatsapp    String
+  description String
+  status      String   @default("PENDING") // PENDING, RESOLVED, CLOSED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("support_requests")
 }

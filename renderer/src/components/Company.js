@@ -6,6 +6,7 @@ const tabs = [
     { id: 'users', label: 'Team', icon: Users, color: 'indigo' },
     { id: 'roles', label: 'Access', icon: Shield, color: 'emerald' },
     { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'amber' },
+    { id: 'helpline', label: 'Helpline', icon: Phone, color: 'rose' },
 ];
 
 const MODULES = [
@@ -47,6 +48,7 @@ const Company = () => {
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
+                        if (tab.id === 'helpline' && !isSuperAdmin) return null;
                         const label = (tab.id === 'profile' && isSuperAdmin) ? 'Companies' : tab.label;
                         return (
                             <button
@@ -76,6 +78,7 @@ const Company = () => {
                     {activeTab === 'users' && <UserManagement currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
                     {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} />}
+                    {activeTab === 'helpline' && isSuperAdmin && <SupportRequests />}
                 </div>
             </div>
         </div>
@@ -93,7 +96,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     const [companyUsers, setCompanyUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR'
+        name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR',
+        office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: ''
     });
 
     useEffect(() => { loadData(); }, [currentUser, isSuperAdmin]);
@@ -108,7 +112,17 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                     if (data?.success === false) console.error("Companies Error:", data.message);
                 } else if (currentUser?.company_id) {
                     const data = await window.electronAPI.getCompany(currentUser.company_id);
-                    if (data && data.success !== false) setFormData(data);
+                    if (data && data.success !== false) {
+                        setFormData({
+                            ...data,
+                            tax_no: data.taxNumber,
+                            currency_symbol: data.currency,
+                            office_phone: data.officePhone,
+                            private_phone: data.privatePhone,
+                            secondary_address: data.secondaryAddress,
+                            zip_code: data.zipCode
+                        });
+                    }
                     else if (data?.success === false) console.error("Company Error:", data.message);
                 }
             }
@@ -140,7 +154,22 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     };
 
     const openModal = (comp = null) => {
-        setFormData(comp || { name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR' });
+        if (comp) {
+            setFormData({
+                ...comp,
+                tax_no: comp.taxNumber,
+                currency_symbol: comp.currency,
+                office_phone: comp.officePhone,
+                private_phone: comp.privatePhone,
+                secondary_address: comp.secondaryAddress,
+                zip_code: comp.zipCode
+            });
+        } else {
+            setFormData({
+                name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR',
+                office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: ''
+            });
+        }
         setShowModal(true);
     };
 
@@ -250,7 +279,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         Core Information
                                     </h4>
                                     <FormInput label="Full Legal Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
-                                    <FormInput label="Base Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} placeholder="PKR" />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormInput label="Base Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} placeholder="PKR" />
+                                        <FormInput label="Tax/NTN No" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
+                                    </div>
+                                    <FormInput label="Official Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
+                                    <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} placeholder="https://www.company.com" icon={Building2} />
                                 </div>
                                 <div className="space-y-6">
                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -258,17 +292,26 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         Communications
                                     </h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2 md:col-span-2">
-                                            <FormInput label="Official Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Building2} />
-                                        </div>
+                                        <FormInput label="Support Helpline" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Support No" icon={Phone} />
+                                        <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline" icon={Phone} />
                                     </div>
-                                    <FormInput label="Support Helpline" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="+92 300 1234567" />
+                                    <FormInput label="Private Number" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} placeholder="Confidential No" icon={Phone} />
                                 </div>
-                                <div className="col-span-full">
-                                    <FormInput label="Tax Certificate / NTN" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} placeholder="Optional registration number" icon={Shield} />
-                                </div>
-                                <div className="col-span-full">
-                                    <FormTextarea label="Headquarters Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Provide physical address..." />
+                                <div className="col-span-full space-y-6">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                        Headquarters Address (Proper)
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormTextarea label="Primary Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
+                                        <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} placeholder="Apartment, Studio, Floor..." />
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City" />
+                                        <FormInput label="State/Province" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} placeholder="State" />
+                                        <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} placeholder="Postal" />
+                                        <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} placeholder="Pakistan" />
+                                    </div>
                                 </div>
                             </div>
                             <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Configuration' : 'Onboard Organization'} />
@@ -286,7 +329,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                     </div>
                                     <div className="flex-1">
                                         <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase tracking-tight">{selectedCompany.name}</h2>
-                                        <div className="grid grid-cols-2 gap-4 text-xs">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
                                             <div>
                                                 <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Email Endpoint</span>
                                                 <p className="text-slate-700 font-bold">{selectedCompany.email || '—'}</p>
@@ -294,6 +337,27 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             <div>
                                                 <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Direct Contact</span>
                                                 <p className="text-slate-700 font-bold">{selectedCompany.phone || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Office Line</span>
+                                                <p className="text-slate-700 font-bold">{selectedCompany.officePhone || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Website URL</span>
+                                                <p className="text-blue-600 font-bold truncate">{selectedCompany.website || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Private Line</span>
+                                                <p className="text-slate-700 font-bold">{selectedCompany.privatePhone || '—'}</p>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">HQ Address</span>
+                                                <p className="text-slate-700 font-bold leading-relaxed">
+                                                    {selectedCompany.address}<br />
+                                                    {selectedCompany.secondaryAddress && <>{selectedCompany.secondaryAddress}<br /></>}
+                                                    {selectedCompany.city}, {selectedCompany.state} {selectedCompany.zipCode}<br />
+                                                    {selectedCompany.country}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -355,6 +419,22 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             <FormInput label="Tax Certificate (NTN)" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
                             <FormInput label="Accounting Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} />
                             <FormInput label="Primary Communication Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} icon={Building2} />
+                            <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} icon={Building2} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <FormInput label="Support No" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} icon={Phone} />
+                            <FormInput label="Office No" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} icon={Phone} />
+                            <FormInput label="Private No" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} icon={Phone} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormTextarea label="Office Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} />
+                            <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} />
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} />
+                            <FormInput label="State" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} />
+                            <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} />
+                            <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} />
                         </div>
                     </div>
                 </div>
@@ -392,7 +472,18 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     window.electronAPI.getUsers(companyId),
                     window.electronAPI.getRoles(companyId)
                 ]);
-                setUsers(usersData || []);
+                const filteredUsers = (usersData || []).filter(u => {
+                    const isSuper = u.role?.toLowerCase() === 'super admin' || u.role?.toLowerCase() === 'super_admin';
+                    if (isSuper) return false;
+                    if (!u.company_id) return false;
+
+                    // If Super Admin is viewing, only show company 'Admin' roles
+                    if (isSuperAdmin) {
+                        return u.role?.toLowerCase() === 'admin';
+                    }
+                    return true;
+                });
+                setUsers(filteredUsers);
                 setRoles(rolesData || []);
                 if (isSuperAdmin) {
                     setCompanies(await window.electronAPI.getCompanies() || []);
@@ -1096,5 +1187,112 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
         <Button type="submit" disabled={saving} label={label} />
     </div>
 );
+
+const SupportRequests = () => {
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/support-requests';
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            setRequests(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error(err);
+        }
+        setLoading(false);
+    };
+
+    const updateStatus = async (id, status) => {
+        try {
+            const API_URL = `https://businessdevelopment-ten.vercel.app/api/support-requests/${id}`;
+            await fetch(API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            loadData();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    if (loading) return <LoadingSpinner />;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Support Tickets</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Manage user issues and inquiries</p>
+                </div>
+                <button onClick={loadData} className="px-4 py-2 bg-slate-50 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-colors border border-slate-100">Refresh Feed</button>
+            </div>
+
+            {requests.length === 0 ? (
+                <EmptyState icon={Info} title="No tickets found" description="All support requests will appear here." />
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-slate-100 bg-slate-50/50">
+                                <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">User Details</th>
+                                <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">WhatsApp / Email</th>
+                                <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</th>
+                                <th className="p-4 text-[10px) font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                                <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {requests.map(req => (
+                                <tr key={req.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
+                                    <td className="p-4">
+                                        <p className="font-bold text-slate-700 text-sm italic">{req.fullName}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2 text-emerald-600">
+                                                <Phone size={12} />
+                                                <span className="text-xs font-bold">{req.whatsapp}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-blue-600">
+                                                <Mail size={12} />
+                                                <span className="text-xs font-bold">{req.email}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 max-w-xs">
+                                        <p className="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 italic">{req.description}</p>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
+                                            ${req.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}
+                                        `}>
+                                            {req.status}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {req.status === 'PENDING' ? (
+                                                <button onClick={() => updateStatus(req.id, 'RESOLVED')} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg" title="Mark as Resolved"><Check size={16} /></button>
+                                            ) : (
+                                                <button onClick={() => updateStatus(req.id, 'PENDING')} className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg" title="Re-open"><X size={16} /></button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export default Company;
