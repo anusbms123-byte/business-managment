@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { List, FileEdit, Receipt, BookOpen, Scale, Plus, Info, Check } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 const tabs = [
     { id: 'chart', label: 'Chart of Accounts', icon: List },
@@ -57,10 +59,12 @@ const Accounting = () => {
 const ChartOfAccounts = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-end">
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
-                <Plus size={16} />
-                <span>Add Account</span>
-            </button>
+            {canCreate('accounting') && (
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+                    <Plus size={16} />
+                    <span>Add Account</span>
+                </button>
+            )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
@@ -97,10 +101,12 @@ const ChartOfAccounts = () => (
 const JournalEntries = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex justify-end">
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
-                <Plus size={16} />
-                <span>New Journal Entry</span>
-            </button>
+            {canCreate('accounting') && (
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+                    <Plus size={16} />
+                    <span>New Journal Entry</span>
+                </button>
+            )}
         </div>
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
@@ -143,10 +149,12 @@ const ExpenseTracking = () => (
                 <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
                 Operational Expenditures
             </h3>
-            <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
-                <Plus size={16} />
-                <span>Add Expense</span>
-            </button>
+            {canCreate('accounting') && (
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest">
+                    <Plus size={16} />
+                    <span>Add Expense</span>
+                </button>
+            )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

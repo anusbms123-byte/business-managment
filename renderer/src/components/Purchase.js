@@ -4,6 +4,8 @@ import {
     User, DollarSign, X, Check, MoreHorizontal, ArrowUpRight,
     Package, Truck, Receipt, Trash, Info
 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -175,13 +177,15 @@ const Purchase = ({ currentUser }) => {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Purchase Procurement</h1>
                     <p className="text-slate-500 text-sm mt-1">Record incoming stock, manage vendor invoices and procurement history.</p>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200 group"
-                >
-                    <Plus size={18} />
-                    <span>New Purchase Order</span>
-                </button>
+                {canCreate('purchase') && (
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200 group"
+                    >
+                        <Plus size={18} />
+                        <span>New Purchase Order</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats Overview */}
@@ -489,13 +493,15 @@ const Purchase = ({ currentUser }) => {
                                         />
                                     </div>
 
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={saving}
-                                        className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg shadow-md shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
-                                    >
-                                        {saving ? 'Processing...' : 'Complete Procurement'}
-                                    </button>
+                                    {canCreate('purchase') && (
+                                        <button
+                                            onClick={handleSave}
+                                            disabled={saving}
+                                            className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg shadow-md shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
+                                        >
+                                            {saving ? 'Processing...' : 'Complete Procurement'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

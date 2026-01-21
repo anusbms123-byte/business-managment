@@ -4,6 +4,8 @@ import {
     Trash2, DollarSign, TrendingUp, Calendar,
     User, Package, ChevronRight, Check, Printer
 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -202,13 +204,15 @@ const Sales = ({ currentUser }) => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
-                    >
-                        <Plus size={18} />
-                        <span>Create New Sale</span>
-                    </button>
+                    {canCreate('sales') && (
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
+                        >
+                            <Plus size={18} />
+                            <span>Create New Sale</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { canView } from '../utils/permissions';
+
 
 const Reports = ({ currentUser }) => {
     const [summary, setSummary] = useState({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
@@ -127,13 +129,15 @@ const Reports = ({ currentUser }) => {
                         <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all" />
                     </div>
                     <div className="flex items-end">
-                        <button
-                            onClick={handleCompileReport}
-                            disabled={loading}
-                            className="w-full px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
-                        >
-                            {loading ? 'Compiling...' : 'Compile Report'}
-                        </button>
+                        {canView('reports') && (
+                            <button
+                                onClick={handleCompileReport}
+                                disabled={loading}
+                                className="w-full px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
+                            >
+                                {loading ? 'Compiling...' : 'Compile Report'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

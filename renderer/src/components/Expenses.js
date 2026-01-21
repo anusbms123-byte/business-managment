@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, X, Edit2, Trash2 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 const Expenses = ({ currentUser }) => {
     const [expenses, setExpenses] = useState([]);
@@ -103,16 +105,18 @@ const Expenses = ({ currentUser }) => {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Expense Tracking</h1>
                     <p className="text-slate-500 text-sm mt-1">Monitor and manage company operational expenditures.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
-                        setShowModal(true);
-                    }}
-                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
-                >
-                    <Plus size={16} />
-                    <span>Add Expense</span>
-                </button>
+                {canCreate('expenses') && (
+                    <button
+                        onClick={() => {
+                            setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
+                            setShowModal(true);
+                        }}
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                    >
+                        <Plus size={16} />
+                        <span>Add Expense</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats */}
@@ -191,12 +195,16 @@ const Expenses = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
-                                            <button onClick={() => openEditModal(expense)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button onClick={() => handleDelete(expense.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {canEdit('expenses') && (
+                                                <button onClick={() => openEditModal(expense)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            )}
+                                            {canDelete('expenses') && (
+                                                <button onClick={() => handleDelete(expense.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

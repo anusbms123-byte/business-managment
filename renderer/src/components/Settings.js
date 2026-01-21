@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { canEdit } from '../utils/permissions';
+
 
 const Settings = ({ currentUser }) => {
     const [formData, setFormData] = useState({
@@ -168,13 +170,15 @@ const Settings = ({ currentUser }) => {
                 </div>
 
                 <div className="pt-4">
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
-                    >
-                        {saving ? 'Processing...' : 'Commit Global Changes'}
-                    </button>
+                    {canEdit('settings') && (
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
+                        >
+                            {saving ? 'Processing...' : 'Commit Global Changes'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

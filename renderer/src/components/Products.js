@@ -4,6 +4,8 @@ import {
     ShoppingCart, AlertTriangle, Check, Layers,
     Tag, DollarSign, Box
 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -297,16 +299,18 @@ const Products = ({ currentUser }) => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <button
-                            onClick={() => {
-                                resetForm();
-                                setIsModalOpen(true);
-                            }}
-                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
-                        >
-                            <Plus size={18} />
-                            <span>Add Product</span>
-                        </button>
+                        {canCreate('inventory') && (
+                            <button
+                                onClick={() => {
+                                    resetForm();
+                                    setIsModalOpen(true);
+                                }}
+                                className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
+                            >
+                                <Plus size={18} />
+                                <span>Add Product</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -371,8 +375,16 @@ const Products = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                            <button onClick={() => openEdit(product)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit size={16} /></button>
-                                            <button onClick={() => handleDelete(product.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                                            {canEdit('inventory') && (
+                                                <button onClick={() => openEdit(product)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                                    <Edit size={16} />
+                                                </button>
+                                            )}
+                                            {canDelete('inventory') && (
+                                                <button onClick={() => handleDelete(product.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

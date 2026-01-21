@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 const tabs = [
     { id: 'profile', label: 'Company', icon: Building2, color: 'blue' },
@@ -245,7 +247,9 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         <h2 className="text-xl font-bold text-slate-800 tracking-tight">Registered Companies</h2>
                         <p className="text-sm text-slate-500">Managing {companies.length} business entities</p>
                     </div>
-                    <Button onClick={() => openModal()} icon={Plus}>Register Company</Button>
+                    {canCreate('settings') && (
+                        <Button onClick={() => openModal()} icon={Plus}>Register Company</Button>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -260,18 +264,22 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                     {c.name?.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={(e) => handleDeleteCompany(e, c.id)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); openModal(c); }}
-                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border-l border-slate-100"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
+                                    {canDelete('settings') && (
+                                        <button
+                                            onClick={(e) => handleDeleteCompany(e, c.id)}
+                                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                    {canEdit('settings') && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openModal(c); }}
+                                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all border-l border-slate-100"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -489,9 +497,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
-                    <Button type="submit" disabled={saving}>
-                        {saving ? 'Synchronizing...' : 'Update Corporate Profile'}
-                    </Button>
+                    {canEdit('settings') && (
+                        <Button type="submit" disabled={saving}>
+                            {saving ? 'Synchronizing...' : 'Update Corporate Profile'}
+                        </Button>
+                    )}
                 </div>
             </div>
         </form>
@@ -612,7 +622,9 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                         className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
                     />
                 </div>
-                <Button onClick={() => openModal()} icon={Plus}>Onboard New Member</Button>
+                {canCreate('users') && (
+                    <Button onClick={() => openModal()} icon={Plus}>Onboard New Member</Button>
+                )}
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -656,8 +668,16 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => openModal(user)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 size={16} /></button>
-                                            <button onClick={() => handleDelete(user.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                                            {canEdit('users') && (
+                                                <button onClick={() => openModal(user)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            )}
+                                            {canDelete('users') && (
+                                                <button onClick={() => handleDelete(user.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -778,7 +798,9 @@ const RolesPermissions = ({ currentUser }) => {
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Control Roles</h2>
                     <p className="text-sm text-slate-500">Define custom permission sets for your team members</p>
                 </div>
-                <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
+                {canCreate('settings') && (
+                    <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -790,8 +812,16 @@ const RolesPermissions = ({ currentUser }) => {
                             </div>
                             {!role.is_system && (
                                 <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Edit2 size={16} /></button>
-                                    <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100"><Trash2 size={16} /></button>
+                                    {canEdit('settings') && (
+                                        <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                    )}
+                                    {canDelete('settings') && (
+                                        <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

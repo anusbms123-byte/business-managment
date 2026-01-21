@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Calendar, DollarSign, Plus, Search, Edit, Eye, X, Trash2, Check, UserPlus } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 const tabs = [
     { id: 'employees', label: 'Employee List', icon: Users },
@@ -130,16 +132,18 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                         placeholder="Search personnel..."
                     />
                 </div>
-                <button
-                    onClick={() => {
-                        setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', joiningDate: new Date().toISOString().split('T')[0] });
-                        setShowModal(true);
-                    }}
-                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
-                >
-                    <Plus size={16} />
-                    <span>Onboard Employee</span>
-                </button>
+                {canCreate('hrm') && (
+                    <button
+                        onClick={() => {
+                            setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', joiningDate: new Date().toISOString().split('T')[0] });
+                            setShowModal(true);
+                        }}
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                    >
+                        <Plus size={16} />
+                        <span>Onboard Employee</span>
+                    </button>
+                )}
             </div>
 
             <div className="overflow-x-auto border border-slate-100 rounded-xl">
@@ -181,8 +185,16 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 <td className="px-6 py-4 text-slate-400 font-bold text-[10px] uppercase">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
-                                        <button onClick={() => { setFormData(emp); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit size={16} /></button>
-                                        <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                                        {canEdit('hrm') && (
+                                            <button onClick={() => { setFormData(emp); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                <Edit size={16} />
+                                            </button>
+                                        )}
+                                        {canDelete('hrm') && (
+                                            <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -388,13 +400,15 @@ const Attendance = ({ employees, currentUser }) => {
                 </table>
             </div>
 
-            <button
-                onClick={saveAttendance}
-                disabled={saving || loading}
-                className="flex items-center justify-center px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
-            >
-                {saving ? 'Updating...' : 'Save Attendance Record'}
-            </button>
+            {canEdit('hrm') && (
+                <button
+                    onClick={saveAttendance}
+                    disabled={saving || loading}
+                    className="flex items-center justify-center px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
+                >
+                    {saving ? 'Updating...' : 'Save Attendance Record'}
+                </button>
+            )}
         </div>
     );
 };
@@ -408,10 +422,12 @@ const Payroll = ({ employees }) => {
                     <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
                         <option>Current Month</option>
                     </select>
-                    <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest">
-                        <Plus size={16} />
-                        <span>Generate Payroll</span>
-                    </button>
+                    {canEdit('hrm') && (
+                        <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest">
+                            <Plus size={16} />
+                            <span>Generate Payroll</span>
+                        </button>
+                    )}
                 </div>
             </div>
 

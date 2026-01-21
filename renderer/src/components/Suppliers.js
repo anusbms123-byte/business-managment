@@ -4,6 +4,8 @@ import {
     Mail, MapPin, Truck, DollarSign, X, Check,
     MoreHorizontal, TrendingDown, Clock, Info
 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -147,13 +149,15 @@ const Suppliers = ({ currentUser }) => {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Supplier Directory</h1>
                     <p className="text-slate-500 text-sm mt-1">Manage vendors, supply chain partners and payables.</p>
                 </div>
-                <button
-                    onClick={() => openModal()}
-                    className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
-                >
-                    <Plus size={18} />
-                    <span>Add New Supplier</span>
-                </button>
+                {canCreate('suppliers') && (
+                    <button
+                        onClick={() => openModal()}
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-sm uppercase tracking-widest"
+                    >
+                        <Plus size={18} />
+                        <span>Add New Supplier</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats Overview */}
@@ -262,18 +266,22 @@ const Suppliers = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => openModal(supplier)}
-                                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(supplier.id)}
-                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {canEdit('suppliers') && (
+                                                <button
+                                                    onClick={() => openModal(supplier)}
+                                                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                            )}
+                                            {canDelete('suppliers') && (
+                                                <button
+                                                    onClick={() => handleDelete(supplier.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

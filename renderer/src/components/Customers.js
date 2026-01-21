@@ -4,6 +4,8 @@ import {
     MapPin, Mail, CreditCard, TrendingUp, Users,
     DollarSign, X, Check, Loader2, MoreVertical
 } from 'lucide-react';
+import { canCreate, canEdit, canDelete } from '../utils/permissions';
+
 
 // Reusable Components matching the design system
 // Premium Stat Card Component
@@ -163,13 +165,15 @@ const Customers = ({ currentUser }) => {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Customer Management</h1>
                     <p className="text-sm text-slate-500 mt-0.5">Manage your clients, track balances and credit limits.</p>
                 </div>
-                <button
-                    onClick={() => openModal()}
-                    className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
-                >
-                    <Plus size={18} />
-                    <span>Add New Customer</span>
-                </button>
+                {canCreate('customers') && (
+                    <button
+                        onClick={() => openModal()}
+                        className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
+                    >
+                        <Plus size={18} />
+                        <span>Add New Customer</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats Overview */}
@@ -255,18 +259,22 @@ const Customers = ({ currentUser }) => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-end space-x-1">
-                                                <button
-                                                    onClick={() => openModal(customer)}
-                                                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(customer.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {canEdit('customers') && (
+                                                    <button
+                                                        onClick={() => openModal(customer)}
+                                                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                )}
+                                                {canDelete('customers') && (
+                                                    <button
+                                                        onClick={() => handleDelete(customer.id)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
