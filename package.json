@@ -1,8 +1,10 @@
 {
   "scripts": {
+    "start": "node cloud-server/index.js",
     "build": "npm --prefix renderer run build && npm --prefix backend run copy-build",
     "vercel-build": "npx prisma@5.17.0 generate --schema=./cloud-server/schema.prisma",
-    "copy-build": "npm --prefix backend run copy-build"
+    "copy-build": "npm --prefix backend run copy-build",
+    "install-all": "npm install && npm --prefix cloud-server install"
   },
   "dependencies": {
     "@prisma/client": "5.17.0"
