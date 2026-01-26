@@ -188,12 +188,7 @@ const Purchase = ({ currentUser }) => {
                 )}
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Bought" value={`PKR ${totalStats.total.toLocaleString()}`} icon={ShoppingCart} color="orange" />
-                <StatCard title="Amount Paid" value={`PKR ${totalStats.paid.toLocaleString()}`} icon={Check} color="emerald" />
-                <StatCard title="Pending Dues" value={`PKR ${totalStats.pending.toLocaleString()}`} icon={DollarSign} color="red" />
-            </div>
+
 
             {/* Main Content Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -290,8 +285,8 @@ const Purchase = ({ currentUser }) => {
 
             {/* Redesigned Purchase Modal (POS Style) */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[2px] animate-in fade-in duration-300">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
                         {/* Modal Header */}
                         <div className="px-8 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
                             <div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
     Plus, Search, Edit, Trash2, X, Package,
     ShoppingCart, AlertTriangle, Check, Layers,
-    Tag, DollarSign, Box
+    Tag, DollarSign, Box, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
@@ -38,6 +38,7 @@ const Products = ({ currentUser }) => {
     const [brands, setBrands] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showOptional, setShowOptional] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // Filter States
@@ -49,7 +50,7 @@ const Products = ({ currentUser }) => {
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         id: null, name: '', sku: '', description: '', unit: 'pcs',
-        cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+        cost_price: '', sell_price: '', stock_qty: '', alert_qty: '',
         weight: '', expiry_date: '', category_name: '', brand_name: '',
         color: '', size: '', grade: '', condition: ''
     });
@@ -170,10 +171,11 @@ const Products = ({ currentUser }) => {
     const resetForm = () => {
         setFormData({
             id: null, name: '', sku: '', description: '', unit: 'pcs',
-            cost_price: 0, sell_price: 0, stock_qty: 0, alert_qty: 5,
+            cost_price: '', sell_price: '', stock_qty: '', alert_qty: '',
             weight: '', expiry_date: '', category_name: '', brand_name: '',
             color: '', size: '', grade: '', condition: ''
         });
+        setShowOptional(false);
     };
 
     const handleDelete = async (id) => {
@@ -204,6 +206,7 @@ const Products = ({ currentUser }) => {
             grade: product.grade || '',
             condition: product.condition || ''
         });
+        setShowOptional(product.color || product.size || product.grade || product.condition || product.description ? true : false);
         setIsModalOpen(true);
     };
 
@@ -225,13 +228,7 @@ const Products = ({ currentUser }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Top Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard title="Item Count" value={stats.total} icon={Package} color="blue" />
-                <StatCard title="Inventory Value" value={`PKR ${stats.totalValue.toLocaleString()}`} icon={DollarSign} color="orange" />
-                <StatCard title="Low Stock Warning" value={stats.lowStock} icon={AlertTriangle} color="red" />
-                <StatCard title="Sold Out Items" value={stats.outOfStock} icon={X} color="gray" />
-            </div>
+
 
             {/* Table Section */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -404,150 +401,168 @@ const Products = ({ currentUser }) => {
 
             {/* Premium Product Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[2px] animate-in fade-in duration-300">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 text-left border border-slate-200">
-                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight">{formData.id ? 'Edit Product' : 'Add New Product'}</h2>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manage inventory details and product specs.</p>
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><X size={20} /></button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                            {/* Basic Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Tag size={12} className="text-blue-500" /> Product Name *
-                                    </label>
-                                    <input required type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. iPhone 15 Pro" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Layers size={12} className="text-blue-500" /> SKU Number
-                                    </label>
-                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="e.g. PHN-APL-15" />
-                                </div>
-                            </div>
-
-                            {/* Units & Description */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Package size={12} className="text-blue-500" /> Unit
-                                    </label>
-                                    <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
-                                        <option value="pcs">Pieces (pcs)</option>
-                                        <option value="kg">Kilogram (kg)</option>
-                                        <option value="gram">Gram (g)</option>
-                                        <option value="ltr">Liter (ltr)</option>
-                                        <option value="mtr">Meter (m)</option>
-                                        <option value="box">Box</option>
-                                        <option value="pkt">Packet</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Check size={12} className="text-blue-500" /> Expiry Date
-                                    </label>
-                                    <input type="date" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
-                                </div>
-                            </div>
-
-                            {/* Attributes (Color, Size, Grade, Condition) */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Color</label>
-                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} placeholder="e.g. Red" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Size</label>
-                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} placeholder="e.g. XL" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Grade</label>
-                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })} placeholder="e.g. A+" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Condition</label>
-                                    <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} placeholder="e.g. New" />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                    Description
-                                </label>
-                                <textarea className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none min-h-[80px]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
-                            </div>
-
-                            {/* Classification */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Box size={12} className="text-blue-500" /> Category
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
-                                        value={formData.category_name}
-                                        onChange={e => setFormData({ ...formData, category_name: e.target.value })}
-                                        placeholder="Enter category"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                        <Tag size={12} className="text-blue-500" /> Brand
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
-                                        value={formData.brand_name}
-                                        onChange={e => setFormData({ ...formData, brand_name: e.target.value })}
-                                        placeholder="Enter brand"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Inventory & Pricing */}
-                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200">
+                        <div className="flex-1 overflow-y-auto">
+                            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                                 <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Cost</label>
-                                    <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.cost_price} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} />
+                                    <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight">{formData.id ? 'Edit Product' : 'Add New Product'}</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manage inventory details and product specs.</p>
                                 </div>
-                                <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Sell</label>
-                                    <input required type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.sell_price} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Stock</label>
-                                    <input required type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.stock_qty} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Min Alert</label>
-                                    <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.alert_qty} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Weight</label>
-                                    <input type="number" step="0.01" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="kg" />
-                                </div>
+                                <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><X size={20} /></button>
                             </div>
 
-                            <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
-                                {saving ? (
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        <span>Saving Data...</span>
+                            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                                {/* Basic Info */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Tag size={12} className="text-blue-500" /> Product Name *
+                                        </label>
+                                        <input required type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. iPhone 15 Pro" />
                                     </div>
-                                ) : (
-                                    <>
-                                        <Check size={20} />
-                                        <span>{formData.id ? 'Save Product' : 'Complete Setup'}</span>
-                                    </>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Layers size={12} className="text-blue-500" /> SKU Number
+                                        </label>
+                                        <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="e.g. PHN-APL-15" />
+                                    </div>
+                                </div>
+
+                                {/* Units & Description */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Package size={12} className="text-blue-500" /> Unit
+                                        </label>
+                                        <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
+                                            <option value="pcs">Pieces (pcs)</option>
+                                            <option value="kg">Kilogram (kg)</option>
+                                            <option value="gram">Gram (g)</option>
+                                            <option value="ltr">Liter (ltr)</option>
+                                            <option value="mtr">Meter (m)</option>
+                                            <option value="box">Box</option>
+                                            <option value="pkt">Packet</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Check size={12} className="text-blue-500" /> Expiry Date
+                                        </label>
+                                        <input type="date" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                {/* Optional Fields Toggle */}
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOptional(!showOptional)}
+                                        className="flex items-center gap-2 text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
+                                    >
+                                        {showOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        {showOptional ? 'Hide Optional Fields' : 'Show Optional Fields (Color, Size, Grade, etc.)'}
+                                    </button>
+                                </div>
+
+                                {showOptional && (
+                                    <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
+                                        {/* Attributes (Color, Size, Grade, Condition) */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Color</label>
+                                                <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} placeholder="e.g. Red" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Size</label>
+                                                <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} placeholder="e.g. XL" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Grade</label>
+                                                <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })} placeholder="e.g. A+" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Condition</label>
+                                                <input type="text" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} placeholder="e.g. New" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                Description
+                                            </label>
+                                            <textarea className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none min-h-[80px]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
+                                        </div>
+                                    </div>
                                 )}
-                            </button>
-                        </form>
+
+                                {/* Classification */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Box size={12} className="text-blue-500" /> Category
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                                            value={formData.category_name}
+                                            onChange={e => setFormData({ ...formData, category_name: e.target.value })}
+                                            placeholder="Enter category"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <Tag size={12} className="text-blue-500" /> Brand
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                                            value={formData.brand_name}
+                                            onChange={e => setFormData({ ...formData, brand_name: e.target.value })}
+                                            placeholder="Enter brand"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Inventory & Pricing */}
+                                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                    <div>
+                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Cost</label>
+                                        <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.cost_price} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Sell</label>
+                                        <input required type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.sell_price} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Stock</label>
+                                        <input required type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.stock_qty} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Min Alert</label>
+                                        <input type="number" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.alert_qty} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Weight</label>
+                                        <input type="number" step="0.01" className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-sm outline-none focus:border-blue-500 transition-all text-slate-800" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00 kg" />
+                                    </div>
+                                </div>
+
+                                <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
+                                    {saving ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Saving Data...</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Check size={20} />
+                                            <span>{formData.id ? 'Save Product' : 'Complete Setup'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone } from 'lucide-react';
+import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
@@ -126,8 +126,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     const [companyUsers, setCompanyUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR',
-        office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: ''
+        name: '', address: '', phone: '', email: '', office_phone: '', city: ''
     });
 
     useEffect(() => { loadData(); }, [currentUser, isSuperAdmin]);
@@ -188,18 +187,13 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         if (comp) {
             setFormData({
                 ...comp,
-                tax_no: comp.taxNumber,
-                currency_symbol: comp.currency,
                 office_phone: comp.officePhone,
-                private_phone: comp.privatePhone,
-                secondary_address: comp.secondaryAddress,
-                zip_code: comp.zipCode,
                 is_active: comp.isActive
             });
         } else {
             setFormData({
-                name: '', address: '', phone: '', email: '', tax_no: '', currency_symbol: 'PKR',
-                office_phone: '', private_phone: '', secondary_address: '', city: '', state: '', zip_code: '', country: 'Pakistan', website: '', is_active: true
+                name: '', address: '', phone: '', email: '',
+                office_phone: '', city: '', is_active: true
             });
         }
         setShowModal(true);
@@ -322,13 +316,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
                                             Core Information
                                         </h4>
-                                        <FormInput label="Full Legal Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormInput label="Base Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} placeholder="PKR" />
-                                            <FormInput label="Tax/NTN No" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
-                                        </div>
-                                        <FormInput label="Official Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
-                                        <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} placeholder="https://www.company.com" icon={Building2} />
+                                        <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
+                                        <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
                                     </div>
                                     <div className="space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -336,10 +325,9 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             Communications
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormInput label="Support Helpline" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Support No" icon={Phone} />
+                                            <FormInput label="Mmbile Phone" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Mobile No" icon={Phone} />
                                             <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline" icon={Phone} />
                                         </div>
-                                        <FormInput label="Private Number" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} placeholder="Confidential No" icon={Phone} />
                                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200 mt-4">
                                             <input type="checkbox" checked={formData.is_active === true || formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                                             <div>
@@ -351,17 +339,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                     <div className="col-span-full space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                             <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                                            Headquarters Address (Proper)
+                                            Address Details
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormTextarea label="Primary Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
-                                            <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} placeholder="Apartment, Studio, Floor..." />
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City" />
-                                            <FormInput label="State/Province" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} placeholder="State" />
-                                            <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} placeholder="Postal" />
-                                            <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} placeholder="Pakistan" />
+                                            <FormTextarea label="Physical Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
+                                            <FormInput label="City" required value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City Name" icon={MapPin} />
                                         </div>
                                     </div>
                                 </div>
@@ -395,21 +377,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                                     <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Office Line</span>
                                                     <p className="text-slate-700 font-bold">{selectedCompany.officePhone || '—'}</p>
                                                 </div>
-                                                <div>
-                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Website URL</span>
-                                                    <p className="text-blue-600 font-bold truncate">{selectedCompany.website || '—'}</p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">Private Line</span>
-                                                    <p className="text-slate-700 font-bold">{selectedCompany.privatePhone || '—'}</p>
-                                                </div>
                                                 <div className="col-span-2">
                                                     <span className="text-slate-400 font-bold uppercase tracking-widest block mb-1">HQ Address</span>
                                                     <p className="text-slate-700 font-bold leading-relaxed">
                                                         {selectedCompany.address}<br />
-                                                        {selectedCompany.secondaryAddress && <>{selectedCompany.secondaryAddress}<br /></>}
-                                                        {selectedCompany.city}, {selectedCompany.state} {selectedCompany.zipCode}<br />
-                                                        {selectedCompany.country}
+                                                        {selectedCompany.city}
                                                     </p>
                                                 </div>
                                             </div>
@@ -474,26 +446,16 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                     <div className="flex-1 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput label="Organization Identity" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} icon={Building2} />
-                            <FormInput label="Tax Certificate (NTN)" value={formData.tax_no} onChange={v => setFormData({ ...formData, tax_no: v })} icon={Shield} />
-                            <FormInput label="Accounting Currency" value={formData.currency_symbol} onChange={v => setFormData({ ...formData, currency_symbol: v })} />
-                            <FormInput label="Primary Communication Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} icon={Building2} />
-                            <FormInput label="Company Website" value={formData.website} onChange={v => setFormData({ ...formData, website: v })} icon={Building2} />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <FormInput label="Support No" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} icon={Phone} />
-                            <FormInput label="Office No" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} icon={Phone} />
-                            <FormInput label="Private No" value={formData.private_phone} onChange={v => setFormData({ ...formData, private_phone: v })} icon={Phone} />
+                            <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} icon={Building2} />
+                            <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} icon={Mail} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormTextarea label="Office Address" value={formData.address} onChange={v => setFormData({ ...formData, address: v })} />
-                            <FormTextarea label="Secondary Address" value={formData.secondary_address} onChange={v => setFormData({ ...formData, secondary_address: v })} />
+                            <FormInput label="Mobile Phone" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} icon={Phone} />
+                            <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} icon={Phone} />
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            <FormInput label="City" value={formData.city} onChange={v => setFormData({ ...formData, city: v })} />
-                            <FormInput label="State" value={formData.state} onChange={v => setFormData({ ...formData, state: v })} />
-                            <FormInput label="Zip Code" value={formData.zip_code} onChange={v => setFormData({ ...formData, zip_code: v })} />
-                            <FormInput label="Country" value={formData.country} onChange={v => setFormData({ ...formData, country: v })} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormTextarea label="Physical Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} />
+                            <FormInput label="City" required value={formData.city} onChange={v => setFormData({ ...formData, city: v })} icon={MapPin} />
                         </div>
                     </div>
                 </div>
@@ -698,18 +660,18 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                             <FormInput label="System Username" required value={formData.username} onChange={v => setFormData({ ...formData, username: v })} placeholder="j_doe" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="relative">
-                                <FormInput
-                                    label={formData.id ? "Security Key (Optional Reset)" : "Initial Access Key"}
-                                    type={showPassword ? 'text' : 'password'}
-                                    required={!formData.id}
-                                    value={formData.password}
-                                    onChange={v => setFormData({ ...formData, password: v })}
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-8.5 text-slate-400 hover:text-blue-600 transition-colors">
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
-                            </div>
+                            <FormInput
+                                label={formData.id ? "Security Key (Optional Reset)" : "Initial Access Key"}
+                                type={showPassword ? 'text' : 'password'}
+                                required={!formData.id}
+                                value={formData.password}
+                                onChange={v => setFormData({ ...formData, password: v })}
+                                suffix={
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 hover:text-blue-600 transition-colors">
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                }
+                            />
                             <FormSelect label="Assigned Privileges" required value={formData.role} onChange={v => setFormData({ ...formData, role: v })} options={roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map(r => ({ value: r.name.toLowerCase().replace(' ', '_'), label: r.name }))} icon={Shield} />
                         </div>
                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200">
@@ -1192,19 +1154,24 @@ const EmptyState = ({ message, icon: Icon = Info }) => (
     </div>
 );
 
-const FormInput = ({ label, type = 'text', value, onChange, required, placeholder, icon: Icon }) => (
+const FormInput = ({ label, type = 'text', value, onChange, required, placeholder, icon: Icon, suffix }) => (
     <div className="space-y-1.5 text-left">
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label} {required && '*'}</label>
         <div className="relative">
-            {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />}
+            {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold" size={16} />}
             <input
                 type={type}
                 required={required}
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800`}
             />
+            {suffix && (
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                    {suffix}
+                </div>
+            )}
         </div>
     </div>
 );

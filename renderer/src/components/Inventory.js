@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Package, Grid, BarChart2, AlertTriangle, Printer,
     Plus, Search, Edit, Trash2, Image, X,
-    Check, TrendingUp, FolderKanban
+    Check, TrendingUp, FolderKanban, Clock
 } from 'lucide-react';
 import Products from './Products';
 
@@ -116,17 +116,17 @@ const StockTracking = ({ currentUser }) => {
     const stats = {
         total: products.length,
         inStock: products.filter(p => p.stockQty > (p.alertQty || 5)).length,
-        lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
-        alerts: products.filter(p => p.stockQty <= (p.alertQty || 5)).length // "Alerts" as critical stock (Low + Out)
+        alerts: products.filter(p => p.stockQty <= (p.alertQty || 5)).length,
+        expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length
     };
 
     const getFilteredProducts = () => {
         switch (filterType) {
             case 'in_stock': return products.filter(p => p.stockQty > (p.alertQty || 5));
-            case 'low_stock': return products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5));
             case 'out_of_stock': return products.filter(p => p.stockQty <= 0);
             case 'alerts': return products.filter(p => p.stockQty <= (p.alertQty || 5));
+            case 'expired': return products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date());
             default: return products;
         }
     };
@@ -152,13 +152,13 @@ const StockTracking = ({ currentUser }) => {
                     isActive={filterType === 'in_stock'}
                     onClick={() => setFilterType('in_stock')}
                 />
-                <StatCard
-                    title="Low Stock"
-                    value={stats.lowStock}
-                    icon={TrendingUp}
-                    color="orange"
-                    isActive={filterType === 'low_stock'}
-                    onClick={() => setFilterType('low_stock')}
+                 <StatCard
+                    title="Restock Alerts"
+                    value={stats.alerts}
+                    icon={AlertTriangle}
+                    color="red"
+                    isActive={filterType === 'alerts'}
+                    onClick={() => setFilterType('alerts')}
                 />
                 <StatCard
                     title="Empty Stock"
@@ -168,13 +168,14 @@ const StockTracking = ({ currentUser }) => {
                     isActive={filterType === 'out_of_stock'}
                     onClick={() => setFilterType('out_of_stock')}
                 />
+               
                 <StatCard
-                    title="Restock Alerts"
-                    value={stats.alerts}
-                    icon={AlertTriangle}
-                    color="red"
-                    isActive={filterType === 'alerts'}
-                    onClick={() => setFilterType('alerts')}
+                    title="Expired Items"
+                    value={stats.expired}
+                    icon={Clock}
+                    color="orange"
+                    isActive={filterType === 'expired'}
+                    onClick={() => setFilterType('expired')}
                 />
             </div>
 

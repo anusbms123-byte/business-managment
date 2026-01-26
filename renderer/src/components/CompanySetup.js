@@ -24,13 +24,7 @@ const CompanySetup = () => {
         companyPhone: '',
         companyAddress: '',
         officePhone: '',
-        privatePhone: '',
-        website: '',
-        secondaryAddress: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: 'Pakistan'
+        city: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -104,7 +98,7 @@ const CompanySetup = () => {
                                 disabled={loading}
                             />
 
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <FormInput
                                     label="Email"
                                     name="companyEmail"
@@ -128,75 +122,34 @@ const CompanySetup = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-5">
-                                <FormInput
-                                    label="Office Number"
-                                    name="officePhone"
-                                    value={formData.officePhone}
-                                    onChange={handleChange}
-                                    icon={Phone}
-                                    placeholder="Landline"
-                                    disabled={loading}
-                                />
-                                <FormInput
-                                    label="Private Number"
-                                    name="privatePhone"
-                                    value={formData.privatePhone}
-                                    onChange={handleChange}
-                                    icon={Phone}
-                                    placeholder="Private Line"
-                                    disabled={loading}
-                                />
-                            </div>
-
                             <FormInput
-                                label="Company Website"
-                                name="website"
-                                value={formData.website}
+                                label="Office Number"
+                                name="officePhone"
+                                value={formData.officePhone}
                                 onChange={handleChange}
-                                icon={Building2}
-                                placeholder="https://www.company.com"
+                                icon={Phone}
+                                placeholder="Landline"
                                 disabled={loading}
                             />
 
                             <div className="space-y-4">
                                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <MapPin size={14} />
-                                    Detailed Location
+                                    Location Details
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Address</label>
-                                        <textarea
-                                            name="companyAddress"
-                                            rows={2}
-                                            value={formData.companyAddress}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
-                                            placeholder="Street, Area..."
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Secondary Address</label>
-                                        <textarea
-                                            name="secondaryAddress"
-                                            rows={2}
-                                            value={formData.secondaryAddress}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
-                                            placeholder="Floor, Suite..."
-                                        />
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Physical Address</label>
+                                    <textarea
+                                        name="companyAddress"
+                                        rows={3}
+                                        value={formData.companyAddress}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
+                                        placeholder="Street, Area, Building..."
+                                        required
+                                    />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormInput label="City" name="city" value={formData.city} onChange={handleChange} icon={MapPin} placeholder="City" />
-                                    <FormInput label="State" name="state" value={formData.state} onChange={handleChange} icon={MapPin} placeholder="State" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormInput label="Zip Code" name="zipCode" value={formData.zipCode} onChange={handleChange} icon={MapPin} placeholder="Postal" />
-                                    <FormInput label="Country" name="country" value={formData.country} onChange={handleChange} icon={MapPin} placeholder="Pakistan" />
-                                </div>
+                                <FormInput label="City" name="city" value={formData.city} onChange={handleChange} icon={MapPin} placeholder="City name" required />
                             </div>
 
 

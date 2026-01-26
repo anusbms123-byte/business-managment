@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     Plus, Search, MoreHorizontal, X, ShoppingCart,
     Trash2, DollarSign, TrendingUp, Calendar,
@@ -48,10 +48,28 @@ const Sales = ({ currentUser }) => {
     const [qty, setQty] = useState(1);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [discount, setDiscount] = useState(0);
+    const [discountType, setDiscountType] = useState('FLAT'); // 'FLAT' or 'PERCENT'
+    const [tax, setTax] = useState(0);
+    const [taxType, setTaxType] = useState('PERCENT'); // 'FLAT' or 'PERCENT'
     const [shippingCost, setShippingCost] = useState(0);
     const [amountPaid, setAmountPaid] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [notes, setNotes] = useState('');
+
+    // Refs for keyboard navigation
+    const customerRef = useRef(null);
+    const productRef = useRef(null);
+    const qtyRef = useRef(null);
+    const addBtnRef = useRef(null);
+
+    // Auto-focus customer field when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            setTimeout(() => {
+                customerRef.current?.focus();
+            }, 100);
+        }
+    }, [isModalOpen]);
 
     useEffect(() => { fetchData(); }, [currentUser]);
 
@@ -121,6 +139,21 @@ const Sales = ({ currentUser }) => {
         }
         setQty(1);
         setSelectedProduct('');
+
+        // After adding, focus back to product search for next item
+        setTimeout(() => {
+            productRef.current?.focus();
+        }, 50);
+    };
+
+    const handleKeyDown = (e, nextRef) => {
+        if (e.key === 'Enter') {
+            // For selects, we allow the default browser behavior (closing the list)
+            // but jump focus after a tiny delay to satisfy the "1 enter" rule.
+            setTimeout(() => {
+                nextRef.current?.focus();
+            }, 50);
+        }
     };
 
     const removeFromCart = (productId) => {
@@ -128,10 +161,13 @@ const Sales = ({ currentUser }) => {
     };
 
     const subTotal = cart.reduce((sum, item) => sum + item.total, 0);
-    const tax = 0; // Can be expanded later
-    const grandTotal = subTotal + parseFloat(shippingCost || 0) - parseFloat(discount || 0);
-    const changeAmount = Math.max(0, parseFloat(amountPaid || 0) - grandTotal);
-    const paymentStatus = parseFloat(amountPaid || 0) >= grandTotal ? 'PAID' : (parseFloat(amountPaid || 0) > 0 ? 'PARTIAL' : 'DUE');
+
+    const discountValue = discountType === 'PERCENT' ? (subTotal * (Number(discount) || 0)) / 100 : (Number(discount) || 0);
+    const taxValue = taxType === 'PERCENT' ? (subTotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
+
+    const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue;
+    const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
+    const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
 
     const handleSaveSale = async () => {
         if (cart.length === 0) return alert("Please add items to cart!");
@@ -144,8 +180,8 @@ const Sales = ({ currentUser }) => {
                 userId: currentUser.id,
                 invoiceNo: `INV-${Date.now().toString().slice(-6)}`,
                 subTotal,
-                discount: parseFloat(discount),
-                tax: 0,
+                discount: discountValue,
+                tax: taxValue,
                 grandTotal,
                 shippingCost: parseFloat(shippingCost),
                 amountPaid: parseFloat(amountPaid),
@@ -160,6 +196,9 @@ const Sales = ({ currentUser }) => {
                 setIsModalOpen(false);
                 setCart([]);
                 setDiscount(0);
+                setDiscountType('FLAT');
+                setTax(0);
+                setTaxType('PERCENT');
                 setShippingCost(0);
                 setAmountPaid(0);
                 setPaymentMethod('CASH');
@@ -183,13 +222,7 @@ const Sales = ({ currentUser }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Top Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard title="Today's Income" value={`PKR ${stats.todayRevenue.toLocaleString()}`} icon={DollarSign} color="orange" />
-                <StatCard title="Sales Today" value={stats.todayCount} icon={ShoppingCart} color="emerald" />
-                <StatCard title="Total Income" value={`PKR ${stats.totalRevenue.toLocaleString()}`} icon={TrendingUp} color="blue" />
-                <StatCard title="Average Sale" value={`PKR ${stats.avgTicket.toLocaleString()}`} icon={Calendar} color="purple" />
-            </div>
+
 
             {/* Sales Table Section */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -289,8 +322,8 @@ const Sales = ({ currentUser }) => {
 
             {/* Professional POS Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[2px] animate-in fade-in duration-300">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
                         {/* Header */}
                         <div className="px-8 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                             <div className="flex items-center gap-4">
@@ -310,15 +343,39 @@ const Sales = ({ currentUser }) => {
                         <div className="flex-1 flex overflow-hidden">
                             {/* Left: Product Selection */}
                             <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-hide border-r border-slate-100">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Customer</label>
+                                        <div className="relative">
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <select
+                                                ref={customerRef}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
+                                                value={selectedCustomer}
+                                                onChange={(e) => setSelectedCustomer(e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, productRef)}
+                                                onFocus={(e) => {
+                                                    try { e.target.showPicker(); } catch (err) { }
+                                                }}
+                                            >
+                                                <option value="">Walk-in Customer</option>
+                                                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Search Product</label>
                                         <div className="relative">
                                             <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <select
+                                                ref={productRef}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
                                                 value={selectedProduct}
                                                 onChange={(e) => setSelectedProduct(e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(e, qtyRef)}
+                                                onFocus={(e) => {
+                                                    try { e.target.showPicker(); } catch (err) { }
+                                                }}
                                             >
                                                 <option value="">Choose item...</option>
                                                 {products.map(p => (
@@ -329,26 +386,32 @@ const Sales = ({ currentUser }) => {
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Quantity</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
-                                                value={qty}
-                                                onChange={(e) => setQty(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="flex items-end">
-                                            <button
-                                                onClick={addToCart}
-                                                disabled={saving}
-                                                className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm disabled:opacity-50"
-                                            >
-                                                ADD TO CART
-                                            </button>
-                                        </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qty</label>
+                                        <input
+                                            ref={qtyRef}
+                                            type="number"
+                                            min="1"
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
+                                            value={qty}
+                                            onChange={(e) => setQty(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addBtnRef.current?.focus();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <button
+                                            ref={addBtnRef}
+                                            onClick={addToCart}
+                                            disabled={saving}
+                                            className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm disabled:opacity-50"
+                                        >
+                                            ADD TO CART
+                                        </button>
                                     </div>
                                 </div>
 
@@ -403,21 +466,6 @@ const Sales = ({ currentUser }) => {
                             {/* Right: Summary & Checkout */}
                             <div className="w-[360px] p-6 flex flex-col space-y-6 bg-slate-50 border-l border-slate-200">
                                 <div className="space-y-4">
-                                    <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-                                        <div className="flex items-center gap-2 mb-1 px-0.5">
-                                            <User size={14} className="text-blue-500" />
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Details</span>
-                                        </div>
-                                        <select
-                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-500 transition-all outline-none font-bold text-xs appearance-none"
-                                            value={selectedCustomer}
-                                            onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        >
-                                            <option value="">Walk-in Customer</option>
-                                            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                    </div>
-
                                     <div className="space-y-3 px-1">
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Subtotal</span>
@@ -435,14 +483,45 @@ const Sales = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                                            <span>Tax</span>
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none"
+                                                    value={taxType}
+                                                    onChange={(e) => setTaxType(e.target.value)}
+                                                >
+                                                    <option value="FLAT">Amt</option>
+                                                    <option value="PERCENT">%</option>
+                                                </select>
+                                                <div className="relative w-24 text-right">
+                                                    <input
+                                                        type="number"
+                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-800 focus:border-blue-500 outline-none transition-all text-sm"
+                                                        value={tax}
+                                                        onChange={(e) => setTax(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Discount</span>
-                                            <div className="relative w-24 text-right">
-                                                <input
-                                                    type="number"
-                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-blue-600 focus:border-blue-500 outline-none transition-all text-sm"
-                                                    value={discount}
-                                                    onChange={(e) => setDiscount(e.target.value)}
-                                                />
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-blue-600"
+                                                    value={discountType}
+                                                    onChange={(e) => setDiscountType(e.target.value)}
+                                                >
+                                                    <option value="FLAT">Amt</option>
+                                                    <option value="PERCENT">%</option>
+                                                </select>
+                                                <div className="relative w-24 text-right">
+                                                    <input
+                                                        type="number"
+                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-blue-600 focus:border-blue-500 outline-none transition-all text-sm"
+                                                        value={discount}
+                                                        onChange={(e) => setDiscount(e.target.value)}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="h-px bg-slate-200 my-4"></div>

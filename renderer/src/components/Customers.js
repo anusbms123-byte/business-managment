@@ -34,14 +34,14 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     );
 };
 
-const Modal = ({ title, children, onClose, size = 'md' }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-        <div className={`bg-white rounded-xl shadow-xl w-full ${size === 'lg' ? 'max-w-4xl' : 'max-w-xl'} overflow-hidden border border-slate-200`}>
+const Modal = ({ title, children, onClose }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <h3 className="text-lg font-bold text-slate-800">{title}</h3>
                 <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
             </div>
-            <div className="p-6 max-h-[85vh] overflow-y-auto">{children}</div>
+            <div className="p-6 flex-1 overflow-y-auto">{children}</div>
         </div>
     </div>
 );
@@ -176,13 +176,7 @@ const Customers = ({ currentUser }) => {
                 )}
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Clients" value={customers.length} icon={Users} color="orange" />
-                <StatCard title="Pending From Clients" value={`PKR ${totalBalance.toLocaleString()}`} icon={DollarSign} color="emerald" />
-                <StatCard title="Current Credit" value={`PKR ${(totalBalance * 0.8).toLocaleString()}`} icon={CreditCard} color="blue" />
-                <StatCard title="Recent Signups" value="12" icon={TrendingUp} color="purple" />
-            </div>
+
 
             {/* Main Content Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

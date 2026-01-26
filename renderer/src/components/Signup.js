@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { User, Lock, Mail, ArrowRight, LayoutDashboard, Eye, EyeOff } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Signup = () => {
@@ -12,6 +12,8 @@ const Signup = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -122,24 +124,30 @@ const Signup = () => {
                             <FormInput
                                 label="Password"
                                 name="password"
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 value={formData.password}
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Create a password"
                                 disabled={loading}
                                 required
+                                showToggle
+                                isVisible={showPassword}
+                                onToggle={() => setShowPassword(!showPassword)}
                             />
                             <FormInput
                                 label="Confirm Password"
                                 name="confirmPassword"
-                                type="password"
+                                type={showConfirmPassword ? 'text' : 'password'}
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Repeat password"
                                 disabled={loading}
                                 required
+                                showToggle
+                                isVisible={showConfirmPassword}
+                                onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
                             />
 
                             <button
@@ -169,15 +177,25 @@ const Signup = () => {
     );
 };
 
-const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
-    <div className="space-y-1.5">
+const FormInput = ({ label, icon: Icon, disabled, showToggle, isVisible, onToggle, ...props }) => (
+    <div className="space-y-1.5 text-left">
         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
         <div className="relative group">
-            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />}
             <input
                 {...props}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300"
+                disabled={disabled}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} ${showToggle ? 'pr-12' : 'pr-4'} py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300`}
             />
+            {showToggle && (
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                    {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+            )}
         </div>
     </div>
 );
