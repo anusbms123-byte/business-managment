@@ -53,6 +53,7 @@ const Purchase = ({ currentUser }) => {
     const [paymentStatus, setPaymentStatus] = useState('RECEIVED');
     const [dueDate, setDueDate] = useState('');
     const [notes, setNotes] = useState('');
+    const [previousBalance, setPreviousBalance] = useState(0);
 
     useEffect(() => {
         loadData();
@@ -109,7 +110,8 @@ const Purchase = ({ currentUser }) => {
 
     const calculateSubtotal = () => cart.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
     const subtotal = calculateSubtotal();
-    const grandTotal = subtotal + parseFloat(shippingCost || 0);
+    const currentBillTotal = subtotal + parseFloat(shippingCost || 0);
+    const grandTotal = currentBillTotal + parseFloat(previousBalance || 0);
     const balanceDue = grandTotal - parseFloat(paidAmount || 0);
 
     const handleSave = async (e) => {
@@ -123,7 +125,7 @@ const Purchase = ({ currentUser }) => {
                 companyId: currentUser?.company_id,
                 vendorId,
                 invoiceNo,
-                totalAmount: grandTotal,
+                totalAmount: currentBillTotal, // Send only current bill to backend (increment logic)
                 paidAmount: parseFloat(paidAmount) || 0,
                 shippingCost: parseFloat(shippingCost) || 0,
                 paymentMethod,
@@ -372,7 +374,12 @@ const Purchase = ({ currentUser }) => {
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supplier</label>
                                         <select
                                             value={vendorId}
-                                            onChange={(e) => setVendorId(e.target.value)}
+                                            onChange={(e) => {
+                                                const vid = e.target.value;
+                                                setVendorId(vid);
+                                                const ven = vendors.find(v => v.id === vid);
+                                                setPreviousBalance(ven?.balance || 0);
+                                            }}
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:border-blue-500 transition-all outline-none text-xs appearance-none"
                                         >
                                             <option value="">Choose Supplier...</option>
@@ -461,6 +468,10 @@ const Purchase = ({ currentUser }) => {
                                         <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tight">
                                             <span>Subtotal</span>
                                             <span>PKR {subtotal.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                            <span>Previous Balance</span>
+                                            <span className="text-rose-500">PKR {parseFloat(previousBalance || 0).toLocaleString()}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tight">
                                             <span>Shipping</span>

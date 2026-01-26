@@ -166,6 +166,34 @@ const Suppliers = ({ currentUser }) => {
                 )}
             </div>
 
+            {/* Stat Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Payables"
+                    value={`PKR ${totalPayable.toLocaleString()}`}
+                    icon={DollarSign}
+                    color="red"
+                />
+                <StatCard
+                    title="Active Suppliers"
+                    value={suppliers.length}
+                    icon={Truck}
+                    color="blue"
+                />
+                <StatCard
+                    title="City Coverage"
+                    value={[...new Set(suppliers.map(s => s.city).filter(Boolean))].length}
+                    icon={MapPin}
+                    color="emerald"
+                />
+                <StatCard
+                    title="Avg. Debt"
+                    value={`PKR ${suppliers.length ? Math.round(totalPayable / suppliers.length).toLocaleString() : 0}`}
+                    icon={TrendingDown}
+                    color="gray"
+                />
+            </div>
+
 
 
             {/* Main Content Card */}
