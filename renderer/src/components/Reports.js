@@ -132,7 +132,6 @@ const Reports = ({ currentUser }) => {
                         {canView('reports') && (
                             <button
                                 onClick={handleCompileReport}
-                                disabled={loading}
                                 className="w-full px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
                             >
                                 {loading ? 'Compiling...' : 'Compile Report'}

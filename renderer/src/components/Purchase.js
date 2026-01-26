@@ -314,7 +314,6 @@ const Purchase = ({ currentUser }) => {
                                         <button
                                             key={product.id}
                                             onClick={() => addToCart(product)}
-                                            disabled={saving}
                                             className="p-4 bg-white border border-slate-100 rounded-xl hover:border-blue-500 hover:shadow-md transition-all group text-left relative overflow-hidden active:scale-95 disabled:opacity-50"
                                         >
                                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -436,7 +435,6 @@ const Purchase = ({ currentUser }) => {
                                                 type="number"
                                                 value={shippingCost}
                                                 onChange={(e) => setShippingCost(e.target.value)}
-                                                disabled={saving}
                                                 className="w-20 px-2 py-0.5 bg-slate-50 rounded text-right font-bold text-slate-800 outline-none border border-slate-100 disabled:opacity-50"
                                             />
                                         </div>
@@ -491,7 +489,6 @@ const Purchase = ({ currentUser }) => {
                                     {canCreate('purchase') && (
                                         <button
                                             onClick={handleSave}
-                                            disabled={saving}
                                             className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg shadow-md shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
                                         >
                                             {saving ? 'Processing...' : 'Complete Procurement'}

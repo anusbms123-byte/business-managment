@@ -55,6 +55,7 @@ const Sales = ({ currentUser }) => {
     const [amountPaid, setAmountPaid] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [notes, setNotes] = useState('');
+    const [previousBalance, setPreviousBalance] = useState(0);
 
     // Refs for keyboard navigation
     const customerRef = useRef(null);
@@ -165,12 +166,21 @@ const Sales = ({ currentUser }) => {
     const discountValue = discountType === 'PERCENT' ? (subTotal * (Number(discount) || 0)) / 100 : (Number(discount) || 0);
     const taxValue = taxType === 'PERCENT' ? (subTotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
 
-    const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue;
+    const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue + (Number(previousBalance) || 0);
+    const netBalance = grandTotal - (Number(amountPaid) || 0);
     const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
     const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
 
     const handleSaveSale = async () => {
         if (cart.length === 0) return alert("Please add items to cart!");
+
+        // Credit Limit Check
+        const cust = customers.find(c => c.id === selectedCustomer);
+        if (cust && cust.creditLimit > 0 && netBalance > cust.creditLimit) {
+            const proceed = window.confirm(`Credit Limit Exceeded! \nLimit: PKR ${cust.creditLimit.toLocaleString()} \nNew Balance: PKR ${netBalance.toLocaleString()} \nDo you still want to proceed?`);
+            if (!proceed) return;
+        }
+
         setSaving(true);
 
         try {
@@ -182,7 +192,7 @@ const Sales = ({ currentUser }) => {
                 subTotal,
                 discount: discountValue,
                 tax: taxValue,
-                grandTotal,
+                grandTotal: grandTotal - (Number(previousBalance) || 0), // Base sale amount
                 shippingCost: parseFloat(shippingCost),
                 amountPaid: parseFloat(amountPaid),
                 paymentMethod,
@@ -193,6 +203,12 @@ const Sales = ({ currentUser }) => {
 
             const result = await window.electronAPI.addSale(saleData);
             if (result.success) {
+                // Update local customers state for dynamic feel
+                const updatedCustomers = customers.map(c =>
+                    c.id === selectedCustomer ? { ...c, balance: netBalance } : c
+                );
+                setCustomers(updatedCustomers);
+
                 setIsModalOpen(false);
                 setCart([]);
                 setDiscount(0);
@@ -352,7 +368,12 @@ const Sales = ({ currentUser }) => {
                                                 ref={customerRef}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
                                                 value={selectedCustomer}
-                                                onChange={(e) => setSelectedCustomer(e.target.value)}
+                                                onChange={(e) => {
+                                                    const cid = e.target.value;
+                                                    setSelectedCustomer(cid);
+                                                    const cust = customers.find(c => c.id === cid);
+                                                    setPreviousBalance(cust?.balance || 0);
+                                                }}
                                                 onKeyDown={(e) => handleKeyDown(e, productRef)}
                                                 onFocus={(e) => {
                                                     try { e.target.showPicker(); } catch (err) { }
@@ -407,7 +428,6 @@ const Sales = ({ currentUser }) => {
                                         <button
                                             ref={addBtnRef}
                                             onClick={addToCart}
-                                            disabled={saving}
                                             className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm disabled:opacity-50"
                                         >
                                             ADD TO CART
@@ -524,6 +544,17 @@ const Sales = ({ currentUser }) => {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                                            <span>Prev. Balance</span>
+                                            <div className="relative w-24 text-right">
+                                                <input
+                                                    type="number"
+                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-rose-500 focus:border-blue-500 outline-none transition-all text-sm"
+                                                    value={previousBalance}
+                                                    onChange={(e) => setPreviousBalance(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="h-px bg-slate-200 my-4"></div>
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
@@ -562,6 +593,10 @@ const Sales = ({ currentUser }) => {
                                                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change</label>
                                                     <span className="text-xs font-bold text-blue-600">PKR {changeAmount.toLocaleString()}</span>
                                                 </div>
+                                                <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Balance</label>
+                                                    <span className={`text-xs font-bold ${netBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>PKR {netBalance.toLocaleString()}</span>
+                                                </div>
                                             </div>
 
                                             <div className="space-y-1.5">
@@ -580,7 +615,7 @@ const Sales = ({ currentUser }) => {
                                 <div className="mt-auto space-y-3">
                                     <button
                                         onClick={handleSaveSale}
-                                        disabled={cart.length === 0 || saving}
+                                        disabled={cart.length === 0}
                                         className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                     >
                                         {saving ? (

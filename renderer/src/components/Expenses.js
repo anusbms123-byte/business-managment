@@ -286,7 +286,6 @@ const Expenses = ({ currentUser }) => {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={saving}
                                         className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
                                     >
                                         {saving ? 'Saving...' : formData.id ? 'Update Expense' : 'Save Expense'}

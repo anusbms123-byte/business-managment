@@ -203,7 +203,6 @@ const Customers = ({ currentUser }) => {
                         <thead>
                             <tr className="bg-slate-50/80">
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Type / CNIC</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Contact Info</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Location</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">Balance</th>
@@ -451,7 +450,6 @@ const Customers = ({ currentUser }) => {
                             </button>
                             <button
                                 type="submit"
-                                disabled={saving}
                                 className="px-5 py-2 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm shadow-blue-200"
                             >
                                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}

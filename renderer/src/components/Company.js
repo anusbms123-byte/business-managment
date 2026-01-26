@@ -462,7 +462,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                 <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                     {canEdit('settings') && (
-                        <Button type="submit" disabled={saving}>
+                        <Button type="submit">
                             {saving ? 'Synchronizing...' : 'Update Corporate Profile'}
                         </Button>
                     )}
@@ -1232,7 +1232,7 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
         >
             Discard
         </button>
-        <Button type="submit" disabled={saving} label={label} />
+        <Button type="submit" label={label} />
     </div>
 );
 

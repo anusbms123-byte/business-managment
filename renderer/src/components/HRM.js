@@ -245,7 +245,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 </div>
                                 <div className="flex items-center justify-end gap-3 pt-4">
                                     <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest">Discard</button>
-                                    <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest">{saving ? 'Saving...' : 'Save Employee'}</button>
+                                    <button type="submit" className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest">{saving ? 'Saving...' : 'Save Employee'}</button>
                                 </div>
                             </form>
                         </div>
@@ -405,7 +405,6 @@ const Attendance = ({ employees, currentUser }) => {
             {canEdit('hrm') && (
                 <button
                     onClick={saveAttendance}
-                    disabled={saving || loading}
                     className="flex items-center justify-center px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
                 >
                     {saving ? 'Updating...' : 'Save Attendance Record'}

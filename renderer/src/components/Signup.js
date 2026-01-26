@@ -107,7 +107,6 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={User}
                                 placeholder="Choose a username"
-                                disabled={loading}
                                 required
                             />
                             <FormInput
@@ -118,7 +117,6 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Mail}
                                 placeholder="your@email.com"
-                                disabled={loading}
                                 required
                             />
                             <FormInput
@@ -129,7 +127,6 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Create a password"
-                                disabled={loading}
                                 required
                                 showToggle
                                 isVisible={showPassword}
@@ -143,7 +140,6 @@ const Signup = () => {
                                 onChange={handleChange}
                                 icon={Lock}
                                 placeholder="Repeat password"
-                                disabled={loading}
                                 required
                                 showToggle
                                 isVisible={showConfirmPassword}
@@ -152,7 +148,6 @@ const Signup = () => {
 
                             <button
                                 type="submit"
-                                disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2"
                             >
                                 {loading ? 'Creating Account...' : (

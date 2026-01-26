@@ -95,7 +95,6 @@ const CompanySetup = () => {
                                 icon={Building2}
                                 placeholder="Business Name"
                                 required
-                                disabled={loading}
                             />
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -108,7 +107,6 @@ const CompanySetup = () => {
                                     icon={Mail}
                                     placeholder="contact@company.com"
                                     required
-                                    disabled={loading}
                                 />
                                 <FormInput
                                     label="Phone"
@@ -118,7 +116,6 @@ const CompanySetup = () => {
                                     icon={Phone}
                                     placeholder="+92 300..."
                                     required
-                                    disabled={loading}
                                 />
                             </div>
 
@@ -129,7 +126,6 @@ const CompanySetup = () => {
                                 onChange={handleChange}
                                 icon={Phone}
                                 placeholder="Landline"
-                                disabled={loading}
                             />
 
                             <div className="space-y-4">
@@ -155,7 +151,6 @@ const CompanySetup = () => {
 
                             <button
                                 type="submit"
-                                disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2 mt-4"
                             >
                                 {loading ? 'Submitting Request...' : (

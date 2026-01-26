@@ -317,7 +317,8 @@ const Products = ({ currentUser }) => {
                             <tr>
                                 <th className="px-6 py-4">Product Name</th>
                                 <th className="px-6 py-4">Category / Brand</th>
-                                <th className="px-6 py-4">Unit / Expiry</th>
+                                <th className="px-6 py-4">Attributes</th>
+                                <th className="px-6 py-4">Unit / Weight / Exp</th>
                                 <th className="px-6 py-4">Inventory</th>
                                 <th className="px-6 py-4">Pricing</th>
                                 <th className="px-6 py-4">Status</th>
@@ -346,12 +347,28 @@ const Products = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-slate-700 uppercase">{product.unit || 'pcs'}</span>
+                                            <span className="text-[10px] text-slate-700 font-bold uppercase">
+                                                {[product.color, product.size, product.grade, product.condition].filter(Boolean).join(' • ') || 'N/A'}
+                                            </span>
+                                            {product.description && (
+                                                <span className="text-[9px] text-slate-400 truncate max-w-[150px]" title={product.description}>
+                                                    {product.description}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-slate-700 uppercase">{product.unit || 'pcs'}</span>
+                                                {product.weight && <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-bold">{product.weight}kg</span>}
+                                            </div>
                                             <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : 'No Expiry'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-600">
-                                        {product.stockQty}
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-bold text-slate-600">{product.stockQty}</div>
+                                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Min: {product.alertQty || 5}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-bold text-slate-800">PKR {product.sellPrice?.toLocaleString()}</div>
@@ -548,7 +565,7 @@ const Products = ({ currentUser }) => {
                                     </div>
                                 </div>
 
-                                <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
+                                <button type="submit" className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
                                     {saving ? (
                                         <div className="flex items-center gap-2">
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

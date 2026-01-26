@@ -173,7 +173,6 @@ const Settings = ({ currentUser }) => {
                     {canEdit('settings') && (
                         <button
                             onClick={handleSave}
-                            disabled={saving}
                             className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
                         >
                             {saving ? 'Processing...' : 'Commit Global Changes'}
