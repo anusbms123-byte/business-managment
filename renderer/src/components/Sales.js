@@ -232,7 +232,8 @@ const Sales = ({ currentUser }) => {
     };
 
     const filteredSales = sales.filter(s =>
-        s.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase())
+        s.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.customer?.name || 'Walk-in Customer').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleDeleteSale = async (id) => {

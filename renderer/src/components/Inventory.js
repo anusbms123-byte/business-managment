@@ -152,7 +152,7 @@ const StockTracking = ({ currentUser }) => {
                     isActive={filterType === 'in_stock'}
                     onClick={() => setFilterType('in_stock')}
                 />
-                 <StatCard
+                <StatCard
                     title="Restock Alerts"
                     value={stats.alerts}
                     icon={AlertTriangle}
@@ -168,7 +168,7 @@ const StockTracking = ({ currentUser }) => {
                     isActive={filterType === 'out_of_stock'}
                     onClick={() => setFilterType('out_of_stock')}
                 />
-               
+
                 <StatCard
                     title="Expired Items"
                     value={stats.expired}
@@ -230,44 +230,145 @@ const StockTracking = ({ currentUser }) => {
     );
 };
 
-const BarcodePrinting = () => (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-                <div className="space-y-1.5 text-left">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Product</label>
-                    <div className="relative">
-                        <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <select className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none">
-                            <option>Product A - SKU001</option>
-                            <option>Product B - SKU002</option>
-                            <option>Product C - SKU003</option>
-                        </select>
+const BarcodePrinting = ({ currentUser }) => {
+    const [products, setProducts] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [numLabels, setNumLabels] = useState(1);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            if (currentUser?.company_id) {
+                try {
+                    const data = await window.electronAPI.getProducts(currentUser.company_id);
+                    const list = Array.isArray(data) ? data : [];
+                    setProducts(list);
+                    if (list.length > 0) setSelectedProduct(list[0]);
+                } catch (err) {
+                    console.error("Error fetching products for barcodes:", err);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+        fetchProducts();
+    }, [currentUser]);
+
+    const handlePrint = () => {
+        if (!selectedProduct) return alert("Please select a product");
+        window.print();
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Print Configuration */}
+                <div className="space-y-6 bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Product</label>
+                        <div className="relative">
+                            <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <select
+                                value={selectedProduct?.id || ''}
+                                onChange={(e) => setSelectedProduct(products.find(p => p.id === e.target.value))}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700"
+                            >
+                                {loading ? <option>Loading products...</option> :
+                                    products.length === 0 ? <option>No products found</option> :
+                                        products.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name} {p.sku ? `(${p.sku})` : ''}</option>
+                                        ))
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Number of Labels</label>
+                        <div className="relative">
+                            <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                                type="number"
+                                value={numLabels}
+                                onChange={(e) => setNumLabels(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none text-slate-700"
+                                min="1"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100/50 flex items-start gap-3">
+                        <div className="p-1.5 bg-blue-100 text-blue-600 rounded">
+                            <Printer size={14} />
+                        </div>
+                        <p className="text-[10px] text-blue-800 font-medium leading-relaxed">
+                            A preview of the label is shown on the right. Clicking print will generate {numLabels} labels adjusted for standard barcode printer rolls.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={handlePrint}
+                        disabled={!selectedProduct || products.length === 0}
+                        className="w-full py-3.5 bg-blue-950 text-white font-bold rounded-xl shadow-lg shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                    >
+                        <Printer size={18} />
+                        <span>Print Barcodes</span>
+                    </button>
+                </div>
+
+                {/* Preview Section */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div className="absolute top-4 left-4">
+                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.3em]">Visual Preview</span>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-xl mb-6 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                        <div className="text-[10px] font-bold text-slate-400 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'SKU-NONE'}</div>
+                        <div className="h-14 w-48 bg-gradient-to-r from-slate-900 via-white to-slate-900 bg-[length:4px_100%] rounded-sm"></div>
+                        <div className="text-sm font-bold text-slate-800 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item Name'}</div>
+                        <div className="text-[10px] font-bold text-blue-600 mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 animate-pulse"></div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest italic">Live Content Preview</p>
                     </div>
                 </div>
-                <div className="space-y-1.5 text-left">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Number of Labels</label>
-                    <div className="relative">
-                        <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input type="number" className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" defaultValue="10" />
-                    </div>
-                </div>
-                <button className="w-full py-2.5 bg-blue-950 text-white font-bold rounded-lg shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
-                    <Printer size={18} />
-                    <span>Print Labels</span>
-                </button>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center">
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm mb-4 transform hover:scale-105 transition-transform">
-                    <div className="text-[10px] font-bold text-slate-400 mb-1 tracking-widest uppercase">SKU001</div>
-                    <div className="h-12 w-40 bg-gradient-to-r from-slate-900 via-white to-slate-900 bg-[length:4px_100%] rounded-sm"></div>
-                    <div className="text-xs font-bold text-slate-800 mt-2 uppercase tracking-tight">Product A Name</div>
+            {/* Hidden Print Section - Optimized for Barcode Label printers */}
+            <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-[9999]">
+                <style>{`
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-section, #print-section * { visibility: visible; }
+                        #print-section { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+                        .print-label { 
+                            border: 1px dashed #ccc; 
+                            padding: 10px; 
+                            text-align: center; 
+                            display: flex; 
+                            flex-direction: column; 
+                            items-center; 
+                            justify-content: center;
+                            page-break-inside: avoid;
+                            height: 100px;
+                        }
+                    }
+                `}</style>
+                <div id="print-section">
+                    {Array.from({ length: numLabels }).map((_, i) => (
+                        <div key={i} className="print-label">
+                            <div style={{ fontSize: '8px', fontWeight: 'bold' }}>{selectedProduct?.sku}</div>
+                            <div style={{ height: '30px', width: '100%', background: 'linear-gradient(to right, #000, #fff, #000)', backgroundSize: '2px 100%' }}></div>
+                            <div style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}>{selectedProduct?.name}</div>
+                            <div style={{ fontSize: '9px', fontWeight: 'bold' }}>PKR {selectedProduct?.sellPrice}</div>
+                        </div>
+                    ))}
                 </div>
-                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest italic">Label Preview</p>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default Inventory;

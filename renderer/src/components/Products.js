@@ -37,6 +37,7 @@ const Products = ({ currentUser }) => {
     const [categories, setCategories] = useState([]);
     const [brands, setBrands] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showOptional, setShowOptional] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -293,8 +294,61 @@ const Products = ({ currentUser }) => {
                                 className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold"
                                 placeholder="Search products..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setShowSuggestions(true);
+                                }}
+                                onFocus={() => setShowSuggestions(true)}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             />
+
+                            {/* Autocomplete Dropdown */}
+                            {showSuggestions && searchTerm.length > 0 && (
+                                <div className="absolute z-20 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="max-h-64 overflow-y-auto scrollbar-hide">
+                                        {products
+                                            .filter(p =>
+                                                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+                                            )
+                                            .slice(0, 8)
+                                            .map(product => (
+                                                <div
+                                                    key={product.id}
+                                                    onClick={() => {
+                                                        setSearchTerm(product.name);
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                    className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center justify-between group border-b border-slate-50 last:border-0 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-[10px] group-hover:bg-blue-50 group-hover:text-blue-600 transition-all border border-slate-100">
+                                                            {product.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors uppercase truncate max-w-[150px]">{product.name}</p>
+                                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{product.sku || 'No SKU'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] font-bold text-slate-800">PKR {product.sellPrice?.toLocaleString()}</p>
+                                                        <p className="text-[9px] font-bold text-emerald-600 uppercase mt-0.5">Stock: {product.stockQty}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        }
+                                        {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku?.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                                            <div className="p-8 text-center">
+                                                <Package size={24} className="mx-auto text-slate-200 mb-2" />
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No matching products</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="bg-slate-50 px-4 py-2 border-t border-slate-100">
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">Showing top results</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         {canCreate('inventory') && (
                             <button
@@ -388,7 +442,7 @@ const Products = ({ currentUser }) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                        <div className="flex items-center justify-end gap-1 transition-all">
                                             {canEdit('inventory') && (
                                                 <button onClick={() => openEdit(product)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                                                     <Edit size={16} />
