@@ -454,12 +454,7 @@ app.post('/api/purchases', async (req, res) => {
                     invoiceNo,
                     totalAmount: parseFloat(totalAmount),
                     paidAmount: parseFloat(paidAmount) || 0,
-                    shippingCost: parseFloat(shippingCost) || 0,
-                    paymentMethod,
-                    paymentStatus: paymentStatus || 'RECEIVED',
-                    dueDate: dueDate ? new Date(dueDate) : null,
-                    notes,
-                    status: paymentStatus || 'RECEIVED', // Compatible with schema 'status' mapping if needed
+                    status: paymentStatus || 'RECEIVED',
                     items: {
                         create: items.map(item => ({
                             productId: item.productId,
