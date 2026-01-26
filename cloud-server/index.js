@@ -443,7 +443,7 @@ app.get('/api/purchases', async (req, res) => {
 
 app.post('/api/purchases', async (req, res) => {
     try {
-        const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, status, items } = req.body;
+        const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
 
         const purchase = await prisma.$transaction(async (tx) => {
             // 1. Create Purchase
@@ -454,7 +454,12 @@ app.post('/api/purchases', async (req, res) => {
                     invoiceNo,
                     totalAmount: parseFloat(totalAmount),
                     paidAmount: parseFloat(paidAmount) || 0,
-                    status: status || 'RECEIVED',
+                    shippingCost: parseFloat(shippingCost) || 0,
+                    paymentMethod,
+                    paymentStatus: paymentStatus || 'RECEIVED',
+                    dueDate: dueDate ? new Date(dueDate) : null,
+                    notes,
+                    status: paymentStatus || 'RECEIVED', // Compatible with schema 'status' mapping if needed
                     items: {
                         create: items.map(item => ({
                             productId: item.productId,
@@ -490,6 +495,46 @@ app.post('/api/purchases', async (req, res) => {
         });
 
         res.json({ success: true, id: purchase.id, ...purchase });
+    } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/purchases/:id', async (req, res) => {
+    try {
+        const purchaseId = req.params.id;
+
+        await prisma.$transaction(async (tx) => {
+            const purchase = await tx.purchase.findUnique({
+                where: { id: purchaseId },
+                include: { items: true }
+            });
+
+            if (!purchase) throw new Error("Purchase not found");
+
+            // 1. Reverse Stock
+            for (const item of purchase.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { decrement: item.quantity } }
+                });
+            }
+
+            // 2. Reverse Vendor Balance
+            if (purchase.vendorId) {
+                const balanceChange = purchase.totalAmount - purchase.paidAmount;
+                await tx.vendor.update({
+                    where: { id: purchase.vendorId },
+                    data: { balance: { decrement: balanceChange } }
+                });
+            }
+
+            // 3. Delete Purchase Items
+            await tx.purchaseItem.deleteMany({ where: { purchaseId } });
+
+            // 4. Delete Purchase
+            await tx.purchase.delete({ where: { id: purchaseId } });
+        });
+
+        res.json({ success: true, message: "Purchase deleted and stock/balance reversed" });
     } catch (e) { handleError(res, e); }
 });
 

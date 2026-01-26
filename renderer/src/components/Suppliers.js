@@ -73,7 +73,13 @@ const Suppliers = ({ currentUser }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            const data = { ...formData, companyId: currentUser?.company_id };
+            const data = {
+                ...formData,
+                companyId: currentUser?.company_id,
+                // Ensure backend receives these fields
+                balance: formData.openingBalance,
+                opening_balance: formData.openingBalance
+            };
             let result;
             if (formData.id) {
                 result = await window.electronAPI.updateVendor(data);
@@ -118,7 +124,7 @@ const Suppliers = ({ currentUser }) => {
             address: supplier.address || '',
             city: supplier.city || '',
             gst_no: supplier.gstNo || '',
-            openingBalance: supplier.openingBalance || 0
+            openingBalance: supplier.balance || supplier.openingBalance || 0
         } : {
             id: null,
             name: '',

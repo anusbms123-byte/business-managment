@@ -93,6 +93,7 @@ ipcMain.handle("add-sale", (e, data) => apiCall('post', '/sales', data));
 // Purchases
 ipcMain.handle("get-purchases", (e, companyId) => apiCall('get', '/purchases', null, { companyId }));
 ipcMain.handle("add-purchase", (e, data) => apiCall('post', '/purchases', data));
+ipcMain.handle("delete-purchase", (e, id) => apiCall('delete', `/purchases/${id}`));
 
 // Expenses
 ipcMain.handle("get-expenses", (e, companyId) => apiCall('get', '/expenses', null, { companyId }));

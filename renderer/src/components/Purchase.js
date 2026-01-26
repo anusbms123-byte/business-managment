@@ -39,6 +39,7 @@ const Purchase = ({ currentUser }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [productSearch, setProductSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -89,7 +90,12 @@ const Purchase = ({ currentUser }) => {
         if (existing) {
             setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
         } else {
-            setCart([...cart, { ...product, quantity: 1, unitCost: product.cost_price || 0 }]);
+            // Backend sends costPrice, ensure we use that or fallback
+            setCart([...cart, {
+                ...product,
+                quantity: 1,
+                unitCost: product.costPrice || product.cost_price || 0
+            }]);
         }
     };
 
@@ -146,6 +152,20 @@ const Purchase = ({ currentUser }) => {
         setSaving(false);
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this purchase? This will reverse stock changes and update vendor balance.')) return;
+        try {
+            const result = await window.electronAPI.deletePurchase(id);
+            if (result?.success === false) {
+                window.alert(result.message);
+            } else {
+                loadData();
+            }
+        } catch (err) {
+            window.alert('Error deleting purchase: ' + err.message);
+        }
+    };
+
     const resetForm = () => {
         setVendorId('');
         setInvoiceNo('');
@@ -160,6 +180,11 @@ const Purchase = ({ currentUser }) => {
     const filtered = purchases.filter(p =>
         p.invoiceNo?.toLowerCase().includes(search.toLowerCase()) ||
         p.vendor?.name?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const filteredProducts = products.filter(p =>
+        p.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(productSearch.toLowerCase())
     );
 
     const totalStats = purchases.reduce((acc, p) => {
@@ -272,6 +297,12 @@ const Purchase = ({ currentUser }) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={() => handleDelete(p.id)}
+                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                         <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
                                             <Info size={16} />
                                         </button>
@@ -304,13 +335,15 @@ const Purchase = ({ currentUser }) => {
                                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                     <input
                                         type="text"
+                                        value={productSearch}
+                                        onChange={(e) => setProductSearch(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none"
                                         placeholder="Scan barcode or type product name..."
                                     />
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 gap-3">
-                                    {products.map(product => (
+                                    {filteredProducts.map(product => (
                                         <button
                                             key={product.id}
                                             onClick={() => addToCart(product)}
@@ -324,7 +357,7 @@ const Purchase = ({ currentUser }) => {
                                                 <span className="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
                                                     Stock: {product.stockQty}
                                                 </span>
-                                                <span className="text-xs font-bold text-slate-500">PKR {product.costPrice?.toLocaleString() || '0'}</span>
+                                                <span className="text-xs font-bold text-slate-500">PKR {(product.costPrice || product.cost_price || 0).toLocaleString()}</span>
                                             </div>
                                         </button>
                                     ))}

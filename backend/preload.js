@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Purchase APIs
     getPurchases: (companyId) => ipcRenderer.invoke('get-purchases', companyId),
     addPurchase: (data) => ipcRenderer.invoke('add-purchase', data),
+    deletePurchase: (id) => ipcRenderer.invoke("delete-purchase", id),
     // Expenses
     getExpenses: (companyId) => ipcRenderer.invoke('get-expenses', companyId),
     createExpense: (data) => ipcRenderer.invoke('create-expense', data),
