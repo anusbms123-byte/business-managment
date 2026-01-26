@@ -61,7 +61,7 @@ function App() {
                 <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
                 <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
 
-                {/* Protected Routes */}
+            
                 {user ? (
                     <Route path="/*" element={
                         <Layout user={user} onLogout={handleLogout}>
