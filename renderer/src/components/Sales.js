@@ -192,9 +192,12 @@ const Sales = ({ currentUser }) => {
                 subTotal,
                 discount: discountValue,
                 tax: taxValue,
-                grandTotal: grandTotal - (Number(previousBalance) || 0), // Base sale amount
+                totalAmount: grandTotal - (Number(previousBalance) || 0), // Base sale amount
+                grandTotal: grandTotal - (Number(previousBalance) || 0), // Keep both for safety
                 shippingCost: parseFloat(shippingCost),
-                amountPaid: parseFloat(amountPaid),
+                paidAmount: parseFloat(amountPaid),
+                amountPaid: parseFloat(amountPaid), // Keep both for safety
+                amount_paid: parseFloat(amountPaid), // DB naming
                 paymentMethod,
                 paymentStatus,
                 notes,
@@ -203,13 +206,22 @@ const Sales = ({ currentUser }) => {
 
             const result = await window.electronAPI.addSale(saleData);
             if (result.success) {
-                // EXPLICIT SYNC: Update customer's balance on the server
+                // EXPLICIT SYNC: Update customer's balance on the server with MINIMAL payload
                 const customerToUpdate = customers.find(c => c.id === selectedCustomer);
                 if (customerToUpdate) {
-                    await window.electronAPI.updateCustomer({
-                        ...customerToUpdate,
-                        balance: netBalance
-                    });
+                    try {
+                        await window.electronAPI.updateCustomer({
+                            id: customerToUpdate.id,
+                            companyId: currentUser.company_id,
+                            name: customerToUpdate.name,
+                            phone: customerToUpdate.phone,
+                            balance: netBalance,
+                            currentBalance: netBalance,
+                            current_balance: netBalance
+                        });
+                    } catch (err) {
+                        console.error("Explicit sync failed:", err);
+                    }
                 }
 
                 // Update local customers state for dynamic feel
@@ -306,11 +318,11 @@ const Sales = ({ currentUser }) => {
                                             {sale.items?.length || 0} Items
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-sm text-slate-800">PKR {sale.grandTotal?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 font-bold text-sm text-slate-800">PKR {(sale.totalAmount || sale.grandTotal)?.toLocaleString()}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{sale.paymentMethod || 'CASH'}</span>
-                                            <span className="text-xs font-bold text-slate-800">PKR {sale.amountPaid?.toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-slate-800">PKR {(sale.paidAmount || sale.amountPaid || 0).toLocaleString()}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
