@@ -52,6 +52,7 @@ ipcMain.handle("get-customers", (e, companyId) => apiCall('get', '/customers', n
 ipcMain.handle("create-customer", (e, data) => apiCall('post', '/customers', data));
 ipcMain.handle("update-customer", (e, data) => apiCall('put', `/customers/${data.id}`, data));
 ipcMain.handle("delete-customer", (e, id) => apiCall('delete', `/customers/${id}`));
+ipcMain.handle("delete-sale", (e, id) => apiCall('delete', `/sales/${id}`));
 
 // Vendors (Suppliers)
 ipcMain.handle("get-vendors", (e, companyId) => apiCall('get', '/vendors', null, { companyId }));

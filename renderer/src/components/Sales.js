@@ -206,29 +206,7 @@ const Sales = ({ currentUser }) => {
 
             const result = await window.electronAPI.addSale(saleData);
             if (result.success) {
-                // EXPLICIT SYNC: Update customer's balance on the server with MINIMAL payload
-                const customerToUpdate = customers.find(c => c.id === selectedCustomer);
-                if (customerToUpdate) {
-                    try {
-                        await window.electronAPI.updateCustomer({
-                            id: customerToUpdate.id,
-                            companyId: currentUser.company_id,
-                            name: customerToUpdate.name,
-                            phone: customerToUpdate.phone,
-                            balance: netBalance,
-                            currentBalance: netBalance,
-                            current_balance: netBalance
-                        });
-                    } catch (err) {
-                        console.error("Explicit sync failed:", err);
-                    }
-                }
-
-                // Update local customers state for dynamic feel
-                const updatedCustomers = customers.map(c =>
-                    c.id === selectedCustomer ? { ...c, balance: netBalance } : c
-                );
-                setCustomers(updatedCustomers);
+                // Backend now handles customer balance update automatically in $transaction
 
                 setIsModalOpen(false);
                 setCart([]);
@@ -256,6 +234,21 @@ const Sales = ({ currentUser }) => {
     const filteredSales = sales.filter(s =>
         s.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleDeleteSale = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this sale? This will restore stock and reverse any customer balance changes.")) return;
+        try {
+            const result = await window.electronAPI.deleteSale(id);
+            if (result.success) {
+                fetchData();
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (error) {
+            console.error("Delete Error:", error);
+            alert("An unexpected error occurred.");
+        }
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -338,9 +331,16 @@ const Sales = ({ currentUser }) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                            <MoreHorizontal size={16} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {canDelete('sales') && (
+                                                <button
+                                                    onClick={() => handleDeleteSale(sale.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

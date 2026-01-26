@@ -93,7 +93,9 @@ const Customers = ({ currentUser }) => {
                 // CRITICAL: Send snake_case fields for cloud compatibility
                 opening_balance: formData.openingBalance,
                 balance: formData.openingBalance,
+                currentBalance: formData.openingBalance,
                 current_balance: formData.openingBalance,
+                creditLimit: formData.creditLimit,
                 credit_limit: formData.creditLimit // Ensure limit is also snake_case
             };
             let result;

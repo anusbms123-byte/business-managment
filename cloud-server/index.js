@@ -314,7 +314,7 @@ app.post('/api/customers', async (req, res) => {
                 gstNo: gst_no,
                 creditLimit: parseFloat(creditLimit) || 0,
                 openingBalance: parseFloat(openingBalance) || 0,
-                balance: parseFloat(openingBalance) || 0
+                balance: parseFloat(openingBalance) || 0 // Initial balance is opening balance
             }
         });
         res.json({ success: true, id: customer.id, ...customer });
@@ -323,7 +323,11 @@ app.post('/api/customers', async (req, res) => {
 
 app.put('/api/customers/:id', async (req, res) => {
     try {
-        const { name, customerType, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance } = req.body;
+        const { name, customerType, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance, balance, currentBalance, current_balance } = req.body;
+
+        // Use provided balance if available, otherwise fallback to opening balance
+        const theoreticalBalance = balance !== undefined ? balance : (currentBalance !== undefined ? currentBalance : current_balance);
+
         await prisma.customer.update({
             where: { id: req.params.id },
             data: {
@@ -336,7 +340,8 @@ app.put('/api/customers/:id', async (req, res) => {
                 cnic,
                 gstNo: gst_no,
                 creditLimit: parseFloat(creditLimit) || 0,
-                openingBalance: parseFloat(openingBalance) || 0
+                openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined,
+                balance: theoreticalBalance !== undefined ? parseFloat(theoreticalBalance) : (openingBalance !== undefined ? parseFloat(openingBalance) : undefined)
             }
         });
         res.json({ success: true, changes: 1 });
@@ -391,7 +396,7 @@ app.post('/api/vendors', async (req, res) => {
 
 app.put('/api/vendors/:id', async (req, res) => {
     try {
-        const { name, company_name, phone, email, address, city, gst_no, openingBalance } = req.body;
+        const { name, company_name, phone, email, address, city, gst_no, openingBalance, balance } = req.body;
         await prisma.vendor.update({
             where: { id: req.params.id },
             data: {
@@ -402,7 +407,8 @@ app.put('/api/vendors/:id', async (req, res) => {
                 address,
                 city,
                 gstNo: gst_no,
-                openingBalance: parseFloat(openingBalance) || 0
+                openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined,
+                balance: balance !== undefined ? parseFloat(balance) : (openingBalance !== undefined ? parseFloat(openingBalance) : undefined)
             }
         });
         res.json({ success: true, changes: 1 });
@@ -929,7 +935,15 @@ app.get('/api/sales', async (req, res) => {
 
 app.post('/api/sales', async (req, res) => {
     try {
-        const { companyId, customerId, userId, invoiceNo, subTotal, discount, tax, grandTotal, items } = req.body;
+        const {
+            companyId, customerId, userId, invoiceNo, subTotal,
+            discount, tax, shippingCost, grandTotal,
+            paymentMethod, paymentType, paymentStatus, amountPaid, paidAmount, notes, items
+        } = req.body;
+
+        const finalGrandTotal = parseFloat(grandTotal || 0);
+        const finalPaidAmount = parseFloat(amountPaid || paidAmount || 0);
+        const finalPaymentType = paymentType || paymentMethod || 'CASH';
 
         await prisma.$transaction(async (tx) => {
             // 1. Create Sale Record
@@ -942,7 +956,12 @@ app.post('/api/sales', async (req, res) => {
                     subTotal: parseFloat(subTotal),
                     discount: parseFloat(discount) || 0,
                     tax: parseFloat(tax) || 0,
-                    grandTotal: parseFloat(grandTotal),
+                    shippingCost: parseFloat(shippingCost) || 0,
+                    grandTotal: finalGrandTotal,
+                    paymentType: finalPaymentType,
+                    paymentStatus: paymentStatus || (finalPaidAmount >= finalGrandTotal ? 'PAID' : (finalPaidAmount > 0 ? 'PARTIAL' : 'DUE')),
+                    amountPaid: finalPaidAmount,
+                    notes,
                     items: {
                         create: items.map(item => ({
                             productId: item.productId,
@@ -964,10 +983,61 @@ app.post('/api/sales', async (req, res) => {
                 });
             }
 
+            // 3. Update Customer Balance if applicable
+            if (customerId) {
+                const balanceChange = finalGrandTotal - finalPaidAmount;
+                if (balanceChange !== 0) {
+                    await tx.customer.update({
+                        where: { id: customerId },
+                        data: { balance: { increment: balanceChange } }
+                    });
+                }
+            }
+
             return sale;
         });
 
         res.json({ success: true, message: "Sale recorded and stock updated" });
+    } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/sales/:id', async (req, res) => {
+    try {
+        const saleId = req.params.id;
+
+        await prisma.$transaction(async (tx) => {
+            const sale = await tx.sale.findUnique({
+                where: { id: saleId },
+                include: { items: true }
+            });
+
+            if (!sale) throw new Error("Sale not found");
+
+            // 1. Restore Stock
+            for (const item of sale.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { increment: item.quantity } }
+                });
+            }
+
+            // 2. Reverse Customer Balance Change
+            if (sale.customerId) {
+                const balanceChange = sale.grandTotal - sale.amountPaid;
+                await tx.customer.update({
+                    where: { id: sale.customerId },
+                    data: { balance: { decrement: balanceChange } }
+                });
+            }
+
+            // 3. Delete Sale Items (Cascade might handle this, but let's be explicit)
+            await tx.saleItem.deleteMany({ where: { saleId } });
+
+            // 4. Delete Sale
+            await tx.sale.delete({ where: { id: saleId } });
+        });
+
+        res.json({ success: true, message: "Sale deleted and stock/balance restored" });
     } catch (e) { handleError(res, e); }
 });
 
