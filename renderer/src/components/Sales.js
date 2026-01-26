@@ -203,6 +203,15 @@ const Sales = ({ currentUser }) => {
 
             const result = await window.electronAPI.addSale(saleData);
             if (result.success) {
+                // EXPLICIT SYNC: Update customer's balance on the server
+                const customerToUpdate = customers.find(c => c.id === selectedCustomer);
+                if (customerToUpdate) {
+                    await window.electronAPI.updateCustomer({
+                        ...customerToUpdate,
+                        balance: netBalance
+                    });
+                }
+
                 // Update local customers state for dynamic feel
                 const updatedCustomers = customers.map(c =>
                     c.id === selectedCustomer ? { ...c, balance: netBalance } : c
