@@ -87,7 +87,15 @@ const Customers = ({ currentUser }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            const data = { ...formData, companyId: currentUser?.company_id };
+            const data = {
+                ...formData,
+                companyId: currentUser?.company_id,
+                // CRITICAL: Send snake_case fields for cloud compatibility
+                opening_balance: formData.openingBalance,
+                balance: formData.openingBalance,
+                current_balance: formData.openingBalance,
+                credit_limit: formData.creditLimit // Ensure limit is also snake_case
+            };
             let result;
             if (formData.id) {
                 result = await window.electronAPI.updateCustomer(data);
@@ -133,7 +141,8 @@ const Customers = ({ currentUser }) => {
             city: customer.city || '',
             gst_no: customer.gstNo || '',
             creditLimit: customer.creditLimit || 0,
-            openingBalance: customer.openingBalance || 0
+            // Use current balance as the editable field for clearer "Current Debt" management
+            openingBalance: customer.balance || customer.openingBalance || 0
         } : {
             id: null,
             name: '',
@@ -398,7 +407,7 @@ const Customers = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Opening Balance</label>
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Current Balance / Opening</label>
                                         <div className="relative">
                                             <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
