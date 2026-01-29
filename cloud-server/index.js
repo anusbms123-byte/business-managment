@@ -1260,7 +1260,7 @@ app.get('/api/reports/summary', async (req, res) => {
         const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 30));
         const end = endDate ? new Date(endDate) : new Date();
 
-        const [sales, purchases, expenses] = await Promise.all([
+        const [sales, purchases, expenses, products, customers, vendors] = await Promise.all([
             prisma.sale.findMany({
                 where: { companyId, date: { gte: start, lte: end } },
                 include: { items: { include: { product: true } } }
@@ -1270,12 +1270,49 @@ app.get('/api/reports/summary', async (req, res) => {
             }),
             prisma.expense.findMany({
                 where: { companyId, date: { gte: start, lte: end } }
+            }),
+            prisma.product.findMany({
+                where: { companyId, isActive: true }
+            }),
+            prisma.customer.findMany({
+                where: { companyId }
+            }),
+            prisma.vendor.findMany({
+                where: { companyId }
             })
         ]);
 
         const totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
         const totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
         const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+
+        // Inventory Valuation
+        const inventoryValuationCost = products.reduce((acc, p) => acc + (p.stockQty * p.costPrice), 0);
+        const inventoryValuationSell = products.reduce((acc, p) => acc + (p.stockQty * p.sellPrice), 0);
+        const lowStockCount = products.filter(p => p.stockQty <= p.alertQty).length;
+
+        // CRM Stats
+        const totalReceivables = customers.reduce((acc, c) => acc + (c.balance > 0 ? c.balance : 0), 0);
+        const totalPayables = vendors.reduce((acc, v) => acc + (v.balance > 0 ? v.balance : 0), 0);
+
+        // Top Performers
+        const topCustomers = customers
+            .map(c => ({
+                id: c.id,
+                name: c.name,
+                totalSpent: sales.filter(s => s.customerId === c.id).reduce((acc, s) => acc + s.grandTotal, 0)
+            }))
+            .sort((a, b) => b.totalSpent - a.totalSpent)
+            .slice(0, 5);
+
+        const topProducts = products
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                qtySold: sales.reduce((acc, s) => acc + s.items.filter(i => i.productId === p.id).reduce((iq, i) => iq + i.quantity, 0), 0)
+            }))
+            .sort((a, b) => b.qtySold - a.qtySold)
+            .slice(0, 5);
 
         // Calculate COGS - Sum of (item.quantity * product.costPrice) for all sold items
         const totalCOGS = sales.reduce((acc, s) => {
@@ -1288,22 +1325,56 @@ app.get('/api/reports/summary', async (req, res) => {
         // Net Profit = Revenue - COGS - Expenses
         const netProfit = totalSales - (totalCOGS + totalExpenses);
 
-        // Calculate Daily Summaries
+        // Calculate Daily/Monthly Summaries
         const dailyMap = {};
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const useMonthlyGrouping = diffDays > 62; // Group by month if range is more than 2 months
 
         // Populate with dates in range
         let curr = new Date(start);
         while (curr <= end) {
-            const dateStr = curr.toISOString().split('T')[0];
-            dailyMap[dateStr] = { date: dateStr, invoices: 0, sales: 0, expenses: 0, purchases: 0, cogs: 0, profit: 0 };
-            curr.setDate(curr.getDate() + 1);
+            let dateStr;
+            if (useMonthlyGrouping) {
+                // Key format: YYYY-MM (e.g., 2024-01)
+                dateStr = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                // Key format: YYYY-MM-DD
+                dateStr = curr.toISOString().split('T')[0];
+            }
+
+            if (!dailyMap[dateStr]) {
+                dailyMap[dateStr] = {
+                    date: dateStr,
+                    invoices: 0,
+                    sales: 0,
+                    expenses: 0,
+                    purchases: 0,
+                    cogs: 0,
+                    profit: 0,
+                    isMonthly: useMonthlyGrouping
+                };
+            }
+
+            if (useMonthlyGrouping) {
+                curr.setMonth(curr.getMonth() + 1);
+                curr.setDate(1); // Keep it at start of month to avoid skipping
+            } else {
+                curr.setDate(curr.getDate() + 1);
+            }
         }
 
         sales.forEach(s => {
-            const d = s.date.toISOString().split('T')[0];
+            let d;
+            if (useMonthlyGrouping) {
+                d = `${s.date.getFullYear()}-${String(s.date.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                d = s.date.toISOString().split('T')[0];
+            }
+
             if (dailyMap[d]) {
                 const saleCOGS = s.items.reduce((itemAcc, item) => {
-                    return itemAcc + (item.quantity * (item.product?.costPrice || 0));
+                    return itemAcc + (item.product?.costPrice || 0) * item.quantity;
                 }, 0);
 
                 dailyMap[d].invoices += 1;
@@ -1314,7 +1385,13 @@ app.get('/api/reports/summary', async (req, res) => {
         });
 
         expenses.forEach(e => {
-            const d = e.date.toISOString().split('T')[0];
+            let d;
+            if (useMonthlyGrouping) {
+                d = `${e.date.getFullYear()}-${String(e.date.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                d = e.date.toISOString().split('T')[0];
+            }
+
             if (dailyMap[d]) {
                 dailyMap[d].expenses += e.amount;
                 dailyMap[d].profit -= e.amount;
@@ -1322,10 +1399,15 @@ app.get('/api/reports/summary', async (req, res) => {
         });
 
         purchases.forEach(p => {
-            const d = p.date.toISOString().split('T')[0];
+            let d;
+            if (useMonthlyGrouping) {
+                d = `${p.date.getFullYear()}-${String(p.date.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                d = p.date.toISOString().split('T')[0];
+            }
+
             if (dailyMap[d]) {
                 dailyMap[d].purchases += p.totalAmount;
-                // Note: purchases don't subtract from profit in COGS model until sold
             }
         });
 
@@ -1337,6 +1419,13 @@ app.get('/api/reports/summary', async (req, res) => {
             totalCOGS,
             totalExpenses,
             netProfit,
+            inventoryValuationCost,
+            inventoryValuationSell,
+            lowStockCount,
+            totalReceivables,
+            totalPayables,
+            topCustomers,
+            topProducts,
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
