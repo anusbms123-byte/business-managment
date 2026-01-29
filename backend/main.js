@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
 
@@ -27,6 +28,16 @@ autoUpdater.on('download-progress', (progressObj) => {
 });
 autoUpdater.on('update-downloaded', (info) => {
     log.info('Update downloaded');
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Ready',
+        message: 'A new version of Business Management App is ready. Restart now to install?',
+        buttons: ['Restart', 'Later']
+    }).then((returnValue) => {
+        if (returnValue.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
 });
 
 const path = require("path");
