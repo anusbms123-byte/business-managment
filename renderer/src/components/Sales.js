@@ -57,6 +57,9 @@ const Sales = ({ currentUser }) => {
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
 
+    // Printing State
+    const [printReceiptData, setPrintReceiptData] = useState(null);
+
     // Refs for keyboard navigation
     const customerRef = useRef(null);
     const productRef = useRef(null);
@@ -171,6 +174,16 @@ const Sales = ({ currentUser }) => {
     const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
     const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
 
+
+
+    // Print Handler
+    const handlePrint = (saleData) => {
+        setPrintReceiptData(saleData);
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    };
+
     const handleSaveSale = async () => {
         if (cart.length === 0) return alert("Please add items to cart!");
 
@@ -201,12 +214,18 @@ const Sales = ({ currentUser }) => {
                 paymentMethod,
                 paymentStatus,
                 notes,
-                items: cart
+                items: cart,
+                // Extra fields for printing
+                customerName: cust?.name || 'Walk-in Customer',
+                date: new Date(),
+                prevBalance: Number(previousBalance) || 0
             };
 
             const result = await window.electronAPI.addSale(saleData);
             if (result.success) {
                 // Backend now handles customer balance update automatically in $transaction
+
+                handlePrint(saleData); // Trigger Print automatically
 
                 setIsModalOpen(false);
                 setCart([]);
@@ -333,6 +352,13 @@ const Sales = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => handlePrint(sale)}
+                                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                title="Print Receipt"
+                                            >
+                                                <Printer size={16} />
+                                            </button>
                                             {canDelete('sales') && (
                                                 <button
                                                     onClick={() => handleDeleteSale(sale.id)}
@@ -360,16 +386,16 @@ const Sales = ({ currentUser }) => {
 
             {/* Professional POS Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-[95%] lg:max-w-7xl h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
                         {/* Header */}
-                        <div className="px-8 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-blue-950 text-white rounded-lg shadow-sm">
+                        <div className="px-4 md:px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                                     <ShoppingCart size={20} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-slate-800 tracking-tight">Terminal POS</h2>
+                                    <h2 className="text-sm md:text-lg font-bold text-slate-800 tracking-tight">Terminal POS</h2>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Operator: {currentUser?.fullname || 'Counter 1'}</p>
                                 </div>
                             </div>
@@ -378,14 +404,14 @@ const Sales = ({ currentUser }) => {
                             </button>
                         </div>
 
-                        <div className="flex-1 flex overflow-hidden">
+                        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-50/30">
                             {/* Left: Product Selection */}
-                            <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-hide border-r border-slate-100">
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div className="flex-1 p-4 md:p-6 overflow-y-auto min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200">
+                                <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end mb-6">
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Customer</label>
                                         <div className="relative">
-                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <select
                                                 ref={customerRef}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
@@ -409,7 +435,7 @@ const Sales = ({ currentUser }) => {
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Search Product</label>
                                         <div className="relative">
-                                            <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <select
                                                 ref={productRef}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
@@ -458,8 +484,8 @@ const Sales = ({ currentUser }) => {
                                 </div>
 
                                 {/* Modern Cart Table */}
-                                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-                                    <table className="w-full text-left">
+                                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+                                    <table className="w-full text-left min-w-[600px]">
                                         <thead className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
                                             <tr>
                                                 <th className="px-6 py-4">Product</th>
@@ -484,7 +510,7 @@ const Sales = ({ currentUser }) => {
                                                     </td>
                                                     <td className="px-6 py-4 text-right font-bold text-slate-800 text-sm">PKR {item.total.toLocaleString()}</td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                                                        <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
                                                             <Trash2 size={14} />
                                                         </button>
                                                     </td>
@@ -492,8 +518,8 @@ const Sales = ({ currentUser }) => {
                                             ))}
                                             {cart.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="5" className="px-6 py-20 text-center">
-                                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
+                                                    <td colSpan="5" className="px-6 py-12 md:py-20 text-center">
+                                                        <div className="w-12 md:w-16 h-12 md:h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200">
                                                             <ShoppingCart size={24} className="text-slate-300" />
                                                         </div>
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cart is empty</p>
@@ -506,84 +532,83 @@ const Sales = ({ currentUser }) => {
                             </div>
 
                             {/* Right: Summary & Checkout */}
-                            <div className="w-[360px] p-6 flex flex-col space-y-6 bg-slate-50 border-l border-slate-200">
+                            <div className="w-full lg:w-[400px] p-4 md:p-6 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-slate-200 shrink-0 overflow-y-auto">
                                 <div className="space-y-4">
                                     <div className="space-y-3 px-1">
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Subtotal</span>
                                             <span className="text-slate-800">PKR {subTotal.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight text-right">
-                                            <span>Shipping</span>
-                                            <div className="relative w-24">
-                                                <input
-                                                    type="number"
-                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-800 focus:border-blue-500 outline-none transition-all text-sm"
-                                                    value={shippingCost}
-                                                    onChange={(e) => setShippingCost(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Tax</span>
-                                            <div className="flex items-center gap-2">
-                                                <select
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none"
-                                                    value={taxType}
-                                                    onChange={(e) => setTaxType(e.target.value)}
-                                                >
-                                                    <option value="FLAT">Amt</option>
-                                                    <option value="PERCENT">%</option>
-                                                </select>
-                                                <div className="relative w-24 text-right">
+
+                                        {/* Tax & Discount Row */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Tax</label>
+                                                <div className="flex items-center gap-1">
+                                                    <select
+                                                        className="bg-white border border-slate-200 rounded px-1 py-1 text-[10px] outline-none"
+                                                        value={taxType}
+                                                        onChange={(e) => setTaxType(e.target.value)}
+                                                    >
+                                                        <option value="FLAT">Amt</option>
+                                                        <option value="PERCENT">%</option>
+                                                    </select>
                                                     <input
                                                         type="number"
-                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-800 focus:border-blue-500 outline-none transition-all text-sm"
+                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
                                                         value={tax}
                                                         onChange={(e) => setTax(e.target.value)}
                                                     />
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Discount</span>
-                                            <div className="flex items-center gap-2">
-                                                <select
-                                                    className="bg-white border border-slate-200 rounded px-1 py-0.5 text-[10px] outline-none text-blue-600"
-                                                    value={discountType}
-                                                    onChange={(e) => setDiscountType(e.target.value)}
-                                                >
-                                                    <option value="FLAT">Amt</option>
-                                                    <option value="PERCENT">%</option>
-                                                </select>
-                                                <div className="relative w-24 text-right">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Discount</label>
+                                                <div className="flex items-center gap-1">
+                                                    <select
+                                                        className="bg-white border border-slate-200 rounded px-1 py-1 text-[10px] outline-none"
+                                                        value={discountType}
+                                                        onChange={(e) => setDiscountType(e.target.value)}
+                                                    >
+                                                        <option value="FLAT">Amt</option>
+                                                        <option value="PERCENT">%</option>
+                                                    </select>
                                                     <input
                                                         type="number"
-                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-blue-600 focus:border-blue-500 outline-none transition-all text-sm"
+                                                        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
                                                         value={discount}
                                                         onChange={(e) => setDiscount(e.target.value)}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Prev. Balance</span>
-                                            <div className="relative w-24 text-right">
+                                            <span>Shipping Cost</span>
+                                            <div className="relative w-24">
                                                 <input
                                                     type="number"
-                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-rose-500 focus:border-blue-500 outline-none transition-all text-sm"
-                                                    value={previousBalance}
-                                                    onChange={(e) => setPreviousBalance(e.target.value)}
+                                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-sm"
+                                                    value={shippingCost}
+                                                    onChange={(e) => setShippingCost(e.target.value)}
                                                 />
                                             </div>
                                         </div>
-                                        <div className="h-px bg-slate-200 my-4"></div>
+
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                                            <span>Previous Balance</span>
+                                            <div className="relative w-24 text-right px-2 py-1 bg-slate-100 rounded-md">
+                                                <span className="text-sm font-bold text-slate-700">{Number(previousBalance).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-slate-200 my-2 lg:my-4"></div>
+
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block">Grand Total</span>
                                                 <div className="flex items-baseline gap-1">
                                                     <span className="text-xs font-bold text-slate-400 uppercase">PKR</span>
-                                                    <span className="text-3xl font-bold text-slate-800 tracking-tighter">
+                                                    <span className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
                                                         {grandTotal.toLocaleString()}
                                                     </span>
                                                 </div>
@@ -595,7 +620,7 @@ const Sales = ({ currentUser }) => {
                                                     <select
                                                         value={paymentMethod}
                                                         onChange={(e) => setPaymentMethod(e.target.value)}
-                                                        className="bg-slate-50 border-none text-[10px] font-bold uppercase focus:ring-0 cursor-pointer"
+                                                        className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[10px] font-bold uppercase focus:outline-none cursor-pointer"
                                                     >
                                                         <option value="CASH">CASH</option>
                                                         <option value="CARD">CARD</option>
@@ -603,21 +628,21 @@ const Sales = ({ currentUser }) => {
                                                     </select>
                                                 </div>
                                                 <div className="flex justify-between items-center">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Received</label>
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cash Received</label>
                                                     <input
                                                         type="number"
-                                                        className="w-24 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-right font-bold text-sm outline-none"
+                                                        className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
                                                         value={amountPaid}
                                                         onChange={(e) => setAmountPaid(e.target.value)}
                                                     />
                                                 </div>
-                                                <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change</label>
-                                                    <span className="text-xs font-bold text-blue-600">PKR {changeAmount.toLocaleString()}</span>
+                                                <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change Return</label>
+                                                    <span className="text-xs font-bold text-slate-600">PKR {changeAmount.toLocaleString()}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                                                <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Balance</label>
-                                                    <span className={`text-xs font-bold ${netBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>PKR {netBalance.toLocaleString()}</span>
+                                                    <span className="text-xs font-bold text-slate-800 px-2 py-0.5 bg-slate-100 rounded">PKR {netBalance.toLocaleString()}</span>
                                                 </div>
                                             </div>
 
@@ -626,19 +651,19 @@ const Sales = ({ currentUser }) => {
                                                 <textarea
                                                     value={notes}
                                                     onChange={(e) => setNotes(e.target.value)}
-                                                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-16"
-                                                    placeholder="Delivery instructions, customer requests..."
+                                                    className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-16 lg:h-20"
+                                                    placeholder="Delivery instructions..."
                                                 />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-auto space-y-3">
+                                <div className="mt-auto pt-4 space-y-3">
                                     <button
                                         onClick={handleSaveSale}
                                         disabled={cart.length === 0}
-                                        className="w-full py-4 bg-blue-950 text-white rounded-xl font-bold text-lg hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                        className="w-full py-3 md:py-4 bg-blue-950 text-white rounded-xl font-bold text-base md:text-lg hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                     >
                                         {saving ? (
                                             <div className="flex items-center gap-2">
@@ -658,6 +683,127 @@ const Sales = ({ currentUser }) => {
                     </div>
                 </div>
             )}
+            {/* Hidden Thermal Receipt Print Section */}
+            <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-[9999] print:p-0">
+                <style>{`
+                    @media print {
+                        body * { visibility: hidden; }
+                        #receipt-print-section, #receipt-print-section * { visibility: visible; }
+                        #receipt-print-section {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%; /* Adapts to page size (80mm/58mm) */
+                            max-width: 80mm; /* Constraint for larger pages */
+                            font-family: 'Courier New', Courier, monospace;
+                            font-size: 11px;
+                            color: #000;
+                            padding: 0;
+                            margin: 0;
+                        }
+                        .print-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+                        .print-divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+                        .print-header { text-align: center; margin-bottom: 10px; }
+                        .print-bold { font-weight: bold; }
+                        .print-center { text-align: center; }
+                    }
+                `}</style>
+
+                {printReceiptData && (
+                    <div id="receipt-print-section">
+                        {/* Header */}
+                        <div className="print-header">
+                            <div className="print-bold" style={{ fontSize: '14px' }}>BMS STORE</div>
+                            <div>Gulshan-e-Iqbal, Karachi</div>
+                            <div>Phone: 0312-3456789</div>
+                        </div>
+
+                        {/* Invoice Info */}
+                        <div className="print-divider"></div>
+                        <div className="print-row">
+                            <span>Inv #: {printReceiptData.invoiceNo}</span>
+                            <span>{new Date(printReceiptData.date || new Date()).toLocaleDateString()}</span>
+                        </div>
+                        <div className="print-row">
+                            <span>Cust: {printReceiptData.customerName || ((printReceiptData.customer?.name) ? printReceiptData.customer.name : 'Walk-in')}</span>
+                            <span>{new Date(printReceiptData.date || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="print-divider"></div>
+
+                        {/* Items */}
+                        <div className="print-row print-bold">
+                            <span style={{ width: '45%' }}>Item</span>
+                            <span style={{ width: '15%', textAlign: 'center' }}>Qty</span>
+                            <span style={{ width: '20%', textAlign: 'right' }}>Price</span>
+                            <span style={{ width: '20%', textAlign: 'right' }}>Total</span>
+                        </div>
+                        <div className="print-divider" style={{ borderBottomStyle: 'solid' }}></div>
+
+                        {(printReceiptData.items || []).map((item, i) => (
+                            <div key={i} className="print-row">
+                                <span style={{ width: '45%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                <span style={{ width: '15%', textAlign: 'center' }}>{item.quantity}</span>
+                                <span style={{ width: '20%', textAlign: 'right' }}>{Math.round(item.price)}</span>
+                                <span style={{ width: '20%', textAlign: 'right' }}>{Math.round(item.total)}</span>
+                            </div>
+                        ))}
+
+                        <div className="print-divider"></div>
+
+                        {/* Totals */}
+                        <div className="print-row">
+                            <span>Subtotal:</span>
+                            <span>{Math.round(printReceiptData.subTotal || 0)}</span>
+                        </div>
+                        {(printReceiptData.discount > 0) && (
+                            <div className="print-row">
+                                <span>Discount:</span>
+                                <span>-{Math.round(printReceiptData.discount)}</span>
+                            </div>
+                        )}
+                        {(printReceiptData.tax > 0) && (
+                            <div className="print-row">
+                                <span>Tax:</span>
+                                <span>+{Math.round(printReceiptData.tax)}</span>
+                            </div>
+                        )}
+                        {(printReceiptData.shippingCost > 0) && (
+                            <div className="print-row">
+                                <span>Delivery:</span>
+                                <span>+{Math.round(printReceiptData.shippingCost)}</span>
+                            </div>
+                        )}
+                        <div className="print-divider" style={{ borderBottomStyle: 'solid' }}></div>
+
+                        <div className="print-row print-bold" style={{ fontSize: '13px' }}>
+                            <span>Grand Total:</span>
+                            <span>{Math.round(printReceiptData.grandTotal || (printReceiptData.totalAmount))}</span>
+                        </div>
+
+                        {(printReceiptData.prevBalance > 0 || (printReceiptData.customer?.balance > 0)) && (
+                            <div className="print-row">
+                                <span>Prev Balance:</span>
+                                <span>{Math.round(printReceiptData.prevBalance || printReceiptData.customer?.balance || 0)}</span>
+                            </div>
+                        )}
+
+                        <div className="print-row print-bold">
+                            <span>Paid ({printReceiptData.paymentMethod}):</span>
+                            <span>{Math.round(printReceiptData.paidAmount || printReceiptData.amountPaid || 0)}</span>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="print-divider"></div>
+                        <div className="print-center" style={{ marginTop: '10px' }}>
+                            <div>Thank you for shopping!</div>
+                            <div style={{ fontSize: '9px' }}>Software by Muhammad Anas</div>
+                        </div>
+                        <div className="print-center" style={{ marginTop: '10px', fontSize: '9px' }}>
+                            ********************************
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

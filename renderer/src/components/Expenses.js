@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MoreHorizontal, X, Edit2, Trash2, Home, Zap, Users, Coffee, DollarSign, TrendingUp } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, X, Edit2, Trash2, Home, Zap, Users, Coffee, DollarSign, TrendingUp, Loader2, Check } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
@@ -246,18 +246,26 @@ const Expenses = ({ currentUser }) => {
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{formData.id ? 'Edit Expense' : 'Add New Expense'}</h3>
-                                <button onClick={() => setShowModal(false)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[98%] md:max-w-4xl h-full md:h-auto max-h-[96vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200 text-left">
+                        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                            <div>
+                                <h3 className="text-sm md:text-lg font-bold text-slate-800 tracking-tight">{formData.id ? 'Edit Expense Record' : 'Record New Expense'}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Track and categorize business spending.</p>
                             </div>
+                            <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all shrink-0"><X size={20} /></button>
+                        </div>
 
-                            <form onSubmit={handleSave} className="p-8 space-y-5">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Expense Title</label>
+                        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <div className="space-y-4 md:space-y-6">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
+                                        Expense Details
+                                    </h4>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Expense Title *</label>
                                         <input
                                             type="text"
                                             required
@@ -268,24 +276,27 @@ const Expenses = ({ currentUser }) => {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Amount (PKR)</label>
-                                            <input
-                                                type="number"
-                                                required
-                                                value={formData.amount}
-                                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
-                                                placeholder="0"
-                                            />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Amount (PKR) *</label>
+                                            <div className="relative">
+                                                <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    value={formData.amount}
+                                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                    placeholder="0"
+                                                />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Category</label>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Category *</label>
                                             <select
                                                 value={formData.category}
                                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none"
                                             >
                                                 <option value="General">General</option>
                                                 <option value="Utilities">Utilities</option>
@@ -298,8 +309,8 @@ const Expenses = ({ currentUser }) => {
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Date</label>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Date *</label>
                                         <input
                                             type="date"
                                             required
@@ -308,35 +319,43 @@ const Expenses = ({ currentUser }) => {
                                             className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
                                         />
                                     </div>
+                                </div>
 
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Description (Optional)</label>
+                                <div className="space-y-4 md:space-y-6">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
+                                        Additional Information
+                                    </h4>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Notes (Optional)</label>
                                         <textarea
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-24 resize-none"
-                                            placeholder="Add notes about this expense..."
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none"
+                                            placeholder="Write any additional details about this expense..."
                                         />
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest"
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
-                                    >
-                                        {saving ? 'Saving...' : formData.id ? 'Update Expense' : 'Save Expense'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="w-full sm:w-auto px-6 py-2.5 text-slate-500 font-bold hover:text-slate-700 transition-all rounded-lg hover:bg-slate-100 text-sm uppercase tracking-widest"
+                                >
+                                    Discard
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="w-full sm:w-auto px-8 py-2.5 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-md shadow-blue-100"
+                                >
+                                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                                    {formData.id ? 'Save Changes' : 'Confirm Expense'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

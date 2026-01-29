@@ -1,12 +1,11 @@
 {
   "name": "businessmanagementapp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Business Management Desktop Application",
   "main": "main.js",
   "author": "Huzaifa",
   "license": "ISC",
   "type": "commonjs",
-
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "electron": "electron .",
@@ -14,47 +13,47 @@
     "copy-build": "node scripts/copy-build.js",
     "dist": "electron-builder --win --x64"
   },
-
   "dependencies": {
     "axios": "^1.13.2",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.7.3",
     "sqlite3": "^5.1.7"
   },
-
   "devDependencies": {
     "electron": "^39.2.7",
     "electron-builder": "^26.4.0"
   },
-
   "build": {
     "appId": "com.businessmanagementapp.bms",
     "productName": "BusinessManagementApp",
-
     "directories": {
       "buildResources": "assets",
       "output": "dist"
     },
-
     "asar": true,
-
     "files": [
       "**/*",
       "!node_modules/.cache/**/*"
     ],
-
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico",
-
       "signAndEditExecutable": false,
       "forceCodeSigning": false,
       "verifyUpdateCodeSignature": false
     },
-
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "huzaifabusiness80-droid",
+        "repo": "businessdevelopment"
+      }
+    ]
   }
 }

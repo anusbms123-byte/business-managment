@@ -36,6 +36,18 @@ code {
   background: rgba(100, 116, 139, 0.4);
 }
 
+/* Hide Scrollbar Utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Shake Animation for Errors */
 @keyframes shake {
 

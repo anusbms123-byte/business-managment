@@ -298,172 +298,182 @@ const Customers = ({ currentUser }) => {
 
             {/* Modal for Add/Edit */}
             {showModal && (
-                <Modal title={formData.id ? 'Update Customer Details' : 'Register New Customer'} onClose={() => setShowModal(false)} size="lg">
-                    <form onSubmit={handleSave} className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-6">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-                                    Basic Information
-                                </h4>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">Full Name *</label>
-                                    <div className="relative">
-                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            required
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="e.g. Ali Khan"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">Phone Number</label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            type="text"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="03xx-xxxxxxx"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Customer Type</label>
-                                        <select
-                                            value={formData.customerType}
-                                            onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
-                                        >
-                                            <option value="retail">Retail</option>
-                                            <option value="wholesale">Wholesale</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">CNIC / ID Number</label>
-                                        <input
-                                            type="text"
-                                            value={formData.cnic}
-                                            onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="42101-xxxxxxx-x"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">Email Address</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="customer@email.com"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">GST Number</label>
-                                    <div className="relative">
-                                        <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            type="text"
-                                            value={formData.gst_no}
-                                            onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="GST Registration No"
-                                        />
-                                    </div>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-[98%] md:max-w-4xl h-full md:h-auto max-h-[96vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200">
+                        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+                            <div>
+                                <h3 className="text-sm md:text-lg font-bold text-slate-800 tracking-tight">{formData.id ? 'Update Customer Details' : 'Register New Customer'}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Manage customer profile and credit info.</p>
                             </div>
+                            <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all shrink-0"><X size={20} /></button>
+                        </div>
 
-                            <div className="space-y-6">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-                                    Additional Details
-                                </h4>
-                                <div className="grid grid-cols-2 gap-4">
+                        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <div className="space-y-4 md:space-y-6">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                                        Basic Information
+                                    </h4>
                                     <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Credit Limit (PKR)</label>
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Full Name *</label>
                                         <div className="relative">
-                                            <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
-                                                type="number"
-                                                value={formData.creditLimit}
-                                                onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                                                required
+                                                type="text"
+                                                value={formData.name}
+                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                                placeholder="0.00"
+                                                placeholder="Ali Khan"
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Phone Number</label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                value={formData.phone}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="03xx-xxxxxxx"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Customer Type</label>
+                                            <select
+                                                value={formData.customerType}
+                                                onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
+                                            >
+                                                <option value="retail">Retail</option>
+                                                <option value="wholesale">Wholesale</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">CNIC / ID Number</label>
+                                            <input
+                                                type="text"
+                                                value={formData.cnic}
+                                                onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="42101-xxxxxxx-x"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Email Address</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="customer@email.com"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">GST Number</label>
                                         <div className="relative">
                                             <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
-                                                type="number"
-                                                value={formData.openingBalance}
-                                                onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                                type="text"
+                                                value={formData.gst_no}
+                                                onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
                                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                                placeholder="0.00"
+                                                placeholder="GST Registration No"
                                             />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">City</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input
-                                            type="text"
-                                            value={formData.city}
-                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="e.g. Karachi"
-                                        />
+
+                                <div className="space-y-4 md:space-y-6">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                                        Additional Details
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Credit Limit (PKR)</label>
+                                            <div className="relative">
+                                                <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input
+                                                    type="number"
+                                                    value={formData.creditLimit}
+                                                    onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
+                                            <div className="relative">
+                                                <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input
+                                                    type="number"
+                                                    value={formData.openingBalance}
+                                                    onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-2 text-left">
-                                    <label className="text-xs font-bold text-slate-600 ml-1">Shipping/Billing Address</label>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3.5 top-3 text-slate-400" size={16} />
-                                        <textarea
-                                            rows="3"
-                                            value={formData.address}
-                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
-                                            placeholder="Store address, city, etc."
-                                        ></textarea>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">City</label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                            <input
+                                                type="text"
+                                                value={formData.city}
+                                                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
+                                                placeholder="Karachi"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <label className="text-xs font-bold text-slate-600 ml-1">Shipping/Billing Address</label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-3.5 top-3 text-slate-400" size={16} />
+                                            <textarea
+                                                rows="3"
+                                                value={formData.address}
+                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm resize-none"
+                                                placeholder="Store address, building, etc."
+                                            ></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 text-slate-500 font-bold hover:text-slate-700 transition-all rounded-lg hover:bg-slate-100 text-sm"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-5 py-2 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 text-sm shadow-sm shadow-blue-200"
-                            >
-                                {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                {formData.id ? 'Update Customer' : 'Add Customer'}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
+                            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="w-full sm:w-auto px-6 py-2.5 text-slate-500 font-bold hover:text-slate-700 transition-all rounded-lg hover:bg-slate-100 text-sm uppercase tracking-widest"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="w-full sm:w-auto px-8 py-2.5 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-md shadow-blue-100"
+                                >
+                                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                                    {formData.id ? 'Save Changes' : 'Complete Setup'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );
