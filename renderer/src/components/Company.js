@@ -75,7 +75,7 @@ const Company = () => {
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
-                        if (tab.id === 'helpline' && !isSuperAdmin) return null;
+                        if ((tab.id === 'helpline' || tab.id === 'requests') && !isSuperAdmin) return null;
                         const label = (tab.id === 'profile' && isSuperAdmin) ? 'Companies' : tab.label;
                         return (
                             <button
@@ -471,6 +471,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         </form>
     );
 };
+
 
 // ============ USER MANAGEMENT ============
 const UserManagement = ({ currentUser, isSuperAdmin }) => {

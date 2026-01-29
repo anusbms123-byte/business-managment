@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
     Plus, Search, Edit, Trash2, X, Package,
     ShoppingCart, AlertTriangle, Check, Layers,
-    Tag, DollarSign, Box, ChevronDown, ChevronUp
+    Tag, DollarSign, Box, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 // Premium Stat Card Component
-const StatCard = ({ title, value, icon: Icon, color }) => {
+const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
     const colors = {
         orange: 'bg-white border-l-4 border-l-blue-500',
         emerald: 'bg-white border-l-4 border-l-emerald-500',
@@ -18,13 +18,15 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     };
 
     return (
-        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
+        <div
+            onClick={onClick}
+            className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border transition-all duration-200 hover:shadow-md group cursor-pointer ${isActive ? 'ring-2 ring-blue-500 shadow-md transform scale-[1.02]' : 'border-slate-200 shadow-sm'}`}>
             <div className="relative flex items-center justify-between">
                 <div>
                     <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
                     <h3 className="text-xl font-bold text-slate-800">{value}</h3>
                 </div>
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
                     <Icon size={20} />
                 </div>
             </div>
@@ -81,8 +83,10 @@ const Products = ({ currentUser }) => {
 
     const stats = useMemo(() => ({
         total: products.length,
-        lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alert_qty || 5)).length,
+        inStock: products.filter(p => p.stockQty > (p.alertQty || 5)).length,
+        lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
+        expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length,
         totalValue: products.reduce((acc, p) => acc + (p.stockQty * p.sell_price), 0)
     }), [products]);
 
@@ -223,14 +227,13 @@ const Products = ({ currentUser }) => {
         if (filterStockStatus === 'instock') matchesStock = p.stockQty > (p.alertQty || 5);
         if (filterStockStatus === 'lowstock') matchesStock = p.stockQty > 0 && p.stockQty <= (p.alertQty || 5);
         if (filterStockStatus === 'outofstock') matchesStock = p.stockQty <= 0;
+        if (filterStockStatus === 'expired') matchesStock = p.expiryDate && new Date(p.expiryDate) < new Date();
 
         return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock;
     });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-
-
             {/* Table Section */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 bg-slate-50/20">
@@ -283,6 +286,7 @@ const Products = ({ currentUser }) => {
                             <option value="instock">In Stock</option>
                             <option value="lowstock">Low Stock</option>
                             <option value="outofstock">Out of Stock</option>
+                            <option value="expired">Expired</option>
                         </select>
                     </div>
 
@@ -365,70 +369,64 @@ const Products = ({ currentUser }) => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-slate-50">
+                    <table className="w-full text-left min-w-max border-separate border-spacing-0">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4">Product Name</th>
-                                <th className="px-6 py-4">Category / Brand</th>
-                                <th className="px-6 py-4">Attributes</th>
-                                <th className="px-6 py-4">Unit / Weight / Exp</th>
-                                <th className="px-6 py-4">Inventory</th>
-                                <th className="px-6 py-4">Pricing</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 z-10 border-b border-slate-100">Product Info</th>
+                                <th className="px-6 py-4 border-b border-slate-100">SKU</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Category</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Brand</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Attributes</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Unit</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Weight</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Expiry</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Stock</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Alert</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Cost (PKR)</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Sell (PKR)</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Status</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredProducts.map((product) => (
-                                <tr key={product.id} className="hover:bg-slate-50/50 transition-all group border-b border-slate-50 last:border-0">
-                                    <td className="px-6 py-4">
+                                <tr key={product.id} className="transition-all border-b border-slate-50 last:border-0 hover:bg-slate-50/30">
+                                    <td className="px-6 py-4 sticky left-0 bg-white z-10 border-b border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold transition-transform group-hover:scale-110">
+                                            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold">
                                                 {product.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight">{product.name}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SKU: {product.sku || 'N/A'}</div>
+                                                <div className="font-bold text-slate-800 text-sm uppercase tracking-tight truncate max-w-[150px]">{product.name}</div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ID:#{product.id}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-slate-700">{product.category?.name || 'Uncategorized'}</span>
-                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.brand?.name || 'No Brand'}</span>
-                                        </div>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-500 border-b border-slate-50">{product.sku || '-'}</td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">
+                                            {product.category?.name || 'Uncategorized'}
+                                        </span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-slate-700 font-bold uppercase">
-                                                {[product.color, product.size, product.grade, product.condition].filter(Boolean).join(' • ') || 'N/A'}
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-600 uppercase tracking-tight border-b border-slate-50">{product.brand?.name || '-'}</td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-slate-700 font-bold uppercase whitespace-nowrap">
+                                                {[product.color, product.size, product.grade, product.condition].filter(Boolean).join(' • ') || '-'}
                                             </span>
-                                            {product.description && (
-                                                <span className="text-[9px] text-slate-400 truncate max-w-[150px]" title={product.description}>
-                                                    {product.description}
-                                                </span>
-                                            )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-slate-700 uppercase">{product.unit || 'pcs'}</span>
-                                                {product.weight && <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-bold">{product.weight}kg</span>}
-                                            </div>
-                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : 'No Expiry'}</span>
-                                        </div>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-700 uppercase border-b border-slate-50">{product.unit || 'pcs'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-600 border-b border-slate-50">{product.weight ? `${product.weight}kg` : '-'}</td>
+                                    <td className="px-6 py-4 text-center text-[10px] text-slate-500 font-bold uppercase border-b border-slate-50">
+                                        {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-bold text-slate-600">{product.stockQty}</div>
-                                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Min: {product.alertQty || 5}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm font-bold text-slate-800">PKR {product.sellPrice?.toLocaleString()}</div>
-                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cost: PKR {product.costPrice?.toLocaleString()}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-sm font-bold text-slate-800 border-b border-slate-50">{product.stockQty}</td>
+                                    <td className="px-6 py-4 text-[10px] text-slate-400 font-bold border-b border-slate-50">Min:{product.alertQty || 5}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-slate-500 border-b border-slate-50">{product.costPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-blue-600 border-b border-slate-50">{product.sellPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
                                         <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                             product.stockQty > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'
                                             }`}>
@@ -436,21 +434,21 @@ const Products = ({ currentUser }) => {
                                                 product.stockQty > 0 ? 'bg-amber-500' : 'bg-rose-500'
                                                 }`}></span>
                                             <span>
-                                                {product.stockQty > product.alertQty ? 'Instock' :
+                                                {product.stockQty > product.alertQty ? 'In Stock' :
                                                     product.stockQty > 0 ? 'Low Stock' : 'Out of Stock'}
                                             </span>
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1 transition-all">
+                                    <td className="px-6 py-4 text-right border-b border-slate-50">
+                                        <div className="flex items-center justify-end gap-1.5 transition-all">
                                             {canEdit('inventory') && (
-                                                <button onClick={() => openEdit(product)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                                    <Edit size={16} />
+                                                <button onClick={() => openEdit(product)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all shadow-sm border border-blue-100">
+                                                    <Edit size={14} />
                                                 </button>
                                             )}
                                             {canDelete('inventory') && (
-                                                <button onClick={() => handleDelete(product.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
-                                                    <Trash2 size={16} />
+                                                <button onClick={() => handleDelete(product.id)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-all shadow-sm border border-rose-100">
+                                                    <Trash2 size={14} />
                                                 </button>
                                             )}
                                         </div>
@@ -619,7 +617,7 @@ const Products = ({ currentUser }) => {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
+                                <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-blue-100 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-70">
                                     {saving ? (
                                         <div className="flex items-center gap-2">
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

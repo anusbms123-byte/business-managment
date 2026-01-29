@@ -146,6 +146,7 @@ const Login = ({ onLoginSuccess }) => {
 
                             <button
                                 type="submit"
+                                disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
                             >
                                 {loading ? (
@@ -272,6 +273,7 @@ const Login = ({ onLoginSuccess }) => {
 
                                     <button
                                         type="submit"
+                                        disabled={supportLoading}
                                         className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest mt-4 disabled:opacity-70"
                                     >
                                         {supportLoading ? (

@@ -186,15 +186,8 @@ const Layout = ({ children, user, onLogout }) => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
                 <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm">
-                    {/* Search */}
-                    <div className="relative w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search anything..."
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-400 transition-all"
-                        />
-                    </div>
+                    {/* Header Left Spacer */}
+                    <div className="flex-1"></div>
 
                     {/* Right Side */}
                     <div className="flex items-center space-x-3">

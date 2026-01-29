@@ -90,13 +90,8 @@ const Customers = ({ currentUser }) => {
             const data = {
                 ...formData,
                 companyId: currentUser?.company_id,
-                // CRITICAL: Send snake_case fields for cloud compatibility
-                opening_balance: formData.openingBalance,
-                balance: formData.openingBalance,
-                currentBalance: formData.openingBalance,
-                current_balance: formData.openingBalance,
-                creditLimit: formData.creditLimit,
-                credit_limit: formData.creditLimit // Ensure limit is also snake_case
+                balance: formData.openingBalance, // Send current balance value from form
+                opening_balance: formData.id ? undefined : formData.openingBalance // Only set opening_balance on creation
             };
             let result;
             if (formData.id) {
@@ -144,7 +139,7 @@ const Customers = ({ currentUser }) => {
             gst_no: customer.gstNo || '',
             creditLimit: customer.creditLimit || 0,
             // Use current balance as the editable field for clearer "Current Debt" management
-            openingBalance: customer.balance || customer.openingBalance || 0
+            openingBalance: customer.balance || 0
         } : {
             id: null,
             name: '',
@@ -409,7 +404,7 @@ const Customers = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2 text-left">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Current Balance / Opening</label>
+                                        <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
                                         <div className="relative">
                                             <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input

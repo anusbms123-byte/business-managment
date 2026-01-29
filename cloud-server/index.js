@@ -341,7 +341,7 @@ app.put('/api/customers/:id', async (req, res) => {
                 gstNo: gst_no,
                 creditLimit: parseFloat(creditLimit) || 0,
                 openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined,
-                balance: theoreticalBalance !== undefined ? parseFloat(theoreticalBalance) : (openingBalance !== undefined ? parseFloat(openingBalance) : undefined)
+                balance: balance !== undefined ? parseFloat(balance) : undefined
             }
         });
         res.json({ success: true, changes: 1 });
@@ -408,7 +408,7 @@ app.put('/api/vendors/:id', async (req, res) => {
                 city,
                 gstNo: gst_no,
                 openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined,
-                balance: balance !== undefined ? parseFloat(balance) : (openingBalance !== undefined ? parseFloat(openingBalance) : undefined)
+                balance: balance !== undefined ? parseFloat(balance) : undefined
             }
         });
         res.json({ success: true, changes: 1 });

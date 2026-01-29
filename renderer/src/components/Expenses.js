@@ -1,7 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, MoreHorizontal, X, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, X, Edit2, Trash2, Home, Zap, Users, Coffee, DollarSign, TrendingUp } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
+
+
+// Premium Stat Card Component
+const StatCard = ({ title, value, icon: Icon, color }) => {
+    const colors = {
+        blue: 'bg-white border-l-4 border-l-blue-600',
+        orange: 'bg-white border-l-4 border-l-orange-500',
+        emerald: 'bg-white border-l-4 border-l-emerald-500',
+        rose: 'bg-white border-l-4 border-l-rose-500',
+        amber: 'bg-white border-l-4 border-l-amber-500',
+        indigo: 'bg-white border-l-4 border-l-indigo-500'
+    };
+
+    return (
+        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
+            <div className="relative flex items-center justify-between">
+                <div>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
+                </div>
+                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <Icon size={20} />
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const Expenses = ({ currentUser }) => {
     const [expenses, setExpenses] = useState([]);
@@ -82,19 +109,10 @@ const Expenses = ({ currentUser }) => {
 
     const stats = {
         today: (expenses || []).filter(e => e.date && new Date(e.date).toDateString() === new Date().toDateString()).reduce((acc, e) => acc + (Number(e.amount) || 0), 0),
-        weekly: (expenses || []).filter(e => {
-            if (!e.date) return false;
-            const d = new Date(e.date);
-            const now = new Date();
-            const weekAgo = new Date(now.setDate(now.getDate() - 7));
-            return d >= weekAgo;
-        }).reduce((acc, e) => acc + (Number(e.amount) || 0), 0),
-        monthly: (expenses || []).filter(e => {
-            if (!e.date) return false;
-            const d = new Date(e.date);
-            const now = new Date();
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        }).reduce((acc, e) => acc + (Number(e.amount) || 0), 0)
+        rent: (expenses || []).filter(e => e.category === 'Rent').reduce((acc, e) => acc + (Number(e.amount) || 0), 0),
+        utilities: (expenses || []).filter(e => e.category === 'Utilities').reduce((acc, e) => acc + (Number(e.amount) || 0), 0),
+        salaries: (expenses || []).filter(e => e.category === 'Salaries').reduce((acc, e) => acc + (Number(e.amount) || 0), 0),
+        teaSnacks: (expenses || []).filter(e => e.category === 'Tea/Snacks').reduce((acc, e) => acc + (Number(e.amount) || 0), 0)
     };
 
     return (
@@ -119,7 +137,33 @@ const Expenses = ({ currentUser }) => {
                 )}
             </div>
 
-
+            {/* Stat Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Rent"
+                    value={`PKR ${stats.rent.toLocaleString()}`}
+                    icon={Home}
+                    color="blue"
+                />
+                <StatCard
+                    title="Utilities"
+                    value={`PKR ${stats.utilities.toLocaleString()}`}
+                    icon={Zap}
+                    color="amber"
+                />
+                <StatCard
+                    title="Salaries"
+                    value={`PKR ${stats.salaries.toLocaleString()}`}
+                    icon={Users}
+                    color="indigo"
+                />
+                <StatCard
+                    title="Tea & Snacks"
+                    value={`PKR ${stats.teaSnacks.toLocaleString()}`}
+                    icon={Coffee}
+                    color="orange"
+                />
+            </div>
 
             {/* Expenses Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">

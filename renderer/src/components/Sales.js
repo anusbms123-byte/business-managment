@@ -422,7 +422,7 @@ const Sales = ({ currentUser }) => {
                                             >
                                                 <option value="">Choose item...</option>
                                                 {products.map(p => (
-                                                    <option key={p.id} value={p.id} disabled={p.stockQty <= 0}>
+                                                    <option key={p.id} value={p.id}>
                                                         {p.name} - (Stock: {p.stockQty}) - PKR {p.sellPrice}
                                                     </option>
                                                 ))}

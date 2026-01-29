@@ -1,37 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Search, Edit2, Trash2, Building2, Phone,
-    Mail, MapPin, Truck, DollarSign, X, Check,
-    MoreHorizontal, TrendingDown, Clock, Info
+    Mail, MapPin, Truck, X, Check
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 // Premium Stat Card Component
-const StatCard = ({ title, value, icon: Icon, color }) => {
-    const colors = {
-        orange: 'bg-white border-l-4 border-l-blue-500',
-        emerald: 'bg-white border-l-4 border-l-emerald-500',
-        red: 'bg-white border-l-4 border-l-rose-500',
-        blue: 'bg-white border-l-4 border-l-indigo-500',
-        purple: 'bg-white border-l-4 border-l-indigo-500',
-        gray: 'bg-white border-l-4 border-l-slate-400'
-    };
 
-    return (
-        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
-                </div>
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                    <Icon size={20} />
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const Suppliers = ({ currentUser }) => {
     const [suppliers, setSuppliers] = useState([]);
@@ -76,9 +52,8 @@ const Suppliers = ({ currentUser }) => {
             const data = {
                 ...formData,
                 companyId: currentUser?.company_id,
-                // Ensure backend receives these fields
-                balance: formData.openingBalance,
-                opening_balance: formData.openingBalance
+                balance: formData.openingBalance, // Send current balance value from form
+                opening_balance: formData.id ? undefined : formData.openingBalance // Only set opening_balance on creation
             };
             let result;
             if (formData.id) {
@@ -124,7 +99,7 @@ const Suppliers = ({ currentUser }) => {
             address: supplier.address || '',
             city: supplier.city || '',
             gst_no: supplier.gstNo || '',
-            openingBalance: supplier.balance || supplier.openingBalance || 0
+            openingBalance: supplier.balance || 0
         } : {
             id: null,
             name: '',
@@ -145,8 +120,6 @@ const Suppliers = ({ currentUser }) => {
         s.phone?.includes(search)
     );
 
-    const totalPayable = suppliers.reduce((acc, s) => acc + (s.balance || 0), 0);
-
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
@@ -165,36 +138,6 @@ const Suppliers = ({ currentUser }) => {
                     </button>
                 )}
             </div>
-
-            {/* Stat Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard
-                    title="Total Payables"
-                    value={`PKR ${totalPayable.toLocaleString()}`}
-                    icon={DollarSign}
-                    color="red"
-                />
-                <StatCard
-                    title="Active Suppliers"
-                    value={suppliers.length}
-                    icon={Truck}
-                    color="blue"
-                />
-                <StatCard
-                    title="City Coverage"
-                    value={[...new Set(suppliers.map(s => s.city).filter(Boolean))].length}
-                    icon={MapPin}
-                    color="emerald"
-                />
-                <StatCard
-                    title="Avg. Debt"
-                    value={`PKR ${suppliers.length ? Math.round(totalPayable / suppliers.length).toLocaleString() : 0}`}
-                    icon={TrendingDown}
-                    color="gray"
-                />
-            </div>
-
-
 
             {/* Main Content Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -320,161 +263,163 @@ const Suppliers = ({ currentUser }) => {
             </div>
 
             {/* Redesigned Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{formData.id ? 'Modify Supplier' : 'New Vendor'}</h3>
-                                <button onClick={() => setShowModal(false)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+            {
+                showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{formData.id ? 'Modify Supplier' : 'New Vendor'}</h3>
+                                    <button onClick={() => setShowModal(false)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+                                </div>
+
+                                <form onSubmit={handleSave} className="p-8 space-y-5">
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Supplier Name</label>
+                                                <div className="relative">
+                                                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formData.name}
+                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
+                                                        placeholder="e.g. Ali Ahmed"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Company Name</label>
+                                                <div className="relative">
+                                                    <Truck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="text"
+                                                        value={formData.company_name}
+                                                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
+                                                        placeholder="Business Name"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Phone Number</label>
+                                                <div className="relative">
+                                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="text"
+                                                        value={formData.phone}
+                                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                        placeholder="+92 300 1234567"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Contact Person</label>
+                                                <div className="relative">
+                                                    <Check className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="text"
+                                                        value={formData.contact_person}
+                                                        onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                        placeholder="Manager Name"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Email</label>
+                                                <div className="relative">
+                                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="email"
+                                                        value={formData.email}
+                                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                        placeholder="sales@vendor.com"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">GST Number</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.gst_no}
+                                                    onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
+                                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                    placeholder="GST Registration"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">City</label>
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="text"
+                                                        value={formData.city}
+                                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                        placeholder="Karachi"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
+                                                <input
+                                                    type="number"
+                                                    value={formData.openingBalance}
+                                                    onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Business Address</label>
+                                            <textarea
+                                                value={formData.address}
+                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                rows="2"
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none resize-none"
+                                                placeholder="Physical address..."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowModal(false)}
+                                            className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest"
+                                        >
+                                            Discard
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
+                                        >
+                                            {saving ? 'Saving...' : formData.id ? 'Update Vendor' : 'Save Vendor'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-
-                            <form onSubmit={handleSave} className="p-8 space-y-5">
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Supplier Name</label>
-                                            <div className="relative">
-                                                <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
-                                                    placeholder="e.g. Ali Ahmed"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Company Name</label>
-                                            <div className="relative">
-                                                <Truck className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="text"
-                                                    value={formData.company_name}
-                                                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800"
-                                                    placeholder="Business Name"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Phone Number</label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="text"
-                                                    value={formData.phone}
-                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                    placeholder="+92 300 1234567"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Contact Person</label>
-                                            <div className="relative">
-                                                <Check className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="text"
-                                                    value={formData.contact_person}
-                                                    onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                    placeholder="Manager Name"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Email</label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className="w-full pl-12 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                    placeholder="sales@vendor.com"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">GST Number</label>
-                                            <input
-                                                type="text"
-                                                value={formData.gst_no}
-                                                onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                placeholder="GST Registration"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">City</label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="text"
-                                                    value={formData.city}
-                                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                    placeholder="Karachi"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Opening Balance</label>
-                                            <input
-                                                type="number"
-                                                value={formData.openingBalance}
-                                                onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none"
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Business Address</label>
-                                        <textarea
-                                            value={formData.address}
-                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                            rows="2"
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none resize-none"
-                                            placeholder="Physical address..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest"
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold shadow-sm shadow-blue-100 hover:bg-slate-900 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
-                                    >
-                                        {saving ? 'Saving...' : formData.id ? 'Update Vendor' : 'Save Vendor'}
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

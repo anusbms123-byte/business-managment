@@ -148,6 +148,7 @@ const Signup = () => {
 
                             <button
                                 type="submit"
+                                disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2"
                             >
                                 {loading ? 'Creating Account...' : (
@@ -179,7 +180,6 @@ const FormInput = ({ label, icon: Icon, disabled, showToggle, isVisible, onToggl
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />}
             <input
                 {...props}
-                disabled={disabled}
                 className={`w-full ${Icon ? 'pl-12' : 'px-4'} ${showToggle ? 'pr-12' : 'pr-4'} py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300`}
             />
             {showToggle && (

@@ -151,6 +151,7 @@ const CompanySetup = () => {
 
                             <button
                                 type="submit"
+                                disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2 mt-4"
                             >
                                 {loading ? 'Submitting Request...' : (
