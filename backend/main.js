@@ -11,21 +11,38 @@ autoUpdater.logger = log;
 autoUpdater.on('checking-for-update', () => {
     log.info('Checking for update...');
 });
+
 autoUpdater.on('update-available', (info) => {
     log.info('Update available.');
+    // Notify user that update is being downloaded
+    dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Found',
+        message: `A new version (${info.version}) is available. It is downloading in the background. We will notify you when it's ready!`,
+        buttons: ['OK']
+    });
 });
+
 autoUpdater.on('update-not-available', (info) => {
     log.info('Update not available.');
 });
+
 autoUpdater.on('error', (err) => {
     log.error('Error in auto-updater. ' + err);
+    // Explicitly notify user about the error if they are checking for updates
+    // This helps debug issues like connectivity or missing release files
+    if (app.isPackaged) {
+        dialog.showErrorBox('Update Error', 'Could not check for updates. Please check your internet connection or try again later. Error: ' + err.message);
+    }
 });
+
 autoUpdater.on('download-progress', (progressObj) => {
     let log_message = "Download speed: " + progressObj.bytesPerSecond;
     log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
     log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
     log.info(log_message);
 });
+
 autoUpdater.on('update-downloaded', (info) => {
     log.info('Update downloaded');
     dialog.showMessageBox({
