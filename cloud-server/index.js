@@ -1861,6 +1861,8 @@ app.get('/api/reports/summary', async (req, res) => {
                     purchases: 0,
                     returns: 0,
                     salaries: 0,
+                    inventory: 0,
+                    payables: 0,
                     cogs: 0,
                     profit: 0,
                     isMonthly: useMonthlyGrouping
@@ -1946,7 +1948,12 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         });
 
-        const recentDays = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+        // Inject current valuation into the last day for the chart
+        const lastDay = recentDays[0];
+        if (lastDay) {
+            lastDay.inventory = inventoryValuationCost;
+            lastDay.payables = totalPayables;
+        }
 
         res.json({
             totalSales,
@@ -1967,6 +1974,8 @@ app.get('/api/reports/summary', async (req, res) => {
             returnCount: saleReturns.length + purchaseReturns.length,
             totalReturns,
             employeeCount: employees.length,
+            vendorCount: vendors.length,
+            customerCount: customers.length,
             totalSalaries,
             recentDays
         });

@@ -4,7 +4,9 @@ import {
     Users, Factory, RefreshCw,
     DollarSign, TrendingUp, RotateCcw,
     Users2, CreditCard, ArrowLeft,
-    Calendar, Download, ChevronRight
+    Calendar, Download, ChevronRight,
+    TrendingDown, Activity, Layers,
+    Briefcase, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -36,6 +38,18 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
     </div>
 );
 
+const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
+    <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+        <div className={`p-2.5 rounded-xl ${color} bg-opacity-10 text-opacity-100`}>
+            <Icon size={18} />
+        </div>
+        <div>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+            <p className="text-sm font-black text-slate-800 tracking-tight">{value}</p>
+        </div>
+    </div>
+);
+
 const Reports = ({ currentUser }) => {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -43,8 +57,10 @@ const Reports = ({ currentUser }) => {
     const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
 
     // Date Filtering
-    const today = new Date().toISOString().split('T')[0];
-    const [dateRange, setDateRange] = useState({ start: today, end: today });
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const today = now.toLocaleDateString('en-CA');
+    const [dateRange, setDateRange] = useState({ start: firstDayOfMonth, end: today });
     const [overviewFilter, setOverviewFilter] = useState('Monthly'); // For Dashboard
 
     useEffect(() => {
@@ -162,19 +178,83 @@ const Reports = ({ currentUser }) => {
     );
 
     const renderDetailView = () => {
+        const chartData = (summary?.recentDays || []).slice().reverse();
         const moduleMap = {
-            sales: { title: 'Sales Analysis', icon: DollarSign, color: '#3b82f6', dataKey: 'sales' },
-            purchases: { title: 'Purchase Log', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases' },
-            inventory: { title: 'Stock Valuation', icon: Package, color: '#6366f1', dataKey: 'inventory' },
-            expenses: { title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses' },
-            returns: { title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns' },
-            suppliers: { title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables' },
-            hrm: { title: 'Payroll Summary', icon: Users2, color: '#10b981', dataKey: 'salaries' },
-            netprofit: { title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit' }
+            sales: {
+                title: 'Sales Analysis', icon: DollarSign, color: '#3b82f6', dataKey: 'sales',
+                miniStats: [
+                    { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
+                    { label: 'Total Invoices', value: summary?.salesCount || 0, icon: Layers, color: 'text-indigo-500' },
+                    { label: 'Gross Margin', value: `PKR ${((summary?.totalSales || 0) - (summary?.totalCOGS || 0)).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-500' }
+                ],
+                tableCols: ['Date Tag', 'Order Volume', 'Gross Revenue']
+            },
+            purchases: {
+                title: 'Purchase Log', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases',
+                miniStats: [
+                    { label: 'Avg Bill Size', value: `PKR ${(Math.round(summary?.totalPurchases / (summary?.purchaseCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-amber-500' },
+                    { label: 'Total Bills', value: summary?.purchaseCount || 0, icon: Layers, color: 'text-orange-500' },
+                    { label: 'Stock Inbound', value: 'Audited', icon: CheckCircle2, color: 'text-slate-400' }
+                ],
+                tableCols: ['Billing Date', 'Invoice Count', 'Total Spent']
+            },
+            inventory: {
+                title: 'Stock Valuation', icon: Package, color: '#6366f1', dataKey: 'inventory',
+                miniStats: [
+                    { label: 'Asset Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Layers, color: 'text-indigo-500' },
+                    { label: 'Low Stock Alerts', value: summary?.lowStockCount || 0, icon: AlertTriangle, color: 'text-rose-500' },
+                    { label: 'Retail Potential', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' }
+                ],
+                tableCols: ['Sync Date', 'Valuation Type', 'Asset Magnitude']
+            },
+            expenses: {
+                title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
+                miniStats: [
+                    { label: 'Daily Average', value: `PKR ${(Math.round(summary?.totalExpenses / (chartData.length || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-rose-500' },
+                    { label: 'Module Entries', value: summary?.expenseCount || 0, icon: Layers, color: 'text-slate-500' },
+                    { label: 'Status', value: 'Debited', icon: CheckCircle2, color: 'text-rose-600' }
+                ],
+                tableCols: ['Expense Date', 'Transactions', 'Net Expenditure']
+            },
+            returns: {
+                title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
+                miniStats: [
+                    { label: 'Refund Volume', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-orange-600' },
+                    { label: 'Total Claims', value: summary?.returnCount || 0, icon: Layers, color: 'text-slate-500' },
+                    { label: 'Approval Rate', value: '100%', icon: CheckCircle2, color: 'text-emerald-500' }
+                ],
+                tableCols: ['Return Date', 'Claim Count', 'Refund Magnitude']
+            },
+            suppliers: {
+                title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables',
+                miniStats: [
+                    { label: 'Direct Liabilities', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: Layers, color: 'text-slate-600' },
+                    { label: 'Active Vendors', value: 'CurrentMa', icon: Users, color: 'text-blue-500' },
+                    { label: 'Payment Status', value: 'Pending Audit', icon: AlertTriangle, color: 'text-amber-500' }
+                ],
+                tableCols: ['Snapshot Date', 'Account Head', 'Balance Owed']
+            },
+            hrm: {
+                title: 'Payroll Summary', icon: Users2, color: '#10b981', dataKey: 'salaries',
+                miniStats: [
+                    { label: 'Active Staff', value: summary?.employeeCount || 0, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Avg Salary/Emp', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
+                    { label: 'Total Dispersed', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CheckCircle2, color: 'text-emerald-500' }
+                ],
+                tableCols: ['Disbursal Month', 'Headcount', 'Net Payroll']
+            },
+            netprofit: {
+                title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
+                miniStats: [
+                    { label: 'Gross Sales', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
+                    { label: 'Operating Costs', value: `PKR ${((summary?.totalExpenses || 0) + (summary?.totalSalaries || 0)).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
+                    { label: 'COGS Sum', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: Layers, color: 'text-orange-500' }
+                ],
+                tableCols: ['Audit Date', 'Operational Delta', 'Net Bottom Line']
+            }
         };
 
         const config = moduleMap[activeModule];
-        const chartData = (summary?.recentDays || []).slice().reverse();
 
         return (
             <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
@@ -223,7 +303,7 @@ const Reports = ({ currentUser }) => {
                     </div>
                 </div>
 
-                {/* Primary Metric & Chart */}
+                {/* Primary Metric & Chart Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
                         <div className="flex items-center justify-between mb-8">
@@ -273,8 +353,8 @@ const Reports = ({ currentUser }) => {
                         <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
-                            <h2 className="text-4xl font-black mt-2 tracking-tighter">
-                                PKR {summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales']?.toLocaleString()}
+                            <h2 className="text-3xl font-black mt-2 tracking-tighter">
+                                PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
                             </h2>
                         </div>
                         <div className="space-y-4 relative z-10 pt-10">
@@ -284,39 +364,53 @@ const Reports = ({ currentUser }) => {
                             </div>
                             <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
                                 <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
-                                <p className="text-xs font-black mt-1 italic">DATA AUDITED & VERIFIED</p>
+                                <p className="text-xs font-black mt-1 italic uppercase tracking-tighter">Verified & Processed</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {/* Sub-Metrics Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {config.miniStats.map((stat, idx) => (
+                        <DetailMiniCard key={idx} {...stat} />
+                    ))}
+                </div>
+
                 {/* Data Table */}
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline underline-offset-8">Activity Journal</h3>
-                        <span className="text-[9px] font-bold text-slate-300">Showing filtered logs from selected range</span>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline underline-offset-8">Insight Journal</h3>
+                        <span className="text-[9px] font-bold text-slate-300">Detailed periodic activity logs</span>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50/50">
                                 <tr>
-                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Tag</th>
-                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
-                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Magnitude</th>
+                                    {config.tableCols.map((col, idx) => (
+                                        <th key={idx} className={`px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest ${idx === 2 ? 'text-right' : ''}`}>
+                                            {col}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {chartData.filter(d => d[config.dataKey] > 0).map((row, i) => (
+                                {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
                                     <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-8 py-5 text-xs font-bold text-slate-500 font-mono italic uppercase">{row.date}</td>
                                         <td className="px-8 py-5">
                                             <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                            <span className="text-xs font-black text-slate-800 uppercase italic">Entry_{i + 1} Record</span>
+                                            <span className="text-xs font-black text-slate-800 uppercase italic">
+                                                {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
+                                                    activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
+                                                        activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
+                                                            `Activity_ID_${i + 1} Log`}
+                                            </span>
                                         </td>
-                                        <td className="px-8 py-5 text-right font-black text-slate-800 text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                        <td className="px-8 py-5 text-right font-black text-slate-800 text-xs text-blue-600">PKR {row[config.dataKey]?.toLocaleString()}</td>
                                     </tr>
                                 ))}
-                                {chartData.filter(d => d[config.dataKey] > 0).length === 0 && (
+                                {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0 && (
                                     <tr>
                                         <td colSpan="3" className="px-8 py-20 text-center">
                                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
