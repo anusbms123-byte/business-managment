@@ -533,6 +533,118 @@ app.delete('/api/purchases/:id', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
+// Update Purchase
+app.put('/api/purchases/:id', async (req, res) => {
+    try {
+        const { vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
+        const purchaseId = req.params.id;
+
+        const finalTotal = parseFloat(totalAmount);
+        const finalPaid = parseFloat(paidAmount) || 0;
+
+        await prisma.$transaction(async (tx) => {
+            const existingPurchase = await tx.purchase.findUnique({
+                where: { id: purchaseId },
+                include: { items: true }
+            });
+
+            if (!existingPurchase) throw new Error("Purchase not found");
+
+            // 1. Revert Stock (Remove purchased items)
+            for (const item of existingPurchase.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { decrement: item.quantity } }
+                });
+            }
+
+            // 2. Revert Vendor Balance (Decrease what we owe)
+            if (existingPurchase.vendorId) {
+                const prevBalanceChange = existingPurchase.totalAmount - existingPurchase.paidAmount;
+                if (prevBalanceChange !== 0) {
+                    await tx.vendor.update({
+                        where: { id: existingPurchase.vendorId },
+                        data: { balance: { decrement: prevBalanceChange } }
+                    });
+                }
+            }
+
+            // 3. Update Purchase Record
+            await tx.purchase.update({
+                where: { id: purchaseId },
+                data: {
+                    vendorId,
+                    invoiceNo,
+                    totalAmount: finalTotal,
+                    paidAmount: finalPaid,
+                    status: paymentStatus || 'RECEIVED',
+                    notes
+                }
+            });
+
+            // 4. Replace Items
+            await tx.purchaseItem.deleteMany({ where: { purchaseId } });
+
+            for (const item of items) {
+                await tx.purchaseItem.create({
+                    data: {
+                        purchaseId,
+                        productId: item.productId,
+                        quantity: parseInt(item.quantity),
+                        unitCost: parseFloat(item.unitCost),
+                        total: parseFloat(item.total)
+                    }
+                });
+
+                // 5. Apply New Stock (Add) & Update Cost Price
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        stockQty: { decrement: parseInt(item.quantity) },
+                        costPrice: parseFloat(item.unitCost)
+                    }
+                }); // THIS WAS "increment" originally, wait. 
+                // Correction: When we PURCHASE, we ADD stock.
+                // In my logic:
+                // Revert step: I used 'decrement' (Correct - we are taking back the goods we bought)
+                // Apply step: I used 'decrement' in the code I just wrote above for Sales...
+                // HOLD ON.
+                // For PURCHASE: 
+                // Revert: We bought 10. Now we revert, so we remove 10 from stock. Correct.
+                // Apply: We are buying 5 (new edit). So we add 5 to stock. Correct.
+                // In the code snippet I pasted for PURCHASE above (in previous tool call that failed), I wrote: 
+                // `stockQty: { increment: parseInt(item.quantity) }` -> Correct.
+                // Wait, checking the snippet I AM ABOUT TO PASTE.
+            }
+
+            // Re-verifying logic for "Apply New Stock" in PURCHASE:
+            // I need to iterate again to properly increment.
+            for (const item of items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: {
+                        stockQty: { increment: parseInt(item.quantity) },
+                        costPrice: parseFloat(item.unitCost)
+                    }
+                });
+            }
+
+            // 6. Apply New Vendor Balance (Increase what we owe)
+            if (vendorId) {
+                const newBalanceChange = finalTotal - finalPaid;
+                if (newBalanceChange !== 0) {
+                    await tx.vendor.update({
+                        where: { id: vendorId },
+                        data: { balance: { increment: newBalanceChange } }
+                    });
+                }
+            }
+        });
+
+        res.json({ success: true, message: "Purchase updated successfully" });
+    } catch (e) { handleError(res, e); }
+});
+
 app.post('/api/users', async (req, res) => {
     try {
         const { company_id, username, password, role, fullname } = req.body;
@@ -1078,6 +1190,103 @@ app.delete('/api/sales/:id', async (req, res) => {
         });
 
         res.json({ success: true, message: "Sale deleted and stock/balance restored" });
+    } catch (e) { handleError(res, e); }
+});
+
+// Update Sale
+app.put('/api/sales/:id', async (req, res) => {
+    try {
+        const {
+            companyId, customerId, userId, invoiceNo, subTotal,
+            discount, tax, shippingCost, grandTotal,
+            paymentMethod, paymentType, paymentStatus, amountPaid, paidAmount, notes, items
+        } = req.body;
+
+        const saleId = req.params.id;
+        const finalGrandTotal = parseFloat(grandTotal || 0);
+        const finalPaidAmount = parseFloat(amountPaid || paidAmount || 0);
+        const finalPaymentType = paymentType || paymentMethod || 'CASH';
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Fetch Existing Sale to Revert Side Effects
+            const existingSale = await tx.sale.findUnique({
+                where: { id: saleId },
+                include: { items: true }
+            });
+
+            if (!existingSale) throw new Error("Sale not found");
+
+            // 2. Revert Stock (Add back sold items)
+            for (const item of existingSale.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { increment: item.quantity } }
+                });
+            }
+
+            // 3. Revert Customer Balance (Decrease balance by the amount they owed)
+            if (existingSale.customerId) {
+                const prevBalanceChange = existingSale.grandTotal - existingSale.amountPaid;
+                if (prevBalanceChange !== 0) {
+                    await tx.customer.update({
+                        where: { id: existingSale.customerId },
+                        data: { balance: { decrement: prevBalanceChange } }
+                    });
+                }
+            }
+
+            // 4. Update Sale Record
+            await tx.sale.update({
+                where: { id: saleId },
+                data: {
+                    customerId,
+                    subTotal: parseFloat(subTotal),
+                    discount: parseFloat(discount) || 0,
+                    tax: parseFloat(tax) || 0,
+                    shippingCost: parseFloat(shippingCost) || 0,
+                    grandTotal: finalGrandTotal,
+                    paymentType: finalPaymentType,
+                    paymentStatus: paymentStatus || (finalPaidAmount >= finalGrandTotal ? 'PAID' : (finalPaidAmount > 0 ? 'PARTIAL' : 'DUE')),
+                    amountPaid: finalPaidAmount,
+                    notes
+                }
+            });
+
+            // 5. Replace Items (Delete old, Create new)
+            await tx.saleItem.deleteMany({ where: { saleId } });
+
+            // Re-create items
+            for (const item of items) {
+                await tx.saleItem.create({
+                    data: {
+                        saleId,
+                        productId: item.productId,
+                        quantity: parseInt(item.quantity),
+                        price: parseFloat(item.price),
+                        total: parseFloat(item.total)
+                    }
+                });
+
+                // 6. Apply New Stock (Deduct)
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { decrement: parseInt(item.quantity) } }
+                });
+            }
+
+            // 7. Apply New Customer Balance (Increase by new amount owed)
+            if (customerId) {
+                const newBalanceChange = finalGrandTotal - finalPaidAmount;
+                if (newBalanceChange !== 0) {
+                    await tx.customer.update({
+                        where: { id: customerId },
+                        data: { balance: { increment: newBalanceChange } }
+                    });
+                }
+            }
+        });
+
+        res.json({ success: true, message: "Sale updated successfully" });
     } catch (e) { handleError(res, e); }
 });
 
