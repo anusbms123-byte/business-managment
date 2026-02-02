@@ -478,12 +478,18 @@ app.post('/api/purchases', async (req, res) => {
             }
 
             // 3. Update Vendor Balance (Payable)
-            const balanceToIncr = Math.max(0, parseFloat(totalAmount) - (parseFloat(paidAmount) || 0));
+            const balanceToIncr = parseFloat(totalAmount) - (parseFloat(paidAmount) || 0);
             if (balanceToIncr !== 0) {
-                await tx.vendor.update({
-                    where: { id: vendorId },
-                    data: { balance: { increment: balanceToIncr } }
-                });
+                const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+                const currentBalance = vendor?.balance || 0;
+                const actualIncrement = balanceToIncr < 0 ? Math.max(balanceToIncr, -currentBalance) : balanceToIncr;
+
+                if (actualIncrement !== 0) {
+                    await tx.vendor.update({
+                        where: { id: vendorId },
+                        data: { balance: { increment: actualIncrement } }
+                    });
+                }
             }
 
             return p;
@@ -515,7 +521,7 @@ app.delete('/api/purchases/:id', async (req, res) => {
 
             // 2. Reverse Vendor Balance
             if (purchase.vendorId) {
-                const balanceChange = Math.max(0, purchase.totalAmount - purchase.paidAmount);
+                const balanceChange = purchase.totalAmount - purchase.paidAmount;
                 await tx.vendor.update({
                     where: { id: purchase.vendorId },
                     data: { balance: { decrement: balanceChange } }
@@ -560,7 +566,7 @@ app.put('/api/purchases/:id', async (req, res) => {
 
             // 2. Revert Vendor Balance (Decrease what we owe)
             if (existingPurchase.vendorId) {
-                const prevBalanceChange = Math.max(0, existingPurchase.totalAmount - existingPurchase.paidAmount);
+                const prevBalanceChange = existingPurchase.totalAmount - existingPurchase.paidAmount;
                 if (prevBalanceChange !== 0) {
                     await tx.vendor.update({
                         where: { id: existingPurchase.vendorId },
@@ -634,13 +640,20 @@ app.put('/api/purchases/:id', async (req, res) => {
             }
 
             // 6. Apply New Vendor Balance (Increase what we owe)
+            // 6. Apply New Vendor Balance (Increase what we owe)
             if (vendorId) {
-                const newBalanceChange = Math.max(0, finalTotal - finalPaid);
+                const newBalanceChange = finalTotal - finalPaid;
                 if (newBalanceChange !== 0) {
-                    await tx.vendor.update({
-                        where: { id: vendorId },
-                        data: { balance: { increment: newBalanceChange } }
-                    });
+                    const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+                    const currentBalance = vendor?.balance || 0;
+                    const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
+
+                    if (actualIncrement !== 0) {
+                        await tx.vendor.update({
+                            where: { id: vendorId },
+                            data: { balance: { increment: actualIncrement } }
+                        });
+                    }
                 }
             }
         });
@@ -1141,12 +1154,31 @@ app.post('/api/sales', async (req, res) => {
 
             // 3. Update Customer Balance if applicable
             if (customerId) {
-                const balanceChange = Math.max(0, finalGrandTotal - finalPaidAmount);
+                const balanceChange = finalGrandTotal - finalPaidAmount;
                 if (balanceChange !== 0) {
-                    await tx.customer.update({
-                        where: { id: customerId },
-                        data: { balance: { increment: balanceChange } }
+                    // Get current balance to prevent it from going negative
+                    const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                    const currentBalance = customer?.balance || 0;
+
+                    // Calculate the actual increment (can't make final balance negative)
+                    const actualIncrement = balanceChange < 0
+                        ? Math.max(balanceChange, -currentBalance) // Prevent negative final balance
+                        : balanceChange; // Positive increment is fine
+
+                    console.log('[DEBUG] Sale Balance Update:', {
+                        grandTotal: finalGrandTotal,
+                        paid: finalPaidAmount,
+                        balanceChange,
+                        currentBalance,
+                        actualIncrement
                     });
+
+                    if (actualIncrement !== 0) {
+                        await tx.customer.update({
+                            where: { id: customerId },
+                            data: { balance: { increment: actualIncrement } }
+                        });
+                    }
                 }
             }
 
@@ -1179,7 +1211,7 @@ app.delete('/api/sales/:id', async (req, res) => {
 
             // 2. Reverse Customer Balance Change
             if (sale.customerId) {
-                const balanceChange = Math.max(0, sale.grandTotal - sale.amountPaid);
+                const balanceChange = sale.grandTotal - sale.amountPaid;
                 await tx.customer.update({
                     where: { id: sale.customerId },
                     data: { balance: { decrement: balanceChange } }
@@ -1230,7 +1262,7 @@ app.put('/api/sales/:id', async (req, res) => {
 
             // 3. Revert Customer Balance (Decrease balance by the amount they owed)
             if (existingSale.customerId) {
-                const prevBalanceChange = Math.max(0, existingSale.grandTotal - existingSale.amountPaid);
+                const prevBalanceChange = existingSale.grandTotal - existingSale.amountPaid;
                 if (prevBalanceChange !== 0) {
                     await tx.customer.update({
                         where: { id: existingSale.customerId },
@@ -1280,12 +1312,18 @@ app.put('/api/sales/:id', async (req, res) => {
 
             // 7. Apply New Customer Balance (Increase by new amount owed)
             if (customerId) {
-                const newBalanceChange = Math.max(0, finalGrandTotal - finalPaidAmount);
+                const newBalanceChange = finalGrandTotal - finalPaidAmount;
                 if (newBalanceChange !== 0) {
-                    await tx.customer.update({
-                        where: { id: customerId },
-                        data: { balance: { increment: newBalanceChange } }
-                    });
+                    const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                    const currentBalance = customer?.balance || 0;
+                    const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
+
+                    if (actualIncrement !== 0) {
+                        await tx.customer.update({
+                            where: { id: customerId },
+                            data: { balance: { increment: actualIncrement } }
+                        });
+                    }
                 }
             }
         });
