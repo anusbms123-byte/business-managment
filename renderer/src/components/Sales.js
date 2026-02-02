@@ -42,6 +42,7 @@ const Sales = ({ currentUser }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    const [editingId, setEditingId] = useState(null);
     // New Sale Cart State
     const [cart, setCart] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState('');
@@ -174,6 +175,51 @@ const Sales = ({ currentUser }) => {
     const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
     const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
 
+    const handleEdit = (sale) => {
+        setEditingId(sale.id);
+        setSelectedCustomer(sale.customerId || '');
+
+        // Reconstruct Cart
+        const loadedCart = (sale.items || []).map(item => ({
+            productId: item.productId || item.product?.id,
+            name: item.product?.name || item.name || 'Unknown Item',
+            sku: item.product?.sku,
+            price: item.price || item.unitPrice,
+            quantity: item.quantity,
+            total: (item.price || item.unitPrice) * item.quantity
+        }));
+        setCart(loadedCart);
+
+        setDiscount(sale.discount || 0);
+        setDiscountType('FLAT');
+        setTax(sale.tax || 0);
+        setTaxType('FLAT');
+        setShippingCost(sale.shippingCost || 0);
+        setAmountPaid(sale.paidAmount || 0);
+        setPaymentMethod(sale.paymentMethod || 'CASH');
+        setNotes(sale.notes || '');
+
+        const cust = customers.find(c => c.id === sale.customerId);
+        setPreviousBalance(cust?.balance || 0);
+
+        setIsModalOpen(true);
+    };
+
+    const resetForm = () => {
+        setEditingId(null);
+        setCart([]);
+        setDiscount(0);
+        setDiscountType('FLAT');
+        setTax(0);
+        setTaxType('PERCENT');
+        setShippingCost(0);
+        setAmountPaid(0);
+        setPaymentMethod('CASH');
+        setNotes('');
+        setSelectedCustomer('');
+        setPreviousBalance(0);
+    };
+
 
 
     // Print Handler
@@ -198,46 +244,37 @@ const Sales = ({ currentUser }) => {
 
         try {
             const saleData = {
+                id: editingId,
                 companyId: currentUser.company_id,
                 customerId: selectedCustomer || null,
                 userId: currentUser.id,
-                invoiceNo: `INV-${Date.now().toString().slice(-6)}`,
+                invoiceNo: editingId ? (sales.find(s => s.id === editingId)?.invoiceNo) : `INV-${Date.now().toString().slice(-6)}`,
                 subTotal,
                 discount: discountValue,
                 tax: taxValue,
-                totalAmount: grandTotal - (Number(previousBalance) || 0), // Base sale amount
-                grandTotal: grandTotal - (Number(previousBalance) || 0), // Keep both for safety
+                totalAmount: grandTotal - (Number(previousBalance) || 0),
+                grandTotal: grandTotal - (Number(previousBalance) || 0),
                 shippingCost: parseFloat(shippingCost),
                 paidAmount: parseFloat(amountPaid),
-                amountPaid: parseFloat(amountPaid), // Keep both for safety
-                amount_paid: parseFloat(amountPaid), // DB naming
+                amountPaid: parseFloat(amountPaid),
+                amount_paid: parseFloat(amountPaid),
                 paymentMethod,
                 paymentStatus,
                 notes,
                 items: cart,
-                // Extra fields for printing
                 customerName: cust?.name || 'Walk-in Customer',
                 date: new Date(),
                 prevBalance: Number(previousBalance) || 0
             };
 
-            const result = await window.electronAPI.addSale(saleData);
+            const result = editingId
+                ? await window.electronAPI.updateSale(saleData)
+                : await window.electronAPI.addSale(saleData);
+
             if (result.success) {
-                // Backend now handles customer balance update automatically in $transaction
-
-                handlePrint(saleData); // Trigger Print automatically
-
+                handlePrint(saleData);
                 setIsModalOpen(false);
-                setCart([]);
-                setDiscount(0);
-                setDiscountType('FLAT');
-                setTax(0);
-                setTaxType('PERCENT');
-                setShippingCost(0);
-                setAmountPaid(0);
-                setPaymentMethod('CASH');
-                setNotes('');
-                setSelectedCustomer('');
+                resetForm();
                 fetchData();
             } else {
                 alert("Error: " + result.message);
@@ -289,7 +326,7 @@ const Sales = ({ currentUser }) => {
                     </div>
                     {canCreate('sales') && (
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => { resetForm(); setIsModalOpen(true); }}
                             className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
                         >
                             <Plus size={18} />
@@ -358,6 +395,15 @@ const Sales = ({ currentUser }) => {
                                                 title="Print Receipt"
                                             >
                                                 <Printer size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleEdit(sale)}
+                                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                title="Edit Sale"
+                                            >
+                                                <div className="w-4 h-4">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                                </div>
                                             </button>
                                             {canDelete('sales') && (
                                                 <button

@@ -95,7 +95,7 @@ const Inventory = ({ currentUser }) => {
 const StockTracking = ({ currentUser }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filterType, setFilterType] = useState('all'); // all, in_stock, low_stock, out_of_stock, alerts
+    const [filterType, setFilterType] = useState('all'); // all, in_stock, low_stock, out_of_stock, alerts, expiring_soon, expired
 
     useEffect(() => {
         const fetchStock = async () => {
@@ -118,6 +118,16 @@ const StockTracking = ({ currentUser }) => {
         inStock: products.filter(p => p.stockQty > (p.alertQty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
         alerts: products.filter(p => p.stockQty <= (p.alertQty || 5)).length,
+        // Expiring Soon: Not expired yet, but expires within 30 days
+        expiringSoon: products.filter(p => {
+            if (!p.expiryDate) return false;
+            const today = new Date();
+            const exp = new Date(p.expiryDate);
+            const diffTime = exp - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 && diffDays <= 30;
+        }).length,
+        // Expired: Date is in the past
         expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length
     };
 
@@ -126,6 +136,14 @@ const StockTracking = ({ currentUser }) => {
             case 'in_stock': return products.filter(p => p.stockQty > (p.alertQty || 5));
             case 'out_of_stock': return products.filter(p => p.stockQty <= 0);
             case 'alerts': return products.filter(p => p.stockQty <= (p.alertQty || 5));
+            case 'expiring_soon': return products.filter(p => {
+                if (!p.expiryDate) return false;
+                const today = new Date();
+                const exp = new Date(p.expiryDate);
+                const diffTime = exp - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays >= 0 && diffDays <= 30;
+            });
             case 'expired': return products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date());
             default: return products;
         }
@@ -135,7 +153,7 @@ const StockTracking = ({ currentUser }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <StatCard
                     title="Total Items"
                     value={stats.total}
@@ -168,12 +186,19 @@ const StockTracking = ({ currentUser }) => {
                     isActive={filterType === 'out_of_stock'}
                     onClick={() => setFilterType('out_of_stock')}
                 />
-
                 <StatCard
-                    title="Expired Items"
-                    value={stats.expired}
+                    title="Expiring Soon"
+                    value={stats.expiringSoon}
                     icon={Clock}
                     color="orange"
+                    isActive={filterType === 'expiring_soon'}
+                    onClick={() => setFilterType('expiring_soon')}
+                />
+                <StatCard
+                    title="Expired"
+                    value={stats.expired}
+                    icon={Trash2}
+                    color="red"
                     isActive={filterType === 'expired'}
                     onClick={() => setFilterType('expired')}
                 />
@@ -198,27 +223,54 @@ const StockTracking = ({ currentUser }) => {
                             <th className="px-6 py-4">Product Name</th>
                             <th className="px-6 py-4 text-center">Current Stock</th>
                             <th className="px-6 py-4 text-center">Alert Level</th>
+                            <th className="px-6 py-4 text-center">Expiry Date</th>
                             <th className="px-6 py-4">Status</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                        {filtered.length > 0 ? filtered.map((p) => (
-                            <tr key={p.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-50 last:border-0">
-                                <td className="px-6 py-4 font-bold text-sm text-slate-800">{p.name}</td>
-                                <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30' : 'text-slate-700'}`}>{p.stockQty}</td>
-                                <td className="px-6 py-4 text-center font-bold text-slate-400 text-xs">{p.alertQty || 5}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                        p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                            'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                        }`}>
-                                        {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
-                                    </span>
-                                </td>
-                            </tr>
-                        )) : (
+                        {filtered.length > 0 ? filtered.map((p) => {
+                            const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
+                            const isExpiringSoon = !isExpired && p.expiryDate && (() => {
+                                const today = new Date();
+                                const exp = new Date(p.expiryDate);
+                                const diffTime = exp - today;
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                return diffDays <= 30;
+                            })();
+
+                            return (
+                                <tr key={p.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-50 last:border-0">
+                                    <td className="px-6 py-4 font-bold text-sm text-slate-800">{p.name}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30' : 'text-slate-700'}`}>{p.stockQty}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-slate-400 text-xs">{p.alertQty || 5}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600' : isExpiringSoon ? 'text-amber-600' : 'text-slate-500'}`}>
+                                        {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex gap-2">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                                    'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                }`}>
+                                                {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
+                                            </span>
+                                            {isExpired && (
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-rose-100 text-rose-700 border-rose-200">
+                                                    Expired
+                                                </span>
+                                            )}
+                                            {isExpiringSoon && (
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-100 text-amber-700 border-amber-200">
+                                                    Expiring
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        }) : (
                             <tr>
-                                <td colSpan="4" className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                                     No products found for this filter
                                 </td>
                             </tr>
