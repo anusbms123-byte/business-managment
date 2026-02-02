@@ -229,8 +229,8 @@ const Reports = ({ currentUser }) => {
                 title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables',
                 miniStats: [
                     { label: 'Direct Liabilities', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: Layers, color: 'text-slate-600' },
-                    { label: 'Active Vendors', value: 'CurrentMa', icon: Users, color: 'text-blue-500' },
-                    { label: 'Payment Status', value: 'Pending Audit', icon: AlertTriangle, color: 'text-amber-500' }
+                    { label: 'Active Vendors', value: `${summary?.vendorCount || 0} Vendors`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Payment Status', value: summary?.totalPayables > 0 ? "Outstanding" : "Cleared", icon: AlertTriangle, color: summary?.totalPayables > 0 ? 'text-amber-500' : 'text-emerald-500' }
                 ],
                 tableCols: ['Snapshot Date', 'Account Head', 'Balance Owed']
             },

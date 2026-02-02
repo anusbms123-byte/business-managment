@@ -1863,6 +1863,7 @@ app.get('/api/reports/summary', async (req, res) => {
                     salaries: 0,
                     inventory: 0,
                     payables: 0,
+                    invoices: 0,
                     cogs: 0,
                     profit: 0,
                     isMonthly: useMonthlyGrouping
@@ -1921,6 +1922,7 @@ app.get('/api/reports/summary', async (req, res) => {
 
             if (dailyMap[d]) {
                 dailyMap[d].purchases += p.totalAmount;
+                dailyMap[d].invoices += 1;
             }
         });
 
