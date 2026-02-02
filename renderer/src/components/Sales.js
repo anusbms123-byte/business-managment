@@ -171,7 +171,7 @@ const Sales = ({ currentUser }) => {
     const taxValue = taxType === 'PERCENT' ? (subTotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
 
     const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue + (Number(previousBalance) || 0);
-    const netBalance = grandTotal - (Number(amountPaid) || 0);
+    const netBalance = Math.max(0, grandTotal - (Number(amountPaid) || 0));
     const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
     const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
 

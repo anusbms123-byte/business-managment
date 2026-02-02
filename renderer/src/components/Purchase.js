@@ -122,7 +122,7 @@ const Purchase = ({ currentUser }) => {
     // --- Totals Calculation ---
     const subtotal = cart.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
     const grandTotal = subtotal + parseFloat(shippingCost || 0) + parseFloat(previousBalance || 0);
-    const balanceDue = grandTotal - parseFloat(paidAmount || 0);
+    const balanceDue = Math.max(0, grandTotal - parseFloat(paidAmount || 0));
 
     const handleSave = async () => {
         if (!vendorId) return window.alert('Please select a vendor');
