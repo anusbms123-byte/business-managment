@@ -400,15 +400,15 @@ const Products = ({ currentUser }) => {
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Stock</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Sell (PKR)</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Cost (PKR)</th>
-                                <th className="px-6 py-4 border-b border-slate-100">Status</th>
                                 <th className="px-6 py-4 border-b border-slate-100">SKU</th>
-                                <th className="px-6 py-4 border-b border-slate-100">Category</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Brand</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Expiry</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Unit</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Weight</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Alert</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Attributes</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Status</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Category</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -416,38 +416,15 @@ const Products = ({ currentUser }) => {
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="transition-all border-b border-slate-50 last:border-0 hover:bg-slate-50/30">
                                     <td className="px-6 py-4 sticky left-0 bg-white z-10 border-b border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold">
-                                                {product.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-slate-800 text-sm uppercase tracking-tight truncate max-w-[150px]">{product.name}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ID:#{product.id}</div>
-                                            </div>
+                                        <div>
+                                            <div className="font-bold text-slate-800 text-sm uppercase tracking-tight truncate max-w-[150px]">{product.name}</div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ID:#{product.id}</div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-bold text-slate-800 border-b border-slate-50 text-center">{product.stockQty}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-blue-600 border-b border-slate-50">{product.sellPrice?.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-slate-500 border-b border-slate-50">{product.costPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 border-b border-slate-50">
-                                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            product.stockQty > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'
-                                            }`}>
-                                            <span className={`w-1 h-1 rounded-full ${product.stockQty > product.alertQty ? 'bg-emerald-500' :
-                                                product.stockQty > 0 ? 'bg-amber-500' : 'bg-rose-500'
-                                                }`}></span>
-                                            <span>
-                                                {product.stockQty > product.alertQty ? 'In Stock' :
-                                                    product.stockQty > 0 ? 'Low Stock' : 'Out of Stock'}
-                                            </span>
-                                        </span>
-                                    </td>
                                     <td className="px-6 py-4 text-xs font-bold text-slate-500 border-b border-slate-50">{product.sku || '-'}</td>
-                                    <td className="px-6 py-4 border-b border-slate-50">
-                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">
-                                            {product.category?.name || 'Uncategorized'}
-                                        </span>
-                                    </td>
                                     <td className="px-6 py-4 text-xs font-bold text-slate-600 uppercase tracking-tight border-b border-slate-50">{product.brand?.name || '-'}</td>
                                     <td className="px-6 py-4 text-center text-[10px] text-slate-500 font-bold uppercase border-b border-slate-50">
                                         {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
@@ -461,6 +438,24 @@ const Products = ({ currentUser }) => {
                                                 {[product.color, product.size, product.grade, product.condition].filter(Boolean).join(' • ') || '-'}
                                             </span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            product.stockQty > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                                            }`}>
+                                            <span className={`w-1 h-1 rounded-full ${product.stockQty > product.alertQty ? 'bg-emerald-500' :
+                                                product.stockQty > 0 ? 'bg-amber-500' : 'bg-rose-500'
+                                                }`}></span>
+                                            <span>
+                                                {product.stockQty > product.alertQty ? 'In Stock' :
+                                                    product.stockQty > 0 ? 'Low Stock' : 'Out of Stock'}
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">
+                                            {product.category?.name || 'Uncategorized'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-right border-b border-slate-50">
                                         <div className="flex items-center justify-end gap-1.5 transition-all">

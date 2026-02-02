@@ -7,31 +7,6 @@ import {
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
 
-const StatCard = ({ title, value, icon: Icon, color }) => {
-    const colors = {
-        orange: 'bg-white border-l-4 border-l-orange-500',
-        emerald: 'bg-white border-l-4 border-l-emerald-500',
-        blue: 'bg-white border-l-4 border-l-blue-950',
-        purple: 'bg-white border-l-4 border-l-indigo-500',
-        red: 'bg-white border-l-4 border-l- rose-500',
-        gray: 'bg-white border-l-4 border-l-slate-400'
-    };
-
-    return (
-        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
-                </div>
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                    <Icon size={20} />
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const Returns = ({ currentUser }) => {
     const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'purchases'
     const [saleReturns, setSaleReturns] = useState([]);
@@ -236,14 +211,6 @@ const Returns = ({ currentUser }) => {
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title={`Total ${activeTab} Returns`} value={stats.count} icon={activeTab === 'sales' ? RefreshCcw : RotateCcw} color="blue" />
-                <StatCard title="Value of Returns" value={`PKR ${stats.total.toLocaleString()}`} icon={DollarSign} color="emerald" />
-                <StatCard title="Active Adjustments" value="Dynamic" icon={ArrowLeftRight} color="purple" />
-                <StatCard title="Total Credits" value="---" icon={CreditCard} color="orange" />
-            </div>
-
             {/* Filters & Table */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -289,12 +256,7 @@ const Returns = ({ currentUser }) => {
                                         <span className="text-sm font-bold text-slate-800">{item.invoiceNo}</span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
-                                                {(activeTab === 'sales' ? item.customer?.name : item.vendor?.name)?.charAt(0)}
-                                            </div>
-                                            <div className="text-sm font-bold text-slate-700">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
-                                        </div>
+                                        <div className="text-sm font-bold text-slate-700">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm text-slate-600">
                                         {item.items?.length || 0} product(s)

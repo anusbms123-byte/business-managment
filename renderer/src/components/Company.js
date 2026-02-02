@@ -26,6 +26,7 @@ const MODULES = [
     { key: 'accounting', label: 'Accounting' },
     { key: 'users', label: 'Users' },
     { key: 'settings', label: 'Settings' },
+    { key: 'backup', label: 'Backup' },
 ];
 
 const Company = () => {
@@ -257,7 +258,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             className="group relative bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
                         >
                             <div className="flex items-start justify-between mb-6">
-                                <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-blue-600 font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                <div className="hidden">
                                     {c.name?.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
@@ -408,9 +409,6 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             ) : companyUsers.map((user) => (
                                                 <div key={user.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition-all group">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-full bg-slate-50 text-slate-400 font-bold text-sm flex items-center justify-center border border-slate-100 uppercase">
-                                                            {user.fullname?.charAt(0)}
-                                                        </div>
                                                         <div>
                                                             <p className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight">{user.fullname}</p>
                                                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">@{user.username}</p>
@@ -608,9 +606,6 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-4">
-                                            <div className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 font-bold text-xs flex items-center justify-center border border-slate-100 uppercase group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                {user.fullname?.charAt(0)}
-                                            </div>
                                             <div>
                                                 <p className="font-bold text-slate-800 text-xs group-hover:text-blue-600 transition-colors uppercase tracking-tight">{user.fullname}</p>
                                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">@{user.username}</p>
@@ -739,10 +734,18 @@ const RolesPermissions = ({ currentUser }) => {
     };
 
     const openModal = (role = null) => {
-        setFormData(role ? { ...role, permissions: role.permissions || [] } : {
-            name: '', description: '',
-            permissions: MODULES.map(m => ({ module: m.key, can_view: 1, can_create: 0, can_edit: 0, can_delete: 0 }))
-        });
+        let initialPerms = [];
+        if (role) {
+            // Merge existing permissions with the full list of modules to ensure new modules like 'returns' can be toggled
+            initialPerms = MODULES.map(m => {
+                const existing = (role.permissions || []).find(p => p.module === m.key);
+                return existing ? { ...existing } : { module: m.key, can_view: 0, can_create: 0, can_edit: 0, can_delete: 0 };
+            });
+            setFormData({ ...role, permissions: initialPerms });
+        } else {
+            initialPerms = MODULES.map(m => ({ module: m.key, can_view: 1, can_create: 0, can_edit: 0, can_delete: 0 }));
+            setFormData({ name: '', description: '', permissions: initialPerms });
+        }
         setShowModal(true);
     };
 
@@ -1124,7 +1127,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     );
 };
 
-const Button = ({ children, onClick, icon: Icon, type = 'button', disabled, className = '' }) => (
+const Button = ({ children, label, onClick, icon: Icon, type = 'button', disabled, className = '' }) => (
     <button
         type={type}
         onClick={onClick}
@@ -1132,7 +1135,7 @@ const Button = ({ children, onClick, icon: Icon, type = 'button', disabled, clas
         className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 ${className}`}
     >
         {Icon && <Icon size={16} />}
-        <span>{children}</span>
+        <span>{children || label}</span>
     </button>
 );
 
@@ -1234,7 +1237,11 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
         >
             Discard
         </button>
-        <Button type="submit" label={label} />
+        <Button
+            type="submit"
+            disabled={saving}
+            label={saving ? 'Processing...' : label}
+        />
     </div>
 );
 

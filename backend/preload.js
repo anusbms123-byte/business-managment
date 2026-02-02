@@ -93,4 +93,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Reports
     getReportSummary: (params) => ipcRenderer.invoke('get-report-summary', params),
+
+    // Backup & Restore
+    createBackup: (companyId) => ipcRenderer.invoke('create-backup', companyId),
+    restoreBackup: (companyId) => ipcRenderer.invoke('restore-backup', companyId),
 });

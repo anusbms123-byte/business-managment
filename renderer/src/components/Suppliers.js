@@ -186,16 +186,9 @@ const Suppliers = ({ currentUser }) => {
                             ) : filtered.map((supplier) => (
                                 <tr key={supplier.id} className="hover:bg-slate-50/50 transition-colors group border-b border-slate-50 last:border-0">
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                                <div className="relative w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold text-sm transition-transform group-hover:scale-110">
-                                                    {supplier.name.charAt(0).toUpperCase()}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-sm uppercase tracking-tight">{supplier.name}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{supplier.companyName || 'Individual'}</p>
-                                            </div>
+                                        <div>
+                                            <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors text-sm uppercase tracking-tight">{supplier.name}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{supplier.companyName || 'Individual'}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

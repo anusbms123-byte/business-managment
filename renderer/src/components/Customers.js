@@ -222,14 +222,9 @@ const Customers = ({ currentUser }) => {
                                 filtered.map((customer) => (
                                     <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group border-b border-slate-50 last:border-0">
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
-                                                    {customer.name.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-none">{customer.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-1">ID: {customer.id.slice(-6).toUpperCase()}</p>
-                                                </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-none">{customer.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-1">ID: {customer.id.slice(-6).toUpperCase()}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

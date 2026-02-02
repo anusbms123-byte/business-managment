@@ -57,6 +57,7 @@ const Sales = ({ currentUser }) => {
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
+    const [returnChange, setReturnChange] = useState(true);
 
     // Printing State
     const [printReceiptData, setPrintReceiptData] = useState(null);
@@ -171,9 +172,10 @@ const Sales = ({ currentUser }) => {
     const taxValue = taxType === 'PERCENT' ? (subTotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
 
     const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue + (Number(previousBalance) || 0);
-    const netBalance = Math.max(0, grandTotal - (Number(amountPaid) || 0));
+    const netBalance = returnChange ? Math.max(0, grandTotal - (Number(amountPaid) || 0)) : grandTotal - (Number(amountPaid) || 0);
     const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
-    const paymentStatus = (Number(amountPaid) || 0) >= grandTotal ? 'PAID' : ((Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE');
+    const effectivePaidAmount = returnChange && (Number(amountPaid) || 0) > grandTotal ? grandTotal : (Number(amountPaid) || 0);
+    const paymentStatus = effectivePaidAmount >= grandTotal ? 'PAID' : (effectivePaidAmount > 0 ? 'PARTIAL' : 'DUE');
 
     const handleEdit = (sale) => {
         setEditingId(sale.id);
@@ -218,6 +220,7 @@ const Sales = ({ currentUser }) => {
         setNotes('');
         setSelectedCustomer('');
         setPreviousBalance(0);
+        setReturnChange(true);
     };
 
 
@@ -255,9 +258,10 @@ const Sales = ({ currentUser }) => {
                 totalAmount: grandTotal - (Number(previousBalance) || 0),
                 grandTotal: grandTotal - (Number(previousBalance) || 0),
                 shippingCost: parseFloat(shippingCost),
-                paidAmount: parseFloat(amountPaid),
-                amountPaid: parseFloat(amountPaid),
-                amount_paid: parseFloat(amountPaid),
+                paidAmount: parseFloat(effectivePaidAmount),
+                amountPaid: parseFloat(effectivePaidAmount),
+                amount_paid: parseFloat(effectivePaidAmount),
+                actual_received: parseFloat(amountPaid),
                 paymentMethod,
                 paymentStatus,
                 notes,
@@ -355,13 +359,8 @@ const Sales = ({ currentUser }) => {
                                         <div className="font-bold text-sm text-slate-800 group-hover:text-blue-600 transition-colors uppercase">{sale.invoiceNo}</div>
                                         <div className="text-[10px] text-slate-400 font-bold mt-1">{new Date(sale.date).toLocaleString()}</div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                                <User size={14} />
-                                            </div>
-                                            <span className="font-bold text-xs text-slate-600">{sale.customer?.name || 'Walk-in Customer'}</span>
-                                        </div>
+                                    <td className="px-6 py-4 text-sm font-bold text-slate-800">
+                                        {sale.customer?.name || 'Walk-in Customer'}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-500 uppercase">
@@ -688,12 +687,32 @@ const Sales = ({ currentUser }) => {
                                                     />
                                                 </div>
                                                 <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                                                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change Return</label>
-                                                    <span className="text-xs font-bold text-slate-600">PKR {changeAmount.toLocaleString()}</span>
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Change Return</label>
+                                                        {changeAmount > 0 && (
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <button
+                                                                    onClick={() => setReturnChange(true)}
+                                                                    className={`px-2 py-0.5 rounded text-[8px] font-bold transition-all ${returnChange ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                                                                >
+                                                                    RETURN
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setReturnChange(false)}
+                                                                    className={`px-2 py-0.5 rounded text-[8px] font-bold transition-all ${!returnChange ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                                                                >
+                                                                    KEEP AS BAL
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-xs font-bold ${returnChange ? 'text-slate-600' : 'text-slate-300 line-through'}`}>PKR {changeAmount.toLocaleString()}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Balance</label>
-                                                    <span className="text-xs font-bold text-slate-800 px-2 py-0.5 bg-slate-100 rounded">PKR {netBalance.toLocaleString()}</span>
+                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${netBalance < 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-800'}`}>
+                                                        {netBalance < 0 ? `Credit: PKR ${Math.abs(netBalance).toLocaleString()}` : `PKR ${netBalance.toLocaleString()}`}
+                                                    </span>
                                                 </div>
                                             </div>
 

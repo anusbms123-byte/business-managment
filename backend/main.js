@@ -190,6 +190,113 @@ ipcMain.handle("get-report-summary", (e, params) => apiCall('get', '/reports/sum
 ipcMain.handle("get-audit-logs", (e, params) => apiCall('get', '/audit-logs', null, params));
 ipcMain.handle("create-audit-log", (e, data) => apiCall('post', '/audit-logs', data));
 
+// Backup & Restore Handlers
+ipcMain.handle("create-backup", async (e, companyId) => {
+    try {
+        const { filePath } = await dialog.showSaveDialog({
+            title: 'Export System Data',
+            defaultPath: `bms_backup_${new Date().toISOString().split('T')[0]}.json`,
+            filters: [{ name: 'JSON Backup', extensions: ['json'] }]
+        });
+
+        if (!filePath) return { success: false, message: "Backup cancelled" };
+
+        const data = {};
+
+        // Fetch all relevant data from cloud
+        const endpoints = [
+            { key: 'company', url: `/companies/${companyId}` },
+            { key: 'employees', url: '/employees', params: { companyId } },
+            { key: 'categories', url: '/categories', params: { companyId } },
+            { key: 'vendors', url: '/vendors', params: { companyId } },
+            { key: 'products', url: '/products', params: { companyId } },
+            { key: 'customers', url: '/customers', params: { companyId } },
+            { key: 'sales', url: '/sales', params: { companyId } },
+            { key: 'purchases', url: '/purchases', params: { companyId } },
+            { key: 'expenses', url: '/expenses', params: { companyId } },
+            { key: 'attendance', url: '/attendance', params: { companyId } },
+        ];
+
+        for (const ep of endpoints) {
+            const res = await apiCall('get', ep.url, null, ep.params);
+            data[ep.key] = res;
+        }
+
+        const fs = require('fs');
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+
+        return { success: true, message: `Backup saved to ${filePath}` };
+    } catch (error) {
+        console.error("Backup Error:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+ipcMain.handle("restore-backup", async (e, companyId) => {
+    try {
+        const { filePaths } = await dialog.showOpenDialog({
+            title: 'Restore System Data',
+            filters: [{ name: 'JSON Backup', extensions: ['json'] }],
+            properties: ['openFile']
+        });
+
+        if (!filePaths || filePaths.length === 0) return { success: false, message: "No file selected" };
+
+        const fs = require('fs');
+        const data = JSON.parse(fs.readFileSync(filePaths[0], 'utf8'));
+
+        const confirm = await dialog.showMessageBox({
+            type: 'warning',
+            title: 'Confirm Restoration',
+            message: 'You are about to restore data. This will add all records from the backup file to your current cloud database. This process cannot be undone. Proceed?',
+            buttons: ['Cancel', 'Proceed Restore']
+        });
+
+        if (confirm.response === 0) return { success: false, message: "Restore cancelled" };
+
+        // Simple import logic (Note: This doesn't handle duplicates or complex ID re-mapping)
+        // In a real scenario, this would be much more complex.
+        const summary = { success: 0, failed: 0 };
+
+        // Priority order for import to maintain relationships
+        const importOrder = [
+            { key: 'categories', url: '/categories' },
+            { key: 'vendors', url: '/vendors' },
+            { key: 'products', url: '/products' },
+            { key: 'customers', url: '/customers' },
+            { key: 'employees', url: '/employees' },
+            { key: 'expenses', url: '/expenses' },
+            // Sales and Purchases are complex due to nested items, 
+            // the cloud API for creation usually handles nested items.
+            { key: 'sales', url: '/sales' },
+            { key: 'purchases', url: '/purchases' },
+        ];
+
+        for (const item of importOrder) {
+            const records = data[item.key];
+            if (Array.isArray(records)) {
+                for (const rec of records) {
+                    // Remove existing IDs and set correct companyId
+                    const { id, companyId: cid, ...payload } = rec;
+                    payload.companyId = companyId;
+
+                    const res = await apiCall('post', item.url, payload);
+                    if (res && res.id) summary.success++;
+                    else summary.failed++;
+                }
+            }
+        }
+
+        return {
+            success: true,
+            message: `Restoration complete. ${summary.success} records imported, ${summary.failed} failed.`
+        };
+    } catch (error) {
+        console.error("Restore Error:", error);
+        return { success: false, message: error.message };
+    }
+});
+
 // Sync Trigger (No-op)
 ipcMain.handle("trigger-sync", async () => ({ success: true, message: "Apps is now pure cloud" }));
 

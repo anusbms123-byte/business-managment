@@ -69,34 +69,35 @@ const Layout = ({ children, user, onLogout }) => {
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
 
         if (isSuperAdmin) {
-            // Super Admin only sees Company & Users at the top
+            // Super Admin only sees Company & Users and Backup
             setVisibleMenuItems([
-                { key: 'users', icon: UserCog, label: 'Company & Users', path: '/company' }
+                { key: 'users', icon: UserCog, label: 'Company & Users', path: '/company' },
+                { key: 'backup', icon: HardDrive, label: 'Backup & Restore', path: '/backup' }
             ]);
             setVisibleSettingsItems([]);
-        } else if (isAdmin) {
-            // Regular Admin sees all
-            setVisibleMenuItems(ALL_MENU_ITEMS);
-            setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
-        } else if (permissions.length > 0) {
-            // Filter based on can_view permission
+        } else if (permissions && permissions.length > 0) {
+            // Filter based on can_view permission (Case-insensitive matching)
             const allowedKeys = permissions
                 .filter(p => p.can_view === 1)
-                .map(p => p.module);
+                .map(p => p.module.toLowerCase());
 
             const filteredMenu = ALL_MENU_ITEMS.filter(item =>
-                allowedKeys.includes(item.key)
+                allowedKeys.includes(item.key.toLowerCase())
             );
             const filteredSettings = SETTINGS_MENU_ITEMS.filter(item =>
-                allowedKeys.includes(item.key)
+                allowedKeys.includes(item.key.toLowerCase())
             );
 
             setVisibleMenuItems(filteredMenu);
             setVisibleSettingsItems(filteredSettings);
-        } else {
-            // No permissions loaded yet, show all (fallback)
+        } else if (isAdmin) {
+            // Fallback for Admin role if permissions aren't loaded yet
             setVisibleMenuItems(ALL_MENU_ITEMS);
             setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
+        } else {
+            // For other roles, show nothing until permissions are confirmed
+            setVisibleMenuItems([]);
+            setVisibleSettingsItems([]);
         }
     }, [permissions, user]);
 
