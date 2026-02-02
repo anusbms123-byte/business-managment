@@ -118,56 +118,56 @@ const Reports = ({ currentUser }) => {
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <ReportCard
-                    title="Sales & Revenue"
+                    title="Sales"
                     value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.salesCount ?? 0} Invoices generated`}
                     icon={DollarSign}
                     colorClass="border-l-blue-500"
                 />
                 <ReportCard
-                    title="Procurement & Purchases"
+                    title="Purchases"
                     value={`PKR ${summary.totalPurchases?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.purchaseCount ?? 0} Bills logged`}
                     icon={ShoppingCart}
                     colorClass="border-l-amber-500"
                 />
                 <ReportCard
-                    title="Inventory Assets"
+                    title="Inventory"
                     value={`PKR ${summary.inventoryValuationCost?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.lowStockCount ?? 0} Low stock SKU alerts`}
                     icon={Package}
                     colorClass="border-l-indigo-500"
                 />
                 <ReportCard
-                    title="Operating Expenses"
+                    title="Expenses"
                     value={`PKR ${summary.totalExpenses?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.expenseCount ?? 0} Expense entries`}
                     icon={TrendingUp}
                     colorClass="border-l-rose-500"
                 />
                 <ReportCard
-                    title="Sales & Purchase Returns"
+                    title="Returns"
                     value={`PKR ${summary.totalReturns?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.returnCount ?? 0} Return transactions`}
                     icon={RotateCcw}
                     colorClass="border-l-orange-500"
                 />
                 <ReportCard
-                    title="Suppliers & Payables"
+                    title="Suppliers"
                     value={`PKR ${summary.totalPayables?.toLocaleString() ?? '0'}`}
                     subValue="Total current liabilities"
                     icon={Factory}
                     colorClass="border-l-slate-600"
                 />
                 <ReportCard
-                    title="HRM & Payroll"
+                    title="HRM"
                     value={`PKR ${summary.totalSalaries?.toLocaleString() ?? '0'}`}
                     subValue={`${summary.employeeCount ?? 0} Active staff members`}
                     icon={Users2}
                     colorClass="border-l-emerald-500"
                 />
                 <ReportCard
-                    title="Net Profitability"
+                    title="Net Profit"
                     value={`PKR ${summary.netProfit?.toLocaleString() ?? '0'}`}
                     subValue="Profit after COGS & Expenses"
                     icon={CreditCard}
