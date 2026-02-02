@@ -64,7 +64,7 @@ const HRM = ({ currentUser }) => {
                 <div className="p-8">
                     {activeTab === 'employees' && <EmployeeList employees={employees} onRefresh={loadEmployees} currentUser={currentUser} loading={loading} />}
                     {activeTab === 'attendance' && <Attendance employees={employees} currentUser={currentUser} />}
-                    {activeTab === 'payroll' && <Payroll employees={employees} />}
+                    {activeTab === 'payroll' && <Payroll employees={employees} currentUser={currentUser} />}
                 </div>
             </div>
         </div>
@@ -74,7 +74,7 @@ const HRM = ({ currentUser }) => {
 const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', joiningDate: new Date().toISOString().split('T')[0] });
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0] });
     const [saving, setSaving] = useState(false);
 
     const handleSave = async (e) => {
@@ -135,7 +135,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                 {canCreate('hrm') && (
                     <button
                         onClick={() => {
-                            setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', joiningDate: new Date().toISOString().split('T')[0] });
+                            setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0] });
                             setShowModal(true);
                         }}
                         className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
@@ -154,6 +154,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Designation</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Phone</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Salary</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">OT/Hr</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Joined</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                         </tr>
@@ -182,6 +183,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 </td>
                                 <td className="px-6 py-4 text-slate-500 font-medium text-xs">{emp.phone}</td>
                                 <td className="px-6 py-4 font-bold text-slate-800 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
+                                <td className="px-6 py-4 font-bold text-blue-600 text-[10px]">PKR {emp.hourlyRate ?? 0}</td>
                                 <td className="px-6 py-4 text-slate-400 font-bold text-[10px] uppercase">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
@@ -233,10 +235,14 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                         <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Salary (PKR)</label>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Monthly Salary (PKR)</label>
                                         <input required type="number" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Hourly OT Rate (PKR)</label>
+                                        <input required type="number" value={formData.hourly_rate} onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" placeholder="0" />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Joining Date</label>
@@ -414,21 +420,75 @@ const Attendance = ({ employees, currentUser }) => {
     );
 };
 
-const Payroll = ({ employees }) => {
-    // Dynamic Payroll needs a dedicated API usually, for now we calculate based on staff list
+const Payroll = ({ employees, currentUser }) => {
+    const [salaries, setSalaries] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+    const [showModal, setShowModal] = useState(false);
+    const [selectedEmp, setSelectedEmp] = useState(null);
+    const [paymentData, setPaymentData] = useState({ bonus: 0, otHours: 0, deductions: 0, notes: '' });
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        loadSalaries();
+    }, [currentUser, month]);
+
+    const loadSalaries = async () => {
+        if (!currentUser?.company_id) return;
+        setLoading(true);
+        try {
+            const data = await window.electronAPI.getSalaries({ companyId: currentUser.company_id, month });
+            setSalaries(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error loading salaries:', err);
+        }
+        setLoading(false);
+    };
+
+    const handlePaySalary = async (e) => {
+        e.preventDefault();
+        if (!selectedEmp) return;
+        setSaving(true);
+        try {
+            const otPay = (parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0);
+            const netPay = (selectedEmp.salary || 0) + (parseFloat(paymentData.bonus) || 0) + otPay - (parseFloat(paymentData.deductions) || 0);
+
+            const payload = {
+                companyId: currentUser.company_id,
+                employeeId: selectedEmp.id,
+                month: month,
+                baseSalary: selectedEmp.salary,
+                bonus: parseFloat(paymentData.bonus) || 0,
+                overtimeHours: parseFloat(paymentData.otHours) || 0,
+                overtimePay: otPay,
+                deductions: parseFloat(paymentData.deductions) || 0,
+                netSalary: netPay,
+                notes: paymentData.notes
+            };
+
+            const result = await window.electronAPI.createSalary(payload);
+            if (result.success !== false) {
+                setShowModal(false);
+                loadSalaries();
+            } else {
+                alert(result.message || "Error saving salary");
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+        setSaving(false);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3">
-                    <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
-                        <option>Current Month</option>
-                    </select>
-                    {canEdit('hrm') && (
-                        <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest">
-                            <Plus size={16} />
-                            <span>Generate Payroll</span>
-                        </button>
-                    )}
+                    <input
+                        type="month"
+                        value={month}
+                        onChange={(e) => setMonth(e.target.value)}
+                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
+                    />
                 </div>
             </div>
 
@@ -438,26 +498,112 @@ const Payroll = ({ employees }) => {
                         <tr>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Employee</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Basic Pay</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Deductions</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Bonus/OT</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Net Salary</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Status</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                        {(employees || []).map((emp) => (
-                            <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{emp.firstName} {emp.lastName}</td>
-                                <td className="px-6 py-4 font-bold text-slate-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
-                                <td className="px-6 py-4 text-rose-600 font-bold text-xs">-PKR 0</td>
-                                <td className="px-6 py-4 font-bold text-blue-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-blue-600 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">View Slip</button>
-                                </td>
-                            </tr>
-                        ))}
+                        {loading ? (
+                            <tr><td colSpan="6" className="px-6 py-10 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Loading payroll...</td></tr>
+                        ) : employees.map((emp) => {
+                            const record = salaries.find(s => s.employeeId === emp.id);
+                            return (
+                                <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                                    <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{emp.firstName} {emp.lastName}</td>
+                                    <td className="px-6 py-4 font-bold text-slate-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 font-bold text-emerald-600 text-[10px]">
+                                        {record ? `+PKR ${(record.bonus + record.overtimePay).toLocaleString()}` : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-blue-600 text-xs">
+                                        PKR {record ? record.netSalary.toLocaleString() : emp.salary?.toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {record ? (
+                                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-tight border border-emerald-100">Paid</span>
+                                        ) : (
+                                            <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded text-[10px] font-bold uppercase tracking-tight border border-slate-100">Unpaid</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        {record ? (
+                                            <button className="text-blue-600 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">View Slip</button>
+                                        ) : (
+                                            <button
+                                                onClick={() => { setSelectedEmp(emp); setPaymentData({ bonus: 0, otHours: 0, deductions: 0, notes: '' }); setShowModal(true); }}
+                                                className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
+                                            >
+                                                Pay Now
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
+
+            {/* Payment Modal */}
+            {showModal && selectedEmp && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200">
+                        <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Generate Payroll: {selectedEmp.firstName}</h3>
+                            <button onClick={() => setShowModal(false)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+                        </div>
+                        <form onSubmit={handlePaySalary} className="p-8 space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Overtime Hours</label>
+                                    <input type="number" step="0.5" value={paymentData.otHours} onChange={(e) => setPaymentData({ ...paymentData, otHours: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Bonus (PKR)</label>
+                                    <input type="number" value={paymentData.bonus} onChange={(e) => setPaymentData({ ...paymentData, bonus: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Deductions (PKR)</label>
+                                <input type="number" value={paymentData.deductions} onChange={(e) => setPaymentData({ ...paymentData, deductions: e.target.value })} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none font-bold text-sm" />
+                            </div>
+
+                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                                    <span>Calculation Preview</span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between text-xs font-bold text-slate-600">
+                                        <span>Base Salary</span>
+                                        <span>PKR {selectedEmp.salary?.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                        <span>OT Pay ({paymentData.otHours} hr x {selectedEmp.hourlyRate})</span>
+                                        <span>+PKR {((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                        <span>Bonus</span>
+                                        <span>+PKR {(parseFloat(paymentData.bonus) || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs font-bold text-rose-600">
+                                        <span>Deductions</span>
+                                        <span>-PKR {(parseFloat(paymentData.deductions) || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="pt-2 mt-2 border-t border-slate-200 flex justify-between text-sm font-black text-blue-600">
+                                        <span>Net Payable</span>
+                                        <span>PKR {((selectedEmp.salary || 0) + (parseFloat(paymentData.bonus) || 0) + ((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)) - (parseFloat(paymentData.deductions) || 0)).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all text-xs uppercase tracking-widest shadow-lg shadow-blue-100">
+                                {saving ? 'Processing...' : 'Confirm & Generate Slip'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

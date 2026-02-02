@@ -1612,6 +1612,7 @@ app.post('/api/employees', async (req, res) => {
                 phone,
                 designation,
                 salary: parseFloat(salary) || 0,
+                hourlyRate: parseFloat(req.body.hourly_rate) || 0,
                 joiningDate: joiningDate ? new Date(joiningDate) : new Date()
             }
         });
@@ -1630,6 +1631,7 @@ app.put('/api/employees/:id', async (req, res) => {
                 phone,
                 designation,
                 salary: salary !== undefined ? parseFloat(salary) : undefined,
+                hourlyRate: req.body.hourly_rate !== undefined ? parseFloat(req.body.hourly_rate) : undefined,
                 joiningDate: joiningDate ? new Date(joiningDate) : undefined
             }
         });
@@ -1696,6 +1698,50 @@ app.post('/api/attendance', async (req, res) => {
             });
         }
         res.json({ success: true });
+    } catch (e) { handleError(res, e); }
+});
+
+// Salary Records
+app.get('/api/salaries', async (req, res) => {
+    try {
+        const { companyId, month } = req.query;
+        if (!companyId) return res.json([]);
+
+        const where = { companyId };
+        if (month) where.month = month;
+
+        const salaries = await prisma.salaryRecord.findMany({
+            where,
+            include: { employee: true },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(salaries);
+    } catch (e) { handleError(res, e); }
+});
+
+app.post('/api/salaries', async (req, res) => {
+    try {
+        const {
+            companyId, employeeId, month, baseSalary, bonus,
+            overtimeHours, overtimePay, deductions, netSalary, notes
+        } = req.body;
+
+        const record = await prisma.salaryRecord.create({
+            data: {
+                companyId,
+                employeeId,
+                month,
+                baseSalary: parseFloat(baseSalary),
+                bonus: parseFloat(bonus) || 0,
+                overtimeHours: parseFloat(overtimeHours) || 0,
+                overtimePay: parseFloat(overtimePay) || 0,
+                deductions: parseFloat(deductions) || 0,
+                netSalary: parseFloat(netSalary),
+                notes,
+                status: 'PAID'
+            }
+        });
+        res.json({ success: true, id: record.id });
     } catch (e) { handleError(res, e); }
 });
 

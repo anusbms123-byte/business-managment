@@ -393,7 +393,8 @@ model Employee {
   lastName    String?  @map("last_name")
   phone       String?
   designation String?
-  salary      Float    @default(0)
+  salary      Float    @default(0) // Basic Monthly Salary
+  hourlyRate  Float    @default(0) @map("hourly_rate") // For Overtime calculation
   joiningDate DateTime @default(now()) @map("joining_date")
   
   createdAt   DateTime @default(now()) @map("created_at")
@@ -403,6 +404,7 @@ model Employee {
   company     Company @relation(fields: [companyId], references: [id])
 
   attendances Attendance[]
+  salaryRecords SalaryRecord[]
 
   @@map("employees")
 }
@@ -418,6 +420,31 @@ model Attendance {
   employee    Employee @relation(fields: [employeeId], references: [id])
 
   @@map("attendances")
+}
+
+model SalaryRecord {
+  id            String   @id @default(cuid())
+  month         String   // E.g., "2026-01"
+  baseSalary    Float    @map("base_salary")
+  bonus         Float    @default(0)
+  overtimeHours Float    @default(0) @map("overtime_hours")
+  overtimePay   Float    @default(0) @map("overtime_pay")
+  deductions    Float    @default(0)
+  netSalary     Float    @map("net_salary")
+  paymentDate   DateTime @default(now()) @map("payment_date")
+  status        String   @default("PAID") // PAID, PENDING
+  notes         String?
+
+  employeeId    String   @map("employee_id")
+  employee      Employee @relation(fields: [employeeId], references: [id])
+
+  companyId     String   @map("company_id")
+  company       Company  @relation(fields: [companyId], references: [id])
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("salary_records")
 }
 
 // =========================================================

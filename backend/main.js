@@ -183,6 +183,10 @@ ipcMain.handle("delete-employee", (e, id) => apiCall('delete', `/employees/${id}
 ipcMain.handle("get-attendance", (e, params) => apiCall('get', '/attendance', null, params));
 ipcMain.handle("save-attendance", (e, data) => apiCall('post', '/attendance', data));
 
+// HRM - Salaries
+ipcMain.handle("get-salaries", (e, params) => apiCall('get', '/salaries', null, params));
+ipcMain.handle("create-salary", (e, data) => apiCall('post', '/salaries', data));
+
 // Reports
 ipcMain.handle("get-report-summary", (e, params) => apiCall('get', '/reports/summary', null, params));
 

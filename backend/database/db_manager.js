@@ -82,6 +82,22 @@ function initSchema() {
       FOREIGN KEY(company_id) REFERENCES companies(id)
     )`);
 
+    // 5. Employees
+    db.run(`CREATE TABLE IF NOT EXISTS employees (
+      id TEXT PRIMARY KEY,
+      company_id TEXT,
+      first_name TEXT NOT NULL,
+      last_name TEXT,
+      phone TEXT,
+      designation TEXT,
+      salary REAL DEFAULT 0,
+      hourly_rate REAL DEFAULT 0,
+      joining_date DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(company_id) REFERENCES companies(id)
+    )`);
+
     // 5. Products (Inventory)
     db.run(`CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
