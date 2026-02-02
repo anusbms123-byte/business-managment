@@ -1950,6 +1950,8 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         });
 
+        const recentDays = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
+
         // Inject current valuation into the last day for the chart
         const lastDay = recentDays[0];
         if (lastDay) {
