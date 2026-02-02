@@ -1859,6 +1859,8 @@ app.get('/api/reports/summary', async (req, res) => {
                     sales: 0,
                     expenses: 0,
                     purchases: 0,
+                    returns: 0,
+                    salaries: 0,
                     cogs: 0,
                     profit: 0,
                     isMonthly: useMonthlyGrouping
@@ -1917,6 +1919,30 @@ app.get('/api/reports/summary', async (req, res) => {
 
             if (dailyMap[d]) {
                 dailyMap[d].purchases += p.totalAmount;
+            }
+        });
+
+        saleReturns.forEach(r => {
+            let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].returns += r.refundAmount;
+                dailyMap[d].profit -= r.refundAmount;
+            }
+        });
+
+        purchaseReturns.forEach(r => {
+            let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].returns += r.refundAmount;
+                dailyMap[d].profit += r.refundAmount;
+            }
+        });
+
+        salaries.forEach(s => {
+            let d = useMonthlyGrouping ? `${s.createdAt.getFullYear()}-${String(s.createdAt.getMonth() + 1).padStart(2, '0')}` : s.createdAt.toISOString().split('T')[0];
+            if (dailyMap[d]) {
+                dailyMap[d].salaries += s.netSalary;
+                dailyMap[d].profit -= s.netSalary;
             }
         });
 

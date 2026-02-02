@@ -3,17 +3,25 @@ import {
     BarChart2, ShoppingCart, Package,
     Users, Factory, RefreshCw,
     DollarSign, TrendingUp, RotateCcw,
-    Users2, CreditCard
+    Users2, CreditCard, ArrowLeft,
+    Calendar, Download, ChevronRight
 } from 'lucide-react';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, Legend, Cell, PieChart, Pie
+} from 'recharts';
 
 const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass }) => (
     <div
         onClick={onClick}
-        className={`bg-white border border-slate-200 border-l-4 ${colorClass} rounded-xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group`}
+        className={`bg-white border border-slate-200 border-l-4 ${colorClass} rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group animate-in zoom-in-95 duration-300`}
     >
         <div className="flex items-start justify-between mb-4">
-            <div className={`p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors`}>
+            <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
                 <Icon size={20} />
+            </div>
+            <div className="text-slate-300 group-hover:text-slate-400 transition-colors">
+                <ChevronRight size={18} />
             </div>
         </div>
         <div>
@@ -29,76 +37,93 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
 );
 
 const Reports = ({ currentUser }) => {
-    const [summary, setSummary] = useState({
-        totalSales: 0,
-        totalPurchases: 0,
-        totalExpenses: 0,
-        totalCOGS: 0,
-        netProfit: 0,
-        inventoryValuationCost: 0,
-        inventoryValuationSell: 0,
-        lowStockCount: 0,
-        totalReceivables: 0,
-        totalPayables: 0,
-        totalReturns: 0,
-        totalSalaries: 0,
-        employeeCount: 0,
-        salesCount: 0,
-        purchaseCount: 0,
-        expenseCount: 0,
-        returnCount: 0
-    });
+    const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('Monthly');
+    const [activeModule, setActiveModule] = useState(null); // 'sales', 'purchases', etc.
     const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
 
-    useEffect(() => {
-        loadReport();
-    }, [currentUser, filter]);
+    // Date Filtering
+    const today = new Date().toISOString().split('T')[0];
+    const [dateRange, setDateRange] = useState({ start: today, end: today });
+    const [overviewFilter, setOverviewFilter] = useState('Monthly'); // For Dashboard
 
-    const loadReport = async () => {
+    useEffect(() => {
+        if (activeModule) {
+            loadDetailedReport();
+        } else {
+            loadDashboardReport();
+        }
+    }, [currentUser, overviewFilter, activeModule]);
+
+    const loadDashboardReport = async () => {
         if (!currentUser?.company_id) return;
         setLoading(true);
         try {
-            let startDate, endDate;
-            const targetNow = new Date();
-
-            if (filter === 'Weekly') {
-                startDate = new Date(targetNow.setDate(targetNow.getDate() - 7)).toISOString();
-                endDate = new Date().toISOString();
-            } else if (filter === 'Monthly') {
-                startDate = new Date(targetNow.setMonth(targetNow.getMonth() - 1)).toISOString();
-                endDate = new Date().toISOString();
-            } else if (filter === 'Yearly') {
-                startDate = new Date(targetNow.setFullYear(targetNow.getFullYear() - 1)).toISOString();
-                endDate = new Date().toISOString();
+            let start, end;
+            const now = new Date();
+            if (overviewFilter === 'Weekly') {
+                start = new Date(now.setDate(now.getDate() - 7)).toISOString();
+                end = new Date().toISOString();
+            } else if (overviewFilter === 'Monthly') {
+                start = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+                end = new Date().toISOString();
+            } else {
+                start = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString();
+                end = new Date().toISOString();
             }
 
             const data = await window.electronAPI.getReportSummary({
                 companyId: currentUser.company_id,
-                startDate,
-                endDate
+                startDate: start,
+                endDate: end
             });
-            setSummary(data || {});
+            setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
         } catch (err) {
-            console.error('Error loading report:', err);
+            console.error('Error:', err);
         }
         setLoading(false);
     };
 
-    return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
+    const loadDetailedReport = async () => {
+        if (!currentUser?.company_id) return;
+        setLoading(true);
+        try {
+            const data = await window.electronAPI.getReportSummary({
+                companyId: currentUser.company_id,
+                startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
+                endDate: new Date(dateRange.end + 'T23:59:59').toISOString()
+            });
+            setSummary(data);
+            setLastUpdated(new Date().toLocaleTimeString());
+        } catch (err) {
+            console.error('Error:', err);
+        }
+        setLoading(false);
+    };
+
+    const handleBack = () => {
+        setActiveModule(null);
+        setOverviewFilter('Monthly');
+    };
+
+    if (loading && !summary) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <RefreshCw size={32} className="text-blue-600 animate-spin" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generating Analytics...</p>
+            </div>
+        );
+    }
+
+    const renderDashboard = () => (
+        <div className="space-y-8 animate-in fade-in duration-500">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">Analytical Reports</h1>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Intelligence Hub</h1>
                     <div className="flex items-center gap-3 mt-1.5">
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Data Overview & Visualizations</p>
-                        <div className="flex items-center gap-1.5 text-slate-300">
-                            <RefreshCw size={10} className={loading ? 'animate-spin' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight italic">Updated: {lastUpdated}</span>
-                        </div>
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Live Business Overview</p>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase tracking-tighter animate-pulse border border-emerald-100 italic">Connected</span>
                     </div>
                 </div>
 
@@ -106,8 +131,8 @@ const Reports = ({ currentUser }) => {
                     {['Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
-                            onClick={() => setFilter(p)}
-                            className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-white text-slate-900 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                            onClick={() => setOverviewFilter(p)}
+                            className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white text-slate-900 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {p}
                         </button>
@@ -115,74 +140,200 @@ const Reports = ({ currentUser }) => {
                 </div>
             </header>
 
-            {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ReportCard
-                    title="Sales"
-                    value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.salesCount ?? 0} Invoices generated`}
-                    icon={DollarSign}
-                    colorClass="border-l-blue-500"
-                />
-                <ReportCard
-                    title="Purchases"
-                    value={`PKR ${summary.totalPurchases?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.purchaseCount ?? 0} Bills logged`}
-                    icon={ShoppingCart}
-                    colorClass="border-l-amber-500"
-                />
-                <ReportCard
-                    title="Inventory"
-                    value={`PKR ${summary.inventoryValuationCost?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.lowStockCount ?? 0} Low stock SKU alerts`}
-                    icon={Package}
-                    colorClass="border-l-indigo-500"
-                />
-                <ReportCard
-                    title="Expenses"
-                    value={`PKR ${summary.totalExpenses?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.expenseCount ?? 0} Expense entries`}
-                    icon={TrendingUp}
-                    colorClass="border-l-rose-500"
-                />
-                <ReportCard
-                    title="Returns"
-                    value={`PKR ${summary.totalReturns?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.returnCount ?? 0} Return transactions`}
-                    icon={RotateCcw}
-                    colorClass="border-l-orange-500"
-                />
-                <ReportCard
-                    title="Suppliers"
-                    value={`PKR ${summary.totalPayables?.toLocaleString() ?? '0'}`}
-                    subValue="Total current liabilities"
-                    icon={Factory}
-                    colorClass="border-l-slate-600"
-                />
-                <ReportCard
-                    title="HRM"
-                    value={`PKR ${summary.totalSalaries?.toLocaleString() ?? '0'}`}
-                    subValue={`${summary.employeeCount ?? 0} Active staff members`}
-                    icon={Users2}
-                    colorClass="border-l-emerald-500"
-                />
-                <ReportCard
-                    title="Net Profit"
-                    value={`PKR ${summary.netProfit?.toLocaleString() ?? '0'}`}
-                    subValue="Profit after COGS & Expenses"
-                    icon={CreditCard}
-                    colorClass="border-l-blue-900"
-                />
+                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Invoices Generated`} icon={DollarSign} colorClass="border-l-blue-500" onClick={() => setActiveModule('sales')} />
+                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Bills Logged`} icon={ShoppingCart} colorClass="border-l-amber-500" onClick={() => setActiveModule('purchases')} />
+                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Stock Warnings`} icon={Package} colorClass="border-l-indigo-500" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Transactions`} icon={TrendingUp} colorClass="border-l-rose-500" onClick={() => setActiveModule('expenses')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Items Reversed`} icon={RotateCcw} colorClass="border-l-orange-500" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Account Payables" icon={Factory} colorClass="border-l-slate-600" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue={`${summary?.employeeCount ?? 0} Active Staff`} icon={Users2} colorClass="border-l-emerald-500" onClick={() => setActiveModule('hrm')} />
+                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Gross - Deductions" icon={CreditCard} colorClass="border-l-slate-900" onClick={() => setActiveModule('netprofit')} />
             </div>
 
-            {/* Additional Info / Empty State */}
-            <div className="p-12 border-2 border-dashed border-slate-100 rounded-3xl text-center">
-                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                    <BarChart2 size={32} />
+            <div className="bg-slate-50/50 p-10 rounded-3xl border border-slate-100 text-center">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 text-slate-300">
+                    <BarChart2 size={24} />
                 </div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Enhanced Charts Coming Soon</h3>
-                <p className="text-xs text-slate-300 mt-1 uppercase tracking-tight italic">Detailed specific module analysis can be accessed via sidebar main modules</p>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Analytical Engine Standby</h3>
+                <p className="text-[10px] text-slate-300 mt-2 uppercase tracking-tight italic">Click on any category above to view detailed logs and growth charts</p>
             </div>
+        </div>
+    );
+
+    const renderDetailView = () => {
+        const moduleMap = {
+            sales: { title: 'Sales Analysis', icon: DollarSign, color: '#3b82f6', dataKey: 'sales' },
+            purchases: { title: 'Purchase Log', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases' },
+            inventory: { title: 'Stock Valuation', icon: Package, color: '#6366f1', dataKey: 'inventory' },
+            expenses: { title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses' },
+            returns: { title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns' },
+            suppliers: { title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables' },
+            hrm: { title: 'Payroll Summary', icon: Users2, color: '#10b981', dataKey: 'salaries' },
+            netprofit: { title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit' }
+        };
+
+        const config = moduleMap[activeModule];
+        const chartData = (summary?.recentDays || []).slice().reverse();
+
+        return (
+            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+                {/* Detail Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleBack}
+                            className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all border border-slate-200 shadow-sm"
+                        >
+                            <ArrowLeft size={18} />
+                        </button>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <config.icon size={18} className="text-blue-600" />
+                                <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">{config.title}</h1>
+                            </div>
+                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-2 px-3 border-r border-slate-100">
+                            <Calendar size={14} className="text-slate-400" />
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                className="text-[10px] font-bold text-slate-700 outline-none uppercase bg-transparent w-28"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 px-3">
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                className="text-[10px] font-bold text-slate-700 outline-none uppercase bg-transparent w-28"
+                            />
+                        </div>
+                        <button
+                            onClick={loadDetailedReport}
+                            className="bg-slate-900 text-white p-2 rounded-xl hover:bg-black transition-all shadow-lg shadow-slate-200"
+                        >
+                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Primary Metric & Chart */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Trend Visualization</h2>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-tight">Timeline Performance Analysis</p>
+                            </div>
+                            <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download size={18} /></button>
+                        </div>
+                        <div className="h-64 mt-4 -ml-6">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={config.color} stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor={config.color} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#94a3b8"
+                                        fontSize={9}
+                                        tickFormatter={(val) => val.split('-').slice(1).join('/')}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis hide />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', padding: '10px' }}
+                                        labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                        itemStyle={{ color: config.color, fontSize: '10px', fontWeight: 'black' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey={config.dataKey}
+                                        stroke={config.color}
+                                        strokeWidth={3}
+                                        fillOpacity={1}
+                                        fill="url(#colorValue)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#0B1033] rounded-3xl p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-blue-900/20">
+                        <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
+                            <h2 className="text-4xl font-black mt-2 tracking-tighter">
+                                PKR {summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales']?.toLocaleString()}
+                            </h2>
+                        </div>
+                        <div className="space-y-4 relative z-10 pt-10">
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Volume</span>
+                                <span className="text-lg font-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                            </div>
+                            <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
+                                <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
+                                <p className="text-xs font-black mt-1 italic">DATA AUDITED & VERIFIED</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Data Table */}
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline underline-offset-8">Activity Journal</h3>
+                        <span className="text-[9px] font-bold text-slate-300">Showing filtered logs from selected range</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50/50">
+                                <tr>
+                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Tag</th>
+                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
+                                    <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Magnitude</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {chartData.filter(d => d[config.dataKey] > 0).map((row, i) => (
+                                    <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-8 py-5 text-xs font-bold text-slate-500 font-mono italic uppercase">{row.date}</td>
+                                        <td className="px-8 py-5">
+                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
+                                            <span className="text-xs font-black text-slate-800 uppercase italic">Entry_{i + 1} Record</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right font-black text-slate-800 text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                                {chartData.filter(d => d[config.dataKey] > 0).length === 0 && (
+                                    <tr>
+                                        <td colSpan="3" className="px-8 py-20 text-center">
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="max-w-7xl mx-auto pb-10">
+            {activeModule ? renderDetailView() : renderDashboard()}
         </div>
     );
 };
