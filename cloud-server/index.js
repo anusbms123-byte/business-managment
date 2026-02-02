@@ -570,16 +570,20 @@ app.put('/api/purchases/:id', async (req, res) => {
             }
 
             // 3. Update Purchase Record
+            const updateData = {
+                totalAmount: finalTotal,
+                paidAmount: finalPaid,
+                status: paymentStatus || 'RECEIVED'
+            };
+
+            // Only include optional fields if they have values
+            if (vendorId) updateData.vendorId = vendorId;
+            if (invoiceNo) updateData.invoiceNo = invoiceNo;
+            if (notes) updateData.notes = notes;
+
             await tx.purchase.update({
                 where: { id: purchaseId },
-                data: {
-                    vendorId,
-                    invoiceNo,
-                    totalAmount: finalTotal,
-                    paidAmount: finalPaid,
-                    status: paymentStatus || 'RECEIVED',
-                    notes
-                }
+                data: updateData
             });
 
             // 4. Replace Items
