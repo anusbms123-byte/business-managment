@@ -52,7 +52,10 @@ autoUpdater.on('update-downloaded', (info) => {
         buttons: ['Restart', 'Later']
     }).then((returnValue) => {
         if (returnValue.response === 0) {
-            autoUpdater.quitAndInstall();
+            log.info('User chose to restart. Calling quitAndInstall(false, true)...');
+            autoUpdater.quitAndInstall(false, true);
+        } else {
+            log.info('User chose to install later.');
         }
     });
 });
