@@ -1836,13 +1836,18 @@ app.get('/api/reports/summary', async (req, res) => {
 
         // Calculate Daily/Monthly Summaries
         const dailyMap = {};
-        const diffTime = Math.abs(end - start);
+
+        // Ensure start and end are valid dates
+        const safeStart = isNaN(start.getTime()) ? new Date(new Date().setDate(new Date().getDate() - 30)) : start;
+        const safeEnd = isNaN(end.getTime()) ? new Date() : end;
+
+        const diffTime = Math.abs(safeEnd - safeStart);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const useMonthlyGrouping = diffDays > 62; // Group by month if range is more than 2 months
+        const useMonthlyGrouping = diffDays > 62;
 
         // Populate with dates in range
-        let curr = new Date(start);
-        while (curr <= end) {
+        let curr = new Date(safeStart);
+        while (curr <= safeEnd) {
             let dateStr;
             if (useMonthlyGrouping) {
                 // Key format: YYYY-MM (e.g., 2024-01)
@@ -1913,13 +1918,7 @@ app.get('/api/reports/summary', async (req, res) => {
         });
 
         purchases.forEach(p => {
-            let d;
-            if (useMonthlyGrouping) {
-                d = `${p.date.getFullYear()}-${String(p.date.getMonth() + 1).padStart(2, '0')}`;
-            } else {
-                d = p.date.toISOString().split('T')[0];
-            }
-
+            let d = useMonthlyGrouping ? `${p.date.getFullYear()}-${String(p.date.getMonth() + 1).padStart(2, '0')}` : p.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
                 dailyMap[d].purchases += p.totalAmount;
                 dailyMap[d].invoices += 1;
