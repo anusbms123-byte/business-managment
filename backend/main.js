@@ -158,6 +158,15 @@ ipcMain.handle("add-purchase", (e, data) => apiCall('post', '/purchases', data))
 ipcMain.handle("update-purchase", (e, data) => apiCall('put', `/purchases/${data.id}`, data));
 ipcMain.handle("delete-purchase", (e, id) => apiCall('delete', `/purchases/${id}`));
 
+// Returns
+ipcMain.handle("get-sale-returns", (e, companyId) => apiCall('get', '/returns/sales', null, { companyId }));
+ipcMain.handle("add-sale-return", (e, data) => apiCall('post', '/returns/sales', data));
+ipcMain.handle("delete-sale-return", (e, id) => apiCall('delete', `/returns/sales/${id}`));
+
+ipcMain.handle("get-purchase-returns", (e, companyId) => apiCall('get', '/returns/purchases', null, { companyId }));
+ipcMain.handle("add-purchase-return", (e, data) => apiCall('post', '/returns/purchases', data));
+ipcMain.handle("delete-purchase-return", (e, id) => apiCall('delete', `/returns/purchases/${id}`));
+
 // Expenses
 ipcMain.handle("get-expenses", (e, companyId) => apiCall('get', '/expenses', null, { companyId }));
 ipcMain.handle("create-expense", (e, data) => apiCall('post', '/expenses', data));

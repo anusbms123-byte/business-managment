@@ -24,8 +24,12 @@ const Purchase = ({ currentUser }) => {
     // Right Panel Details
     const [invoiceNo, setInvoiceNo] = useState('');
     const [dueDate, setDueDate] = useState('');
-    const [shippingCost, setShippingCost] = useState(0);
-    const [paidAmount, setPaidAmount] = useState(0);
+    const [shippingCost, setShippingCost] = useState('');
+    const [discount, setDiscount] = useState('');
+    const [discountType, setDiscountType] = useState('FLAT');
+    const [tax, setTax] = useState('');
+    const [taxType, setTaxType] = useState('PERCENT'); // Default tax to percent
+    const [paidAmount, setPaidAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [paymentStatus, setPaymentStatus] = useState('RECEIVED');
     const [notes, setNotes] = useState('');
@@ -121,7 +125,10 @@ const Purchase = ({ currentUser }) => {
 
     // --- Totals Calculation ---
     const subtotal = cart.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
-    const grandTotal = subtotal + parseFloat(shippingCost || 0) + parseFloat(previousBalance || 0);
+    const discountValue = discountType === 'PERCENT' ? (subtotal * (Number(discount) || 0)) / 100 : (Number(discount) || 0);
+    const taxValue = taxType === 'PERCENT' ? (subtotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
+
+    const grandTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue + parseFloat(previousBalance || 0);
     const balanceDue = Math.max(0, grandTotal - parseFloat(paidAmount || 0));
 
     const handleSave = async () => {
@@ -135,9 +142,11 @@ const Purchase = ({ currentUser }) => {
                 companyId: currentUser?.company_id,
                 vendorId,
                 invoiceNo,
-                totalAmount: subtotal + parseFloat(shippingCost || 0), // Current bill amount
+                totalAmount: subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue, // Bill Amount (Excluding Prev Balance)
                 paidAmount: parseFloat(paidAmount) || 0,
                 shippingCost: parseFloat(shippingCost) || 0,
+                discount: discountValue,
+                tax: taxValue,
                 paymentMethod,
                 paymentStatus,
                 dueDate: dueDate || null,
@@ -189,6 +198,10 @@ const Purchase = ({ currentUser }) => {
         setPaymentMethod(purchase.paymentMethod || 'CASH');
         setPaidAmount(purchase.paidAmount || 0);
         setShippingCost(purchase.shippingCost || 0);
+        setDiscount(purchase.discount || 0);
+        setDiscountType('FLAT');
+        setTax(purchase.tax || 0);
+        setTaxType('FLAT'); // Loaded as flat value
         setNotes(purchase.notes || '');
 
         // Reconstruct Cart
@@ -214,8 +227,12 @@ const Purchase = ({ currentUser }) => {
         setVendorId('');
         setInvoiceNo('');
         setCart([]);
-        setPaidAmount(0);
-        setShippingCost(0);
+        setPaidAmount('');
+        setShippingCost('');
+        setDiscount('');
+        setDiscountType('FLAT');
+        setTax('');
+        setTaxType('PERCENT');
         setDueDate('');
         setNotes('');
         setPaymentStatus('RECEIVED');
@@ -408,7 +425,8 @@ const Purchase = ({ currentUser }) => {
                                                 type="number"
                                                 min="1"
                                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
-                                                value={qty}
+                                                value={qty || ''}
+                                                placeholder="0"
                                                 onChange={(e) => setQty(e.target.value)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
@@ -502,7 +520,7 @@ const Purchase = ({ currentUser }) => {
                                         </div>
                                     </div>
 
-                                    {/* Financials */}
+                                    {/* Financials Summary */}
                                     <div className="bg-slate-50/50 p-4 rounded-xl space-y-3 border border-slate-100">
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Subtotal</span>
@@ -513,9 +531,42 @@ const Purchase = ({ currentUser }) => {
                                             <input
                                                 type="number"
                                                 className="w-20 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                value={shippingCost}
+                                                value={shippingCost || ''}
                                                 onChange={(e) => setShippingCost(e.target.value)}
+                                                placeholder="0"
                                             />
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                                            <span>Tax</span>
+                                            <div className="flex gap-1">
+                                                <input
+                                                    type="number"
+                                                    className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
+                                                    value={tax || ''}
+                                                    onChange={(e) => setTax(e.target.value)}
+                                                    placeholder="0"
+                                                />
+                                                <select value={taxType} onChange={e => setTaxType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
+                                                    <option value="PERCENT">%</option>
+                                                    <option value="FLAT">Flat</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
+                                            <span>Discount</span>
+                                            <div className="flex gap-1">
+                                                <input
+                                                    type="number"
+                                                    className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
+                                                    value={discount || ''}
+                                                    onChange={(e) => setDiscount(e.target.value)}
+                                                    placeholder="0"
+                                                />
+                                                <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
+                                                    <option value="FLAT">Flat</option>
+                                                    <option value="PERCENT">%</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                             <span>Previous Balance</span>
@@ -548,8 +599,9 @@ const Purchase = ({ currentUser }) => {
                                             <input
                                                 type="number"
                                                 className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
-                                                value={paidAmount}
+                                                value={paidAmount || ''}
                                                 onChange={(e) => setPaidAmount(e.target.value)}
+                                                placeholder="0"
                                             />
                                         </div>
                                         <div className="flex justify-between items-center pt-2 border-t border-slate-100">

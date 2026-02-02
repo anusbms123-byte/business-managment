@@ -15,6 +15,7 @@ const MODULES = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'sales', label: 'Sales' },
     { key: 'purchase', label: 'Purchase' },
+    { key: 'returns', label: 'Returns' },
     { key: 'products', label: 'Products' },
     { key: 'inventory', label: 'Inventory' },
     { key: 'customers', label: 'Customers' },

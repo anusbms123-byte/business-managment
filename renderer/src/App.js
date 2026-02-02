@@ -19,6 +19,7 @@ import Backup from './components/Backup';
 import Signup from './components/Signup';
 import CompanySetup from './components/CompanySetup';
 import PendingApproval from './components/PendingApproval';
+import Returns from './components/Returns';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -55,13 +56,13 @@ function App() {
     return (
         <Router>
             <Routes>
-                
+
                 <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
                 <Route path="/signup" element={!user ? <Signup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
                 <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
                 <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
 
-            
+
                 {user ? (
                     <Route path="/*" element={
                         <Layout user={user} onLogout={handleLogout}>
@@ -75,6 +76,7 @@ function App() {
                                 <Route path="/inventory" element={<Inventory currentUser={user} />} />
                                 <Route path="/purchase" element={<Purchase currentUser={user} />} />
                                 <Route path="/sales" element={<Sales currentUser={user} />} />
+                                <Route path="/returns" element={<Returns currentUser={user} />} />
                                 <Route path="/customers" element={<Customers currentUser={user} />} />
                                 <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
                                 <Route path="/expenses" element={<Expenses currentUser={user} />} />

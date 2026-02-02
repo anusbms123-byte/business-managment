@@ -285,7 +285,7 @@ const StockTracking = ({ currentUser }) => {
 const BarcodePrinting = ({ currentUser }) => {
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [numLabels, setNumLabels] = useState(1);
+    const [numLabels, setNumLabels] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -308,6 +308,7 @@ const BarcodePrinting = ({ currentUser }) => {
 
     const handlePrint = () => {
         if (!selectedProduct) return alert("Please select a product");
+        if (!numLabels || parseInt(numLabels) <= 0) return alert("Please enter a valid number of labels");
         window.print();
     };
 
@@ -341,9 +342,10 @@ const BarcodePrinting = ({ currentUser }) => {
                             <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
                                 type="number"
-                                value={numLabels}
-                                onChange={(e) => setNumLabels(Math.max(1, parseInt(e.target.value) || 1))}
+                                value={numLabels || ''}
+                                onChange={(e) => setNumLabels(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none text-slate-700"
+                                placeholder="0"
                                 min="1"
                             />
                         </div>
@@ -409,7 +411,7 @@ const BarcodePrinting = ({ currentUser }) => {
                     }
                 `}</style>
                 <div id="print-section">
-                    {Array.from({ length: numLabels }).map((_, i) => (
+                    {Array.from({ length: parseInt(numLabels) || 0 }).map((_, i) => (
                         <div key={i} className="print-label">
                             <div style={{ fontSize: '8px', fontWeight: 'bold' }}>{selectedProduct?.sku}</div>
                             <div style={{ height: '30px', width: '100%', background: 'linear-gradient(to right, #000, #fff, #000)', backgroundSize: '2px 100%' }}></div>

@@ -443,7 +443,7 @@ app.get('/api/purchases', async (req, res) => {
 
 app.post('/api/purchases', async (req, res) => {
     try {
-        const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
+        const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, discount, tax, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
 
         const purchase = await prisma.$transaction(async (tx) => {
             // 1. Create Purchase
@@ -453,6 +453,9 @@ app.post('/api/purchases', async (req, res) => {
                     vendorId,
                     invoiceNo,
                     totalAmount: parseFloat(totalAmount),
+                    discount: parseFloat(discount) || 0,
+                    tax: parseFloat(tax) || 0,
+                    shippingCost: parseFloat(shippingCost) || 0,
                     paidAmount: parseFloat(paidAmount) || 0,
                     status: paymentStatus || 'RECEIVED',
                     items: {
@@ -542,7 +545,7 @@ app.delete('/api/purchases/:id', async (req, res) => {
 // Update Purchase
 app.put('/api/purchases/:id', async (req, res) => {
     try {
-        const { vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
+        const { vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, discount, tax, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
         const purchaseId = req.params.id;
 
         const finalTotal = parseFloat(totalAmount);
@@ -578,6 +581,9 @@ app.put('/api/purchases/:id', async (req, res) => {
             // 3. Update Purchase Record
             const updateData = {
                 totalAmount: finalTotal,
+                discount: parseFloat(discount) || 0,
+                tax: parseFloat(tax) || 0,
+                shippingCost: parseFloat(shippingCost) || 0,
                 paidAmount: finalPaid,
                 status: paymentStatus || 'RECEIVED'
             };
@@ -659,6 +665,197 @@ app.put('/api/purchases/:id', async (req, res) => {
         });
 
         res.json({ success: true, message: "Purchase updated successfully" });
+    } catch (e) { handleError(res, e); }
+});
+
+
+// ==========================================
+// RETURNS
+// ==========================================
+
+// Sale Returns
+app.get('/api/returns/sales', async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        if (!companyId) return res.json([]);
+        const returns = await prisma.saleReturn.findMany({
+            where: { companyId },
+            include: { customer: true, items: { include: { product: true } } },
+            orderBy: { date: 'desc' }
+        });
+        res.json(returns);
+    } catch (e) { handleError(res, e); }
+});
+
+app.post('/api/returns/sales', async (req, res) => {
+    try {
+        const { companyId, customerId, saleId, invoiceNo, subTotal, tax, totalAmount, notes, items } = req.body;
+
+        const saleReturn = await prisma.$transaction(async (tx) => {
+            // 1. Create Sale Return
+            const sr = await tx.saleReturn.create({
+                data: {
+                    companyId,
+                    customerId,
+                    saleId,
+                    invoiceNo,
+                    subTotal: parseFloat(subTotal),
+                    tax: parseFloat(tax) || 0,
+                    totalAmount: parseFloat(totalAmount),
+                    notes,
+                    items: {
+                        create: items.map(item => ({
+                            productId: item.productId,
+                            quantity: parseInt(item.quantity),
+                            price: parseFloat(item.price),
+                            total: parseFloat(item.total)
+                        }))
+                    }
+                }
+            });
+
+            // 2. Update Product Stock (Increment because items are returned)
+            for (const item of items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { increment: parseInt(item.quantity) } }
+                });
+            }
+
+            // 3. Update Customer Balance (Decrease receivable)
+            await tx.customer.update({
+                where: { id: customerId },
+                data: { balance: { decrement: parseFloat(totalAmount) } }
+            });
+
+            return sr;
+        });
+
+        res.json({ success: true, id: saleReturn.id, ...saleReturn });
+    } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/returns/sales/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        await prisma.$transaction(async (tx) => {
+            const sr = await tx.saleReturn.findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!sr) throw new Error("Return not found");
+
+            // 1. Revert Stock
+            for (const item of sr.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { decrement: item.quantity } }
+                });
+            }
+
+            // 2. Revert Customer Balance
+            await tx.customer.update({
+                where: { id: sr.customerId },
+                data: { balance: { increment: sr.totalAmount } }
+            });
+
+            // 3. Delete Return
+            await tx.saleReturn.delete({ where: { id } });
+        });
+        res.json({ success: true, message: "Sale return deleted and stock/balance reversed" });
+    } catch (e) { handleError(res, e); }
+});
+
+// Purchase Returns
+app.get('/api/returns/purchases', async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        if (!companyId) return res.json([]);
+        const returns = await prisma.purchaseReturn.findMany({
+            where: { companyId },
+            include: { vendor: true, items: { include: { product: true } } },
+            orderBy: { date: 'desc' }
+        });
+        res.json(returns);
+    } catch (e) { handleError(res, e); }
+});
+
+app.post('/api/returns/purchases', async (req, res) => {
+    try {
+        const { companyId, vendorId, purchaseId, invoiceNo, subTotal, tax, totalAmount, notes, items } = req.body;
+
+        const purchaseReturn = await prisma.$transaction(async (tx) => {
+            // 1. Create Purchase Return
+            const pr = await tx.purchaseReturn.create({
+                data: {
+                    companyId,
+                    vendorId,
+                    purchaseId,
+                    invoiceNo,
+                    subTotal: parseFloat(subTotal),
+                    tax: parseFloat(tax) || 0,
+                    totalAmount: parseFloat(totalAmount),
+                    notes,
+                    items: {
+                        create: items.map(item => ({
+                            productId: item.productId,
+                            quantity: parseInt(item.quantity),
+                            unitCost: parseFloat(item.unitCost),
+                            total: parseFloat(item.total)
+                        }))
+                    }
+                }
+            });
+
+            // 2. Update Product Stock (Decrement because items are returned to vendor)
+            for (const item of items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { decrement: parseInt(item.quantity) } }
+                });
+            }
+
+            // 3. Update Vendor Balance (Decrease payable)
+            await tx.vendor.update({
+                where: { id: vendorId },
+                data: { balance: { decrement: parseFloat(totalAmount) } }
+            });
+
+            return pr;
+        });
+
+        res.json({ success: true, id: purchaseReturn.id, ...purchaseReturn });
+    } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/returns/purchases/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        await prisma.$transaction(async (tx) => {
+            const pr = await tx.purchaseReturn.findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!pr) throw new Error("Return not found");
+
+            // 1. Revert Stock
+            for (const item of pr.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stockQty: { increment: item.quantity } }
+                });
+            }
+
+            // 2. Revert Vendor Balance
+            await tx.vendor.update({
+                where: { id: pr.vendorId },
+                data: { balance: { increment: pr.totalAmount } }
+            });
+
+            // 3. Delete Return
+            await tx.purchaseReturn.delete({ where: { id } });
+        });
+        res.json({ success: true, message: "Purchase return deleted and stock/balance reversed" });
     } catch (e) { handleError(res, e); }
 });
 

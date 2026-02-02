@@ -15,7 +15,7 @@ async function main() {
     ];
 
     const modules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
-        'customers', 'suppliers', 'expenses', 'reports', 'users', 'settings', 'hrm', 'accounting'];
+        'customers', 'suppliers', 'expenses', 'reports', 'users', 'settings', 'hrm', 'accounting', 'returns'];
 
     for (const role of systemRoles) {
         // Upsert Role (Update if exists, Create if not)

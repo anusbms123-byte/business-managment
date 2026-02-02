@@ -62,8 +62,8 @@ const Customers = ({ currentUser }) => {
         address: '',
         city: '',
         gst_no: '',
-        creditLimit: 0,
-        openingBalance: 0
+        creditLimit: '',
+        openingBalance: ''
     });
 
     useEffect(() => { loadCustomers(); }, [currentUser]);
@@ -90,8 +90,8 @@ const Customers = ({ currentUser }) => {
             const data = {
                 ...formData,
                 companyId: currentUser?.company_id,
-                balance: formData.openingBalance, // Send current balance value from form
-                opening_balance: formData.id ? undefined : formData.openingBalance // Only set opening_balance on creation
+                balance: Number(formData.openingBalance) || 0, // Send current balance value from form
+                opening_balance: formData.id ? undefined : (Number(formData.openingBalance) || 0) // Only set opening_balance on creation
             };
             let result;
             if (formData.id) {
@@ -137,9 +137,9 @@ const Customers = ({ currentUser }) => {
             address: customer.address || '',
             city: customer.city || '',
             gst_no: customer.gstNo || '',
-            creditLimit: customer.creditLimit || 0,
+            creditLimit: customer.creditLimit || '',
             // Use current balance as the editable field for clearer "Current Debt" management
-            openingBalance: customer.balance || 0
+            openingBalance: customer.balance || ''
         } : {
             id: null,
             name: '',
@@ -150,8 +150,8 @@ const Customers = ({ currentUser }) => {
             address: '',
             city: '',
             gst_no: '',
-            creditLimit: 0,
-            openingBalance: 0
+            creditLimit: '',
+            openingBalance: ''
         });
         setShowModal(true);
     };
@@ -405,7 +405,7 @@ const Customers = ({ currentUser }) => {
                                                 <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
                                                     type="number"
-                                                    value={formData.creditLimit}
+                                                    value={formData.creditLimit || ''}
                                                     onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
                                                     placeholder="0.00"
@@ -418,7 +418,7 @@ const Customers = ({ currentUser }) => {
                                                 <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
                                                     type="number"
-                                                    value={formData.openingBalance}
+                                                    value={formData.openingBalance || ''}
                                                     onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm"
                                                     placeholder="0.00"

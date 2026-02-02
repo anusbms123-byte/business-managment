@@ -21,7 +21,7 @@ const Suppliers = ({ currentUser }) => {
         address: '',
         city: '',
         gst_no: '',
-        openingBalance: 0
+        openingBalance: ''
     });
 
     useEffect(() => { loadSuppliers(); }, [currentUser]);
@@ -48,8 +48,8 @@ const Suppliers = ({ currentUser }) => {
             const data = {
                 ...formData,
                 companyId: currentUser?.company_id,
-                balance: formData.openingBalance,
-                opening_balance: formData.id ? undefined : formData.openingBalance
+                balance: Number(formData.openingBalance) || 0,
+                opening_balance: formData.id ? undefined : (Number(formData.openingBalance) || 0)
             };
             let result;
             if (formData.id) {
@@ -95,7 +95,7 @@ const Suppliers = ({ currentUser }) => {
             address: supplier.address || '',
             city: supplier.city || '',
             gst_no: supplier.gstNo || '',
-            openingBalance: supplier.balance || 0
+            openingBalance: supplier.balance || ''
         } : {
             id: null,
             name: '',
@@ -106,7 +106,7 @@ const Suppliers = ({ currentUser }) => {
             address: '',
             city: '',
             gst_no: '',
-            openingBalance: 0
+            openingBalance: ''
         });
         setShowModal(true);
     };
@@ -367,7 +367,7 @@ const Suppliers = ({ currentUser }) => {
                                             <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
                                             <input
                                                 type="number"
-                                                value={formData.openingBalance}
+                                                value={formData.openingBalance || ''}
                                                 onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
                                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 outline-none transition-all text-sm font-bold"
                                                 placeholder="0.00"

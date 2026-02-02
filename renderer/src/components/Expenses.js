@@ -284,7 +284,7 @@ const Expenses = ({ currentUser }) => {
                                                 <input
                                                     type="number"
                                                     required
-                                                    value={formData.amount}
+                                                    value={formData.amount || ''}
                                                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
                                                     placeholder="0"

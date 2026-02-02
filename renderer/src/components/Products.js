@@ -570,7 +570,7 @@ const Products = ({ currentUser }) => {
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <Box size={12} className="text-slate-400" /> Weight (kg)
                                             </label>
-                                            <input type="number" step="0.01" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
+                                            <input type="number" step="0.01" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
                                         </div>
                                     </div>
 
@@ -580,13 +580,13 @@ const Products = ({ currentUser }) => {
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <DollarSign size={12} className="text-slate-400" /> Cost Price
                                             </label>
-                                            <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.cost_price} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="0" />
+                                            <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <DollarSign size={12} className="text-slate-400" /> Sell Price *
                                             </label>
-                                            <input required type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.sell_price} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="0" />
                                         </div>
                                     </div>
 
@@ -596,13 +596,13 @@ const Products = ({ currentUser }) => {
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <Box size={12} className="text-slate-400" /> Initial Stock *
                                             </label>
-                                            <input required type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.stock_qty} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.stock_qty || ''} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <AlertTriangle size={12} className="text-slate-400" /> Low Stock Alert
                                             </label>
-                                            <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.alert_qty} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
+                                            <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.alert_qty || ''} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
                                     </div>
 

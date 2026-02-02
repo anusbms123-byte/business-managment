@@ -48,12 +48,12 @@ const Sales = ({ currentUser }) => {
     const [selectedProduct, setSelectedProduct] = useState('');
     const [qty, setQty] = useState(1);
     const [selectedCustomer, setSelectedCustomer] = useState('');
-    const [discount, setDiscount] = useState(0);
+    const [discount, setDiscount] = useState('');
     const [discountType, setDiscountType] = useState('FLAT'); // 'FLAT' or 'PERCENT'
-    const [tax, setTax] = useState(0);
+    const [tax, setTax] = useState('');
     const [taxType, setTaxType] = useState('PERCENT'); // 'FLAT' or 'PERCENT'
-    const [shippingCost, setShippingCost] = useState(0);
-    const [amountPaid, setAmountPaid] = useState(0);
+    const [shippingCost, setShippingCost] = useState('');
+    const [amountPaid, setAmountPaid] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
@@ -208,12 +208,12 @@ const Sales = ({ currentUser }) => {
     const resetForm = () => {
         setEditingId(null);
         setCart([]);
-        setDiscount(0);
+        setDiscount('');
         setDiscountType('FLAT');
-        setTax(0);
+        setTax('');
         setTaxType('PERCENT');
-        setShippingCost(0);
-        setAmountPaid(0);
+        setShippingCost('');
+        setAmountPaid('');
         setPaymentMethod('CASH');
         setNotes('');
         setSelectedCustomer('');
@@ -508,7 +508,8 @@ const Sales = ({ currentUser }) => {
                                             type="number"
                                             min="1"
                                             className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
-                                            value={qty}
+                                            value={qty || ''}
+                                            placeholder="0"
                                             onChange={(e) => setQty(e.target.value)}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
@@ -602,7 +603,8 @@ const Sales = ({ currentUser }) => {
                                                     <input
                                                         type="number"
                                                         className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                        value={tax}
+                                                        value={tax || ''}
+                                                        placeholder="0"
                                                         onChange={(e) => setTax(e.target.value)}
                                                     />
                                                 </div>
@@ -621,7 +623,8 @@ const Sales = ({ currentUser }) => {
                                                     <input
                                                         type="number"
                                                         className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                        value={discount}
+                                                        value={discount || ''}
+                                                        placeholder="0"
                                                         onChange={(e) => setDiscount(e.target.value)}
                                                     />
                                                 </div>
@@ -634,7 +637,8 @@ const Sales = ({ currentUser }) => {
                                                 <input
                                                     type="number"
                                                     className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-sm"
-                                                    value={shippingCost}
+                                                    value={shippingCost || ''}
+                                                    placeholder="0"
                                                     onChange={(e) => setShippingCost(e.target.value)}
                                                 />
                                             </div>
@@ -678,7 +682,8 @@ const Sales = ({ currentUser }) => {
                                                     <input
                                                         type="number"
                                                         className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
-                                                        value={amountPaid}
+                                                        value={amountPaid || ''}
+                                                        placeholder="0"
                                                         onChange={(e) => setAmountPaid(e.target.value)}
                                                     />
                                                 </div>

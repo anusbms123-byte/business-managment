@@ -46,6 +46,8 @@ model Company {
   expenses    Expense[]
   employees   Employee[]
   accounts    Account[]
+  saleReturns SaleReturn[]
+  purchaseReturns PurchaseReturn[]
 
   @@map("companies")
 }
@@ -175,6 +177,8 @@ model Product {
 
   saleItems     SaleItem[]
   purchaseItems PurchaseItem[]
+  saleReturnItems SaleReturnItem[]
+  purchaseReturnItems PurchaseReturnItem[]
 
   @@map("products")
 }
@@ -203,6 +207,7 @@ model Customer {
   company     Company @relation(fields: [companyId], references: [id])
 
   sales       Sale[]
+  saleReturns SaleReturn[]
 
   @@map("customers")
 }
@@ -239,6 +244,7 @@ model Sale {
   user        User?   @relation(fields: [userId], references: [id])
 
   items       SaleItem[]
+  returns     SaleReturn[]
 
   @@map("sales")
 }
@@ -280,6 +286,7 @@ model Vendor {
   company     Company @relation(fields: [companyId], references: [id])
 
   purchases   Purchase[]
+  purchaseReturns PurchaseReturn[]
 
   @@map("vendors")
 }
@@ -290,6 +297,9 @@ model Purchase {
   date          DateTime @default(now())
   
   totalAmount   Float    @map("total_amount")
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  shippingCost  Float    @default(0) @map("shipping_cost")
   paidAmount    Float    @default(0) @map("paid_amount")
   status        String   @default("RECEIVED") // ORDERED, RECEIVED
 
@@ -303,6 +313,7 @@ model Purchase {
   vendor        Vendor? @relation(fields: [vendorId], references: [id])
 
   items         PurchaseItem[]
+  returns       PurchaseReturn[]
 
   @@map("purchases")
 }
@@ -455,4 +466,92 @@ model SupportRequest {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("support_requests")
+}
+
+// =========================================================
+// 8. RETURNS MANAGEMENT
+// =========================================================
+
+model SaleReturn {
+  id            String   @id @default(cuid())
+  invoiceNo     String   @map("invoice_no")
+  date          DateTime @default(now())
+  
+  saleId        String?  @map("sale_id")
+  sale          Sale?    @relation(fields: [saleId], references: [id])
+  
+  customerId    String   @map("customer_id")
+  customer      Customer @relation(fields: [customerId], references: [id])
+  
+  subTotal      Float    @map("sub_total")
+  tax           Float    @default(0)
+  totalAmount   Float    @map("total_amount")
+  
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  companyId     String   @map("company_id")
+  company       Company  @relation(fields: [companyId], references: [id])
+
+  items         SaleReturnItem[]
+
+  @@map("sale_returns")
+}
+
+model SaleReturnItem {
+  id            String   @id @default(cuid())
+  quantity      Int
+  price         Float
+  total         Float
+  
+  returnId      String   @map("return_id")
+  saleReturn    SaleReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  productId     String   @map("product_id")
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@map("sale_return_items")
+}
+
+model PurchaseReturn {
+  id            String   @id @default(cuid())
+  invoiceNo     String?  @map("invoice_no")
+  date          DateTime @default(now())
+  
+  purchaseId    String?  @map("purchase_id")
+  purchase      Purchase? @relation(fields: [purchaseId], references: [id])
+  
+  vendorId      String   @map("vendor_id")
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
+  
+  subTotal      Float    @map("sub_total")
+  tax           Float    @default(0)
+  totalAmount   Float    @map("total_amount")
+  
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  companyId     String   @map("company_id")
+  company       Company  @relation(fields: [companyId], references: [id])
+
+  items         PurchaseReturnItem[]
+
+  @@map("purchase_returns")
+}
+
+model PurchaseReturnItem {
+  id            String   @id @default(cuid())
+  quantity      Int
+  unitCost      Float    @map("unit_cost")
+  total         Float
+  
+  returnId      String   @map("return_id")
+  purchaseReturn PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  productId     String   @map("product_id")
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@map("purchase_return_items")
 }

@@ -68,6 +68,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     addPurchase: (data) => ipcRenderer.invoke('add-purchase', data),
     updatePurchase: (data) => ipcRenderer.invoke('update-purchase', data),
     deletePurchase: (id) => ipcRenderer.invoke("delete-purchase", id),
+
+    // Returns APIs
+    getSaleReturns: (companyId) => ipcRenderer.invoke('get-sale-returns', companyId),
+    handleSaleReturn: (data) => ipcRenderer.invoke('add-sale-return', data),
+    deleteSaleReturn: (id) => ipcRenderer.invoke('delete-sale-return', id),
+
+    getPurchaseReturns: (companyId) => ipcRenderer.invoke('get-purchase-returns', companyId),
+    handlePurchaseReturn: (data) => ipcRenderer.invoke('add-purchase-return', data),
+    deletePurchaseReturn: (id) => ipcRenderer.invoke('delete-purchase-return', id),
     // Expenses
     getExpenses: (companyId) => ipcRenderer.invoke('get-expenses', companyId),
     createExpense: (data) => ipcRenderer.invoke('create-expense', data),
