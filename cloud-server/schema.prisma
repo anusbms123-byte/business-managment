@@ -48,6 +48,7 @@ model Company {
   accounts    Account[]
   saleReturns SaleReturn[]
   purchaseReturns PurchaseReturn[]
+  salaryRecords SalaryRecord[]
 
   @@map("companies")
 }

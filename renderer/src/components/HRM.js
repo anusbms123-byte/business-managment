@@ -579,7 +579,7 @@ const Payroll = ({ employees, currentUser }) => {
                                         <span>PKR {selectedEmp.salary?.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold text-emerald-600">
-                                        <span>OT Pay ({paymentData.otHours} hr x {selectedEmp.hourlyRate})</span>
+                                        <span>OT Pay ({paymentData.otHours} hr x {selectedEmp.hourlyRate || 0})</span>
                                         <span>+PKR {((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold text-emerald-600">
