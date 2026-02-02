@@ -427,6 +427,7 @@ const Payroll = ({ employees, currentUser }) => {
     const [showModal, setShowModal] = useState(false);
     const [selectedEmp, setSelectedEmp] = useState(null);
     const [paymentData, setPaymentData] = useState({ bonus: 0, otHours: 0, deductions: 0, notes: '' });
+    const [viewingSlip, setViewingSlip] = useState(null);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -528,7 +529,12 @@ const Payroll = ({ employees, currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         {record ? (
-                                            <button className="text-blue-600 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">View Slip</button>
+                                            <button
+                                                onClick={() => setViewingSlip(record)}
+                                                className="text-blue-600 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
+                                            >
+                                                View Slip
+                                            </button>
                                         ) : (
                                             <button
                                                 onClick={() => { setSelectedEmp(emp); setPaymentData({ bonus: 0, otHours: 0, deductions: 0, notes: '' }); setShowModal(true); }}
@@ -547,6 +553,7 @@ const Payroll = ({ employees, currentUser }) => {
 
             {/* Payment Modal */}
             {showModal && selectedEmp && (
+                // ... (Existing Pay Salary Modal)
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200">
                         <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
@@ -601,6 +608,108 @@ const Payroll = ({ employees, currentUser }) => {
                                 {saving ? 'Processing...' : 'Confirm & Generate Slip'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Salary Slip Viewer */}
+            {viewingSlip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 overflow-y-auto">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Slip Header */}
+                        <div className="bg-[#0B1033] p-10 text-white flex justify-between items-start">
+                            <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter">Salary Payslip</h2>
+                                <p className="text-blue-300 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Official Payment Record</p>
+                            </div>
+                            <button onClick={() => setViewingSlip(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+                        </div>
+
+                        <div className="p-10 space-y-8">
+                            {/* Staff Info */}
+                            <div className="grid grid-cols-2 gap-10">
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Employee Details</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase">{viewingSlip.employee?.firstName} {viewingSlip.employee?.lastName}</p>
+                                        <p className="text-xs font-bold text-blue-600 mt-0.5">{viewingSlip.employee?.designation}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payment Period</p>
+                                        <p className="text-sm font-black text-slate-800 uppercase">{new Date(viewingSlip.month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right space-y-4">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payment Status</p>
+                                        <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 italic">Confirmed Paid</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transaction ID</p>
+                                        <p className="text-xs font-mono font-bold text-slate-500 uppercase">SLP-{viewingSlip.id.slice(-8).toUpperCase()}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Calculation Table */}
+                            <div className="border border-slate-100 rounded-xl overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</th>
+                                            <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        <tr className="bg-white">
+                                            <td className="px-6 py-4 text-xs font-bold text-slate-600">Basic Monthly Salary</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-800">PKR {viewingSlip.baseSalary?.toLocaleString()}</td>
+                                        </tr>
+                                        <tr className="bg-white">
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs font-bold text-slate-600">Overtime Earnings</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">({viewingSlip.overtimeHours} hours at {viewingSlip.employee?.hourlyRate}/hr)</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600">+PKR {viewingSlip.overtimePay?.toLocaleString()}</td>
+                                        </tr>
+                                        <tr className="bg-white">
+                                            <td className="px-6 py-4 text-xs font-bold text-slate-600">Performance Bonus</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600">+PKR {viewingSlip.bonus?.toLocaleString()}</td>
+                                        </tr>
+                                        <tr className="bg-white">
+                                            <td className="px-6 py-4 text-xs font-bold text-slate-600">Total Deductions</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-rose-600">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
+                                        </tr>
+                                        <tr className="bg-slate-50/50">
+                                            <td className="px-6 py-6 text-sm font-black text-slate-800 uppercase tracking-tight">Net Dispatched Salary</td>
+                                            <td className="px-6 py-6 text-right text-lg font-black text-blue-600">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-start justify-between gap-10 pt-4 border-t border-slate-50">
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Notes / Remarks</p>
+                                    <p className="text-xs text-slate-500 italic leading-relaxed">{viewingSlip.notes || 'No special remarks for this period.'}</p>
+                                </div>
+                                <div className="text-center">
+                                    <div className="w-32 h-1 bg-slate-100 mb-2 mx-auto"></div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authorized Sign</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-center gap-4">
+                            <button
+                                onClick={() => window.print()}
+                                className="px-8 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all text-[10px] uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2"
+                            >
+                                <DollarSign size={14} />
+                                Print Slip
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

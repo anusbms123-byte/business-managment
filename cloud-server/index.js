@@ -1754,7 +1754,7 @@ app.get('/api/reports/summary', async (req, res) => {
         const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 30));
         const end = endDate ? new Date(endDate) : new Date();
 
-        const [sales, purchases, expenses, products, customers, vendors] = await Promise.all([
+        const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
                 where: { companyId, date: { gte: start, lte: end } },
                 include: { items: { include: { product: true } } }
@@ -1773,6 +1773,18 @@ app.get('/api/reports/summary', async (req, res) => {
             }),
             prisma.vendor.findMany({
                 where: { companyId }
+            }),
+            prisma.saleReturn.findMany({
+                where: { companyId, date: { gte: start, lte: end } }
+            }),
+            prisma.purchaseReturn.findMany({
+                where: { companyId, date: { gte: start, lte: end } }
+            }),
+            prisma.employee.findMany({
+                where: { companyId }
+            }),
+            prisma.salaryRecord.findMany({
+                where: { companyId, createdAt: { gte: start, lte: end } }
             })
         ]);
 
@@ -1816,8 +1828,11 @@ app.get('/api/reports/summary', async (req, res) => {
             return acc + saleCOGS;
         }, 0);
 
-        // Net Profit = Revenue - COGS - Expenses
-        const netProfit = totalSales - (totalCOGS + totalExpenses);
+        // Net Profit = Revenue - COGS - Expenses - Salaries? (Let's stick to simple logic for now)
+        const totalSalaries = salaries.reduce((acc, s) => acc + s.netSalary, 0);
+        const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
+
+        const totalReturns = saleReturns.reduce((acc, r) => acc + r.refundAmount, 0) + purchaseReturns.reduce((acc, r) => acc + r.refundAmount, 0);
 
         // Calculate Daily/Monthly Summaries
         const dailyMap = {};
@@ -1923,6 +1938,10 @@ app.get('/api/reports/summary', async (req, res) => {
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
+            returnCount: saleReturns.length + purchaseReturns.length,
+            totalReturns,
+            employeeCount: employees.length,
+            totalSalaries,
             recentDays
         });
     } catch (e) { handleError(res, e); }
