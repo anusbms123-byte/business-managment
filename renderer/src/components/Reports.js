@@ -27,10 +27,10 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
             </div>
         </div>
         <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">{value}</h3>
+            <p className="text-black text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+            <h3 className="text-xl font-black text-black tracking-tight">{value}</h3>
             {subValue && (
-                <p className="text-[10px] text-slate-500 font-medium mt-2 flex items-center gap-1.5 uppercase tracking-tight">
+                <p className="text-[10px] text-black font-bold mt-2 flex items-center gap-1.5 uppercase tracking-tight">
                     {subValue}
                 </p>
             )}
@@ -44,8 +44,8 @@ const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
             <Icon size={18} />
         </div>
         <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-            <p className="text-sm font-black text-slate-800 tracking-tight">{value}</p>
+            <p className="text-[9px] font-black text-black uppercase tracking-widest">{label}</p>
+            <p className="text-sm font-black text-black tracking-tight">{value}</p>
         </div>
     </div>
 );
@@ -138,16 +138,8 @@ const Reports = ({ currentUser }) => {
     }
 
     const renderDashboard = () => (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-                <div>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Intelligence Hub</h1>
-                    <div className="flex items-center gap-3 mt-1.5">
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Live Business Overview</p>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase tracking-tighter animate-pulse border border-emerald-100 italic">Connected</span>
-                    </div>
-                </div>
-
+        <div className="animate-in fade-in duration-500">
+            <header className="flex flex-col md:flex-row md:items-center justify-end gap-6 pb-6 border-b border-slate-100">
                 <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
@@ -161,7 +153,7 @@ const Reports = ({ currentUser }) => {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Invoices Generated`} icon={DollarSign} colorClass="border-l-blue-500" onClick={() => setActiveModule('sales')} />
                 <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Bills Logged`} icon={ShoppingCart} colorClass="border-l-amber-500" onClick={() => setActiveModule('purchases')} />
                 <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Stock Warnings`} icon={Package} colorClass="border-l-indigo-500" onClick={() => setActiveModule('inventory')} />
@@ -262,9 +254,9 @@ const Reports = ({ currentUser }) => {
         const config = moduleMap[activeModule];
 
         return (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+            <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-[#F8FAFC] animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
                 {/* Detail Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between bg-white shrink-0 gap-4">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={handleBack}
@@ -275,9 +267,9 @@ const Reports = ({ currentUser }) => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <config.icon size={18} className="text-blue-600" />
-                                <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">{config.title}</h1>
+                                <h1 className="text-xl font-black text-black tracking-tight uppercase italic">{config.title}</h1>
                             </div>
-                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
+                            <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
                         </div>
                     </div>
 
@@ -288,7 +280,7 @@ const Reports = ({ currentUser }) => {
                                 type="date"
                                 value={dateRange.start}
                                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                className="text-[10px] font-bold text-slate-700 outline-none uppercase bg-transparent w-28"
+                                className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
                             />
                         </div>
                         <div className="flex items-center gap-2 px-3">
@@ -296,7 +288,7 @@ const Reports = ({ currentUser }) => {
                                 type="date"
                                 value={dateRange.end}
                                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                className="text-[10px] font-bold text-slate-700 outline-none uppercase bg-transparent w-28"
+                                className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
                             />
                         </div>
                         <button
@@ -308,122 +300,126 @@ const Reports = ({ currentUser }) => {
                     </div>
                 </div>
 
-                {/* Primary Metric & Chart Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
-                        <div className="flex items-center justify-between mb-8">
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+
+                    {/* Primary Metric & Chart Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-1 italic">Trend Visualization</h2>
+                                    <p className="text-xs text-black font-bold uppercase tracking-tight">Timeline Performance Analysis</p>
+                                </div>
+                                <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download size={18} /></button>
+                            </div>
+                            <div className="h-64 mt-4 -ml-6">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor={config.color} stopOpacity={0.2} />
+                                                <stop offset="95%" stopColor={config.color} stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis
+                                            dataKey="date"
+                                            stroke="#94a3b8"
+                                            fontSize={9}
+                                            tickFormatter={(val) => val.split('-').slice(1).join('/')}
+                                            tickLine={false}
+                                            axisLine={false}
+                                        />
+                                        <YAxis hide />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', padding: '10px' }}
+                                            labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                            itemStyle={{ color: config.color, fontSize: '10px', fontWeight: 'black' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey={config.dataKey}
+                                            stroke={config.color}
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorValue)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        <div className="bg-[#0B1033] rounded-3xl p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-blue-900/20">
+                            <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
                             <div>
-                                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Trend Visualization</h2>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-tight">Timeline Performance Analysis</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
+                                <h2 className="text-3xl font-black mt-2 tracking-tighter">
+                                    PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
+                                </h2>
                             </div>
-                            <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download size={18} /></button>
-                        </div>
-                        <div className="h-64 mt-4 -ml-6">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={config.color} stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor={config.color} stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <XAxis
-                                        dataKey="date"
-                                        stroke="#94a3b8"
-                                        fontSize={9}
-                                        tickFormatter={(val) => val.split('-').slice(1).join('/')}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', padding: '10px' }}
-                                        labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                                        itemStyle={{ color: config.color, fontSize: '10px', fontWeight: 'black' }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey={config.dataKey}
-                                        stroke={config.color}
-                                        strokeWidth={3}
-                                        fillOpacity={1}
-                                        fill="url(#colorValue)"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    <div className="bg-[#0B1033] rounded-3xl p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-blue-900/20">
-                        <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
-                            <h2 className="text-3xl font-black mt-2 tracking-tighter">
-                                PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
-                            </h2>
-                        </div>
-                        <div className="space-y-4 relative z-10 pt-10">
-                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Volume</span>
-                                <span className="text-lg font-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
-                            </div>
-                            <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
-                                <p className="text-xs font-black mt-1 italic uppercase tracking-tighter">Verified & Processed</p>
+                            <div className="space-y-4 relative z-10 pt-10">
+                                <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Volume</span>
+                                    <span className="text-lg font-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
+                                    <p className="text-xs font-black mt-1 italic uppercase tracking-tighter">Verified & Processed</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Sub-Metrics Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {config.miniStats.map((stat, idx) => (
-                        <DetailMiniCard key={idx} {...stat} />
-                    ))}
-                </div>
-
-                {/* Data Table */}
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic underline underline-offset-8">Insight Journal</h3>
-                        <span className="text-[9px] font-bold text-slate-300">Detailed periodic activity logs</span>
+                    {/* Sub-Metrics Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {config.miniStats.map((stat, idx) => (
+                            <DetailMiniCard key={idx} {...stat} />
+                        ))}
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50/50">
-                                <tr>
-                                    {config.tableCols.map((col, idx) => (
-                                        <th key={idx} className={`px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest ${idx === 2 ? 'text-right' : ''}`}>
-                                            {col}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
-                                    <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-8 py-5 text-xs font-bold text-slate-500 font-mono italic uppercase">{row.date}</td>
-                                        <td className="px-8 py-5">
-                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                            <span className="text-xs font-black text-slate-800 uppercase italic">
-                                                {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
-                                                    activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
-                                                        activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
-                                                            `Activity_ID_${i + 1} Log`}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right font-black text-slate-800 text-xs text-blue-600">PKR {row[config.dataKey]?.toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                                {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0 && (
+
+                    {/* Data Table */}
+                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic underline underline-offset-8">Insight Journal</h3>
+                            <span className="text-[9px] font-bold text-black">Detailed periodic activity logs</span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50/50">
                                     <tr>
-                                        <td colSpan="3" className="px-8 py-20 text-center">
-                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
-                                        </td>
+                                        {config.tableCols.map((col, idx) => (
+                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest ${idx === 2 ? 'text-right' : ''}`}>
+                                                {col}
+                                            </th>
+                                        ))}
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
+                                        <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
+                                            <td className="px-8 py-5">
+                                                <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
+                                                <span className="text-xs font-black text-black uppercase italic">
+                                                    {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
+                                                        activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
+                                                            activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
+                                                                `Activity_ID_${i + 1} Log`}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right font-black text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                    {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0 && (
+                                        <tr>
+                                            <td colSpan="3" className="px-8 py-20 text-center">
+                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

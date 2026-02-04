@@ -99,4 +99,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Backup & Restore
     createBackup: (companyId) => ipcRenderer.invoke('create-backup', companyId),
     restoreBackup: (companyId) => ipcRenderer.invoke('restore-backup', companyId),
+
+    // Admin Messages
+    getAdminMessages: (params) => ipcRenderer.invoke('get-admin-messages', params),
+    sendAdminMessage: (data) => ipcRenderer.invoke('send-admin-message', data),
 });

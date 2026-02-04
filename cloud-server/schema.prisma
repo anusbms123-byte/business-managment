@@ -583,3 +583,12 @@ model PurchaseReturnItem {
 
   @@map("purchase_return_items")
 }
+
+model AdminMessage {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("general") // general, alert, update
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("admin_messages")
+}

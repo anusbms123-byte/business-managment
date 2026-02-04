@@ -2247,6 +2247,34 @@ app.put('/api/support-requests/:id', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
+// ==========================================
+// 9. ADMIN MESSAGES (Announcements)
+// ==========================================
+
+app.post('/api/admin-messages', async (req, res) => {
+    try {
+        const { content, type } = req.body;
+        const message = await prisma.adminMessage.create({
+            data: {
+                content,
+                type: type || 'general'
+            }
+        });
+        res.json({ success: true, id: message.id });
+    } catch (e) { handleError(res, e); }
+});
+
+app.get('/api/admin-messages', async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+        const messages = await prisma.adminMessage.findMany({
+            take: parseInt(limit),
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(messages);
+    } catch (e) { handleError(res, e); }
+});
+
 // Start Server
 if (require.main === module) {
     app.listen(PORT, '0.0.0.0', () => {

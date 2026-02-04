@@ -268,7 +268,8 @@ const Purchase = ({ currentUser }) => {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="relative animate-in fade-in duration-500">
+
             {/* Header / Table Section - Matches Sales.js style */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/20">
@@ -315,18 +316,18 @@ const Purchase = ({ currentUser }) => {
                                 </tr>
                             ) : filteredPurchases.map((p) => (
                                 <tr key={p.id} className="hover:bg-slate-50/50 transition-all group border-b border-slate-50 last:border-0">
-                                    <td className="px-6 py-4 font-bold text-sm text-slate-800 uppercase">{p.invoiceNo || `PO-${p.id.toString().slice(-6)}`}</td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-800">
+                                    <td className="px-6 py-4 font-bold text-sm text-black uppercase">{p.invoiceNo || `PO-${p.id.toString().slice(-6)}`}</td>
+                                    <td className="px-6 py-4 text-sm font-bold text-black">
                                         {p.vendor?.name}
                                     </td>
-                                    <td className="px-6 py-4 text-[11px] font-bold text-slate-500">
+                                    <td className="px-6 py-4 text-[11px] font-bold text-black">
                                         {new Date(p.date).toLocaleDateString()}
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-sm text-slate-800">PKR {p.totalAmount.toLocaleString()}</td>
+                                    <td className="px-6 py-4 font-bold text-sm text-black">PKR {p.totalAmount.toLocaleString()}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{p.paymentMethod || 'CASH'}</span>
-                                            <span className="text-xs font-bold text-slate-800">PKR {(p.paidAmount || 0).toLocaleString()}</span>
+                                            <span className="text-[10px] font-bold text-black uppercase">{p.paymentMethod || 'CASH'}</span>
+                                            <span className="text-xs font-bold text-black">PKR {(p.paidAmount || 0).toLocaleString()}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -366,157 +367,161 @@ const Purchase = ({ currentUser }) => {
                 </div>
             </div>
 
-            {/* POS-Style Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-[95%] lg:max-w-7xl h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
-                        {/* Header */}
-                        <div className="px-4 md:px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                                    <ShoppingCart size={20} />
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+                    {/* Fixed Header */}
+                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <ShoppingCart size={22} />
+                            </div>
+                            <div>
+                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">Procurement Terminal</h2>
+                                <p className="text-[10px] text-black font-bold uppercase tracking-widest mt-0.5">Operator: {currentUser?.fullname || 'Admin'}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
+                        >
+                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Terminal</span>
+                            <X size={20} />
+                        </button>
+                    </div>
+
+
+                    <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-50/30">
+                        {/* LEFT COLUMN: Inputs & Cart - Fixed Layout */}
+                        <div className="flex-1 p-4 md:p-6 overflow-hidden min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col">
+
+                            {/* Top Input Row (Vendor | Product | Qty) */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-6 flex-shrink-0">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Supplier</label>
+                                    <div className="relative">
+                                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <select
+                                            ref={vendorRef}
+                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
+                                            value={vendorId}
+                                            onChange={(e) => {
+                                                const vid = e.target.value;
+                                                setVendorId(vid);
+                                                const ven = vendors.find(v => v.id === vid);
+                                                setPreviousBalance(ven?.balance || 0);
+                                            }}
+                                            onKeyDown={(e) => handleKeyDown(e, productRef)}
+                                        >
+                                            <option value="">Select Supplier</option>
+                                            {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-sm md:text-lg font-bold text-slate-800 tracking-tight">Procurement Terminal</h2>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Operator: {currentUser?.fullname || 'Admin'}</p>
+
+                                <div className="space-y-1.5 lg:col-span-2">
+                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Product</label>
+                                    <div className="relative">
+                                        <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            ref={productRef}
+                                            type="text"
+                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none"
+                                            placeholder="Type to search product..."
+                                            value={productSearch}
+                                            onChange={(e) => {
+                                                setProductSearch(e.target.value);
+                                                setIsProductListVisible(true);
+                                                setHighlightedIndex(0);
+                                            }}
+                                            onFocus={() => setIsProductListVisible(true)}
+                                            onBlur={() => {
+                                                setTimeout(() => setIsProductListVisible(false), 200);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'ArrowDown') {
+                                                    e.preventDefault();
+                                                    setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+                                                } else if (e.key === 'ArrowUp') {
+                                                    e.preventDefault();
+                                                    setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                } else if (e.key === 'Enter') {
+                                                    if (isProductListVisible && filteredProducts[highlightedIndex]) {
+                                                        e.preventDefault();
+                                                        handleProductSelect(filteredProducts[highlightedIndex]);
+                                                    } else {
+                                                        handleKeyDown(e, qtyRef);
+                                                    }
+                                                } else if (e.key === 'Escape') {
+                                                    setIsProductListVisible(false);
+                                                }
+                                            }}
+                                        />
+                                        {isProductListVisible && filteredProducts.length > 0 && (
+                                            <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                {filteredProducts.map((p, index) => (
+                                                    <div
+                                                        key={p.id}
+                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
+                                                        onClick={() => handleProductSelect(p)}
+                                                    >
+                                                        <div>
+                                                            <div className="font-bold text-sm text-black">{p.name}</div>
+                                                            <div className="text-[10px] text-black font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                        </div>
+                                                        <div className="font-bold text-black text-sm">Cost: PKR {(p.costPrice || p.cost_price || 0).toLocaleString()}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {selectedProduct && !isProductListVisible && (
+                                            <button
+                                                onClick={() => {
+                                                    const p = products.find(prod => prod.id === selectedProduct);
+                                                    setDetailProduct(p);
+                                                    setShowDetailModal(true);
+                                                }}
+                                                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-blue-600 hover:bg-blue-50 rounded bg-white/80 shadow-sm border border-blue-100 z-10"
+                                                title="View Detail"
+                                            >
+                                                <Eye size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <div className="space-y-1.5 flex-1">
+                                        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Qty</label>
+                                        <input
+                                            ref={qtyRef}
+                                            type="number"
+                                            min="1"
+                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
+                                            value={qty || ''}
+                                            placeholder="0"
+                                            onChange={(e) => setQty(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    addToCart();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <button
+                                        ref={addBtnRef}
+                                        onClick={addToCart}
+                                        className="px-4 py-2 mt-auto bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm active:scale-95"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
                                 </div>
                             </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
-                                <X size={20} />
-                            </button>
-                        </div>
 
-                        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-50/30">
-                            {/* LEFT COLUMN: Inputs & Cart */}
-                            <div className="flex-1 p-4 md:p-6 overflow-y-auto min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200">
-
-                                {/* Top Input Row (Vendor | Product | Qty) */}
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-6">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supplier</label>
-                                        <div className="relative">
-                                            <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <select
-                                                ref={vendorRef}
-                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
-                                                value={vendorId}
-                                                onChange={(e) => {
-                                                    const vid = e.target.value;
-                                                    setVendorId(vid);
-                                                    const ven = vendors.find(v => v.id === vid);
-                                                    setPreviousBalance(ven?.balance || 0);
-                                                }}
-                                                onKeyDown={(e) => handleKeyDown(e, productRef)}
-                                            >
-                                                <option value="">Select Supplier</option>
-                                                {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1.5 lg:col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Product</label>
-                                        <div className="relative">
-                                            <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                ref={productRef}
-                                                type="text"
-                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none"
-                                                placeholder="Type to search product..."
-                                                value={productSearch}
-                                                onChange={(e) => {
-                                                    setProductSearch(e.target.value);
-                                                    setIsProductListVisible(true);
-                                                    setHighlightedIndex(0);
-                                                }}
-                                                onFocus={() => setIsProductListVisible(true)}
-                                                onBlur={() => {
-                                                    setTimeout(() => setIsProductListVisible(false), 200);
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'ArrowDown') {
-                                                        e.preventDefault();
-                                                        setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
-                                                    } else if (e.key === 'ArrowUp') {
-                                                        e.preventDefault();
-                                                        setHighlightedIndex(prev => Math.max(prev - 1, 0));
-                                                    } else if (e.key === 'Enter') {
-                                                        if (isProductListVisible && filteredProducts[highlightedIndex]) {
-                                                            e.preventDefault();
-                                                            handleProductSelect(filteredProducts[highlightedIndex]);
-                                                        } else {
-                                                            handleKeyDown(e, qtyRef);
-                                                        }
-                                                    } else if (e.key === 'Escape') {
-                                                        setIsProductListVisible(false);
-                                                    }
-                                                }}
-                                            />
-                                            {isProductListVisible && filteredProducts.length > 0 && (
-                                                <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                                                    {filteredProducts.map((p, index) => (
-                                                        <div
-                                                            key={p.id}
-                                                            className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
-                                                            onClick={() => handleProductSelect(p)}
-                                                        >
-                                                            <div>
-                                                                <div className="font-bold text-sm text-slate-800">{p.name}</div>
-                                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
-                                                            </div>
-                                                            <div className="font-bold text-blue-600 text-sm">Cost: PKR {(p.costPrice || p.cost_price || 0).toLocaleString()}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {selectedProduct && !isProductListVisible && (
-                                                <button
-                                                    onClick={() => {
-                                                        const p = products.find(prod => prod.id === selectedProduct);
-                                                        setDetailProduct(p);
-                                                        setShowDetailModal(true);
-                                                    }}
-                                                    className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-blue-600 hover:bg-blue-50 rounded bg-white/80 shadow-sm border border-blue-100 z-10"
-                                                    title="View Detail"
-                                                >
-                                                    <Eye size={14} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <div className="space-y-1.5 flex-1">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qty</label>
-                                            <input
-                                                ref={qtyRef}
-                                                type="number"
-                                                min="1"
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none text-center"
-                                                value={qty || ''}
-                                                placeholder="0"
-                                                onChange={(e) => setQty(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        addToCart();
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <button
-                                            ref={addBtnRef}
-                                            onClick={addToCart}
-                                            className="px-4 py-2 mt-auto bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm active:scale-95"
-                                        >
-                                            <Plus size={20} />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Cart Table */}
-                                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[300px]">
-                                    <table className="w-full text-left">
-                                        <thead className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
+                            {/* Cart Table - Takes remaining height */}
+                            <div className="flex-1 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                    <table className="w-full text-left relative">
+                                        <thead className="bg-slate-50/90 backdrop-blur text-[10px] font-bold text-black uppercase tracking-[0.2em] border-b border-slate-100 sticky top-0 z-10">
                                             <tr>
                                                 <th className="px-6 py-4">Product</th>
                                                 <th className="px-6 py-4 text-center">Cost</th>
@@ -529,16 +534,16 @@ const Purchase = ({ currentUser }) => {
                                             {cart.map((item, idx) => (
                                                 <tr key={idx} className="group hover:bg-slate-50/50 transition-all">
                                                     <td className="px-6 py-4">
-                                                        <div className="font-bold text-slate-800 text-sm">{item.name}</div>
-                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
+                                                        <div className="font-bold text-black text-sm">{item.name}</div>
+                                                        <div className="text-[10px] text-black font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center font-bold text-slate-600 text-xs">PKR {item.unitCost.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-center font-bold text-black text-xs">PKR {item.unitCost.toLocaleString()}</td>
                                                     <td className="px-6 py-4">
-                                                        <div className="w-16 mx-auto px-2 py-1 bg-slate-100 rounded text-center font-bold text-xs text-slate-700 border border-slate-200">
+                                                        <div className="w-16 mx-auto px-2 py-1 bg-slate-100 rounded text-center font-bold text-xs text-black border border-slate-200">
                                                             {item.quantity}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right font-bold text-slate-800 text-sm">PKR {item.total.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-right font-bold text-black text-sm">PKR {item.total.toLocaleString()}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button onClick={() => removeFromCart(item.id)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
                                                             <Trash2 size={14} />
@@ -552,7 +557,7 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 text-slate-300">
                                                             <ShoppingCart size={24} />
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cart is empty</p>
+                                                        <p className="text-[10px] font-bold text-black uppercase tracking-widest">Cart is empty</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -560,151 +565,151 @@ const Purchase = ({ currentUser }) => {
                                     </table>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* RIGHT COLUMN: Summary & Checkout */}
-                            <div className="w-full lg:w-[380px] p-4 md:p-6 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-slate-200 shrink-0 overflow-y-auto">
-                                <div className="space-y-5">
+                        {/* RIGHT COLUMN: Summary & Checkout */}
+                        <div className="w-full lg:w-[380px] p-4 md:p-6 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-slate-200 shrink-0 overflow-y-auto">
+                            <div className="space-y-5">
 
-                                    {/* Invoice Info */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Supplier Inv #</label>
-                                            <input
-                                                type="text"
-                                                value={invoiceNo}
-                                                onChange={(e) => setInvoiceNo(e.target.value)}
-                                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                                                placeholder="ex. INV-99"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Due Date</label>
-                                            <input
-                                                type="date"
-                                                value={dueDate}
-                                                onChange={(e) => setDueDate(e.target.value)}
-                                                className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Financials Summary */}
-                                    <div className="bg-slate-50/50 p-4 rounded-xl space-y-3 border border-slate-100">
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Subtotal</span>
-                                            <span className="text-slate-800">PKR {subtotal.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Shipping</span>
-                                            <input
-                                                type="number"
-                                                className="w-20 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                value={shippingCost || ''}
-                                                onChange={(e) => setShippingCost(e.target.value)}
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Tax</span>
-                                            <div className="flex gap-1">
-                                                <input
-                                                    type="number"
-                                                    className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                    value={tax || ''}
-                                                    onChange={(e) => setTax(e.target.value)}
-                                                    placeholder="0"
-                                                />
-                                                <select value={taxType} onChange={e => setTaxType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
-                                                    <option value="PERCENT">%</option>
-                                                    <option value="FLAT">Flat</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Discount</span>
-                                            <div className="flex gap-1">
-                                                <input
-                                                    type="number"
-                                                    className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                    value={discount || ''}
-                                                    onChange={(e) => setDiscount(e.target.value)}
-                                                    placeholder="0"
-                                                />
-                                                <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
-                                                    <option value="FLAT">Flat</option>
-                                                    <option value="PERCENT">%</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
-                                            <span>Previous Balance</span>
-                                            <span className="px-2 py-1 bg-slate-200 rounded text-slate-700">{previousBalance.toLocaleString()}</span>
-                                        </div>
-                                        <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block">Grand Total</span>
-                                            <span className="text-xl font-bold text-slate-800 tracking-tighter">
-                                                PKR {grandTotal.toLocaleString()}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Payment */}
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Payment Method</label>
-                                            <select
-                                                value={paymentMethod}
-                                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                                className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[10px] font-bold uppercase focus:outline-none cursor-pointer"
-                                            >
-                                                <option value="CASH">CASH</option>
-                                                <option value="BANK_TRANSFER">BANK TRANSFER</option>
-                                                <option value="CHEQUE">CHEQUE</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Amount Paid</label>
-                                            <input
-                                                type="number"
-                                                className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
-                                                value={paidAmount || ''}
-                                                onChange={(e) => setPaidAmount(e.target.value)}
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Balance Due</label>
-                                            <span className="text-xs font-bold text-rose-600 px-2 py-0.5 bg-rose-50 rounded">PKR {balanceDue.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-
+                                {/* Invoice Info */}
+                                <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
-                                        <textarea
-                                            value={notes}
-                                            onChange={(e) => setNotes(e.target.value)}
-                                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-16"
-                                            placeholder="Details..."
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Supplier Inv #</label>
+                                        <input
+                                            type="text"
+                                            value={invoiceNo}
+                                            onChange={(e) => setInvoiceNo(e.target.value)}
+                                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
+                                            placeholder="ex. INV-99"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Due Date</label>
+                                        <input
+                                            type="date"
+                                            value={dueDate}
+                                            onChange={(e) => setDueDate(e.target.value)}
+                                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="mt-auto pt-4">
-                                    <button
-                                        onClick={handleSave}
-                                        disabled={cart.length === 0}
-                                        className="w-full py-3 bg-blue-950 text-white rounded-xl font-bold text-base hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
-                                    >
-                                        {saving ? (
-                                            <span>Processing...</span>
-                                        ) : (
-                                            <>
-                                                <Receipt size={18} />
-                                                <span>Save Order</span>
-                                            </>
-                                        )}
-                                    </button>
+                                {/* Financials Summary */}
+                                <div className="bg-slate-50/50 p-4 rounded-xl space-y-3 border border-slate-100">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
+                                        <span>Subtotal</span>
+                                        <span className="text-slate-800">PKR {subtotal.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
+                                        <span>Shipping</span>
+                                        <input
+                                            type="number"
+                                            className="w-20 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
+                                            value={shippingCost || ''}
+                                            onChange={(e) => setShippingCost(e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
+                                        <span>Tax</span>
+                                        <div className="flex gap-1">
+                                            <input
+                                                type="number"
+                                                className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
+                                                value={tax || ''}
+                                                onChange={(e) => setTax(e.target.value)}
+                                                placeholder="0"
+                                            />
+                                            <select value={taxType} onChange={e => setTaxType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
+                                                <option value="PERCENT">%</option>
+                                                <option value="FLAT">Flat</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
+                                        <span>Discount</span>
+                                        <div className="flex gap-1">
+                                            <input
+                                                type="number"
+                                                className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
+                                                value={discount || ''}
+                                                onChange={(e) => setDiscount(e.target.value)}
+                                                placeholder="0"
+                                            />
+                                            <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="bg-slate-100 rounded text-[10px] font-bold px-1 outline-none">
+                                                <option value="FLAT">Flat</option>
+                                                <option value="PERCENT">%</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
+                                        <span>Previous Balance</span>
+                                        <span className="px-2 py-1 bg-slate-200 rounded text-black">{previousBalance.toLocaleString()}</span>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-black uppercase tracking-[0.2em] block">Grand Total</span>
+                                        <span className="text-xl font-bold text-black tracking-tighter">
+                                            PKR {grandTotal.toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
+
+                                {/* Payment */}
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[9px] font-bold text-black uppercase tracking-widest">Payment Method</label>
+                                        <select
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                            className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[10px] font-bold uppercase focus:outline-none cursor-pointer text-black"
+                                        >
+                                            <option value="CASH">CASH</option>
+                                            <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                                            <option value="CHEQUE">CHEQUE</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[9px] font-bold text-black uppercase tracking-widest">Amount Paid</label>
+                                        <input
+                                            type="number"
+                                            className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-black outline-none focus:border-blue-500"
+                                            value={paidAmount || ''}
+                                            onChange={(e) => setPaidAmount(e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                                        <label className="text-[9px] font-bold text-black uppercase tracking-widest">Balance Due</label>
+                                        <span className="text-xs font-bold text-rose-600 px-2 py-0.5 bg-rose-50 rounded">PKR {balanceDue.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-bold text-black uppercase tracking-widest ml-1">Notes</label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-black outline-none focus:border-blue-500 transition-all resize-none h-16"
+                                        placeholder="Details..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-auto pt-4">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={cart.length === 0}
+                                    className="w-full py-3 bg-blue-950 text-white rounded-xl font-bold text-base hover:bg-slate-900 shadow-md shadow-blue-100 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                >
+                                    {saving ? (
+                                        <span>Processing...</span>
+                                    ) : (
+                                        <>
+                                            <Receipt size={18} />
+                                            <span>Save Order</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -722,8 +727,8 @@ const Purchase = ({ currentUser }) => {
                                         <Package size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-slate-800">{detailProduct.name}</h3>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Product Details</p>
+                                        <h3 className="text-lg font-bold text-black">{detailProduct.name}</h3>
+                                        <p className="text-[10px] text-black font-bold uppercase tracking-widest">Product Details</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setShowDetailModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
@@ -734,20 +739,20 @@ const Purchase = ({ currentUser }) => {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cost Price</p>
-                                        <p className="text-sm font-bold text-slate-800">PKR {detailProduct.costPrice?.toLocaleString() || 0}</p>
+                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Cost Price</p>
+                                        <p className="text-sm font-bold text-black">PKR {detailProduct.costPrice?.toLocaleString() || 0}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Sale Price</p>
-                                        <p className="text-sm font-bold text-slate-800">PKR {detailProduct.sellPrice?.toLocaleString() || 0}</p>
+                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Sale Price</p>
+                                        <p className="text-sm font-bold text-black">PKR {detailProduct.sellPrice?.toLocaleString() || 0}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Current Stock</p>
-                                        <p className="text-sm font-bold text-slate-800">{detailProduct.stockQty} {detailProduct.unit || 'pcs'}</p>
+                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Current Stock</p>
+                                        <p className="text-sm font-bold text-black">{detailProduct.stockQty} {detailProduct.unit || 'pcs'}</p>
                                     </div>
                                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">SKU / Code</p>
-                                        <p className="text-sm font-bold text-slate-800">{detailProduct.code || detailProduct.sku || 'N/A'}</p>
+                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">SKU / Code</p>
+                                        <p className="text-sm font-bold text-black">{detailProduct.code || detailProduct.sku || 'N/A'}</p>
                                     </div>
                                 </div>
 
@@ -779,8 +784,9 @@ const Purchase = ({ currentUser }) => {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

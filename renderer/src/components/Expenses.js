@@ -116,29 +116,12 @@ const Expenses = ({ currentUser }) => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business Expenses</h1>
-                    <p className="text-slate-500 text-sm mt-1">Track and manage your daily operational spending.</p>
-                </div>
-                {canCreate('expenses') && (
-                    <button
-                        onClick={() => {
-                            setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
-                            setShowModal(true);
-                        }}
-                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
-                    >
-                        <Plus size={16} />
-                        <span>Add Expense</span>
-                    </button>
-                )}
-            </div>
+        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+
 
             {/* Stat Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <StatCard
                     title="Total Rent"
                     value={`PKR ${stats.rent.toLocaleString()}`}
@@ -167,7 +150,7 @@ const Expenses = ({ currentUser }) => {
 
             {/* Expenses Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/20">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="relative group w-full md:w-80">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                         <input
@@ -178,17 +161,29 @@ const Expenses = ({ currentUser }) => {
                             placeholder="Search expense history..."
                         />
                     </div>
+                    {canCreate('expenses') && (
+                        <button
+                            onClick={() => {
+                                setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
+                                setShowModal(true);
+                            }}
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                        >
+                            <Plus size={16} />
+                            <span>Add Expense</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Category</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Expenditure Title</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Category</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Expenditure Title</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -209,7 +204,7 @@ const Expenses = ({ currentUser }) => {
                                 </tr>
                             ) : filteredExpenses?.map((expense) => (
                                 <tr key={expense.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">
                                         {expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
@@ -217,7 +212,7 @@ const Expenses = ({ currentUser }) => {
                                             {expense.category}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight">{expense.title}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">{expense.title}</td>
                                     <td className="px-6 py-4">
                                         <span className="text-xs font-bold text-rose-600 tracking-tight">
                                             PKR {expense.amount?.toLocaleString() ?? '0'}
@@ -244,120 +239,124 @@ const Expenses = ({ currentUser }) => {
                 </div>
             </div>
 
-            {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[98%] md:max-w-4xl h-full md:h-auto max-h-[96vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-200 text-left">
-                        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                            <div>
-                                <h3 className="text-sm md:text-lg font-bold text-slate-800 tracking-tight">{formData.id ? 'Edit Expense Record' : 'Record New Expense'}</h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Track and categorize business spending.</p>
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {/* Full-Page Header */}
+                        <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+                            <div className="min-w-0">
+                                <h3 className="text-xl md:text-2xl font-bold text-black tracking-tight truncate">{formData.id ? 'Edit Expense Record' : 'Record New Expense'}</h3>
+                                <p className="text-[10px] md:text-xs text-black font-bold uppercase tracking-widest mt-1 truncate">Track and categorize business spending details.</p>
                             </div>
-                            <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all shrink-0"><X size={20} /></button>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
+                            >
+                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Page</span>
+                                <X size={20} />
+                            </button>
                         </div>
 
-                        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                <div className="space-y-4 md:space-y-6">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
-                                        Expense Details
-                                    </h4>
+                        <div className="max-w-7xl mx-auto w-full p-4 md:p-8 pb-24">
+                            <form onSubmit={handleSave} className="space-y-8 md:space-y-12">
 
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Expense Title *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
-                                            placeholder="e.g. Office Electricity Bill"
-                                        />
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                    <div className="space-y-4 md:space-y-6">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
+                                            Expense Details
+                                        </h4>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Amount (PKR) *</label>
-                                            <div className="relative">
-                                                <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                <input
-                                                    type="number"
-                                                    required
-                                                    value={formData.amount || ''}
-                                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
-                                                    placeholder="0"
-                                                />
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Expense Title *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                placeholder="e.g. Office Electricity Bill"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Amount (PKR) *</label>
+                                                <div className="relative">
+                                                    <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        value={formData.amount || ''}
+                                                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Category *</label>
+                                                <select
+                                                    value={formData.category}
+                                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none"
+                                                >
+                                                    <option value="General">General</option>
+                                                    <option value="Utilities">Utilities</option>
+                                                    <option value="Rent">Rent</option>
+                                                    <option value="Transport">Transport</option>
+                                                    <option value="Salaries">Salaries</option>
+                                                    <option value="Tea/Snacks">Tea/Snacks</option>
+                                                    <option value="Others">Others</option>
+                                                </select>
                                             </div>
                                         </div>
+
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Category *</label>
-                                            <select
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none"
-                                            >
-                                                <option value="General">General</option>
-                                                <option value="Utilities">Utilities</option>
-                                                <option value="Rent">Rent</option>
-                                                <option value="Transport">Transport</option>
-                                                <option value="Salaries">Salaries</option>
-                                                <option value="Tea/Snacks">Tea/Snacks</option>
-                                                <option value="Others">Others</option>
-                                            </select>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Date *</label>
+                                            <input
+                                                type="date"
+                                                required
+                                                value={formData.date}
+                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Date *</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={formData.date}
-                                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
-                                        />
+                                    <div className="space-y-4 md:space-y-6">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
+                                            Additional Information
+                                        </h4>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Notes (Optional)</label>
+                                            <textarea
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none"
+                                                placeholder="Write any additional details about this expense..."
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 md:space-y-6">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
-                                        Additional Information
-                                    </h4>
-
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-600 ml-1">Notes (Optional)</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none"
-                                            placeholder="Write any additional details about this expense..."
-                                        />
-                                    </div>
+                                <div className="pt-8 sticky bottom-0 bg-white pb-8">
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
+                                    >
+                                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Check size={22} />}
+                                        {formData.id ? 'Update Expense Information' : 'Confirm and Save Expense'}
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="w-full sm:w-auto px-6 py-2.5 text-slate-500 font-bold hover:text-slate-700 transition-all rounded-lg hover:bg-slate-100 text-sm uppercase tracking-widest"
-                                >
-                                    Discard
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="w-full sm:w-auto px-8 py-2.5 bg-blue-950 text-white font-bold rounded-lg hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-md shadow-blue-100"
-                                >
-                                    {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                                    {formData.id ? 'Save Changes' : 'Confirm Expense'}
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
+
             )}
         </div>
     );

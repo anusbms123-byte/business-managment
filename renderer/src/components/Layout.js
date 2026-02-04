@@ -49,6 +49,22 @@ const Layout = ({ children, user, onLogout }) => {
     const [visibleMenuItems, setVisibleMenuItems] = useState([]);
     const [visibleSettingsItems, setVisibleSettingsItems] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [adminMessages, setAdminMessages] = useState([]);
+    const [showMessages, setShowMessages] = useState(false);
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            try {
+                if (window.electronAPI && window.electronAPI.getAdminMessages) {
+                    const data = await window.electronAPI.getAdminMessages({ limit: 5 });
+                    if (Array.isArray(data)) setAdminMessages(data);
+                }
+            } catch (err) { console.error("Error fetching admin messages:", err); }
+        };
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 300000); // 5 mins
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         // Load permissions from sessionStorage
@@ -220,10 +236,51 @@ const Layout = ({ children, user, onLogout }) => {
                         <button className="hidden sm:flex p-2.5 bg-slate-50 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200">
                             <Mail size={18} />
                         </button>
-                        <button className="p-2 md:p-2.5 bg-slate-50 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 relative">
-                            <Bell size={20} />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-500 rounded-full"></span>
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowMessages(!showMessages)}
+                                className="p-2 md:p-2.5 bg-slate-50 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 relative"
+                            >
+                                <Bell size={20} />
+                                {adminMessages.length > 0 && (
+                                    <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
+                                )}
+                            </button>
+
+                            {/* Messages Dropdown */}
+                            {showMessages && (
+                                <>
+                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
+                                    <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
+                                            <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">System Notifications</h3>
+                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{adminMessages.length} Messages</span>
+                                        </div>
+                                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                            {adminMessages.length === 0 ? (
+                                                <div className="p-8 text-center">
+                                                    <Bell size={32} className="mx-auto text-slate-200 mb-2" />
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No notifications</p>
+                                                </div>
+                                            ) : adminMessages.map((msg) => (
+                                                <div key={msg.id} className="p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${msg.type === 'alert' ? 'bg-rose-500' :
+                                                            msg.type === 'update' ? 'bg-emerald-500' : 'bg-blue-500'
+                                                            }`}></div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-800 font-bold leading-snug">{msg.content}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center rounded-b-xl">
+                                            <button onClick={() => setShowMessages(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">Close</button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                         <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-4 border-l border-slate-200 ml-1 md:ml-2">
                             <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#0B1033] flex items-center justify-center text-white font-bold shadow-md shadow-blue-100 shrink-0">
                                 {user?.fullname?.charAt(0).toUpperCase() || 'U'}

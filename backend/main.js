@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
+
 
 const { autoUpdater } = require("electron-updater");
 const log = require("electron-log");
@@ -194,6 +195,10 @@ ipcMain.handle("get-report-summary", (e, params) => apiCall('get', '/reports/sum
 ipcMain.handle("get-audit-logs", (e, params) => apiCall('get', '/audit-logs', null, params));
 ipcMain.handle("create-audit-log", (e, data) => apiCall('post', '/audit-logs', data));
 
+// Admin Messages
+ipcMain.handle("get-admin-messages", (e, params) => apiCall('get', '/admin-messages', null, params));
+ipcMain.handle("send-admin-message", (e, data) => apiCall('post', '/admin-messages', data));
+
 // Backup & Restore Handlers
 ipcMain.handle("create-backup", async (e, companyId) => {
     try {
@@ -306,6 +311,7 @@ ipcMain.handle("trigger-sync", async () => ({ success: true, message: "Apps is n
 
 // Create window
 function createWindow() {
+    Menu.setApplicationMenu(null);
     console.log("Preload path:", path.join(__dirname, "preload.js"));
     const win = new BrowserWindow({
         width: 1200,

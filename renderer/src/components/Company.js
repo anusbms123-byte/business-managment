@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin } from 'lucide-react';
+import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin, Megaphone, Send } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
@@ -9,6 +9,7 @@ const tabs = [
     { id: 'roles', label: 'Staff Access', icon: Shield, color: 'emerald' },
     { id: 'requests', label: 'Organization Requests', icon: ClipboardList, color: 'amber' },
     { id: 'helpline', label: 'Customer Support', icon: Phone, color: 'rose' },
+    { id: 'broadcast', label: 'System Broadcast', icon: Megaphone, color: 'purple' },
 ];
 
 const MODULES = [
@@ -64,20 +65,15 @@ const Company = () => {
     }, [currentUser, isSuperAdmin]);
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business & Team Settings</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage your company profile, staff members, and system access.</p>
-                </div>
-            </div>
+        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
-                        if ((tab.id === 'helpline' || tab.id === 'requests') && !isSuperAdmin) return null;
+                        if ((tab.id === 'helpline' || tab.id === 'requests' || tab.id === 'broadcast') && !isSuperAdmin) return null;
                         const label = (tab.id === 'profile' && isSuperAdmin) ? 'Companies' : tab.label;
                         return (
                             <button
@@ -111,6 +107,7 @@ const Company = () => {
                     {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
                     {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} onAction={fetchCounts} />}
                     {activeTab === 'helpline' && isSuperAdmin && <SupportRequests onAction={fetchCounts} />}
+                    {activeTab === 'broadcast' && isSuperAdmin && <SystemBroadcast />}
                 </div>
             </div>
         </div>
@@ -242,8 +239,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
             <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800 tracking-tight">Registered Companies</h2>
-                        <p className="text-sm text-slate-500">Managing {companies.length} business entities</p>
+                        <h2 className="text-xl font-bold text-black tracking-tight">Registered Companies</h2>
+                        <p className="text-sm text-black font-bold">Managing {companies.length} business entities</p>
                     </div>
                     {canCreate('settings') && (
                         <Button onClick={() => openModal()} icon={Plus}>Register Company</Button>
@@ -1045,8 +1042,8 @@ const CompanyRequests = ({ currentUser, onAction }) => {
             )}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Requests</h2>
-                    <p className="text-sm text-slate-500">Review pending organization registration requests</p>
+                    <h2 className="text-xl font-bold text-black tracking-tight">Access Requests</h2>
+                    <p className="text-sm text-black font-bold">Review pending organization registration requests</p>
                 </div>
                 <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-widest border border-blue-100">
                     {requests.length} Pending
@@ -1067,16 +1064,16 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                             <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-100">Pending</span>
                         </div>
 
-                        <h3 className="font-bold text-slate-800 text-lg mb-1">{req.companyName}</h3>
+                        <h3 className="font-bold text-black text-lg mb-1">{req.companyName}</h3>
                         <div className="space-y-2 mb-6">
-                            <p className="text-xs text-slate-500 flex items-center gap-2">
+                            <p className="text-xs text-black font-bold flex items-center gap-2">
                                 <Mail size={12} /> {req.companyEmail || 'No Email'}
                             </p>
-                            <p className="text-xs text-slate-500 flex items-center gap-2">
+                            <p className="text-xs text-black font-bold flex items-center gap-2">
                                 <Phone size={12} /> {req.companyPhone || 'No Phone'}
                             </p>
-                            <p className="text-xs text-slate-500 flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
-                                <Users size={12} /> Requested by: <span className="font-bold text-slate-700">@{req.user?.username}</span>
+                            <p className="text-xs text-black flex items-center gap-2 border-t border-slate-50 pt-2 mt-2">
+                                <Users size={12} /> Requested by: <span className="font-bold text-black">@{req.user?.username}</span>
                             </p>
                         </div>
 
@@ -1116,8 +1113,8 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
         <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
             <div className="relative flex items-center justify-between">
                 <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
+                    <p className="text-black text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+                    <h3 className="text-xl font-bold text-black">{value}</h3>
                 </div>
                 <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                     <Icon size={20} />
@@ -1161,7 +1158,7 @@ const EmptyState = ({ message, icon: Icon = Info }) => (
 
 const FormInput = ({ label, type = 'text', value, onChange, required, placeholder, icon: Icon, suffix }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label} {required && '*'}</label>
+        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">{label} {required && '*'}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold" size={16} />}
             <input
@@ -1170,7 +1167,7 @@ const FormInput = ({ label, type = 'text', value, onChange, required, placeholde
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-black`}
             />
             {suffix && (
                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
@@ -1183,7 +1180,7 @@ const FormInput = ({ label, type = 'text', value, onChange, required, placeholde
 
 const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">{label}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-3 text-slate-400" size={16} />}
             <textarea
@@ -1191,7 +1188,7 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
                 onChange={e => onChange(e.target.value)}
                 rows={rows}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800 resize-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-black resize-none`}
             />
         </div>
     </div>
@@ -1199,14 +1196,14 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
 
 const FormSelect = ({ label, value, onChange, options, required, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label} {required && '*'}</label>
+        <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">{label} {required && '*'}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />}
             <select
                 required={required}
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-slate-800 outline-none appearance-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm text-black outline-none appearance-none`}
             >
                 <option value="">{placeholder || 'Select...'}</option>
                 {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -1217,16 +1214,33 @@ const FormSelect = ({ label, value, onChange, options, required, placeholder, ic
 );
 
 const Modal = ({ title, children, onClose, size = 'md' }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[2px] animate-in fade-in duration-200">
-        <div className={`bg-white rounded-xl shadow-2xl w-full ${size === 'lg' ? 'max-w-4xl' : 'max-w-xl'} overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200`}>
-            <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">{title}</h3>
-                <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+    <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+        {/* Full-Page Header */}
+        <div className="px-4 md:px-8 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                    <Building2 size={22} />
+                </div>
+                <div>
+                    <h3 className="text-sm md:text-xl font-bold text-black tracking-tight uppercase">{title}</h3>
+                </div>
             </div>
-            <div className="p-8 max-h-[85vh] overflow-y-auto scrollbar-hide">{children}</div>
+            <button
+                onClick={onClose}
+                className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
+            >
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Panel</span>
+                <X size={20} />
+            </button>
+        </div>
+        <div className="flex-1 p-8 overflow-y-auto scrollbar-hide bg-slate-50/30">
+            <div className={`mx-auto w-full ${size === 'lg' ? 'max-w-7xl' : 'max-w-4xl'}`}>
+                {children}
+            </div>
         </div>
     </div>
 );
+
 
 const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
     <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 mt-6">
@@ -1349,6 +1363,109 @@ const SupportRequests = ({ onAction }) => {
                     </table>
                 </div>
             )}
+        </div>
+    );
+};
+
+const SystemBroadcast = () => {
+    const [message, setMessage] = useState('');
+    const [type, setType] = useState('general');
+    const [sending, setSending] = useState(false);
+    const [recentMessages, setRecentMessages] = useState([]);
+
+    useEffect(() => { loadMessages(); }, []);
+
+    const loadMessages = async () => {
+        try {
+            const data = await window.electronAPI.getAdminMessages({ limit: 5 });
+            if (Array.isArray(data)) setRecentMessages(data);
+        } catch (err) { console.error("Error loading messages:", err); }
+    };
+
+    const handleSend = async (e) => {
+        e.preventDefault();
+        if (!message.trim()) return;
+        setSending(true);
+        try {
+            const res = await window.electronAPI.sendAdminMessage({ content: message, type });
+            if (res.success) {
+                setMessage('');
+                loadMessages();
+                alert('Message broadcasted successfully!');
+            } else {
+                alert('Failed: ' + res.message);
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+        setSending(false);
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <Send className="text-blue-600" size={20} />
+                    Create New Broadcast
+                </h3>
+                <form onSubmit={handleSend} className="space-y-4">
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Message Content</label>
+                        <textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:border-blue-500 transition-all min-h-[120px]"
+                            placeholder="Type a message for all system users..."
+                            required
+                        />
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
+                        <div className="w-full md:w-48">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Alert Type</label>
+                            <select
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                                className="w-full mt-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:border-blue-500 transition-all"
+                            >
+                                <option value="general">📢 General</option>
+                                <option value="alert">⚠️ Urgent Alert</option>
+                                <option value="update">🚀 System Update</option>
+                            </select>
+                        </div>
+                        <button
+                            disabled={sending}
+                            className="px-8 py-2.5 bg-blue-900 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                        >
+                            <Send size={18} />
+                            {sending ? 'Broadcasting...' : 'Broadcast Now'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div className="bg-slate-50/50 rounded-xl border border-slate-200 p-6 overflow-hidden">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Recent Broadcasts</h3>
+                <div className="space-y-3">
+                    {recentMessages.length === 0 ? (
+                        <p className="text-xs text-slate-400 text-center py-4">No recent messages found.</p>
+                    ) : recentMessages.map((m) => (
+                        <div key={m.id} className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm flex items-start justify-between group">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${m.type === 'alert' ? 'bg-rose-50 text-rose-500 border-rose-100' :
+                                            m.type === 'update' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                                                'bg-blue-50 text-blue-500 border-blue-100'
+                                        }`}>
+                                        {m.type}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-bold">{new Date(m.createdAt).toLocaleString()}</span>
+                                </div>
+                                <p className="text-sm text-slate-800 font-bold">{m.content}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };

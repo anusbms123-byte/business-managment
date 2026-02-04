@@ -45,14 +45,9 @@ const Inventory = ({ currentUser }) => {
     const [activeTab, setActiveTab] = useState('products');
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Stock & Products</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage your stock, product details, and barcode printing.</p>
-                </div>
-            </div>
+        <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
                 {/* Modern Tab Bar */}
@@ -152,8 +147,8 @@ const StockTracking = ({ currentUser }) => {
     const filtered = getFilteredProducts();
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="animate-in fade-in duration-500">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <StatCard
                     title="Total Items"
                     value={stats.total}
@@ -210,15 +205,15 @@ const StockTracking = ({ currentUser }) => {
                         <TrendingUp size={20} />
                     </div>
                     <div>
-                        <h4 className="font-bold text-slate-800 text-lg uppercase tracking-tight">Stock Overview</h4>
-                        <p className="text-slate-500 text-sm">Viewing {filterType === 'all' ? 'All Products' : filterType.replace(/_/g, ' ')}</p>
+                        <h4 className="font-bold text-black text-lg uppercase tracking-tight">Stock Overview</h4>
+                        <p className="text-black text-sm font-bold">Viewing {filterType === 'all' ? 'All Products' : filterType.replace(/_/g, ' ')}</p>
                     </div>
                 </div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                    <thead className="bg-slate-50/80 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">
                         <tr>
                             <th className="px-6 py-4">Product Name</th>
                             <th className="px-6 py-4 text-center">Current Stock</th>
@@ -240,10 +235,10 @@ const StockTracking = ({ currentUser }) => {
 
                             return (
                                 <tr key={p.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-50 last:border-0">
-                                    <td className="px-6 py-4 font-bold text-sm text-slate-800">{p.name}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30' : 'text-slate-700'}`}>{p.stockQty}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-slate-400 text-xs">{p.alertQty || 5}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600' : isExpiringSoon ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    <td className="px-6 py-4 font-bold text-sm text-black">{p.name}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30' : 'text-black'}`}>{p.stockQty}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-black text-xs">{p.alertQty || 5}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600' : isExpiringSoon ? 'text-amber-600' : 'text-black'}`}>
                                         {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
                                     </td>
                                     <td className="px-6 py-4">
@@ -313,7 +308,7 @@ const BarcodePrinting = ({ currentUser }) => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl">
+        <div className="animate-in fade-in duration-500 max-w-5xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Print Configuration */}
                 <div className="space-y-6 bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
@@ -380,7 +375,7 @@ const BarcodePrinting = ({ currentUser }) => {
                         <div className="text-[10px] font-bold text-slate-400 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'SKU-NONE'}</div>
                         <div className="h-14 w-48 bg-gradient-to-r from-slate-900 via-white to-slate-900 bg-[length:4px_100%] rounded-sm"></div>
                         <div className="text-sm font-bold text-slate-800 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item Name'}</div>
-                        <div className="text-[10px] font-bold text-blue-600 mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
+                        <div className="text-[10px] font-bold text-black mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-400">

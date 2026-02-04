@@ -40,10 +40,10 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
         <div className="flex items-start justify-between">
             <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                    {Icon && <Icon size={14} className="text-slate-400 group-hover:text-blue-600 transition-colors" />}
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{title}</p>
+                    {Icon && <Icon size={14} className="text-black group-hover:text-blue-600 transition-colors" />}
+                    <p className="text-[10px] text-black font-bold uppercase tracking-widest">{title}</p>
                 </div>
-                <p className="text-xl font-bold text-slate-800">{value}</p>
+                <p className="text-xl font-bold text-black">{value}</p>
                 <div className="mt-3 flex items-center space-x-1.5">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                         {changeType === 'up' ? '↑' : '↓'} {change}
@@ -53,7 +53,7 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
             </div>
             <div className="relative flex items-center justify-center ml-4">
                 <CircularProgress percentage={percentage} color={color} />
-                <span className="absolute text-[10px] font-black text-slate-800">{percentage}%</span>
+                <span className="absolute text-[10px] font-black text-black">{percentage}%</span>
             </div>
         </div>
     </div>
@@ -204,8 +204,8 @@ const Dashboard = ({ currentUser }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-medium tracking-tight">Business Dashboard</h1>
-                    <p className="text-slate-500 text-lg mt-1">Quick summary of your business performance.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-black">Business Dashboard</h1>
+                    <p className="text-black text-lg mt-1 font-bold">Quick summary of your business performance.</p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
@@ -266,17 +266,17 @@ const Dashboard = ({ currentUser }) => {
                 <div className="lg:col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm transition-all">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Sales & Profit Trends</h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Income vs profitability over time</p>
+                            <h2 className="text-sm font-bold text-black uppercase tracking-tight">Sales & Profit Trends</h2>
+                            <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">Income vs profitability over time</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Sales</span>
+                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">Total Sales</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Net Profit</span>
+                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">Net Profit</span>
                             </div>
                         </div>
                     </div>
@@ -289,7 +289,7 @@ const Dashboard = ({ currentUser }) => {
 
                 {/* Top Customers */}
                 <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm">
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-8">Active Clients</h2>
+                    <h2 className="text-sm font-bold text-black uppercase tracking-tight mb-8">Active Clients</h2>
                     <div className="space-y-6">
                         {(topCustomers?.length ?? 0) === 0 ? (
                             <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">No clients yet</div>
@@ -299,8 +299,8 @@ const Dashboard = ({ currentUser }) => {
                                     {customer.name?.substring(0, 2)}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{customer.name}</p>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{customer.phone || 'Strategic Partner'}</p>
+                                    <p className="text-xs font-bold text-black uppercase tracking-tight">{customer.name}</p>
+                                    <p className="text-[10px] text-black font-bold uppercase tracking-widest">{customer.phone || 'Strategic Partner'}</p>
                                 </div>
                             </div>
                         ))}
@@ -311,18 +311,18 @@ const Dashboard = ({ currentUser }) => {
             {/* Sales Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Latest Sales Activity</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Invoices</p>
+                    <h2 className="text-sm font-bold text-black uppercase tracking-tight">Latest Sales Activity</h2>
+                    <p className="text-[10px] font-bold text-black uppercase tracking-widest">Recent Invoices</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Invoice ID</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Post Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Audit Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Debit Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Invoice ID</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Customer</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Post Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Audit Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Debit Amount</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -332,15 +332,15 @@ const Dashboard = ({ currentUser }) => {
                                 <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No transactions found</td></tr>
                             ) : recentSales?.map((sale, i) => (
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-400 tracking-tight">{sale.createdAt ? new Date(sale.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black tracking-tight">{sale.createdAt ? new Date(sale.createdAt).toLocaleDateString() : 'N/A'}</td>
                                     <td className="px-6 py-4">
                                         <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border bg-emerald-50 text-emerald-600 border-emerald-100">
                                             Completed
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-xs font-black text-slate-800 tracking-tight">PKR {sale.totalAmount?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 text-right text-xs font-black text-black tracking-tight">PKR {sale.totalAmount?.toLocaleString() ?? '0'}</td>
                                 </tr>
                             ))}
                         </tbody>

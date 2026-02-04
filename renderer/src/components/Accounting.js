@@ -123,15 +123,15 @@ const JournalEntries = () => (
                     <tbody className="divide-y divide-slate-50">
                         <tr className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">Jan 12, 2026</td>
-                            <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight">JE-001</td>
-                            <td className="px-6 py-4 text-xs font-bold text-blue-600 uppercase tracking-tight">Cash in Hand</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">JE-001</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">Cash in Hand</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600 tracking-tight">PKR 10,000</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-slate-400 tracking-tight">—</td>
                         </tr>
                         <tr className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">Jan 12, 2026</td>
-                            <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight">JE-001</td>
-                            <td className="px-6 py-4 text-xs font-bold text-blue-600 uppercase tracking-tight pl-8">Sales Revenue</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">JE-001</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight pl-8">Sales Revenue</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-slate-400 tracking-tight">—</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-rose-600 tracking-tight">PKR 10,000</td>
                         </tr>
@@ -241,17 +241,17 @@ const GeneralLedger = () => (
                     <tbody className="divide-y divide-slate-50">
                         <tr className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">Jan 01, 2026</td>
-                            <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight">Opening Balance Brought Forward</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">Opening Balance Brought Forward</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600 tracking-tight">PKR 100,000</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-slate-400 tracking-tight">—</td>
-                            <td className="px-6 py-4 text-right text-xs font-bold text-blue-600 tracking-tight">PKR 100,000</td>
+                            <td className="px-6 py-4 text-right text-xs font-bold text-black tracking-tight">PKR 100,000</td>
                         </tr>
                         <tr className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-tight">Jan 12, 2026</td>
-                            <td className="px-6 py-4 text-xs font-bold text-slate-800 uppercase tracking-tight text-blue-600 cursor-pointer hover:underline">Sale Transaction - INV-1023</td>
+                            <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight cursor-pointer hover:underline">Sale Transaction - INV-1023</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600 tracking-tight">PKR 15,000</td>
                             <td className="px-6 py-4 text-right text-xs font-bold text-slate-400 tracking-tight">—</td>
-                            <td className="px-6 py-4 text-right text-xs font-bold text-blue-600 tracking-tight">PKR 115,000</td>
+                            <td className="px-6 py-4 text-right text-xs font-bold text-black tracking-tight">PKR 115,000</td>
                         </tr>
                     </tbody>
                 </table>
