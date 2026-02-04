@@ -61,7 +61,7 @@ const Reports = ({ currentUser }) => {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'); // YYYY-MM-DD
     const today = now.toLocaleDateString('en-CA');
     const [dateRange, setDateRange] = useState({ start: firstDayOfMonth, end: today });
-    const [overviewFilter, setOverviewFilter] = useState('Monthly'); // For Dashboard
+    const [overviewFilter, setOverviewFilter] = useState('Daily'); // For Dashboard
 
     useEffect(() => {
         if (activeModule) {
@@ -77,7 +77,12 @@ const Reports = ({ currentUser }) => {
         try {
             let start, end;
             const now = new Date();
-            if (overviewFilter === 'Weekly') {
+            if (overviewFilter === 'Daily') {
+                start = new Date();
+                start.setHours(0, 0, 0, 0);
+                start = start.toISOString();
+                end = new Date().toISOString();
+            } else if (overviewFilter === 'Weekly') {
                 start = new Date(now.setDate(now.getDate() - 7)).toISOString();
                 end = new Date().toISOString();
             } else if (overviewFilter === 'Monthly') {
@@ -120,7 +125,7 @@ const Reports = ({ currentUser }) => {
 
     const handleBack = () => {
         setActiveModule(null);
-        setOverviewFilter('Monthly');
+        setOverviewFilter('Daily');
     };
 
     if (loading && !summary) {
@@ -144,7 +149,7 @@ const Reports = ({ currentUser }) => {
                 </div>
 
                 <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
-                    {['Weekly', 'Monthly', 'Yearly'].map((p) => (
+                    {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setOverviewFilter(p)}

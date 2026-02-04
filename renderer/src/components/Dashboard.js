@@ -164,7 +164,7 @@ const Dashboard = ({ currentUser }) => {
     const [recentSales, setRecentSales] = useState([]);
     const [topCustomers, setTopCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('Weekly');
+    const [filter, setFilter] = useState('Daily');
 
     useEffect(() => {
         loadDashboardData();
@@ -208,7 +208,7 @@ const Dashboard = ({ currentUser }) => {
                     <p className="text-slate-500 text-lg mt-1">Quick summary of your business performance.</p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
-                    {['Weekly', 'Monthly', 'Yearly'].map((p) => (
+                    {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setFilter(p)}

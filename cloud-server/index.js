@@ -1750,9 +1750,29 @@ app.post('/api/salaries', async (req, res) => {
 // ==========================================
 app.get('/api/reports/summary', async (req, res) => {
     try {
-        const { companyId, startDate, endDate } = req.query;
-        const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 30));
-        const end = endDate ? new Date(endDate) : new Date();
+        const { companyId, startDate, endDate, period } = req.query;
+        let start = startDate ? new Date(startDate) : null;
+        let end = endDate ? new Date(endDate) : new Date();
+
+        if (!start) {
+            const now = new Date();
+            if (period === 'Daily') {
+                start = new Date();
+                start.setHours(0, 0, 0, 0);
+            } else if (period === 'Weekly') {
+                start = new Date();
+                start.setDate(now.getDate() - 7);
+            } else if (period === 'Monthly') {
+                start = new Date();
+                start.setMonth(now.getMonth() - 1);
+            } else if (period === 'Yearly') {
+                start = new Date();
+                start.setFullYear(now.getFullYear() - 1);
+            } else {
+                start = new Date();
+                start.setDate(now.getDate() - 30);
+            }
+        }
 
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({

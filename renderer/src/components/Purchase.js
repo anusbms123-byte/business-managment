@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     Plus, Search, X, ShoppingCart,
     Trash2, Package, User, Receipt, Eye
@@ -36,6 +36,9 @@ const Purchase = ({ currentUser }) => {
     const [paymentStatus, setPaymentStatus] = useState('RECEIVED');
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
+    const [productSearch, setProductSearch] = useState('');
+    const [isProductListVisible, setIsProductListVisible] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     // Refs for keyboard navigation
     const vendorRef = useRef(null);
@@ -43,20 +46,7 @@ const Purchase = ({ currentUser }) => {
     const qtyRef = useRef(null);
     const addBtnRef = useRef(null);
 
-    useEffect(() => {
-        loadData();
-    }, [currentUser]);
-
-    // Focus vendor select when modal opens
-    useEffect(() => {
-        if (isModalOpen) {
-            setTimeout(() => {
-                vendorRef.current?.focus();
-            }, 100);
-        }
-    }, [isModalOpen]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             if (window.electronAPI) {
@@ -74,7 +64,20 @@ const Purchase = ({ currentUser }) => {
             console.error('Error loading purchase data:', err);
         }
         setLoading(false);
-    };
+    }, [currentUser?.company_id]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    // Focus vendor select when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            setTimeout(() => {
+                vendorRef.current?.focus();
+            }, 100);
+        }
+    }, [isModalOpen]);
 
     // --- Cart Logic ---
 
@@ -106,10 +109,28 @@ const Purchase = ({ currentUser }) => {
         }
         setQty(1);
         setSelectedProduct('');
+        setProductSearch('');
 
         // Focus back to product for quick entry
         setTimeout(() => {
             productRef.current?.focus();
+        }, 50);
+    };
+
+    const filteredProducts = useMemo(() => {
+        if (!productSearch) return products;
+        return products.filter(p =>
+            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+        );
+    }, [products, productSearch]);
+
+    const handleProductSelect = (product) => {
+        setSelectedProduct(product.id);
+        setProductSearch(product.name);
+        setIsProductListVisible(false);
+        setTimeout(() => {
+            qtyRef.current?.focus();
         }, 50);
     };
 
@@ -397,21 +418,58 @@ const Purchase = ({ currentUser }) => {
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Product</label>
                                         <div className="relative">
                                             <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <select
+                                            <input
                                                 ref={productRef}
-                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
-                                                value={selectedProduct}
-                                                onChange={(e) => setSelectedProduct(e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, qtyRef)}
-                                            >
-                                                <option value="">Select Item...</option>
-                                                {products.map(p => (
-                                                    <option key={p.id} value={p.id}>
-                                                        {p.name} - (Stock: {p.stockQty}) - Cost: {p.costPrice || 0}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {selectedProduct && (
+                                                type="text"
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none"
+                                                placeholder="Type to search product..."
+                                                value={productSearch}
+                                                onChange={(e) => {
+                                                    setProductSearch(e.target.value);
+                                                    setIsProductListVisible(true);
+                                                    setHighlightedIndex(0);
+                                                }}
+                                                onFocus={() => setIsProductListVisible(true)}
+                                                onBlur={() => {
+                                                    setTimeout(() => setIsProductListVisible(false), 200);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'ArrowDown') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+                                                    } else if (e.key === 'ArrowUp') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                    } else if (e.key === 'Enter') {
+                                                        if (isProductListVisible && filteredProducts[highlightedIndex]) {
+                                                            e.preventDefault();
+                                                            handleProductSelect(filteredProducts[highlightedIndex]);
+                                                        } else {
+                                                            handleKeyDown(e, qtyRef);
+                                                        }
+                                                    } else if (e.key === 'Escape') {
+                                                        setIsProductListVisible(false);
+                                                    }
+                                                }}
+                                            />
+                                            {isProductListVisible && filteredProducts.length > 0 && (
+                                                <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                    {filteredProducts.map((p, index) => (
+                                                        <div
+                                                            key={p.id}
+                                                            className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
+                                                            onClick={() => handleProductSelect(p)}
+                                                        >
+                                                            <div>
+                                                                <div className="font-bold text-sm text-slate-800">{p.name}</div>
+                                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            </div>
+                                                            <div className="font-bold text-blue-600 text-sm">Cost: PKR {(p.costPrice || p.cost_price || 0).toLocaleString()}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {selectedProduct && !isProductListVisible && (
                                                 <button
                                                     onClick={() => {
                                                         const p = products.find(prod => prod.id === selectedProduct);

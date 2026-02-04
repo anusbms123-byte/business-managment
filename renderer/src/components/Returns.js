@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-    Plus, Search, MoreHorizontal, X, ShoppingCart,
-    Trash2, DollarSign, RotateCcw, Calendar,
-    User, Package, ChevronRight, Check, Printer,
-    Building2, RefreshCcw, ArrowLeftRight, CreditCard
+    Plus, Search, X, ShoppingCart,
+    Trash2, RefreshCcw
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
 
@@ -27,15 +25,14 @@ const Returns = ({ currentUser }) => {
     const [cart, setCart] = useState([]);
     const [notes, setNotes] = useState('');
     const [tax, setTax] = useState('');
+    const [productSearch, setProductSearch] = useState('');
+    const [isProductListVisible, setIsProductListVisible] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     const productRef = useRef(null);
     const qtyRef = useRef(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [currentUser, activeTab]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!currentUser?.company_id) return;
         setLoading(true);
         try {
@@ -58,7 +55,11 @@ const Returns = ({ currentUser }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentUser?.company_id, activeTab]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const addToCart = () => {
         if (!selectedProductId || !qty || parseInt(qty) <= 0) return;
@@ -86,8 +87,26 @@ const Returns = ({ currentUser }) => {
         }
 
         setSelectedProductId('');
+        setProductSearch('');
         setQty('');
         productRef.current?.focus();
+    };
+
+    const filteredProducts = useMemo(() => {
+        if (!productSearch) return products;
+        return products.filter(p =>
+            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+        );
+    }, [products, productSearch]);
+
+    const handleProductSelect = (product) => {
+        setSelectedProductId(product.id);
+        setProductSearch(product.name);
+        setIsProductListVisible(false);
+        setTimeout(() => {
+            qtyRef.current?.focus();
+        }, 50);
     };
 
     const removeFromCart = (id) => {
@@ -142,6 +161,7 @@ const Returns = ({ currentUser }) => {
         setNotes('');
         setTax('');
         setSelectedProductId('');
+        setProductSearch('');
         setQty('');
     };
 
@@ -167,14 +187,6 @@ const Returns = ({ currentUser }) => {
             entityName?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
-
-    const stats = useMemo(() => {
-        const data = activeTab === 'sales' ? saleReturns : purchaseReturns;
-        return {
-            count: data.length,
-            total: data.reduce((sum, item) => sum + item.totalAmount, 0)
-        };
-    }, [saleReturns, purchaseReturns, activeTab]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -320,20 +332,63 @@ const Returns = ({ currentUser }) => {
                                     </div>
                                     <div className="space-y-1.5 col-span-2">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Product</label>
-                                        <select
-                                            ref={productRef}
-                                            className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-blue-500 transition-all"
-                                            value={selectedProductId}
-                                            onChange={(e) => setSelectedProductId(e.target.value)}
-                                        >
-                                            <option value="">Select Item...</option>
-                                            {products.map(p => <option key={p.id} value={p.id}>{p.name} - (Stock: {p.stockQty})</option>)}
-                                        </select>
+                                        <div className="relative">
+                                            <input
+                                                ref={productRef}
+                                                type="text"
+                                                className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-blue-500 transition-all"
+                                                placeholder="Search product..."
+                                                value={productSearch}
+                                                onChange={(e) => {
+                                                    setProductSearch(e.target.value);
+                                                    setIsProductListVisible(true);
+                                                    setHighlightedIndex(0);
+                                                }}
+                                                onFocus={() => setIsProductListVisible(true)}
+                                                onBlur={() => {
+                                                    setTimeout(() => setIsProductListVisible(false), 200);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'ArrowDown') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+                                                    } else if (e.key === 'ArrowUp') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                    } else if (e.key === 'Enter') {
+                                                        if (isProductListVisible && filteredProducts[highlightedIndex]) {
+                                                            e.preventDefault();
+                                                            handleProductSelect(filteredProducts[highlightedIndex]);
+                                                        }
+                                                    } else if (e.key === 'Escape') {
+                                                        setIsProductListVisible(false);
+                                                    }
+                                                }}
+                                            />
+                                            {isProductListVisible && filteredProducts.length > 0 && (
+                                                <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                    {filteredProducts.map((p, index) => (
+                                                        <div
+                                                            key={p.id}
+                                                            className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
+                                                            onClick={() => handleProductSelect(p)}
+                                                        >
+                                                            <div>
+                                                                <div className="font-bold text-sm text-slate-800">{p.name}</div>
+                                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            </div>
+                                                            <div className="font-bold text-blue-600 text-sm">PKR {(activeTab === 'sales' ? p.sellPrice : p.costPrice).toLocaleString()}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex gap-2 items-end">
                                         <div className="flex-1 space-y-1.5">
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Qty</label>
                                             <input
+                                                ref={qtyRef}
                                                 type="number"
                                                 className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-blue-500 transition-all"
                                                 value={qty}

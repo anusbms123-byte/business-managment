@@ -116,7 +116,8 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
 
     const filtered = (employees || []).filter(e =>
         `${e.firstName} ${e.lastName || ''}`.toLowerCase().includes(search.toLowerCase()) ||
-        e.designation?.toLowerCase().includes(search.toLowerCase())
+        e.designation?.toLowerCase().includes(search.toLowerCase()) ||
+        e.id.toString().toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -150,6 +151,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-50/80">
                         <tr>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">ID</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Name</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Designation</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Phone</th>
@@ -175,6 +177,9 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                             </tr>
                         ) : filtered?.map((emp) => (
                             <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <td className="px-6 py-4 font-bold text-slate-400 text-[10px] tracking-tight">
+                                    #{emp.id.toString().slice(-3).toUpperCase()}
+                                </td>
                                 <td className="px-6 py-4 font-bold text-slate-800 text-xs">
                                     {emp.firstName} {emp.lastName}
                                 </td>
@@ -363,6 +368,7 @@ const Attendance = ({ employees, currentUser }) => {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-50/80">
                         <tr>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">ID</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Employee</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Check In</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Check Out</th>
@@ -381,6 +387,9 @@ const Attendance = ({ employees, currentUser }) => {
                             </tr>
                         ) : attendanceRows?.map((att) => (
                             <tr key={att.employeeId} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4 font-bold text-slate-400 text-[10px] tracking-tight">
+                                    #{att.employeeId.toString().slice(-3).toUpperCase()}
+                                </td>
                                 <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{att.name}</td>
                                 <td className="px-6 py-4 font-bold text-slate-600 text-xs">{att.checkIn}</td>
                                 <td className="px-6 py-4 font-bold text-slate-400 text-xs">{att.checkOut}</td>
@@ -497,6 +506,7 @@ const Payroll = ({ employees, currentUser }) => {
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-50/80">
                         <tr>
+                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">ID</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Employee</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Basic Pay</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Bonus/OT</th>
@@ -512,6 +522,9 @@ const Payroll = ({ employees, currentUser }) => {
                             const record = salaries.find(s => s.employeeId === emp.id);
                             return (
                                 <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                                    <td className="px-6 py-4 font-bold text-slate-400 text-[10px] tracking-tight">
+                                        #{emp.id.toString().slice(-3).toUpperCase()}
+                                    </td>
                                     <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{emp.firstName} {emp.lastName}</td>
                                     <td className="px-6 py-4 font-bold text-slate-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
                                     <td className="px-6 py-4 font-bold text-emerald-600 text-[10px]">
@@ -585,19 +598,19 @@ const Payroll = ({ employees, currentUser }) => {
                                         <span>Base Salary</span>
                                         <span>PKR {selectedEmp.salary?.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                    <div className="flex justify-between text-xs font-bold text-slate-800">
                                         <span>OT Pay ({paymentData.otHours} hr x {selectedEmp.hourlyRate || 0})</span>
                                         <span>+PKR {((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs font-bold text-emerald-600">
+                                    <div className="flex justify-between text-xs font-bold text-slate-800">
                                         <span>Bonus</span>
                                         <span>+PKR {(parseFloat(paymentData.bonus) || 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between text-xs font-bold text-rose-600">
+                                    <div className="flex justify-between text-xs font-bold text-slate-800">
                                         <span>Deductions</span>
                                         <span>-PKR {(parseFloat(paymentData.deductions) || 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="pt-2 mt-2 border-t border-slate-200 flex justify-between text-sm font-black text-blue-600">
+                                    <div className="pt-2 mt-2 border-t border-slate-200 flex justify-between text-sm font-black text-slate-900">
                                         <span>Net Payable</span>
                                         <span>PKR {((selectedEmp.salary || 0) + (parseFloat(paymentData.bonus) || 0) + ((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)) - (parseFloat(paymentData.deductions) || 0)).toLocaleString()}</span>
                                     </div>
@@ -670,19 +683,19 @@ const Payroll = ({ employees, currentUser }) => {
                                                 <p className="text-xs font-bold text-slate-600">Overtime Earnings</p>
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase">({viewingSlip.overtimeHours} hours at {viewingSlip.employee?.hourlyRate}/hr)</p>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600">+PKR {viewingSlip.overtimePay?.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-800">+PKR {viewingSlip.overtimePay?.toLocaleString()}</td>
                                         </tr>
                                         <tr className="bg-white">
                                             <td className="px-6 py-4 text-xs font-bold text-slate-600">Performance Bonus</td>
-                                            <td className="px-6 py-4 text-right text-xs font-bold text-emerald-600">+PKR {viewingSlip.bonus?.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-800">+PKR {viewingSlip.bonus?.toLocaleString()}</td>
                                         </tr>
                                         <tr className="bg-white">
                                             <td className="px-6 py-4 text-xs font-bold text-slate-600">Total Deductions</td>
-                                            <td className="px-6 py-4 text-right text-xs font-bold text-rose-600">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-800">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
                                         </tr>
                                         <tr className="bg-slate-50/50">
                                             <td className="px-6 py-6 text-sm font-black text-slate-800 uppercase tracking-tight">Net Dispatched Salary</td>
-                                            <td className="px-6 py-6 text-right text-lg font-black text-blue-600">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
+                                            <td className="px-6 py-6 text-right text-lg font-black text-slate-900">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
                                         </tr>
                                     </tbody>
                                 </table>

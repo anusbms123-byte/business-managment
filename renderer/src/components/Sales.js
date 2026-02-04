@@ -1,37 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
-    Plus, Search, MoreHorizontal, X, ShoppingCart,
-    Trash2, DollarSign, TrendingUp, Calendar,
-    User, Package, ChevronRight, Check, Printer
+    Plus, Search, X, ShoppingCart,
+    Trash2, Package, User, Printer
 } from 'lucide-react';
-import { canCreate, canEdit, canDelete } from '../utils/permissions';
-
-
-// Premium Stat Card Component
-const StatCard = ({ title, value, icon: Icon, color }) => {
-    const colors = {
-        orange: 'bg-white border-l-4 border-l-blue-500',
-        emerald: 'bg-white border-l-4 border-l-emerald-500',
-        blue: 'bg-white border-l-4 border-l-blue-950',
-        purple: 'bg-white border-l-4 border-l-indigo-500',
-        red: 'bg-white border-l-4 border-l-rose-500',
-        gray: 'bg-white border-l-4 border-l-slate-400'
-    };
-
-    return (
-        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
-                </div>
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                    <Icon size={20} />
-                </div>
-            </div>
-        </div>
-    );
-};
+import { canCreate, canDelete } from '../utils/permissions';
 
 const Sales = ({ currentUser }) => {
     const [sales, setSales] = useState([]);
@@ -58,6 +30,9 @@ const Sales = ({ currentUser }) => {
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
     const [returnChange, setReturnChange] = useState(true);
+    const [productSearch, setProductSearch] = useState('');
+    const [isProductListVisible, setIsProductListVisible] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
 
     // Printing State
     const [printReceiptData, setPrintReceiptData] = useState(null);
@@ -68,18 +43,7 @@ const Sales = ({ currentUser }) => {
     const qtyRef = useRef(null);
     const addBtnRef = useRef(null);
 
-    // Auto-focus customer field when modal opens
-    useEffect(() => {
-        if (isModalOpen) {
-            setTimeout(() => {
-                customerRef.current?.focus();
-            }, 100);
-        }
-    }, [isModalOpen]);
-
-    useEffect(() => { fetchData(); }, [currentUser]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (currentUser?.company_id) {
             setLoading(true);
             try {
@@ -103,18 +67,20 @@ const Sales = ({ currentUser }) => {
             }
             setLoading(false);
         }
-    };
+    }, [currentUser?.company_id]);
 
-    const stats = useMemo(() => {
-        const today = new Date().toLocaleDateString();
-        const todaySales = sales.filter(s => new Date(s.date).toLocaleDateString() === today);
-        return {
-            todayCount: todaySales.length,
-            todayRevenue: todaySales.reduce((acc, s) => acc + s.grandTotal, 0),
-            totalRevenue: sales.reduce((acc, s) => acc + s.grandTotal, 0),
-            avgTicket: sales.length ? (sales.reduce((acc, s) => acc + s.grandTotal, 0) / sales.length).toFixed(0) : 0
-        };
-    }, [sales]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Auto-focus customer field when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            setTimeout(() => {
+                customerRef.current?.focus();
+            }, 100);
+        }
+    }, [isModalOpen]);
 
     // Cart Logic
     const addToCart = () => {
@@ -145,10 +111,28 @@ const Sales = ({ currentUser }) => {
         }
         setQty(1);
         setSelectedProduct('');
+        setProductSearch('');
 
         // After adding, focus back to product search for next item
         setTimeout(() => {
             productRef.current?.focus();
+        }, 50);
+    };
+
+    const filteredProducts = useMemo(() => {
+        if (!productSearch) return products;
+        return products.filter(p =>
+            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+        );
+    }, [products, productSearch]);
+
+    const handleProductSelect = (product) => {
+        setSelectedProduct(product.id);
+        setProductSearch(product.name);
+        setIsProductListVisible(false);
+        setTimeout(() => {
+            qtyRef.current?.focus();
         }, 50);
     };
 
@@ -221,6 +205,7 @@ const Sales = ({ currentUser }) => {
         setSelectedCustomer('');
         setPreviousBalance(0);
         setReturnChange(true);
+        setProductSearch('');
     };
 
 
@@ -481,23 +466,58 @@ const Sales = ({ currentUser }) => {
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Search Product</label>
                                         <div className="relative">
                                             <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <select
+                                            <input
                                                 ref={productRef}
-                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none appearance-none cursor-pointer"
-                                                value={selectedProduct}
-                                                onChange={(e) => setSelectedProduct(e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, qtyRef)}
-                                                onFocus={(e) => {
-                                                    try { e.target.showPicker(); } catch (err) { }
+                                                type="text"
+                                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none"
+                                                placeholder="Type to search product..."
+                                                value={productSearch}
+                                                onChange={(e) => {
+                                                    setProductSearch(e.target.value);
+                                                    setIsProductListVisible(true);
+                                                    setHighlightedIndex(0);
                                                 }}
-                                            >
-                                                <option value="">Choose item...</option>
-                                                {products.map(p => (
-                                                    <option key={p.id} value={p.id}>
-                                                        {p.name} - (Stock: {p.stockQty}) - PKR {p.sellPrice}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                onFocus={() => setIsProductListVisible(true)}
+                                                onBlur={() => {
+                                                    // Delay blur to allow clicking on the list
+                                                    setTimeout(() => setIsProductListVisible(false), 200);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'ArrowDown') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+                                                    } else if (e.key === 'ArrowUp') {
+                                                        e.preventDefault();
+                                                        setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                    } else if (e.key === 'Enter') {
+                                                        if (isProductListVisible && filteredProducts[highlightedIndex]) {
+                                                            e.preventDefault();
+                                                            handleProductSelect(filteredProducts[highlightedIndex]);
+                                                        } else {
+                                                            handleKeyDown(e, qtyRef);
+                                                        }
+                                                    } else if (e.key === 'Escape') {
+                                                        setIsProductListVisible(false);
+                                                    }
+                                                }}
+                                            />
+                                            {isProductListVisible && filteredProducts.length > 0 && (
+                                                <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                    {filteredProducts.map((p, index) => (
+                                                        <div
+                                                            key={p.id}
+                                                            className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
+                                                            onClick={() => handleProductSelect(p)}
+                                                        >
+                                                            <div>
+                                                                <div className="font-bold text-sm text-slate-800">{p.name}</div>
+                                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            </div>
+                                                            <div className="font-bold text-blue-600 text-sm">PKR {p.sellPrice}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
@@ -797,79 +817,6 @@ const Sales = ({ currentUser }) => {
                         <div className="print-row">
                             <span>Cust: {printReceiptData.customerName || ((printReceiptData.customer?.name) ? printReceiptData.customer.name : 'Walk-in')}</span>
                             <span>{new Date(printReceiptData.date || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <div className="print-divider"></div>
-
-                        {/* Items */}
-                        <div className="print-row print-bold">
-                            <span style={{ width: '45%' }}>Item</span>
-                            <span style={{ width: '15%', textAlign: 'center' }}>Qty</span>
-                            <span style={{ width: '20%', textAlign: 'right' }}>Price</span>
-                            <span style={{ width: '20%', textAlign: 'right' }}>Total</span>
-                        </div>
-                        <div className="print-divider" style={{ borderBottomStyle: 'solid' }}></div>
-
-                        {(printReceiptData.items || []).map((item, i) => (
-                            <div key={i} className="print-row">
-                                <span style={{ width: '45%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                <span style={{ width: '15%', textAlign: 'center' }}>{item.quantity}</span>
-                                <span style={{ width: '20%', textAlign: 'right' }}>{Math.round(item.price)}</span>
-                                <span style={{ width: '20%', textAlign: 'right' }}>{Math.round(item.total)}</span>
-                            </div>
-                        ))}
-
-                        <div className="print-divider"></div>
-
-                        {/* Totals */}
-                        <div className="print-row">
-                            <span>Subtotal:</span>
-                            <span>{Math.round(printReceiptData.subTotal || 0)}</span>
-                        </div>
-                        {(printReceiptData.discount > 0) && (
-                            <div className="print-row">
-                                <span>Discount:</span>
-                                <span>-{Math.round(printReceiptData.discount)}</span>
-                            </div>
-                        )}
-                        {(printReceiptData.tax > 0) && (
-                            <div className="print-row">
-                                <span>Tax:</span>
-                                <span>+{Math.round(printReceiptData.tax)}</span>
-                            </div>
-                        )}
-                        {(printReceiptData.shippingCost > 0) && (
-                            <div className="print-row">
-                                <span>Delivery:</span>
-                                <span>+{Math.round(printReceiptData.shippingCost)}</span>
-                            </div>
-                        )}
-                        <div className="print-divider" style={{ borderBottomStyle: 'solid' }}></div>
-
-                        <div className="print-row print-bold" style={{ fontSize: '13px' }}>
-                            <span>Grand Total:</span>
-                            <span>{Math.round(printReceiptData.grandTotal || (printReceiptData.totalAmount))}</span>
-                        </div>
-
-                        {(printReceiptData.prevBalance > 0 || (printReceiptData.customer?.balance > 0)) && (
-                            <div className="print-row">
-                                <span>Prev Balance:</span>
-                                <span>{Math.round(printReceiptData.prevBalance || printReceiptData.customer?.balance || 0)}</span>
-                            </div>
-                        )}
-
-                        <div className="print-row print-bold">
-                            <span>Paid ({printReceiptData.paymentMethod}):</span>
-                            <span>{Math.round(printReceiptData.paidAmount || printReceiptData.amountPaid || 0)}</span>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="print-divider"></div>
-                        <div className="print-center" style={{ marginTop: '10px' }}>
-                            <div>Thank you for shopping!</div>
-                            <div style={{ fontSize: '9px' }}>Software by Muhammad Anas</div>
-                        </div>
-                        <div className="print-center" style={{ marginTop: '10px', fontSize: '9px' }}>
-                            ********************************
                         </div>
                     </div>
                 )}
