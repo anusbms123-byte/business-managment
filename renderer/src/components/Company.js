@@ -45,12 +45,10 @@ const Company = () => {
     const fetchCounts = async () => {
         if (!isSuperAdmin) return;
         try {
-            const [reqRes, helpRes] = await Promise.all([
-                fetch('https://businessdevelopment-ten.vercel.app/api/company-requests?status=PENDING'),
-                fetch('https://businessdevelopment-ten.vercel.app/api/support-requests?status=PENDING')
+            const [reqData, helpData] = await Promise.all([
+                window.electronAPI.getCompanyRequests({ status: 'PENDING' }),
+                window.electronAPI.getSupportRequests({ status: 'PENDING' })
             ]);
-            const reqData = await reqRes.json();
-            const helpData = await helpRes.json();
             setCounts({
                 requests: Array.isArray(reqData) ? reqData.length : 0,
                 helpline: Array.isArray(helpData) ? helpData.length : 0
@@ -955,8 +953,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
     const loadRequests = async () => {
         setLoading(true);
         try {
-            const response = await fetch('https://businessdevelopment-ten.vercel.app/api/company-requests?status=PENDING');
-            const data = await response.json();
+            const data = await window.electronAPI.getCompanyRequests({ status: 'PENDING' });
             setRequests(data);
         } catch (err) {
             console.error('Failed to load requests:', err);
@@ -967,13 +964,12 @@ const CompanyRequests = ({ currentUser, onAction }) => {
     const handleApprove = async (id) => {
         if (!window.confirm('Approve this company request? This will create a new organization and activate the user.')) return;
         try {
-            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${id}/approve`, { method: 'POST' });
-            const data = await response.json();
-            if (data.success) {
+            const res = await window.electronAPI.approveCompanyRequest(id);
+            if (res.success) {
                 loadRequests();
                 if (onAction) onAction();
             } else {
-                alert(data.message);
+                alert(res.message);
             }
         } catch (err) {
             console.error(err);
@@ -984,18 +980,13 @@ const CompanyRequests = ({ currentUser, onAction }) => {
         if (!rejecting.notes?.trim()) return alert('Please provide a reason for rejection.');
         setIsRejecting(true);
         try {
-            const response = await fetch(`https://businessdevelopment-ten.vercel.app/api/company-requests/${rejecting.id}/reject`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notes: rejecting.notes })
-            });
-            const data = await response.json();
-            if (data.success) {
+            const res = await window.electronAPI.rejectCompanyRequest(rejecting.id, rejecting.notes);
+            if (res.success) {
                 setRejecting(null);
                 loadRequests();
                 if (onAction) onAction();
             } else {
-                alert(data.message);
+                alert(res.message);
             }
         } catch (err) {
             console.error(err);
@@ -1266,9 +1257,7 @@ const SupportRequests = ({ onAction }) => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const API_URL = 'https://businessdevelopment-ten.vercel.app/api/support-requests?status=PENDING';
-            const response = await fetch(API_URL);
-            const data = await response.json();
+            const data = await window.electronAPI.getSupportRequests({ status: 'PENDING' });
             setRequests(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error(err);
@@ -1278,12 +1267,7 @@ const SupportRequests = ({ onAction }) => {
 
     const updateStatus = async (id, status) => {
         try {
-            const API_URL = `https://businessdevelopment-ten.vercel.app/api/support-requests/${id}`;
-            await fetch(API_URL, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            });
+            await window.electronAPI.updateSupportStatus(id, status);
             loadData();
             if (onAction) onAction();
         } catch (err) {
@@ -1453,8 +1437,8 @@ const SystemBroadcast = () => {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${m.type === 'alert' ? 'bg-rose-50 text-rose-500 border-rose-100' :
-                                            m.type === 'update' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
-                                                'bg-blue-50 text-blue-500 border-blue-100'
+                                        m.type === 'update' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                                            'bg-blue-50 text-blue-500 border-blue-100'
                                         }`}>
                                         {m.type}
                                     </span>

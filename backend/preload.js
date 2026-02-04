@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     createCompany: (data) => ipcRenderer.invoke('create-company', data),
     updateCompany: (data) => ipcRenderer.invoke('update-company', data),
     deleteCompany: (id) => ipcRenderer.invoke('delete-company', id),
+    getCompanyRequests: (params) => ipcRenderer.invoke('get-company-requests', params),
+    approveCompanyRequest: (id) => ipcRenderer.invoke('approve-company-request', id),
+    rejectCompanyRequest: (id, notes) => ipcRenderer.invoke('reject-company-request', id, notes),
 
     // User APIs
     getUsers: (companyId) => ipcRenderer.invoke('get-users', companyId),
@@ -103,4 +106,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Admin Messages
     getAdminMessages: (params) => ipcRenderer.invoke('get-admin-messages', params),
     sendAdminMessage: (data) => ipcRenderer.invoke('send-admin-message', data),
+
+    // Support Requests
+    getSupportRequests: (params) => ipcRenderer.invoke('get-support-requests', params),
+    createSupportRequest: (data) => ipcRenderer.invoke('create-support-request', data),
+    updateSupportStatus: (id, status) => ipcRenderer.invoke('update-support-status', id, status),
 });

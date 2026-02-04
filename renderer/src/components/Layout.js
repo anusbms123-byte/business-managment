@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
     Receipt, BarChart3, UserCog, Settings, LogOut, Search, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw
+    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy
 } from 'lucide-react';
 
 // Define all menu items with their permission keys
@@ -51,20 +51,61 @@ const Layout = ({ children, user, onLogout }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [adminMessages, setAdminMessages] = useState([]);
     const [showMessages, setShowMessages] = useState(false);
+    const [showSupport, setShowSupport] = useState(false);
+    const [supportRequests, setSupportRequests] = useState([]);
+    const [supportView, setSupportView] = useState('list'); // 'list' or 'new'
+    const [supportForm, setSupportForm] = useState({ whatsapp: '', description: '' });
+    const [submittingSupport, setSubmittingSupport] = useState(false);
+
+    const fetchMessages = async () => {
+        try {
+            if (window.electronAPI && window.electronAPI.getAdminMessages) {
+                const data = await window.electronAPI.getAdminMessages({ limit: 5 });
+                if (Array.isArray(data)) setAdminMessages(data);
+            }
+        } catch (err) { console.error("Error fetching admin messages:", err); }
+    };
+
+    const fetchSupportRequests = async () => {
+        try {
+            if (window.electronAPI && window.electronAPI.getSupportRequests && user?.id) {
+                const data = await window.electronAPI.getSupportRequests({ userId: user.id });
+                if (Array.isArray(data)) setSupportRequests(data);
+            }
+        } catch (err) { console.error("Error fetching support requests:", err); }
+    };
 
     useEffect(() => {
-        const fetchMessages = async () => {
-            try {
-                if (window.electronAPI && window.electronAPI.getAdminMessages) {
-                    const data = await window.electronAPI.getAdminMessages({ limit: 5 });
-                    if (Array.isArray(data)) setAdminMessages(data);
-                }
-            } catch (err) { console.error("Error fetching admin messages:", err); }
-        };
         fetchMessages();
         const interval = setInterval(fetchMessages, 300000); // 5 mins
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (user?.id) fetchSupportRequests();
+    }, [user]);
+
+    const handleSupportSubmit = async (e) => {
+        e.preventDefault();
+        if (!supportForm.description.trim()) return;
+        setSubmittingSupport(true);
+        try {
+            const res = await window.electronAPI.createSupportRequest({
+                fullName: user.fullname || user.username,
+                email: user.email || '',
+                whatsapp: supportForm.whatsapp,
+                description: supportForm.description,
+                userId: user.id,
+                companyId: user.company_id
+            });
+            if (res.success) {
+                setSupportForm({ whatsapp: '', description: '' });
+                setSupportView('list');
+                fetchSupportRequests();
+            }
+        } catch (err) { console.error("Error submitting support:", err); }
+        setSubmittingSupport(false);
+    };
 
     useEffect(() => {
         // Load permissions from sessionStorage
@@ -233,13 +274,130 @@ const Layout = ({ children, user, onLogout }) => {
 
                     {/* Right Side */}
                     <div className="flex items-center space-x-2 md:space-x-3">
-                        <button className="hidden sm:flex p-2.5 bg-slate-50 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200">
-                            <Mail size={18} />
-                        </button>
                         <div className="relative">
                             <button
-                                onClick={() => setShowMessages(!showMessages)}
-                                className="p-2 md:p-2.5 bg-slate-50 rounded-lg text-slate-500 hover:bg-slate-100 transition-all duration-200 relative"
+                                onClick={() => {
+                                    setShowSupport(!showSupport);
+                                    setShowMessages(false);
+                                    setSupportView('list');
+                                }}
+                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showSupport ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                            >
+                                <Mail size={18} />
+                                {supportRequests.some(r => r.status === 'RESOLVED') && (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
+                                )}
+                            </button>
+
+                            {/* Support Dropdown */}
+                            {showSupport && (
+                                <>
+                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
+                                    <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                        {supportView === 'list' ? (
+                                            <>
+                                                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                                    <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                                        <LifeBuoy size={14} className="text-blue-500" />
+                                                        Help & Support
+                                                    </h3>
+                                                    <button
+                                                        onClick={() => setSupportView('new')}
+                                                        className="text-[9px] font-bold text-blue-600 hover:text-blue-700 uppercase flex items-center gap-1"
+                                                    >
+                                                        <Plus size={12} /> New Ticket
+                                                    </button>
+                                                </div>
+                                                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                    {supportRequests.length === 0 ? (
+                                                        <div className="p-10 text-center">
+                                                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                                <Mail size={24} className="text-slate-300" />
+                                                            </div>
+                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No support tickets</p>
+                                                            <button
+                                                                onClick={() => setSupportView('new')}
+                                                                className="mt-4 text-[10px] font-bold text-blue-600 hover:underline uppercase"
+                                                            >
+                                                                Contact Super Admin
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="divide-y divide-slate-50">
+                                                            {supportRequests.map((req) => (
+                                                                <div key={req.id} className="p-4 hover:bg-slate-50 transition-colors">
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' :
+                                                                                req.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
+                                                                                    'bg-slate-100 text-slate-600'
+                                                                            }`}>
+                                                                            {req.status}
+                                                                        </span>
+                                                                        <span className="text-[9px] text-slate-400 font-medium">
+                                                                            {new Date(req.createdAt).toLocaleDateString()}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs text-slate-700 font-bold line-clamp-2 leading-snug">{req.description}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="p-5 animate-in slide-in-from-right-4 duration-300">
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 rounded">
+                                                        <ChevronLeft size={16} className="text-slate-500" />
+                                                    </button>
+                                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">New Support Ticket</h3>
+                                                </div>
+                                                <form onSubmit={handleSupportSubmit} className="space-y-4">
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">WhatsApp No (Optional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={supportForm.whatsapp}
+                                                            onChange={(e) => setSupportForm({ ...supportForm, whatsapp: e.target.value })}
+                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-blue-500 transition-all"
+                                                            placeholder="Format: +92..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Description</label>
+                                                        <textarea
+                                                            required
+                                                            value={supportForm.description}
+                                                            onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
+                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-blue-500 transition-all min-h-[100px]"
+                                                            placeholder="Describe your problem or request..."
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="submit"
+                                                        disabled={submittingSupport}
+                                                        className="w-full py-2.5 bg-[#0B1033] text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                                    >
+                                                        <Send size={14} />
+                                                        {submittingSupport ? 'Sending...' : 'Submit Request'}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        )}
+                                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
+                                            <button onClick={() => setShowSupport(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">Close</button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setShowMessages(!showMessages);
+                                    setShowSupport(false);
+                                }}
+                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showMessages ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                             >
                                 <Bell size={20} />
                                 {adminMessages.length > 0 && (

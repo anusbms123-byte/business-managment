@@ -485,6 +485,8 @@ model CompanyRequest {
 
 model SupportRequest {
   id          String   @id @default(cuid())
+  userId      String?  @map("user_id")
+  companyId   String?  @map("company_id")
   fullName    String   @map("full_name")
   email       String
   whatsapp    String

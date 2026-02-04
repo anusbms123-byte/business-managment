@@ -102,6 +102,9 @@ ipcMain.handle("get-company", (e, id) => apiCall('get', `/companies/${id}`));
 ipcMain.handle("create-company", (e, data) => apiCall('post', '/companies', data));
 ipcMain.handle("update-company", (e, data) => apiCall('put', `/companies/${data.id}`, data));
 ipcMain.handle("delete-company", (e, id) => apiCall('delete', `/companies/${id}`));
+ipcMain.handle("get-company-requests", (e, params) => apiCall('get', '/company-requests', null, params));
+ipcMain.handle("approve-company-request", (e, id) => apiCall('post', `/company-requests/${id}/approve`));
+ipcMain.handle("reject-company-request", (e, id, notes) => apiCall('post', `/company-requests/${id}/reject`, { notes }));
 
 // Users
 ipcMain.handle("get-users", (e, companyId) => apiCall('get', '/users', null, { companyId }));
@@ -198,6 +201,11 @@ ipcMain.handle("create-audit-log", (e, data) => apiCall('post', '/audit-logs', d
 // Admin Messages
 ipcMain.handle("get-admin-messages", (e, params) => apiCall('get', '/admin-messages', null, params));
 ipcMain.handle("send-admin-message", (e, data) => apiCall('post', '/admin-messages', data));
+
+// Support Requests
+ipcMain.handle("get-support-requests", (e, params) => apiCall('get', '/support-requests', null, params));
+ipcMain.handle("create-support-request", (e, data) => apiCall('post', '/support-requests', data));
+ipcMain.handle("update-support-status", (e, id, status) => apiCall('put', `/support-requests/${id}`, { status }));
 
 // Backup & Restore Handlers
 ipcMain.handle("create-backup", async (e, companyId) => {

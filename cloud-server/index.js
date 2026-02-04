@@ -2208,13 +2208,15 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
 // Submit Support Request
 app.post('/api/support-requests', async (req, res) => {
     try {
-        const { fullName, email, whatsapp, description } = req.body;
+        const { fullName, email, whatsapp, description, userId, companyId } = req.body;
         const request = await prisma.supportRequest.create({
             data: {
                 fullName,
                 email,
                 whatsapp,
                 description,
+                userId,
+                companyId,
                 status: 'PENDING'
             }
         });
@@ -2222,11 +2224,15 @@ app.post('/api/support-requests', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
-// Get All Support Requests (Super Admin)
+// Get All Support Requests (Super Admin or Specific User)
 app.get('/api/support-requests', async (req, res) => {
     try {
-        const { status } = req.query;
-        const where = status ? { status } : {};
+        const { status, userId, companyId } = req.query;
+        const where = {};
+        if (status) where.status = status;
+        if (userId) where.userId = userId;
+        if (companyId) where.companyId = companyId;
+
         const requests = await prisma.supportRequest.findMany({
             where,
             orderBy: { createdAt: 'desc' }
