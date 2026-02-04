@@ -270,7 +270,7 @@ const Returns = ({ currentUser }) => {
                                         {item.items?.length || 0} product(s)
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="text-sm font-bold text-slate-900">PKR {item.totalAmount.toLocaleString()}</span>
+                                        <span className="text-sm font-medium text-slate-900">PKR {item.totalAmount.toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -424,11 +424,11 @@ const Returns = ({ currentUser }) => {
                                                     <div className="text-sm font-bold text-slate-800">{item.name}</div>
                                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-bold text-slate-600 text-xs">PKR {item.price.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-center font-medium text-slate-600 text-xs">PKR {item.price.toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-700">{item.quantity}</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-bold text-slate-800 text-sm">PKR {item.total.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-right font-medium text-slate-800 text-sm">PKR {item.total.toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all">
                                                         <Trash2 size={14} />
@@ -468,7 +468,7 @@ const Returns = ({ currentUser }) => {
                                 <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Subtotal</span>
-                                        <span className="text-slate-800 font-bold font-mono">PKR {subTotal.toLocaleString()}</span>
+                                        <span className="text-slate-800 font-medium font-mono">PKR {subTotal.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Handling / Tax</span>
@@ -482,7 +482,7 @@ const Returns = ({ currentUser }) => {
                                     </div>
                                     <div className="pt-4 border-t border-slate-200 flex flex-col gap-1">
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Credit Amount</span>
-                                        <span className="text-2xl font-black text-blue-950 tracking-tighter">
+                                        <span className="text-2xl font-medium text-blue-950 tracking-tighter">
                                             PKR {totalAmount.toLocaleString()}
                                         </span>
                                     </div>

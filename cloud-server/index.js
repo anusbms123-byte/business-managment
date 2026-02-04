@@ -1813,9 +1813,22 @@ app.get('/api/reports/summary', async (req, res) => {
         const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
 
         // Inventory Valuation
-        const inventoryValuationCost = products.reduce((acc, p) => acc + (p.stockQty * p.costPrice), 0);
-        const inventoryValuationSell = products.reduce((acc, p) => acc + (p.stockQty * p.sellPrice), 0);
-        const lowStockCount = products.filter(p => p.stockQty <= p.alertQty).length;
+        const inventoryValuationCost = products.reduce((acc, p) => acc + (p.stockQty * (p.costPrice || 0)), 0);
+        const inventoryValuationSell = products.reduce((acc, p) => acc + (p.stockQty * (p.sellPrice || 0)), 0);
+
+        const lowStockCount = products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length;
+        const outOfStockCount = products.filter(p => p.stockQty <= 0).length;
+        const inStockCount = products.filter(p => p.stockQty > (p.alertQty || 5)).length;
+
+        const nowForExpiry = new Date();
+        const expiredCount = products.filter(p => p.expiryDate && new Date(p.expiryDate) < nowForExpiry).length;
+        const expiringSoonCount = products.filter(p => {
+            if (!p.expiryDate) return false;
+            const exp = new Date(p.expiryDate);
+            const diffTime = exp - nowForExpiry;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 && diffDays <= 30;
+        }).length;
 
         // CRM Stats
         const totalReceivables = customers.reduce((acc, c) => acc + (c.balance > 0 ? c.balance : 0), 0);
@@ -1987,6 +2000,10 @@ app.get('/api/reports/summary', async (req, res) => {
             inventoryValuationCost,
             inventoryValuationSell,
             lowStockCount,
+            outOfStockCount,
+            inStockCount,
+            expiredCount,
+            expiringSoonCount,
             totalReceivables,
             totalPayables,
             topCustomers,

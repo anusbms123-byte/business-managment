@@ -28,7 +28,7 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
         </div>
         <div>
             <p className="text-black text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-            <h3 className="text-xl font-black text-black tracking-tight">{value}</h3>
+            <h3 className="text-xl font-medium text-black tracking-tight">{value}</h3>
             {subValue && (
                 <p className="text-[10px] text-black font-bold mt-2 flex items-center gap-1.5 uppercase tracking-tight">
                     {subValue}
@@ -45,7 +45,7 @@ const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
         </div>
         <div>
             <p className="text-[9px] font-black text-black uppercase tracking-widest">{label}</p>
-            <p className="text-sm font-black text-black tracking-tight">{value}</p>
+            <p className="text-sm font-medium text-black tracking-tight">{value}</p>
         </div>
     </div>
 );
@@ -353,14 +353,14 @@ const Reports = ({ currentUser }) => {
                             <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
-                                <h2 className="text-3xl font-black mt-2 tracking-tighter">
+                                <h2 className="text-3xl font-medium mt-2 tracking-tighter">
                                     PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
                                 </h2>
                             </div>
                             <div className="space-y-4 relative z-10 pt-10">
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Volume</span>
-                                    <span className="text-lg font-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                                    <span className="text-lg font-medium">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
                                     <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
@@ -407,7 +407,7 @@ const Reports = ({ currentUser }) => {
                                                                 `Activity_ID_${i + 1} Log`}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-5 text-right font-black text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                            <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
                                         </tr>
                                     ))}
                                     {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0 && (

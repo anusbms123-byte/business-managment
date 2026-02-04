@@ -43,7 +43,7 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
                     {Icon && <Icon size={14} className="text-black group-hover:text-blue-600 transition-colors" />}
                     <p className="text-[10px] text-black font-bold uppercase tracking-widest">{title}</p>
                 </div>
-                <p className="text-xl font-bold text-black">{value}</p>
+                <p className="text-xl font-medium text-black">{value}</p>
                 <div className="mt-3 flex items-center space-x-1.5">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                         {changeType === 'up' ? '↑' : '↓'} {change}
@@ -373,7 +373,7 @@ const Dashboard = ({ currentUser }) => {
                                             Completed
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-xs font-black text-black tracking-tight">PKR {sale.totalAmount?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 text-right text-xs font-medium text-black tracking-tight">PKR {sale.totalAmount?.toLocaleString() ?? '0'}</td>
                                 </tr>
                             ))}
                         </tbody>
