@@ -6,7 +6,7 @@ import {
     Users2, CreditCard, ArrowLeft,
     Calendar, Download, ChevronRight,
     TrendingDown, Activity, Layers,
-    Briefcase, AlertTriangle, CheckCircle2
+    Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -198,25 +198,27 @@ const Reports = ({ currentUser }) => {
             inventory: {
                 title: 'Stock Valuation', icon: Package, color: '#6366f1', dataKey: 'inventory',
                 miniStats: [
-                    { label: 'Asset Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Layers, color: 'text-indigo-500' },
-                    { label: 'Low Stock Alerts', value: summary?.lowStockCount || 0, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Retail Potential', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' }
+                    { label: 'In Stock (Healthy)', value: summary?.inStockCount || 0, icon: CheckCircle2, color: 'text-emerald-500' },
+                    { label: 'Low Stock Items', value: summary?.lowStockCount || 0, icon: AlertTriangle, color: 'text-orange-500' },
+                    { label: 'Out of Stock', value: summary?.outOfStockCount || 0, icon: X, color: 'text-rose-500' },
+                    { label: 'Expiring Soon', value: summary?.expiringSoonCount || 0, icon: Clock, color: 'text-amber-500' },
+                    { label: 'Expired Items', value: summary?.expiredCount || 0, icon: Trash2, color: 'text-rose-600' }
                 ],
                 tableCols: ['Sync Date', 'Valuation Type', 'Asset Magnitude']
             },
             expenses: {
                 title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
                 miniStats: [
-                    { label: 'Daily Average', value: `PKR ${(Math.round(summary?.totalExpenses / (chartData.length || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-rose-500' },
-                    { label: 'Module Entries', value: summary?.expenseCount || 0, icon: Layers, color: 'text-slate-500' },
-                    { label: 'Status', value: 'Debited', icon: CheckCircle2, color: 'text-rose-600' }
+                    { label: 'Total Expenditure', value: `PKR ${(summary?.totalExpenses || 0).toLocaleString()}`, icon: DollarSign, color: 'text-rose-500' },
+                    { label: 'Daily Average', value: `PKR ${(Math.round(summary?.totalExpenses / (chartData.length || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
+                    { label: 'Module Entries', value: summary?.expenseCount || 0, icon: Layers, color: 'text-slate-500' }
                 ],
                 tableCols: ['Expense Date', 'Transactions', 'Net Expenditure']
             },
             returns: {
                 title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
                 miniStats: [
-                    { label: 'Refund Volume', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-orange-600' },
+                    { label: 'Total Refunds', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-600' },
                     { label: 'Total Claims', value: summary?.returnCount || 0, icon: Layers, color: 'text-slate-500' },
                     { label: 'Approval Rate', value: '100%', icon: CheckCircle2, color: 'text-emerald-500' }
                 ],
@@ -225,27 +227,27 @@ const Reports = ({ currentUser }) => {
             suppliers: {
                 title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables',
                 miniStats: [
-                    { label: 'Direct Liabilities', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: Layers, color: 'text-slate-600' },
+                    { label: 'Total Payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-rose-600' },
                     { label: 'Active Vendors', value: `${summary?.vendorCount || 0} Vendors`, icon: Users, color: 'text-blue-500' },
-                    { label: 'Payment Status', value: summary?.totalPayables > 0 ? "Outstanding" : "Cleared", icon: AlertTriangle, color: summary?.totalPayables > 0 ? 'text-amber-500' : 'text-emerald-500' }
+                    { label: 'Avg Payable/Vendor', value: `PKR ${(Math.round(summary?.totalPayables / (summary?.vendorCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
                 tableCols: ['Snapshot Date', 'Account Head', 'Balance Owed']
             },
             hrm: {
                 title: 'Payroll Summary', icon: Users2, color: '#10b981', dataKey: 'salaries',
                 miniStats: [
-                    { label: 'Active Staff', value: summary?.employeeCount || 0, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Avg Salary/Emp', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
-                    { label: 'Total Dispersed', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CheckCircle2, color: 'text-emerald-500' }
+                    { label: 'Monthly Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Active Staff', value: summary?.employeeCount || 0, icon: Users, color: 'text-blue-500' },
+                    { label: 'Avg Salary/Emp', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-indigo-500' }
                 ],
                 tableCols: ['Disbursal Month', 'Headcount', 'Net Payroll']
             },
             netprofit: {
                 title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
                 miniStats: [
-                    { label: 'Gross Sales', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
+                    { label: 'Net Profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: TrendingUp, color: summary?.netProfit >= 0 ? 'text-emerald-500' : 'text-rose-500' },
                     { label: 'Operating Costs', value: `PKR ${((summary?.totalExpenses || 0) + (summary?.totalSalaries || 0)).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
-                    { label: 'COGS Sum', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: Layers, color: 'text-orange-500' }
+                    { label: 'COGS (Inventory Sold)', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: Layers, color: 'text-orange-500' }
                 ],
                 tableCols: ['Audit Date', 'Operational Delta', 'Net Bottom Line']
             }
@@ -301,7 +303,14 @@ const Reports = ({ currentUser }) => {
                 </div>
 
                 {/* Scrollable Content Area */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-8">
+
+                    {/* Sub-Metrics Row - Now at the Top */}
+                    <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-${config.miniStats.length} gap-4`}>
+                        {config.miniStats.map((stat, idx) => (
+                            <DetailMiniCard key={idx} {...stat} />
+                        ))}
+                    </div>
 
                     {/* Primary Metric & Chart Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -349,33 +358,27 @@ const Reports = ({ currentUser }) => {
                             </div>
                         </div>
 
-                        <div className="bg-[#0B1033] rounded-3xl p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-2xl shadow-blue-900/20">
-                            <div className="absolute top-0 right-0 p-10 opacity-10"><config.icon size={120} /></div>
+                        <div className="bg-white rounded-3xl p-8 text-black flex flex-col justify-between relative overflow-hidden shadow-sm border border-slate-100">
+                            <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900"><config.icon size={120} /></div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-300 italic">Consolidated Total</p>
-                                <h2 className="text-3xl font-medium mt-2 tracking-tighter">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Consolidated Total</p>
+                                <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black">
                                     PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
                                 </h2>
                             </div>
                             <div className="space-y-4 relative z-10 pt-10">
-                                <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-200">Volume</span>
-                                    <span className="text-lg font-medium">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Volume</span>
+                                    <span className="text-lg font-medium text-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-blue-600/20 border border-blue-500/30">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-blue-200">Periodic Status</p>
-                                    <p className="text-xs font-black mt-1 italic uppercase tracking-tighter">Verified & Processed</p>
+                                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600">Periodic Status</p>
+                                    <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900">Verified & Processed</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Sub-Metrics Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {config.miniStats.map((stat, idx) => (
-                            <DetailMiniCard key={idx} {...stat} />
-                        ))}
-                    </div>
 
                     {/* Data Table */}
                     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
