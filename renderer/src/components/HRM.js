@@ -149,11 +149,11 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                         <tr>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">ID</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Designation</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Phone</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Salary</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">OT/Hr</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Joined</th>
+                            <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-center">Designation</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -173,19 +173,19 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                             </tr>
                         ) : filtered?.map((emp) => (
                             <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
-                                <td className="px-6 py-4 font-bold text-black text-[10px] tracking-tight">
-                                    #{emp.id.toString().slice(-3).toUpperCase()}
+                                <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
+                                    {emp.id}
                                 </td>
                                 <td className="px-6 py-4 font-bold text-black text-xs">
                                     {emp.firstName} {emp.lastName}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">{emp.designation}</span>
                                 </td>
                                 <td className="px-6 py-4 text-black font-bold text-xs">{emp.phone}</td>
                                 <td className="px-6 py-4 font-bold text-black text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
                                 <td className="px-6 py-4 font-bold text-black text-[10px]">PKR {emp.hourlyRate ?? 0}</td>
                                 <td className="px-6 py-4 text-black font-bold text-[10px] uppercase">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">{emp.designation}</span>
+                                </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
                                         {canEdit('hrm') && (
@@ -285,6 +285,7 @@ const Attendance = ({ employees, currentUser }) => {
     const [attendanceRows, setAttendanceRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         loadAttendance();
@@ -349,13 +350,23 @@ const Attendance = ({ employees, currentUser }) => {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
                 />
+                <div className="relative group w-full md:w-80">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="Search employee by ID or Name..."
+                    />
+                </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -396,12 +407,15 @@ const Attendance = ({ employees, currentUser }) => {
                             </tr>
                         ) : (attendanceRows?.length ?? 0) === 0 ? (
                             <tr>
-                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees available</td>
+                                <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees available</td>
                             </tr>
-                        ) : attendanceRows?.map((att) => (
+                        ) : attendanceRows?.filter(att =>
+                            att.name.toLowerCase().includes(search.toLowerCase()) ||
+                            att.employeeId.toString().toLowerCase().includes(search.toLowerCase())
+                        ).map((att) => (
                             <tr key={att.employeeId} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-6 py-4 font-bold text-slate-400 text-[10px] tracking-tight">
-                                    #{att.employeeId.toString().slice(-3).toUpperCase()}
+                                <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
+                                    {att.employeeId}
                                 </td>
                                 <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{att.name}</td>
                                 <td className="px-6 py-4 font-bold text-slate-600 text-xs">{att.checkIn}</td>
@@ -451,6 +465,7 @@ const Payroll = ({ employees, currentUser }) => {
     const [paymentData, setPaymentData] = useState({ bonus: 0, otHours: 0, deductions: 0, notes: '' });
     const [viewingSlip, setViewingSlip] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         loadSalaries();
@@ -505,12 +520,20 @@ const Payroll = ({ employees, currentUser }) => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center space-x-3">
+                <input
+                    type="month"
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
+                />
+                <div className="relative group w-full md:w-80">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                     <input
-                        type="month"
-                        value={month}
-                        onChange={(e) => setMonth(e.target.value)}
-                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500"
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="Search employee by ID or Name..."
                     />
                 </div>
             </div>
@@ -530,13 +553,16 @@ const Payroll = ({ employees, currentUser }) => {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                         {loading ? (
-                            <tr><td colSpan="6" className="px-6 py-10 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Loading payroll...</td></tr>
-                        ) : employees.map((emp) => {
+                            <tr><td colSpan="7" className="px-6 py-10 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Loading payroll...</td></tr>
+                        ) : employees.filter(emp =>
+                            `${emp.firstName} ${emp.lastName || ''}`.toLowerCase().includes(search.toLowerCase()) ||
+                            emp.id.toString().toLowerCase().includes(search.toLowerCase())
+                        ).map((emp) => {
                             const record = salaries.find(s => s.employeeId === emp.id);
                             return (
                                 <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4 font-bold text-slate-400 text-[10px] tracking-tight">
-                                        #{emp.id.toString().slice(-3).toUpperCase()}
+                                    <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
+                                        {emp.id}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{emp.firstName} {emp.lastName}</td>
                                     <td className="px-6 py-4 font-bold text-slate-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>

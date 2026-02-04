@@ -199,17 +199,6 @@ const StockTracking = ({ currentUser }) => {
                 />
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 text-white rounded-lg shadow-sm shadow-blue-100">
-                        <TrendingUp size={20} />
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-black text-lg uppercase tracking-tight">Stock Overview</h4>
-                        <p className="text-black text-sm font-bold">Viewing {filterType === 'all' ? 'All Products' : filterType.replace(/_/g, ' ')}</p>
-                    </div>
-                </div>
-            </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-left">

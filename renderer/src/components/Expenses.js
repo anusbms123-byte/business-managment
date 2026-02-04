@@ -120,33 +120,6 @@ const Expenses = ({ currentUser }) => {
 
 
 
-            {/* Stat Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <StatCard
-                    title="Total Rent"
-                    value={`PKR ${stats.rent.toLocaleString()}`}
-                    icon={Home}
-                    color="blue"
-                />
-                <StatCard
-                    title="Utilities"
-                    value={`PKR ${stats.utilities.toLocaleString()}`}
-                    icon={Zap}
-                    color="amber"
-                />
-                <StatCard
-                    title="Salaries"
-                    value={`PKR ${stats.salaries.toLocaleString()}`}
-                    icon={Users}
-                    color="indigo"
-                />
-                <StatCard
-                    title="Tea & Snacks"
-                    value={`PKR ${stats.teaSnacks.toLocaleString()}`}
-                    icon={Coffee}
-                    color="orange"
-                />
-            </div>
 
             {/* Expenses Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">

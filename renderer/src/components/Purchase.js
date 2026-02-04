@@ -39,6 +39,7 @@ const Purchase = ({ currentUser }) => {
     const [productSearch, setProductSearch] = useState('');
     const [isProductListVisible, setIsProductListVisible] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
+    const [hoveredProduct, setHoveredProduct] = useState(null);
 
     // Refs for keyboard navigation
     const vendorRef = useRef(null);
@@ -463,6 +464,8 @@ const Purchase = ({ currentUser }) => {
                                                         key={p.id}
                                                         className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
                                                         onClick={() => handleProductSelect(p)}
+                                                        onMouseEnter={() => setHoveredProduct(p)}
+                                                        onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
                                                             <div className="font-bold text-sm text-black">{p.name}</div>
@@ -471,6 +474,67 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="font-bold text-black text-sm">Cost: PKR {(p.costPrice || p.cost_price || 0).toLocaleString()}</div>
                                                     </div>
                                                 ))}
+                                            </div>
+                                        )}
+
+                                        {/* Product Hover Detail Card */}
+                                        {isProductListVisible && hoveredProduct && (
+                                            <div className="absolute left-full ml-4 top-0 z-[120] w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50">
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                                        <Package size={20} />
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <div className="font-bold text-sm text-black uppercase tracking-tight truncate">{hoveredProduct.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SKU: {hoveredProduct.sku || 'N/A'}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    {/* Attributes Grid */}
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Color</p>
+                                                            <p className="text-xs font-bold text-black">{hoveredProduct.color || '-'}</p>
+                                                        </div>
+                                                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Size</p>
+                                                            <p className="text-xs font-bold text-black">{hoveredProduct.size || '-'}</p>
+                                                        </div>
+                                                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Grade</p>
+                                                            <p className="text-xs font-bold text-black">{hoveredProduct.grade || '-'}</p>
+                                                        </div>
+                                                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Status</p>
+                                                            <p className={`text-xs font-bold ${hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                {hoveredProduct.stockQty <= 0 ? 'Out of Stock' : hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'Low Stock' : 'In Stock'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Pricing & Stock */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Cost Price</span>
+                                                            <span className="text-xs font-bold text-black">PKR {hoveredProduct.costPrice?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Sale Price</span>
+                                                            <span className="text-xs font-bold text-blue-600">PKR {hoveredProduct.sellPrice?.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Stock Avail</span>
+                                                            <span className="text-xs font-bold text-black">{hoveredProduct.stockQty} {hoveredProduct.unit}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Footer Info */}
+                                                    <div className="flex justify-between items-center pt-2 text-[9px] font-bold uppercase tracking-wider">
+                                                        <span className="text-slate-400">Brand: <span className="text-black">{hoveredProduct.brand?.name || 'Local'}</span></span>
+                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md truncate max-w-[100px]">{hoveredProduct.category?.name}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         {selectedProduct && !isProductListVisible && (
@@ -713,78 +777,79 @@ const Purchase = ({ currentUser }) => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div >
             )}
 
             {/* Product Detail Modal */}
-            {showDetailModal && detailProduct && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                        <Package size={24} />
+            {
+                showDetailModal && detailProduct && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <Package size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-black">{detailProduct.name}</h3>
+                                            <p className="text-[10px] text-black font-bold uppercase tracking-widest">Product Details</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-black">{detailProduct.name}</h3>
-                                        <p className="text-[10px] text-black font-bold uppercase tracking-widest">Product Details</p>
+                                    <button onClick={() => setShowDetailModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Cost Price</p>
+                                            <p className="text-sm font-bold text-black">PKR {detailProduct.costPrice?.toLocaleString() || 0}</p>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Sale Price</p>
+                                            <p className="text-sm font-bold text-black">PKR {detailProduct.sellPrice?.toLocaleString() || 0}</p>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Current Stock</p>
+                                            <p className="text-sm font-bold text-black">{detailProduct.stockQty} {detailProduct.unit || 'pcs'}</p>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">SKU / Code</p>
+                                            <p className="text-sm font-bold text-black">{detailProduct.code || detailProduct.sku || 'N/A'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-blue-50/30 rounded-xl border border-blue-100/50">
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Secondary Details</p>
+                                            <div className="flex justify-between text-xs py-1 border-b border-blue-100/30">
+                                                <span className="text-slate-500 font-medium">Category</span>
+                                                <span className="text-slate-700 font-bold">{detailProduct.category?.name || 'Uncategorized'}</span>
+                                            </div>
+                                            <div className="flex justify-between text-xs py-1 border-b border-blue-100/30">
+                                                <span className="text-slate-500 font-medium">Brand</span>
+                                                <span className="text-slate-700 font-bold">{detailProduct.brand?.name || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex justify-between text-xs py-1">
+                                                <span className="text-slate-500 font-medium">Alert Threshold</span>
+                                                <span className="text-slate-700 font-bold">{detailProduct.alertThreshold || 0}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <button onClick={() => setShowDetailModal(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
-                                    <X size={20} />
+
+                                <button
+                                    onClick={() => setShowDetailModal(false)}
+                                    className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
+                                >
+                                    CLOSE DETAIL
                                 </button>
                             </div>
-
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Cost Price</p>
-                                        <p className="text-sm font-bold text-black">PKR {detailProduct.costPrice?.toLocaleString() || 0}</p>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Sale Price</p>
-                                        <p className="text-sm font-bold text-black">PKR {detailProduct.sellPrice?.toLocaleString() || 0}</p>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">Current Stock</p>
-                                        <p className="text-sm font-bold text-black">{detailProduct.stockQty} {detailProduct.unit || 'pcs'}</p>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-black uppercase tracking-widest mb-1">SKU / Code</p>
-                                        <p className="text-sm font-bold text-black">{detailProduct.code || detailProduct.sku || 'N/A'}</p>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-blue-50/30 rounded-xl border border-blue-100/50">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Secondary Details</p>
-                                        <div className="flex justify-between text-xs py-1 border-b border-blue-100/30">
-                                            <span className="text-slate-500 font-medium">Category</span>
-                                            <span className="text-slate-700 font-bold">{detailProduct.category?.name || 'Uncategorized'}</span>
-                                        </div>
-                                        <div className="flex justify-between text-xs py-1 border-b border-blue-100/30">
-                                            <span className="text-slate-500 font-medium">Brand</span>
-                                            <span className="text-slate-700 font-bold">{detailProduct.brand?.name || 'N/A'}</span>
-                                        </div>
-                                        <div className="flex justify-between text-xs py-1">
-                                            <span className="text-slate-500 font-medium">Alert Threshold</span>
-                                            <span className="text-slate-700 font-bold">{detailProduct.alertThreshold || 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setShowDetailModal(false)}
-                                className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-[0.98]"
-                            >
-                                CLOSE DETAIL
-                            </button>
                         </div>
                     </div>
-                </div>
-            )
+                )
             }
         </div >
     );

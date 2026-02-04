@@ -37,12 +37,13 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico",
+      "icon": "assets/icon.png",
       "signAndEditExecutable": false,
       "forceCodeSigning": false,
       "verifyUpdateCodeSignature": false
     },
     "nsis": {
+      "installerIcon": "assets/icon.png",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,

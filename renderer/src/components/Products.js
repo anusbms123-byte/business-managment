@@ -49,6 +49,9 @@ const Products = ({ currentUser }) => {
     const [filterCategory, setFilterCategory] = useState('');
     const [filterBrand, setFilterBrand] = useState('');
     const [filterStockStatus, setFilterStockStatus] = useState(''); // 'instock', 'lowstock', 'outofstock'
+    const [filterColor, setFilterColor] = useState('');
+    const [filterSize, setFilterSize] = useState('');
+    const [filterGrade, setFilterGrade] = useState('');
 
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -108,7 +111,10 @@ const Products = ({ currentUser }) => {
         lowStock: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
         expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length,
-        totalValue: products.reduce((acc, p) => acc + (p.stockQty * p.sell_price), 0)
+        totalValue: products.reduce((acc, p) => acc + (p.stockQty * p.sell_price), 0),
+        uniqueColors: [...new Set(products.map(p => p.color).filter(Boolean))],
+        uniqueSizes: [...new Set(products.map(p => p.size).filter(Boolean))],
+        uniqueGrades: [...new Set(products.map(p => p.grade).filter(Boolean))]
     }), [products]);
 
     const handleSubmit = async (e) => {
@@ -238,11 +244,15 @@ const Products = ({ currentUser }) => {
 
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+            p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.id?.toString().includes(searchTerm);
 
         const matchesUnit = filterUnit ? p.unit === filterUnit : true;
         const matchesCategory = filterCategory ? p.category?.id === filterCategory : true;
         const matchesBrand = filterBrand ? p.brand?.id === filterBrand : true;
+        const matchesColor = filterColor ? p.color === filterColor : true;
+        const matchesSize = filterSize ? p.size === filterSize : true;
+        const matchesGrade = filterGrade ? p.grade === filterGrade : true;
 
         let matchesStock = true;
         if (filterStockStatus === 'instock') matchesStock = p.stockQty > (p.alertQty || 5);
@@ -250,7 +260,7 @@ const Products = ({ currentUser }) => {
         if (filterStockStatus === 'outofstock') matchesStock = p.stockQty <= 0;
         if (filterStockStatus === 'expired') matchesStock = p.expiryDate && new Date(p.expiryDate) < new Date();
 
-        return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock;
+        return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock && matchesColor && matchesSize && matchesGrade;
     });
 
     return (
@@ -260,7 +270,7 @@ const Products = ({ currentUser }) => {
                 <div className="p-6 border-b border-slate-100 bg-slate-50/20">
 
                     {/* Filters Row */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
                         {/* Category Filter */}
                         <select
                             className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
@@ -309,6 +319,36 @@ const Products = ({ currentUser }) => {
                             <option value="outofstock">Out of Stock</option>
                             <option value="expired">Expired</option>
                         </select>
+
+                        {/* Color Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterColor}
+                            onChange={(e) => setFilterColor(e.target.value)}
+                        >
+                            <option value="">All Colors</option>
+                            {stats.uniqueColors.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+
+                        {/* Size Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterSize}
+                            onChange={(e) => setFilterSize(e.target.value)}
+                        >
+                            <option value="">All Sizes</option>
+                            {stats.uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+
+                        {/* Grade Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterGrade}
+                            onChange={(e) => setFilterGrade(e.target.value)}
+                        >
+                            <option value="">All Grades</option>
+                            {stats.uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -334,7 +374,8 @@ const Products = ({ currentUser }) => {
                                         {products
                                             .filter(p =>
                                                 p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+                                                p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                p.id?.toString().includes(searchTerm)
                                             )
                                             .slice(0, 8)
                                             .map(product => (
@@ -362,7 +403,7 @@ const Products = ({ currentUser }) => {
                                                 </div>
                                             ))
                                         }
-                                        {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku?.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                                        {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || p.id?.toString().includes(searchTerm)).length === 0 && (
                                             <div className="p-8 text-center">
                                                 <Package size={24} className="mx-auto text-slate-200 mb-2" />
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No matching products</p>
@@ -396,11 +437,11 @@ const Products = ({ currentUser }) => {
                     <table className="w-full text-left min-w-max border-separate border-spacing-0">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 z-10 border-b border-slate-100">Product Info</th>
+                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 z-10 border-b border-slate-100">SKU</th>
+                                <th className="px-6 py-4 border-b border-slate-100">Product</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Stock</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Sell (PKR)</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Cost (PKR)</th>
-                                <th className="px-6 py-4 border-b border-slate-100">SKU</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Brand</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Expiry</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Unit</th>
@@ -416,15 +457,15 @@ const Products = ({ currentUser }) => {
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="transition-all border-b border-slate-50 last:border-0 hover:bg-slate-50/30">
                                     <td className="px-6 py-4 sticky left-0 bg-white z-10 border-b border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                        <div>
-                                            <div className="font-bold text-black text-sm uppercase tracking-tight truncate max-w-[150px]">{product.name}</div>
-                                            <div className="text-[10px] text-black font-bold uppercase tracking-widest">ID:#{product.id}</div>
-                                        </div>
+                                        <div className="text-xs font-bold text-black">{product.sku || '-'}</div>
+                                    </td>
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <div className="font-bold text-black text-sm uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
+                                        <div className="text-[9px] text-black font-bold uppercase tracking-widest mt-0.5">ID: #{product.id}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-bold text-black border-b border-slate-50 text-center">{product.stockQty}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.sellPrice?.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.costPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black border-b border-slate-50">{product.sku || '-'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight border-b border-slate-50">{product.brand?.name || '-'}</td>
                                     <td className="px-6 py-4 text-center text-[10px] text-black font-bold uppercase border-b border-slate-50">
                                         {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
