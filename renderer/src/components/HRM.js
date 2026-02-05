@@ -174,7 +174,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                         ) : filtered?.map((emp) => (
                             <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
                                 <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
-                                    {emp.id}
+                                    HRM-{String(emp.id).slice(-4)}
                                 </td>
                                 <td className="px-6 py-4 font-bold text-black text-xs">
                                     {emp.firstName} {emp.lastName}
@@ -415,7 +415,7 @@ const Attendance = ({ employees, currentUser }) => {
                         ).map((att) => (
                             <tr key={att.employeeId} className="hover:bg-slate-50/50 transition-colors">
                                 <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
-                                    {att.employeeId}
+                                    HRM-{String(att.employeeId).slice(-4)}
                                 </td>
                                 <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{att.name}</td>
                                 <td className="px-6 py-4 font-bold text-slate-600 text-xs">{att.checkIn}</td>
@@ -562,7 +562,7 @@ const Payroll = ({ employees, currentUser }) => {
                             return (
                                 <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
-                                        {emp.id}
+                                        HRM-{String(emp.id).slice(-4)}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-slate-800 text-xs uppercase tracking-tight">{emp.firstName} {emp.lastName}</td>
                                     <td className="px-6 py-4 font-bold text-slate-600 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>

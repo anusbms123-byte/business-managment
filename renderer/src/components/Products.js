@@ -307,19 +307,6 @@ const Products = ({ currentUser }) => {
                             <option value="pkt">Packet</option>
                         </select>
 
-                        {/* Stock Filter */}
-                        <select
-                            className="bg-white border border-slate-200 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
-                            value={filterStockStatus}
-                            onChange={(e) => setFilterStockStatus(e.target.value)}
-                        >
-                            <option value="">All Stock Status</option>
-                            <option value="instock">In Stock</option>
-                            <option value="lowstock">Low Stock</option>
-                            <option value="outofstock">Out of Stock</option>
-                            <option value="expired">Expired</option>
-                        </select>
-
                         {/* Color Filter */}
                         <select
                             className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
@@ -348,6 +335,19 @@ const Products = ({ currentUser }) => {
                         >
                             <option value="">All Grades</option>
                             {stats.uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+
+                        {/* Stock Filter */}
+                        <select
+                            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            value={filterStockStatus}
+                            onChange={(e) => setFilterStockStatus(e.target.value)}
+                        >
+                            <option value="">All Stock Status</option>
+                            <option value="instock">In Stock</option>
+                            <option value="lowstock">Low Stock</option>
+                            <option value="outofstock">Out of Stock</option>
+                            <option value="expired">Expired</option>
                         </select>
                     </div>
 
