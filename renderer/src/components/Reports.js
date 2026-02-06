@@ -67,7 +67,7 @@ const Reports = ({ currentUser }) => {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'); // YYYY-MM-DD
     const today = now.toLocaleDateString('en-CA');
     const [dateRange, setDateRange] = useState({ start: firstDayOfMonth, end: today });
-    const [overviewFilter, setOverviewFilter] = useState('Daily'); // For Dashboard
+    const [overviewFilter, setOverviewFilter] = useState('All'); // For Dashboard
 
     useEffect(() => {
         loadCustomers();
@@ -130,8 +130,12 @@ const Reports = ({ currentUser }) => {
             } else if (overviewFilter === 'Monthly') {
                 start = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
                 end = new Date().toISOString();
-            } else {
+            } else if (overviewFilter === 'Yearly') {
                 start = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString();
+                end = new Date().toISOString();
+            } else {
+                // All Time
+                start = new Date(0).toISOString(); // 1970-01-01
                 end = new Date().toISOString();
             }
 
@@ -172,7 +176,7 @@ const Reports = ({ currentUser }) => {
 
     const handleBack = () => {
         setActiveModule(null);
-        setOverviewFilter('Daily');
+        setOverviewFilter('All');
         setSelectedCustomer('all');
         setSelectedVendor('all');
         setSelectedPaymentStatus('all');
@@ -192,7 +196,7 @@ const Reports = ({ currentUser }) => {
         <div className="animate-in fade-in duration-500">
             <header className="flex flex-col md:flex-row md:items-center justify-end gap-6 pb-6 border-b border-slate-100">
                 <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
-                    {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
+                    {['Daily', 'Weekly', 'Monthly', 'Yearly', 'All'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setOverviewFilter(p)}
