@@ -1791,7 +1791,8 @@ app.get('/api/reports/summary', async (req, res) => {
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
                 where: salesWhere,
-                include: { items: { include: { product: true } } }
+                include: { customer: true, items: { include: { product: true } } },
+                orderBy: { date: 'desc' }
             }),
             prisma.purchase.findMany({
                 where: { companyId, date: { gte: start, lte: end } }
@@ -2031,6 +2032,7 @@ app.get('/api/reports/summary', async (req, res) => {
             vendorCount: vendors.length,
             customerCount: customers.length,
             totalSalaries,
+            detailedSales: sales, // Return full list for detailed table
             recentDays
         });
     } catch (e) { handleError(res, e); }

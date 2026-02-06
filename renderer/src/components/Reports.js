@@ -209,7 +209,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-indigo-500' },
                     { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
-                tableCols: ['Date Tag', 'Order Volume', 'Gross Revenue'],
+                tableCols: ['Date', 'Invoice', 'Customer', 'Items', 'Status', 'Paid', 'Total'],
                 cols: 5
             },
             purchases: {
@@ -546,28 +546,60 @@ const Reports = ({ currentUser }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
-                                        <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                            <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
-                                            <td className="px-8 py-5">
-                                                <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                                <span className="text-xs font-black text-black uppercase italic">
-                                                    {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
-                                                        activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
-                                                            activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
-                                                                `Activity_ID_${i + 1} Log`}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
-                                        </tr>
-                                    ))}
-                                    {chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0 && (
-                                        <tr>
-                                            <td colSpan="3" className="px-8 py-20 text-center">
-                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
-                                            </td>
-                                        </tr>
+                                    {activeModule === 'sales' && summary?.detailedSales ? (
+                                        summary.detailedSales.map((sale, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">
+                                                    {new Date(sale.date).toLocaleDateString('en-CA')}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase">
+                                                    {sale.invoiceNo || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase">
+                                                    {sale.customer?.name || 'Walk-in'}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-black uppercase">
+                                                        {sale.items?.length || 0}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${sale.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
+                                                        }`}>
+                                                        {sale.paymentStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 text-right">
+                                                    PKR {sale.paidAmount?.toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {sale.grandTotal?.toLocaleString()}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
+                                                <td className="px-8 py-5">
+                                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
+                                                    <span className="text-xs font-black text-black uppercase italic">
+                                                        {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
+                                                            activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
+                                                                activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
+                                                                    `Activity_ID_${i + 1} Log`}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                            </tr>
+                                        ))
                                     )}
+                                    {((activeModule === 'sales' && (!summary?.detailedSales || summary.detailedSales.length === 0)) ||
+                                        (activeModule !== 'sales' && chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
+                                            <tr>
+                                                <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
+                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
+                                                </td>
+                                            </tr>
+                                        )}
                                 </tbody>
                             </table>
                         </div>
