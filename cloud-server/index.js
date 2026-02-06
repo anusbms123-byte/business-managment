@@ -1749,7 +1749,7 @@ app.post('/api/salaries', async (req, res) => {
 // ==========================================
 app.get('/api/reports/summary', async (req, res) => {
     try {
-        const { companyId, startDate, endDate, period } = req.query;
+        const { companyId, startDate, endDate, period, customerId } = req.query;
         let start = startDate ? new Date(startDate) : null;
         let end = endDate ? new Date(endDate) : new Date();
 
@@ -1773,9 +1773,15 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         }
 
+        // Build sales where clause with optional customer filter
+        const salesWhere = { companyId, date: { gte: start, lte: end } };
+        if (customerId && customerId !== 'all') {
+            salesWhere.customerId = customerId;
+        }
+
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
-                where: { companyId, date: { gte: start, lte: end } },
+                where: salesWhere,
                 include: { items: { include: { product: true } } }
             }),
             prisma.purchase.findMany({

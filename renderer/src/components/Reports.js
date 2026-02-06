@@ -55,6 +55,8 @@ const Reports = ({ currentUser }) => {
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState(null); // 'sales', 'purchases', etc.
     const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState('all');
 
     // Date Filtering
     const now = new Date();
@@ -64,12 +66,26 @@ const Reports = ({ currentUser }) => {
     const [overviewFilter, setOverviewFilter] = useState('Daily'); // For Dashboard
 
     useEffect(() => {
+        loadCustomers();
+    }, [currentUser]);
+
+    useEffect(() => {
         if (activeModule) {
             loadDetailedReport();
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer]);
+
+    const loadCustomers = async () => {
+        if (!currentUser?.company_id) return;
+        try {
+            const data = await window.electronAPI.getCustomers(currentUser.company_id);
+            setCustomers(data || []);
+        } catch (err) {
+            console.error('Error loading customers:', err);
+        }
+    };
 
     const loadDashboardReport = async () => {
         if (!currentUser?.company_id) return;
@@ -96,7 +112,8 @@ const Reports = ({ currentUser }) => {
             const data = await window.electronAPI.getReportSummary({
                 companyId: currentUser.company_id,
                 startDate: start,
-                endDate: end
+                endDate: end,
+                customerId: activeModule === 'sales' ? selectedCustomer : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -113,7 +130,8 @@ const Reports = ({ currentUser }) => {
             const data = await window.electronAPI.getReportSummary({
                 companyId: currentUser.company_id,
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
-                endDate: new Date(dateRange.end + 'T23:59:59').toISOString()
+                endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
+                customerId: activeModule === 'sales' ? selectedCustomer : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -126,6 +144,7 @@ const Reports = ({ currentUser }) => {
     const handleBack = () => {
         setActiveModule(null);
         setOverviewFilter('Daily');
+        setSelectedCustomer('all');
     };
 
     if (loading && !summary) {
@@ -294,35 +313,60 @@ const Reports = ({ currentUser }) => {
                             <div className="flex items-center gap-2">
                                 <config.icon size={18} className="text-blue-600" />
                                 <h1 className="text-xl font-black text-black tracking-tight uppercase italic">{config.title}</h1>
+                                {activeModule === 'sales' && selectedCustomer !== 'all' && (
+                                    <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                        {customers.find(c => c.id === selectedCustomer)?.name || 'Customer'}
+                                    </span>
+                                )}
                             </div>
                             <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
-                        <div className="flex items-center gap-2 px-3 border-r border-slate-100">
-                            <Calendar size={14} className="text-slate-400" />
-                            <input
-                                type="date"
-                                value={dateRange.start}
-                                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
-                            />
+                    <div className="flex items-center gap-3">
+                        {activeModule === 'sales' && (
+                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                <Users size={14} className="text-slate-400 ml-3" />
+                                <select
+                                    value={selectedCustomer}
+                                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                >
+                                    <option value="all">All Customers</option>
+                                    {customers.map(customer => (
+                                        <option key={customer.id} value={customer.id}>
+                                            {customer.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
+                            <div className="flex items-center gap-2 px-3 border-r border-slate-100">
+                                <Calendar size={14} className="text-slate-400" />
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 px-3">
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
+                                />
+                            </div>
+                            <button
+                                onClick={loadDetailedReport}
+                                className="bg-slate-900 text-white p-2 rounded-xl hover:bg-black transition-all shadow-lg shadow-slate-200"
+                            >
+                                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                            </button>
                         </div>
-                        <div className="flex items-center gap-2 px-3">
-                            <input
-                                type="date"
-                                value={dateRange.end}
-                                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
-                            />
-                        </div>
-                        <button
-                            onClick={loadDetailedReport}
-                            className="bg-slate-900 text-white p-2 rounded-xl hover:bg-black transition-all shadow-lg shadow-slate-200"
-                        >
-                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                        </button>
                     </div>
                 </div>
 
