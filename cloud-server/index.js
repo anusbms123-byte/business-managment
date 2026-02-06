@@ -1749,7 +1749,7 @@ app.post('/api/salaries', async (req, res) => {
 // ==========================================
 app.get('/api/reports/summary', async (req, res) => {
     try {
-        const { companyId, startDate, endDate, period, customerId, paymentStatus } = req.query;
+        const { companyId, startDate, endDate, period, customerId, vendorId, paymentStatus } = req.query;
         let start = startDate ? new Date(startDate) : null;
         let end = endDate ? new Date(endDate) : new Date();
 
@@ -1788,6 +1788,18 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         }
 
+        const purchasesWhere = { companyId, date: { gte: start, lte: end } };
+        if (vendorId && vendorId !== 'all') {
+            purchasesWhere.vendorId = vendorId;
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            if (paymentStatus === 'paid') {
+                purchasesWhere.paymentStatus = 'PAID';
+            } else if (paymentStatus === 'credit') {
+                purchasesWhere.paymentStatus = { in: ['DUE', 'PARTIAL'] };
+            }
+        }
+
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
                 where: salesWhere,
@@ -1795,7 +1807,9 @@ app.get('/api/reports/summary', async (req, res) => {
                 orderBy: { date: 'desc' }
             }),
             prisma.purchase.findMany({
-                where: { companyId, date: { gte: start, lte: end } }
+                where: purchasesWhere,
+                include: { vendor: true, items: { include: { product: true } } },
+                orderBy: { date: 'desc' }
             }),
             prisma.expense.findMany({
                 where: { companyId, date: { gte: start, lte: end } }
@@ -2033,6 +2047,7 @@ app.get('/api/reports/summary', async (req, res) => {
             customerCount: customers.length,
             totalSalaries,
             detailedSales: sales, // Return full list for detailed table
+            detailedPurchases: purchases,
             recentDays
         });
     } catch (e) { handleError(res, e); }

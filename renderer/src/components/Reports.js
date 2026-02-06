@@ -57,7 +57,10 @@ const Reports = ({ currentUser }) => {
     const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState('all');
+    const [selectedVendor, setSelectedVendor] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
+    // Track previous activeModule to clear filters when switching
+    const [prevActiveModule, setPrevActiveModule] = useState(null);
 
     // Date Filtering
     const now = new Date();
@@ -68,7 +71,18 @@ const Reports = ({ currentUser }) => {
 
     useEffect(() => {
         loadCustomers();
+        loadVendors();
     }, [currentUser]);
+
+    useEffect(() => {
+        // Reset filters when switching modules, but not on initial load if just switching for first time
+        if (activeModule !== prevActiveModule) {
+            setSelectedCustomer('all');
+            setSelectedVendor('all');
+            setSelectedPaymentStatus('all');
+            setPrevActiveModule(activeModule);
+        }
+    }, [activeModule, prevActiveModule]);
 
     useEffect(() => {
         if (activeModule) {
@@ -76,7 +90,18 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedPaymentStatus]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus]);
+
+    const loadVendors = async () => {
+        if (!currentUser?.company_id) return;
+        try {
+            const data = await window.electronAPI.getVendors(currentUser.company_id);
+            setVendors(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error loading vendors:', err);
+        }
+    };
+    const [vendors, setVendors] = useState([]);
 
     const loadCustomers = async () => {
         if (!currentUser?.company_id) return;
@@ -134,7 +159,8 @@ const Reports = ({ currentUser }) => {
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
                 customerId: activeModule === 'sales' ? selectedCustomer : undefined,
-                paymentStatus: activeModule === 'sales' ? selectedPaymentStatus : undefined
+                vendorId: activeModule === 'purchases' ? selectedVendor : undefined,
+                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -148,7 +174,9 @@ const Reports = ({ currentUser }) => {
         setActiveModule(null);
         setOverviewFilter('Daily');
         setSelectedCustomer('all');
+        setSelectedVendor('all');
         setSelectedPaymentStatus('all');
+        setPrevActiveModule(null);
     };
 
     if (loading && !summary) {
@@ -222,7 +250,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Active Vendors', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-indigo-500' },
                     { label: 'Stock Value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-500' }
                 ],
-                tableCols: ['Billing Date', 'Invoice Count', 'Total Spent'],
+                tableCols: ['Date', 'Invoice', 'Vendor', 'Products', 'Items', 'Total', 'Status'],
                 cols: 3
             },
             inventory: {
@@ -364,6 +392,38 @@ const Reports = ({ currentUser }) => {
                                         <option value="all">All Payments</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {activeModule === 'purchases' && (
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Factory size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedVendor}
+                                        onChange={(e) => setSelectedVendor(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Vendors</option>
+                                        {vendors.map(v => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedPaymentStatus}
+                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Payments</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="credit">Credit / Due</option>
                                     </select>
                                 </div>
                             </>
@@ -547,33 +607,33 @@ const Reports = ({ currentUser }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {activeModule === 'sales' && summary?.detailedSales ? (
-                                        summary.detailedSales.map((sale, i) => (
+                                    {((activeModule === 'sales' && summary?.detailedSales) || (activeModule === 'purchases' && summary?.detailedPurchases)) ? (
+                                        (activeModule === 'sales' ? summary.detailedSales : summary.detailedPurchases).map((tx, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                                 <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
-                                                    {new Date(sale.date).toLocaleDateString('en-CA')}
+                                                    {new Date(tx.date).toLocaleDateString('en-CA')}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                    {sale.invoiceNo || '-'}
+                                                    {tx.invoiceNo || '-'}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                    {sale.customer?.name || 'Walk-in'}
+                                                    {tx.customer?.name || tx.vendor?.name || (activeModule === 'sales' ? 'Walk-in' : 'Unknown')}
                                                 </td>
                                                 <td className="px-8 py-5 align-top">
-                                                    <span className="text-[10px] font-bold text-slate-600 uppercase max-w-[200px] truncate block" title={sale.items?.map(item => item.product?.name || item.name).join(', ')}>
-                                                        {sale.items?.map(item => item.product?.name || item.name).join(', ') || '-'}
+                                                    <span className="text-[10px] font-bold text-slate-600 uppercase max-w-[200px] truncate block" title={tx.items?.map(item => item.product?.name || item.name).join(', ')}>
+                                                        {tx.items?.map(item => item.product?.name || item.name).join(', ') || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-center align-top">
                                                     <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-black uppercase">
-                                                        {sale.items?.length || 0}
+                                                        {tx.items?.length || 0}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {sale.grandTotal?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${sale.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${tx.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
                                                         }`}>
-                                                        {sale.paymentStatus}
+                                                        {tx.paymentStatus}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -596,7 +656,8 @@ const Reports = ({ currentUser }) => {
                                         ))
                                     )}
                                     {((activeModule === 'sales' && (!summary?.detailedSales || summary.detailedSales.length === 0)) ||
-                                        (activeModule !== 'sales' && chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
+                                        (activeModule === 'purchases' && (!summary?.detailedPurchases || summary.detailedPurchases.length === 0)) ||
+                                        (activeModule !== 'sales' && activeModule !== 'purchases' && chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
                                                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
