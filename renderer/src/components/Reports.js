@@ -209,7 +209,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-indigo-500' },
                     { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
-                tableCols: ['Date', 'Invoice', 'Customer', 'Items', 'Status', 'Paid', 'Total'],
+                tableCols: ['Date', 'Invoice', 'Customer', 'Products', 'Items', 'Total', 'Status'],
                 cols: 5
             },
             purchases: {
@@ -539,7 +539,8 @@ const Reports = ({ currentUser }) => {
                                 <thead className="bg-slate-50/50">
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
-                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest ${idx === 2 ? 'text-right' : ''}`}>
+                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
+                                                ${col === 'Total' || col === 'Status' ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -549,30 +550,32 @@ const Reports = ({ currentUser }) => {
                                     {activeModule === 'sales' && summary?.detailedSales ? (
                                         summary.detailedSales.map((sale, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
                                                     {new Date(sale.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase">
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
                                                     {sale.invoiceNo || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase">
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
                                                     {sale.customer?.name || 'Walk-in'}
                                                 </td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-8 py-5 align-top">
+                                                    <span className="text-[10px] font-bold text-slate-600 uppercase max-w-[200px] truncate block" title={sale.items?.map(item => item.product?.name || item.name).join(', ')}>
+                                                        {sale.items?.map(item => item.product?.name || item.name).join(', ') || '-'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-center align-top">
                                                     <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-black uppercase">
                                                         {sale.items?.length || 0}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {sale.grandTotal?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right align-top">
                                                     <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${sale.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
                                                         }`}>
                                                         {sale.paymentStatus}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 text-right">
-                                                    PKR {sale.paidAmount?.toLocaleString()}
-                                                </td>
-                                                <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {sale.grandTotal?.toLocaleString()}</td>
                                             </tr>
                                         ))
                                     ) : (
