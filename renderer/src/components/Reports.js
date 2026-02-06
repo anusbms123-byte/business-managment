@@ -324,8 +324,8 @@ const Reports = ({ currentUser }) => {
                                 )}
                                 {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
                                     <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
-                                            ? 'bg-emerald-100 text-emerald-600'
-                                            : 'bg-orange-100 text-orange-600'
+                                        ? 'bg-emerald-100 text-emerald-600'
+                                        : 'bg-orange-100 text-orange-600'
                                         }`}>
                                         {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
                                     </span>
@@ -462,14 +462,67 @@ const Reports = ({ currentUser }) => {
                                 </h2>
                             </div>
                             <div className="space-y-4 relative z-10 pt-10">
-                                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Volume</span>
-                                    <span className="text-lg font-medium text-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600">Periodic Status</p>
-                                    <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900">Verified & Processed</p>
-                                </div>
+                                {activeModule === 'sales' && selectedCustomer === 'all' ? (
+                                    /* Top Customers View */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Customers</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{c.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.totalSpent?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No customer data available</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : activeModule === 'sales' && selectedCustomer !== 'all' ? (
+                                    /* Top Products View for Specific Customer */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Products</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Qty</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{p.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-600">{p.qtySold} Units</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topProducts || summary.topProducts.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No product data available</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Default View */
+                                    <>
+                                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Volume</span>
+                                            <span className="text-lg font-medium text-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600">Periodic Status</p>
+                                            <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900">Verified & Processed</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
