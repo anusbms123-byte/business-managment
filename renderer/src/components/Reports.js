@@ -623,9 +623,15 @@ const Reports = ({ currentUser }) => {
                         <div className="bg-white rounded-3xl p-8 text-black flex flex-col justify-between relative overflow-hidden shadow-sm border border-slate-100">
                             <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900"><config.icon size={120} /></div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Consolidated Total</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
+                                    {activeModule === 'returns' ? 'Consolidated Refunds' : 'Consolidated Total'}
+                                </p>
                                 <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black">
-                                    PKR {(summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0).toLocaleString()}
+                                    PKR {(
+                                        activeModule === 'returns'
+                                            ? (selectedReturnType === 'sales' ? (summary?.totalSalesReturns || 0) : selectedReturnType === 'purchases' ? (summary?.totalPurchaseReturns || 0) : (summary?.totalReturns || 0))
+                                            : (summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0)
+                                    ).toLocaleString()}
                                 </h2>
                             </div>
                             <div className="space-y-4 relative z-10 pt-10">
@@ -751,28 +757,32 @@ const Reports = ({ currentUser }) => {
                                             )}
                                         </div>
                                     </div>
-                                ) : activeModule === 'expenses' ? (
-                                    /* Top Expense Categories View */
+                                ) : activeModule === 'returns' ? (
+                                    /* Returns Breakdown View */
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Categories</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Refund Breakdown</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Logic</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            {(summary?.topExpenseCategories || []).slice(0, 5).map((c, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-orange-500' : 'bg-slate-400'}`}>
-                                                            {i + 1}
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{c.name}</span>
-                                                    </div>
-                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.total?.toLocaleString()}</span>
+                                        <div className="space-y-3">
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                                    <span className="text-[10px] font-black text-black">SALES RETURNS</span>
                                                 </div>
-                                            ))}
-                                            {(!summary?.topExpenseCategories || summary.topExpenseCategories.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No expense data available</p>
-                                            )}
+                                                <span className="text-xs font-bold text-rose-600">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                    <span className="text-[10px] font-black text-black">PURCHASE RETURNS</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-blue-600">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-center px-1">
+                                                <span className="text-[9px] font-bold text-slate-400 italic font-mono uppercase">Activity Frequency</span>
+                                                <span className="text-[10px] font-black text-slate-700">{summary?.returnCount || 0} Transactions</span>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
