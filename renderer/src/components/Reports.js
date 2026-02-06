@@ -57,6 +57,7 @@ const Reports = ({ currentUser }) => {
     const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState('all');
+    const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
 
     // Date Filtering
     const now = new Date();
@@ -75,7 +76,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedPaymentStatus]);
 
     const loadCustomers = async () => {
         if (!currentUser?.company_id) return;
@@ -113,7 +114,8 @@ const Reports = ({ currentUser }) => {
                 companyId: currentUser.company_id,
                 startDate: start,
                 endDate: end,
-                customerId: activeModule === 'sales' ? selectedCustomer : undefined
+                customerId: activeModule === 'sales' ? selectedCustomer : undefined,
+                paymentStatus: activeModule === 'sales' ? selectedPaymentStatus : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -131,7 +133,8 @@ const Reports = ({ currentUser }) => {
                 companyId: currentUser.company_id,
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
-                customerId: activeModule === 'sales' ? selectedCustomer : undefined
+                customerId: activeModule === 'sales' ? selectedCustomer : undefined,
+                paymentStatus: activeModule === 'sales' ? selectedPaymentStatus : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -145,6 +148,7 @@ const Reports = ({ currentUser }) => {
         setActiveModule(null);
         setOverviewFilter('Daily');
         setSelectedCustomer('all');
+        setSelectedPaymentStatus('all');
     };
 
     if (loading && !summary) {
