@@ -1869,7 +1869,8 @@ app.get('/api/reports/summary', async (req, res) => {
                 where: { companyId }
             }),
             prisma.salaryRecord.findMany({
-                where: { companyId, createdAt: { gte: start, lte: end } }
+                where: { companyId, createdAt: { gte: start, lte: end } },
+                include: { employee: true }
             })
         ]);
 
@@ -2095,6 +2096,12 @@ app.get('/api/reports/summary', async (req, res) => {
             expenseCategoryMap[cat].total += e.amount;
             expenseCategoryMap[cat].count += 1;
         });
+
+        // Add Staff Payroll to the map for the breakdown
+        if (totalSalaries > 0) {
+            expenseCategoryMap['Staff Payroll'] = { name: 'Staff Payroll', total: totalSalaries, count: salaries.length };
+        }
+
         const topExpenseCategories = Object.values(expenseCategoryMap)
             .sort((a, b) => b.total - a.total)
             .slice(0, 5);
@@ -2104,6 +2111,23 @@ app.get('/api/reports/summary', async (req, res) => {
         Object.keys(expenseCategoryMap).forEach(key => {
             expenseCategoryBreakdown[key] = expenseCategoryMap[key].total;
         });
+
+        // Standardize salaries for detailed view if needed
+        let detailedExpenses = [...expenses];
+        if (req.query.expenseCategory === 'Staff Payroll') {
+            detailedExpenses = salaries.map(s => ({
+                id: s.id,
+                date: s.createdAt,
+                title: `Salary - ${s.employee?.name || 'Unknown Staff'}`,
+                category: 'Staff Payroll',
+                description: `Salary disbursal for ${s.employee?.name || 'Employee'}`,
+                amount: s.netSalary
+            }));
+        } else if (!req.query.expenseCategory || req.query.expenseCategory === 'all') {
+            // Optionally merge salaries into 'all' view? 
+            // User requested filtering specifically, but merged view is often better for 'All'.
+            // For now, let's keep it consistent with the user's focus on "Staff Payroll" as a filter.
+        }
 
         res.json({
             totalSales,
@@ -2126,7 +2150,7 @@ app.get('/api/reports/summary', async (req, res) => {
             topPurchasedProducts,
             topValuedItems,
             topExpenseCategories,
-            expenseCategoryBreakdown, // New
+            expenseCategoryBreakdown,
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
@@ -2139,7 +2163,7 @@ app.get('/api/reports/summary', async (req, res) => {
             detailedSales: sales,
             detailedPurchases: purchases,
             detailedInventory: products,
-            detailedExpenses: expenses,
+            detailedExpenses, // Standardized
             recentDays
         });
     } catch (e) { handleError(res, e); }

@@ -66,7 +66,7 @@ const Reports = ({ currentUser }) => {
     const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
     // Expense Filters
     const [selectedExpenseCategory, setSelectedExpenseCategory] = useState('all');
-    const expenseCategories = ['Bills', 'Snacks', 'Rent', 'Transport', 'General'];
+    const expenseCategories = ['Bills', 'Snacks', 'Rent', 'Transport', 'Staff Payroll', 'General'];
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
 
