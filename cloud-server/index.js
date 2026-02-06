@@ -1929,6 +1929,10 @@ app.get('/api/reports/summary', async (req, res) => {
 
         // Populate with dates in range
         let curr = new Date(safeStart);
+        // Normalize to start of UTC day to ensure we cover all UTC dates in range
+        if (!useMonthlyGrouping) {
+            curr.setUTCHours(0, 0, 0, 0);
+        }
         while (curr <= safeEnd) {
             let dateStr;
             if (useMonthlyGrouping) {
