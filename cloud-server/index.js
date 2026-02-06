@@ -2116,6 +2116,40 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         });
 
+        // Responsive Chart Data: Adjust dailyMap keys based on active filters
+        if (req.query.expenseCategory && req.query.expenseCategory !== 'all') {
+            Object.values(dailyMap).forEach(day => {
+                if (req.query.expenseCategory === 'Staff Payroll') {
+                    day.expenses = day.salaries; // Map salaries to expenses key for the chart
+                    day.salaries = 0;
+                } else {
+                    day.salaries = 0; // Regular expense categories don't include salaries
+                }
+            });
+        }
+
+        if (req.query.returnType && req.query.returnType !== 'all') {
+            Object.values(dailyMap).forEach(day => {
+                if (req.query.returnType === 'sales') {
+                    // Only show sales returns in the returns key
+                    day.returns = saleReturns
+                        .filter(r => {
+                            const rd = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
+                            return rd === day.date;
+                        })
+                        .reduce((acc, r) => acc + r.totalAmount, 0);
+                } else if (req.query.returnType === 'purchases') {
+                    // Only show purchase returns in the returns key
+                    day.returns = purchaseReturns
+                        .filter(r => {
+                            const rd = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
+                            return rd === day.date;
+                        })
+                        .reduce((acc, r) => acc + r.totalAmount, 0);
+                }
+            });
+        }
+
         const recentDays = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
 
         // Inject current valuation into the last day for the chart
