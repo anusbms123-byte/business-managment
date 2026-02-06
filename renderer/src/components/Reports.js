@@ -67,6 +67,8 @@ const Reports = ({ currentUser }) => {
     // Expense Filters
     const [selectedExpenseCategory, setSelectedExpenseCategory] = useState('all');
     const expenseCategories = ['Bills', 'Snacks', 'Rent', 'Transport', 'Staff Payroll', 'General'];
+    // Returns Filters
+    const [selectedReturnType, setSelectedReturnType] = useState('all'); // all, sales, purchases
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
 
@@ -92,6 +94,7 @@ const Reports = ({ currentUser }) => {
             setSelectedCategoryId('all');
             setSelectedStockStatus('all');
             setSelectedExpenseCategory('all');
+            setSelectedReturnType('all');
             setPrevActiveModule(activeModule);
         }
     }, [activeModule, prevActiveModule]);
@@ -102,7 +105,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType]);
 
     const loadVendors = async () => {
         if (!currentUser?.company_id) return;
@@ -189,7 +192,8 @@ const Reports = ({ currentUser }) => {
                 paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
-                expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined
+                expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined,
+                returnType: activeModule === 'returns' ? selectedReturnType : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -321,11 +325,12 @@ const Reports = ({ currentUser }) => {
                 title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
                 miniStats: [
                     { label: 'Total Refunds', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-600' },
-                    { label: 'Return Count', value: `${summary?.returnCount || 0} Items`, icon: RefreshCw, color: 'text-blue-500' },
-                    { label: 'Pending Claims', value: '100% Processed', icon: CheckCircle2, color: 'text-emerald-500' },
-                    { label: 'Return Frequency', value: 'Low Volume', icon: Activity, color: 'text-indigo-500' }
+                    { label: 'Sale Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
+                    { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-blue-500' },
+                    { label: 'Return Count', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-indigo-500' }
                 ],
-                tableCols: ['Return Date', 'Claim Count', 'Refund Magnitude'],
+                tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Items', 'Refund Magnitude'],
+                tableTitle: 'Returns Ledger',
                 cols: 4
             },
             suppliers: {
@@ -498,6 +503,20 @@ const Reports = ({ currentUser }) => {
                                     </select>
                                 </div>
                             </>
+                        )}
+                        {activeModule === 'returns' && (
+                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                <RotateCcw size={14} className="text-slate-400 ml-3" />
+                                <select
+                                    value={selectedReturnType}
+                                    onChange={(e) => setSelectedReturnType(e.target.value)}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                >
+                                    <option value="all">All Returns</option>
+                                    <option value="sales">Sales Returns</option>
+                                    <option value="purchases">Purchase Returns</option>
+                                </select>
+                            </div>
                         )}
                         {activeModule === 'expenses' && (
                             <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
@@ -788,7 +807,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
-                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -876,6 +895,31 @@ const Reports = ({ currentUser }) => {
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
+                                                ) : activeModule === 'returns' && summary?.detailedReturns ? (
+                                                    summary.detailedReturns.map((ret, i) => (
+                                                        <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                            <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                                                {new Date(ret.date).toLocaleDateString('en-CA')}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-xs font-bold uppercase align-top">
+                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                                    {ret.type}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                                {ret.invoiceNo}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                                {ret.party}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-center text-xs font-bold text-slate-500 align-top">
+                                                                {ret.items} Items
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                                PKR {ret.amount?.toLocaleString()}
+                                                            </td>
+                                                        </tr>
+                                                    ))
                                                 ) : (
                                                     <>
                                                         <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">

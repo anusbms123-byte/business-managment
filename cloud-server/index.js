@@ -1860,10 +1860,14 @@ app.get('/api/reports/summary', async (req, res) => {
                 where: { companyId }
             }),
             prisma.saleReturn.findMany({
-                where: { companyId, date: { gte: start, lte: end } }
+                where: { companyId, date: { gte: start, lte: end } },
+                include: { customer: true, items: true },
+                orderBy: { date: 'desc' }
             }),
             prisma.purchaseReturn.findMany({
-                where: { companyId, date: { gte: start, lte: end } }
+                where: { companyId, date: { gte: start, lte: end } },
+                include: { vendor: true, items: true },
+                orderBy: { date: 'desc' }
             }),
             prisma.employee.findMany({
                 where: { companyId }
@@ -1960,7 +1964,38 @@ app.get('/api/reports/summary', async (req, res) => {
         }
 
         const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
-        const totalReturns = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0) + purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+
+        const totalSalesReturns = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+        const totalPurchaseReturns = purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+        const totalReturns = totalSalesReturns + totalPurchaseReturns;
+
+        // Standardize Returns for detailed view
+        let detailedReturns = [];
+        const returnType = req.query.returnType || 'all';
+
+        if (returnType === 'all' || returnType === 'sales') {
+            detailedReturns = [...detailedReturns, ...saleReturns.map(r => ({
+                id: r.id,
+                date: r.date,
+                type: 'Sale Return',
+                invoiceNo: r.invoiceNo,
+                party: r.customer?.name || 'Walk-in Customer',
+                amount: r.totalAmount,
+                items: r.items.length
+            }))];
+        }
+        if (returnType === 'all' || returnType === 'purchases') {
+            detailedReturns = [...detailedReturns, ...purchaseReturns.map(r => ({
+                id: r.id,
+                date: r.date,
+                type: 'Purchase Return',
+                invoiceNo: r.invoiceNo || 'N/A',
+                party: r.vendor?.name || 'Unknown Vendor',
+                amount: r.totalAmount,
+                items: r.items.length
+            }))];
+        }
+        detailedReturns.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         // Calculate Daily/Monthly Summaries
         const dailyMap = {};
@@ -2178,7 +2213,10 @@ app.get('/api/reports/summary', async (req, res) => {
             detailedSales: sales,
             detailedPurchases: purchases,
             detailedInventory: products,
-            detailedExpenses, // Standardized
+            detailedExpenses,
+            detailedReturns,
+            totalSalesReturns,
+            totalPurchaseReturns,
             recentDays
         });
     } catch (e) { handleError(res, e); }
