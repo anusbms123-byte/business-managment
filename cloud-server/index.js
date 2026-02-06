@@ -1879,7 +1879,27 @@ app.get('/api/reports/summary', async (req, res) => {
                 name: p.name,
                 qtySold: sales.reduce((acc, s) => acc + s.items.filter(i => i.productId === p.id).reduce((iq, i) => iq + i.quantity, 0), 0)
             }))
+            .filter(p => p.qtySold > 0)
             .sort((a, b) => b.qtySold - a.qtySold)
+            .slice(0, 5);
+
+        const topVendors = vendors
+            .map(v => ({
+                id: v.id,
+                name: v.name,
+                totalSpent: purchases.filter(p => p.vendorId === v.id).reduce((acc, p) => acc + p.totalAmount, 0)
+            }))
+            .sort((a, b) => b.totalSpent - a.totalSpent)
+            .slice(0, 5);
+
+        const topPurchasedProducts = products
+            .map(p => ({
+                id: p.id,
+                name: p.name,
+                qtyBought: purchases.reduce((acc, pur) => acc + pur.items.filter(i => i.productId === p.id).reduce((iq, i) => iq + i.quantity, 0), 0)
+            }))
+            .filter(p => p.qtyBought > 0)
+            .sort((a, b) => b.qtyBought - a.qtyBought)
             .slice(0, 5);
 
         // Calculate COGS - Sum of (item.quantity * product.costPrice) for all sold items
@@ -2037,6 +2057,8 @@ app.get('/api/reports/summary', async (req, res) => {
             totalPayables,
             topCustomers,
             topProducts,
+            topVendors,
+            topPurchasedProducts,
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
