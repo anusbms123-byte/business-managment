@@ -301,8 +301,8 @@ const Reports = ({ currentUser }) => {
                     { label: 'Transaction Count', value: `${summary?.expenseCount || 0} Logs`, icon: Layers, color: 'text-slate-500' },
                     { label: 'Daily Burn', value: `PKR ${(Math.round(summary?.totalExpenses / 30) || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-orange-500' }
                 ],
-                tableCols: ['Expense Date', 'Transactions', 'Net Expenditure'],
-                cols: 5
+                tableCols: ['Date', 'Category', 'Description', 'Amount'],
+                cols: 4
             },
             returns: {
                 title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
@@ -702,6 +702,30 @@ const Reports = ({ currentUser }) => {
                                             )}
                                         </div>
                                     </div>
+                                ) : activeModule === 'expenses' ? (
+                                    /* Top Expense Categories View */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Categories</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topExpenseCategories || []).slice(0, 5).map((c, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-orange-500' : 'bg-slate-400'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{c.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.total?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topExpenseCategories || summary.topExpenseCategories.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No expense data available</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ) : (
                                     /* Default View */
                                     <>
@@ -793,8 +817,25 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                             </tr>
                                         ))
+                                    ) : activeModule === 'expenses' && summary?.detailedExpenses ? (
+                                        summary.detailedExpenses.map((expense, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                                    {new Date(expense.date).toLocaleDateString('en-CA')}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                    <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[300px] truncate">
+                                                    {expense.description || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                    PKR {expense.amount?.toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))
                                     ) : (
-                                        chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
+                                        chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                                 <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
                                                 <td className="px-8 py-5">
@@ -813,7 +854,8 @@ const Reports = ({ currentUser }) => {
                                     {((activeModule === 'sales' && (!summary?.detailedSales || summary.detailedSales.length === 0)) ||
                                         (activeModule === 'purchases' && (!summary?.detailedPurchases || summary.detailedPurchases.length === 0)) ||
                                         (activeModule === 'inventory' && (!summary?.detailedInventory || summary.detailedInventory.length === 0)) ||
-                                        (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
+                                        (activeModule === 'expenses' && (!summary?.detailedExpenses || summary.detailedExpenses.length === 0)) ||
+                                        (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
                                                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
@@ -824,8 +866,8 @@ const Reports = ({ currentUser }) => {
                             </table>
                         </div >
                     </div >
-                </div >
-            </div >
+                </div>
+            </div>
         );
     };
 

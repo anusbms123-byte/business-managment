@@ -2079,6 +2079,21 @@ app.get('/api/reports/summary', async (req, res) => {
             .sort((a, b) => (b.stockQty * (b.costPrice || 0)) - (a.stockQty * (a.costPrice || 0)))
             .slice(0, 5);
 
+        // Top Expense Categories
+        const expenseCategoryMap = {};
+        expenses.forEach(e => {
+            const cat = e.category || 'Uncategorized';
+            if (!expenseCategoryMap[cat]) {
+                expenseCategoryMap[cat] = { name: cat, total: 0, count: 0 };
+            }
+            expenseCategoryMap[cat].total += e.amount;
+            expenseCategoryMap[cat].count += 1;
+        });
+        const topExpenseCategories = Object.values(expenseCategoryMap)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+
         res.json({
             totalSales,
             totalPurchases,
@@ -2098,7 +2113,8 @@ app.get('/api/reports/summary', async (req, res) => {
             topProducts,
             topVendors,
             topPurchasedProducts,
-            topValuedItems, // New
+            topValuedItems,
+            topExpenseCategories, // New
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
@@ -2110,7 +2126,8 @@ app.get('/api/reports/summary', async (req, res) => {
             totalSalaries,
             detailedSales: sales,
             detailedPurchases: purchases,
-            detailedInventory: products, // New
+            detailedInventory: products,
+            detailedExpenses: expenses, // New
             recentDays
         });
     } catch (e) { handleError(res, e); }
