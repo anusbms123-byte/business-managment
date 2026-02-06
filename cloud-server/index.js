@@ -1784,7 +1784,7 @@ app.get('/api/reports/summary', async (req, res) => {
             if (paymentStatus === 'paid') {
                 salesWhere.paymentStatus = 'PAID';
             } else if (paymentStatus === 'credit') {
-                salesWhere.paymentStatus = { in: ['UNPAID', 'PARTIAL'] };
+                salesWhere.paymentStatus = { in: ['DUE', 'PARTIAL'] };
             }
         }
 
@@ -1879,7 +1879,7 @@ app.get('/api/reports/summary', async (req, res) => {
         const totalSalaries = salaries.reduce((acc, s) => acc + s.netSalary, 0);
         const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
 
-        const totalReturns = saleReturns.reduce((acc, r) => acc + r.refundAmount, 0) + purchaseReturns.reduce((acc, r) => acc + r.refundAmount, 0);
+        const totalReturns = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0) + purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
 
         // Calculate Daily/Monthly Summaries
         const dailyMap = {};
@@ -1975,16 +1975,16 @@ app.get('/api/reports/summary', async (req, res) => {
         saleReturns.forEach(r => {
             let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
-                dailyMap[d].returns += r.refundAmount;
-                dailyMap[d].profit -= r.refundAmount;
+                dailyMap[d].returns += r.totalAmount;
+                dailyMap[d].profit -= r.totalAmount;
             }
         });
 
         purchaseReturns.forEach(r => {
             let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
-                dailyMap[d].returns += r.refundAmount;
-                dailyMap[d].profit += r.refundAmount;
+                dailyMap[d].returns += r.totalAmount;
+                dailyMap[d].profit += r.totalAmount;
             }
         });
 
