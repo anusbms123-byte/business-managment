@@ -1861,12 +1861,12 @@ app.get('/api/reports/summary', async (req, res) => {
             }),
             prisma.saleReturn.findMany({
                 where: { companyId, date: { gte: start, lte: end } },
-                include: { customer: true, items: true },
+                include: { customer: true, items: { include: { product: true } } },
                 orderBy: { date: 'desc' }
             }),
             prisma.purchaseReturn.findMany({
                 where: { companyId, date: { gte: start, lte: end } },
-                include: { vendor: true, items: true },
+                include: { vendor: true, items: { include: { product: true } } },
                 orderBy: { date: 'desc' }
             }),
             prisma.employee.findMany({
@@ -1981,7 +1981,8 @@ app.get('/api/reports/summary', async (req, res) => {
                 invoiceNo: r.invoiceNo,
                 party: r.customer?.name || 'Walk-in Customer',
                 amount: r.totalAmount,
-                items: r.items.length
+                itemCount: r.items.length,
+                returnDetail: r.items.map(i => `${i.product?.name || 'Item'} (x${i.quantity})`).join(', ')
             }))];
         }
         if (returnType === 'all' || returnType === 'purchases') {
@@ -1992,7 +1993,8 @@ app.get('/api/reports/summary', async (req, res) => {
                 invoiceNo: r.invoiceNo || 'N/A',
                 party: r.vendor?.name || 'Unknown Vendor',
                 amount: r.totalAmount,
-                items: r.items.length
+                itemCount: r.items.length,
+                returnDetail: r.items.map(i => `${i.product?.name || 'Item'} (x${i.quantity})`).join(', ')
             }))];
         }
         detailedReturns.sort((a, b) => new Date(b.date) - new Date(a.date));

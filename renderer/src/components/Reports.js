@@ -329,7 +329,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-blue-500' },
                     { label: 'Return Count', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-indigo-500' }
                 ],
-                tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Items', 'Refund Magnitude'],
+                tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Returned Products', 'Refund Magnitude'],
                 tableTitle: 'Returns Ledger',
                 cols: 4
             },
@@ -922,8 +922,14 @@ const Reports = ({ currentUser }) => {
                                                             <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
                                                                 {ret.party}
                                                             </td>
-                                                            <td className="px-8 py-5 text-center text-xs font-bold text-slate-500 align-top">
-                                                                {ret.items} Items
+                                                            <td className="px-8 py-5 text-xs font-medium text-slate-500 align-top max-w-[250px]">
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {ret.returnDetail?.split(', ').map((item, idx) => (
+                                                                        <span key={idx} className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600">
+                                                                            {item}
+                                                                        </span>
+                                                                    )) || <span className="italic text-slate-400">No details</span>}
+                                                                </div>
                                                             </td>
                                                             <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
                                                                 PKR {ret.amount?.toLocaleString()}
