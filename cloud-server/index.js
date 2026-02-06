@@ -1965,16 +1965,25 @@ app.get('/api/reports/summary', async (req, res) => {
 
         const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
 
-        const totalSalesReturns = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0);
-        const totalPurchaseReturns = purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+        const returnType = req.query.returnType || 'all';
+        let filteredSaleReturns = [...saleReturns];
+        let filteredPurchaseReturns = [...purchaseReturns];
+
+        if (returnType === 'sales') {
+            filteredPurchaseReturns = [];
+        } else if (returnType === 'purchases') {
+            filteredSaleReturns = [];
+        }
+
+        const totalSalesReturns = filteredSaleReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+        const totalPurchaseReturns = filteredPurchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
         const totalReturns = totalSalesReturns + totalPurchaseReturns;
+        const returnCount = filteredSaleReturns.length + filteredPurchaseReturns.length;
 
         // Standardize Returns for detailed view
         let detailedReturns = [];
-        const returnType = req.query.returnType || 'all';
-
         if (returnType === 'all' || returnType === 'sales') {
-            detailedReturns = [...detailedReturns, ...saleReturns.map(r => ({
+            detailedReturns = [...detailedReturns, ...filteredSaleReturns.map(r => ({
                 id: r.id,
                 date: r.date,
                 type: 'Sale Return',
@@ -1986,7 +1995,7 @@ app.get('/api/reports/summary', async (req, res) => {
             }))];
         }
         if (returnType === 'all' || returnType === 'purchases') {
-            detailedReturns = [...detailedReturns, ...purchaseReturns.map(r => ({
+            detailedReturns = [...detailedReturns, ...filteredPurchaseReturns.map(r => ({
                 id: r.id,
                 date: r.date,
                 type: 'Purchase Return',
@@ -2240,7 +2249,7 @@ app.get('/api/reports/summary', async (req, res) => {
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
-            returnCount: saleReturns.length + purchaseReturns.length,
+            returnCount,
             totalReturns,
             employeeCount: employees.length,
             vendorCount: vendors.length,

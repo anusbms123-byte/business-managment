@@ -905,37 +905,6 @@ const Reports = ({ currentUser }) => {
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
-                                                ) : activeModule === 'returns' && summary?.detailedReturns ? (
-                                                    summary.detailedReturns.map((ret, i) => (
-                                                        <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                            <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
-                                                                {new Date(ret.date).toLocaleDateString('en-CA')}
-                                                            </td>
-                                                            <td className="px-8 py-5 text-xs font-bold uppercase align-top">
-                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
-                                                                    {ret.type}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                                {ret.invoiceNo}
-                                                            </td>
-                                                            <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
-                                                                {ret.party}
-                                                            </td>
-                                                            <td className="px-8 py-5 text-xs font-medium text-slate-500 align-top max-w-[250px]">
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {ret.returnDetail?.split(', ').map((item, idx) => (
-                                                                        <span key={idx} className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600">
-                                                                            {item}
-                                                                        </span>
-                                                                    )) || <span className="italic text-slate-400">No details</span>}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
-                                                                PKR {ret.amount?.toLocaleString()}
-                                                            </td>
-                                                        </tr>
-                                                    ))
                                                 ) : (
                                                     <>
                                                         <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
@@ -952,6 +921,37 @@ const Reports = ({ currentUser }) => {
                                                         </td>
                                                     </>
                                                 )}
+                                            </tr>
+                                        ))
+                                    ) : activeModule === 'returns' && summary?.detailedReturns ? (
+                                        summary.detailedReturns.map((ret, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                                    {new Date(ret.date).toLocaleDateString('en-CA')}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold uppercase align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                        {ret.type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                    {ret.invoiceNo}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                    {ret.party}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 align-top max-w-[250px]">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {ret.returnDetail?.split(', ').map((item, idx) => (
+                                                            <span key={idx} className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600">
+                                                                {item}
+                                                            </span>
+                                                        )) || <span className="italic text-slate-400">No details</span>}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                    PKR {ret.amount?.toLocaleString()}
+                                                </td>
                                             </tr>
                                         ))
                                     ) : (
@@ -975,7 +975,8 @@ const Reports = ({ currentUser }) => {
                                         (activeModule === 'purchases' && (!summary?.detailedPurchases || summary.detailedPurchases.length === 0)) ||
                                         (activeModule === 'inventory' && (!summary?.detailedInventory || summary.detailedInventory.length === 0)) ||
                                         (activeModule === 'expenses' && (!summary?.detailedExpenses || summary.detailedExpenses.length === 0)) ||
-                                        (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
+                                        (activeModule === 'returns' && (!summary?.detailedReturns || summary.detailedReturns.length === 0)) ||
+                                        (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && activeModule !== 'returns' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
                                                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
