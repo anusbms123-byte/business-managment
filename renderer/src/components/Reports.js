@@ -66,7 +66,7 @@ const Reports = ({ currentUser }) => {
     const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
     // Expense Filters
     const [selectedExpenseCategory, setSelectedExpenseCategory] = useState('all');
-    const expenseCategories = ['Electricity', 'Snacks', 'Rent', 'Transport', 'General'];
+    const expenseCategories = ['Bills', 'Snacks', 'Rent', 'Transport', 'General'];
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
 
@@ -269,6 +269,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Customer', 'Products', 'Items', 'Total', 'Status'],
+                tableTitle: 'Sales Ledger',
                 cols: 5
             },
             purchases: {
@@ -282,6 +283,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Stock Value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-500' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Vendor', 'Products', 'Items', 'Total', 'Status'],
+                tableTitle: 'Purchase Log',
                 cols: 3
             },
             inventory: {
@@ -296,19 +298,21 @@ const Reports = ({ currentUser }) => {
                     { label: 'Expired Products', value: `${summary?.expiredCount || 0} Items`, icon: Trash2, color: 'text-rose-600' }
                 ],
                 tableCols: ['Product Name', 'Category', 'Stock Qty', 'Unit Cost', 'Total Value', 'Status'],
+                tableTitle: 'Inventory Audit',
                 cols: 7
             },
             expenses: {
                 title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
                 miniStats: [
                     { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-indigo-500' },
-                    { label: 'Electricity Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
+                    { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
                     { label: 'Snacks & Tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-orange-500' },
                     { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-blue-500' },
                     { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-500' },
                     { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-slate-500' }
                 ],
-                tableCols: ['Date', 'Category', 'Description', 'Amount'],
+                tableCols: ['Date', 'Title', 'Category', 'Description', 'Amount'],
+                tableTitle: 'Expense Journal',
                 cols: 3
             },
             returns: {
@@ -771,8 +775,10 @@ const Reports = ({ currentUser }) => {
                     {/* Data Table */}
                     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                         <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic underline underline-offset-8">Insight Journal</h3>
-                            <span className="text-[9px] font-bold text-black">Detailed periodic activity logs</span>
+                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic underline underline-offset-8">
+                                {config.tableTitle || 'Insight Journal'}
+                            </h3>
+                            <span className="text-[9px] font-bold text-black">{config.tableTitle ? `Detailed ${config.tableTitle}` : 'Detailed periodic activity logs'}</span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -780,7 +786,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
-                                                ${col === 'Total' || col === 'Status' ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Status' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -848,12 +854,15 @@ const Reports = ({ currentUser }) => {
                                                     {new Date(expense.date).toLocaleDateString('en-CA')}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                    {expense.title || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
                                                     <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[300px] truncate">
                                                     {expense.description || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-left font-black text-rose-600 text-xs align-top">
                                                     PKR {expense.amount?.toLocaleString()}
                                                 </td>
                                             </tr>
