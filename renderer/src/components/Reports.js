@@ -322,6 +322,14 @@ const Reports = ({ currentUser }) => {
                                         {customers.find(c => c.id === selectedCustomer)?.name || 'Customer'}
                                     </span>
                                 )}
+                                {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
+                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                            ? 'bg-emerald-100 text-emerald-600'
+                                            : 'bg-orange-100 text-orange-600'
+                                        }`}>
+                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
+                                    </span>
+                                )}
                             </div>
                             <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
                         </div>
@@ -329,21 +337,36 @@ const Reports = ({ currentUser }) => {
 
                     <div className="flex items-center gap-3">
                         {activeModule === 'sales' && (
-                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                <Users size={14} className="text-slate-400 ml-3" />
-                                <select
-                                    value={selectedCustomer}
-                                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
-                                >
-                                    <option value="all">All Customers</option>
-                                    {customers.map(customer => (
-                                        <option key={customer.id} value={customer.id}>
-                                            {customer.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedCustomer}
+                                        onChange={(e) => setSelectedCustomer(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Customers</option>
+                                        {customers.map(customer => (
+                                            <option key={customer.id} value={customer.id}>
+                                                {customer.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedPaymentStatus}
+                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Payments</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="credit">Credit</option>
+                                    </select>
+                                </div>
+                            </>
                         )}
 
                         <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
