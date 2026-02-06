@@ -59,6 +59,10 @@ const Reports = ({ currentUser }) => {
     const [selectedCustomer, setSelectedCustomer] = useState('all');
     const [selectedVendor, setSelectedVendor] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
+    // Inventory Filters
+    const [categories, setCategories] = useState([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+    const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
 
@@ -72,6 +76,7 @@ const Reports = ({ currentUser }) => {
     useEffect(() => {
         loadCustomers();
         loadVendors();
+        loadCategories();
     }, [currentUser]);
 
     useEffect(() => {
@@ -80,6 +85,8 @@ const Reports = ({ currentUser }) => {
             setSelectedCustomer('all');
             setSelectedVendor('all');
             setSelectedPaymentStatus('all');
+            setSelectedCategoryId('all');
+            setSelectedStockStatus('all');
             setPrevActiveModule(activeModule);
         }
     }, [activeModule, prevActiveModule]);
@@ -90,7 +97,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus]);
 
     const loadVendors = async () => {
         if (!currentUser?.company_id) return;
@@ -102,6 +109,16 @@ const Reports = ({ currentUser }) => {
         }
     };
     const [vendors, setVendors] = useState([]);
+
+    const loadCategories = async () => {
+        if (!currentUser?.company_id) return;
+        try {
+            const data = await window.electronAPI.getCategories(currentUser.company_id);
+            setCategories(data || []);
+        } catch (err) {
+            console.error('Error loading categories:', err);
+        }
+    };
 
     const loadCustomers = async () => {
         if (!currentUser?.company_id) return;
@@ -164,7 +181,9 @@ const Reports = ({ currentUser }) => {
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
                 customerId: activeModule === 'sales' ? selectedCustomer : undefined,
                 vendorId: activeModule === 'purchases' ? selectedVendor : undefined,
-                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined
+                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined,
+                categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
+                stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -180,6 +199,8 @@ const Reports = ({ currentUser }) => {
         setSelectedCustomer('all');
         setSelectedVendor('all');
         setSelectedPaymentStatus('all');
+        setSelectedCategoryId('all');
+        setSelectedStockStatus('all');
         setPrevActiveModule(null);
     };
 
@@ -268,7 +289,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Expiring Soon', value: `${summary?.expiringSoonCount || 0} Items`, icon: Clock, color: 'text-amber-500' },
                     { label: 'Expired Products', value: `${summary?.expiredCount || 0} Items`, icon: Trash2, color: 'text-rose-600' }
                 ],
-                tableCols: ['Sync Date', 'Valuation Type', 'Asset Magnitude'],
+                tableCols: ['Product Name', 'Category', 'Stock Qty', 'Unit Cost', 'Total Value', 'Status'],
                 cols: 7
             },
             expenses: {
@@ -428,6 +449,39 @@ const Reports = ({ currentUser }) => {
                                         <option value="all">All Payments</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit / Due</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {activeModule === 'inventory' && (
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Layers size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedCategoryId}
+                                        onChange={(e) => setSelectedCategoryId(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Categories</option>
+                                        {categories.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <AlertTriangle size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedStockStatus}
+                                        onChange={(e) => setSelectedStockStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">Any Status</option>
+                                        <option value="low">Low Stock</option>
+                                        <option value="out">Out of Stock</option>
+                                        <option value="expired">Expired</option>
                                     </select>
                                 </div>
                             </>
@@ -624,6 +678,30 @@ const Reports = ({ currentUser }) => {
                                             </div>
                                         </div>
                                     )
+                                ) : activeModule === 'inventory' ? (
+                                    /* Top Valued Stock View */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Valued Stock</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Asset Value</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topValuedItems || []).slice(0, 3).map((p, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-blue-500' : 'bg-slate-500'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{p.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-emerald-600">PKR {((p.stockQty * p.costPrice) || 0).toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topValuedItems || summary.topValuedItems.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No inventory data available</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ) : (
                                     /* Default View */
                                     <>
@@ -692,8 +770,31 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                             </tr>
                                         ))
+                                    ) : activeModule === 'inventory' && summary?.detailedInventory ? (
+                                        summary.detailedInventory.map((item, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                                    {item.name}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                    {item.category?.name || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-center align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-black'}`}>
+                                                        {item.stockQty}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-medium text-slate-500 text-xs align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-black text-black text-xs align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right align-top">
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 text-red-600' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                        {item.stockQty <= 0 ? 'Out of Stock' : item.stockQty <= (item.alertQty || 5) ? 'Low Stock' : 'In Stock'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))
                                     ) : (
-                                        chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
+                                        chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                                 <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
                                                 <td className="px-8 py-5">
@@ -711,7 +812,8 @@ const Reports = ({ currentUser }) => {
                                     )}
                                     {((activeModule === 'sales' && (!summary?.detailedSales || summary.detailedSales.length === 0)) ||
                                         (activeModule === 'purchases' && (!summary?.detailedPurchases || summary.detailedPurchases.length === 0)) ||
-                                        (activeModule !== 'sales' && activeModule !== 'purchases' && chartData.filter(d => activeModule === 'inventory' || activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
+                                        (activeModule === 'inventory' && (!summary?.detailedInventory || summary.detailedInventory.length === 0)) ||
+                                        (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
                                                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
@@ -720,10 +822,10 @@ const Reports = ({ currentUser }) => {
                                         )}
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </div >
+                    </div >
+                </div >
+            </div >
         );
     };
 

@@ -1800,6 +1800,35 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         }
 
+        // Inventory filters
+        const productsWhere = { companyId, isActive: true };
+        if (req.query.categoryId && req.query.categoryId !== 'all') {
+            productsWhere.categoryId = req.query.categoryId;
+        }
+        if (req.query.stockStatus && req.query.stockStatus !== 'all') {
+            const status = req.query.stockStatus;
+            if (status === 'low') {
+                productsWhere.stockQty = { gt: 0, lte: 5 }; // Assuming 5 is alert qty or usage of alertQty field if available
+                // If we want to use the dynamic alertQty field: 
+                // Prisma doesn't support field comparison in where easily without raw query, so simplistic approach:
+                // We'll filter in memory or assume a heuristic. 
+                // Let's stick to simple fixed or check if we can do better. 
+                // Actually, let's filter in memory if we need dynamic alertQty comparison.
+                // For now, let's fetch all and filter in memory if complex status is needed, 
+                // OR just use the main fetch and filter later.
+                // BUT, to keep it consistent, let's just fetch all active products for the company,
+                // and then apply these filters in memory to generate 'detailedInventory' and 'topValuedItems'.
+                // Ideally, 'products' variable below is used for Summary Cards which usually show GLOBAL stats.
+                // If we filter 'products' variable, the summary cards will shrink to just that category.
+                // That is usually Desired Behavior in a Deep Dive.
+            } else if (status === 'out') {
+                productsWhere.stockQty = { lte: 0 };
+            } else if (status === 'expired') {
+                // Similarly, expiry comparison needs date
+                productsWhere.expiryDate = { lt: new Date() };
+            }
+        }
+
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
                 where: salesWhere,
@@ -1815,7 +1844,8 @@ app.get('/api/reports/summary', async (req, res) => {
                 where: { companyId, date: { gte: start, lte: end } }
             }),
             prisma.product.findMany({
-                where: { companyId, isActive: true }
+                where: productsWhere,
+                include: { category: true }
             }),
             prisma.customer.findMany({
                 where: { companyId }
@@ -2044,6 +2074,11 @@ app.get('/api/reports/summary', async (req, res) => {
             lastDay.payables = totalPayables;
         }
 
+        // Top Valued Inventory Items
+        const topValuedItems = [...products]
+            .sort((a, b) => (b.stockQty * (b.costPrice || 0)) - (a.stockQty * (a.costPrice || 0)))
+            .slice(0, 5);
+
         res.json({
             totalSales,
             totalPurchases,
@@ -2063,6 +2098,7 @@ app.get('/api/reports/summary', async (req, res) => {
             topProducts,
             topVendors,
             topPurchasedProducts,
+            topValuedItems, // New
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
@@ -2072,8 +2108,9 @@ app.get('/api/reports/summary', async (req, res) => {
             vendorCount: vendors.length,
             customerCount: customers.length,
             totalSalaries,
-            detailedSales: sales, // Return full list for detailed table
+            detailedSales: sales,
             detailedPurchases: purchases,
+            detailedInventory: products, // New
             recentDays
         });
     } catch (e) { handleError(res, e); }
