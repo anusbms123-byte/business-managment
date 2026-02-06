@@ -2127,10 +2127,16 @@ app.get('/api/reports/summary', async (req, res) => {
             detailedExpenses = salaries.map(s => ({
                 id: s.id,
                 date: s.createdAt,
-                title: `Salary - ${s.employee?.name || 'Unknown Staff'}`,
+                title: `${s.employee?.firstName} ${s.employee?.lastName || ''}`,
                 category: 'Staff Payroll',
-                description: `Salary disbursal for ${s.employee?.name || 'Employee'}`,
-                amount: s.netSalary
+                description: s.notes || `Salary for ${s.month}`,
+                amount: s.netSalary,
+                // Extra fields for rich table
+                designation: s.employee?.designation || '-',
+                baseSalary: s.baseSalary,
+                bonus: s.bonus,
+                overtimePay: s.overtimePay,
+                deductions: s.deductions
             }));
         } else if (!req.query.expenseCategory || req.query.expenseCategory === 'all') {
             // Optionally merge salaries into 'all' view? 

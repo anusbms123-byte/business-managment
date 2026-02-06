@@ -311,8 +311,10 @@ const Reports = ({ currentUser }) => {
                     { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-500' },
                     { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-slate-500' }
                 ],
-                tableCols: ['Date', 'Title', 'Category', 'Description', 'Amount'],
-                tableTitle: 'Expense Journal',
+                tableCols: selectedExpenseCategory === 'Staff Payroll'
+                    ? ['Date', 'Staff Name', 'Designation', 'Basic Pay', 'Bonus/OT', 'Deduction', 'Net Paid']
+                    : ['Date', 'Title', 'Category', 'Description', 'Amount'],
+                tableTitle: selectedExpenseCategory === 'Staff Payroll' ? 'Staff Payroll Audit' : 'Expense Journal',
                 cols: 3
             },
             returns: {
@@ -786,7 +788,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
-                                                ${(col === 'Total' || col === 'Status' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -853,18 +855,43 @@ const Reports = ({ currentUser }) => {
                                                 <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
                                                     {new Date(expense.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                    {expense.title || '-'}
-                                                </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                    <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
-                                                </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[300px] truncate">
-                                                    {expense.description || '-'}
-                                                </td>
-                                                <td className="px-8 py-5 text-left font-black text-rose-600 text-xs align-top">
-                                                    PKR {expense.amount?.toLocaleString()}
-                                                </td>
+                                                {selectedExpenseCategory === 'Staff Payroll' ? (
+                                                    <>
+                                                        <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                            {expense.title || '-'}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-[10px] font-bold text-blue-600 uppercase align-top">
+                                                            {expense.designation || '-'}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right font-bold text-slate-800 text-xs align-top">
+                                                            PKR {expense.baseSalary?.toLocaleString()}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right font-bold text-emerald-600 text-[10px] align-top">
+                                                            +PKR {(expense.bonus + (expense.overtimePay || 0)).toLocaleString()}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right font-bold text-rose-600 text-[10px] align-top">
+                                                            -PKR {expense.deductions?.toLocaleString()}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right font-black text-blue-800 text-xs align-top">
+                                                            PKR {expense.amount?.toLocaleString()}
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                            {expense.title || '-'}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[300px] truncate">
+                                                            {expense.description || '-'}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-left font-black text-rose-600 text-xs align-top">
+                                                            PKR {expense.amount?.toLocaleString()}
+                                                        </td>
+                                                    </>
+                                                )}
                                             </tr>
                                         ))
                                     ) : (
