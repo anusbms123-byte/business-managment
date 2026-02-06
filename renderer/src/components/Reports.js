@@ -6,7 +6,8 @@ import {
     Users2, CreditCard, ArrowLeft,
     Calendar, Download, ChevronRight,
     TrendingDown, Activity, Layers,
-    Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X
+    Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X,
+    Zap, Coffee, Home, Truck, FileText
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -63,6 +64,9 @@ const Reports = ({ currentUser }) => {
     const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
     const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
+    // Expense Filters
+    const [selectedExpenseCategory, setSelectedExpenseCategory] = useState('all');
+    const expenseCategories = ['Electricity', 'Snacks', 'Rent', 'Transport', 'General'];
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
 
@@ -87,6 +91,7 @@ const Reports = ({ currentUser }) => {
             setSelectedPaymentStatus('all');
             setSelectedCategoryId('all');
             setSelectedStockStatus('all');
+            setSelectedExpenseCategory('all');
             setPrevActiveModule(activeModule);
         }
     }, [activeModule, prevActiveModule]);
@@ -97,7 +102,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory]);
 
     const loadVendors = async () => {
         if (!currentUser?.company_id) return;
@@ -183,7 +188,8 @@ const Reports = ({ currentUser }) => {
                 vendorId: activeModule === 'purchases' ? selectedVendor : undefined,
                 paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
-                stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined
+                stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
+                expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined
             });
             setSummary(data);
             setLastUpdated(new Date().toLocaleTimeString());
@@ -295,14 +301,15 @@ const Reports = ({ currentUser }) => {
             expenses: {
                 title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
                 miniStats: [
-                    { label: 'Total Spent', value: `PKR ${(summary?.totalExpenses || 0).toLocaleString()}`, icon: DollarSign, color: 'text-rose-500' },
-                    { label: 'Monthly Avg', value: `PKR ${(Math.round(summary?.totalExpenses / (chartData.length || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
                     { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-indigo-500' },
-                    { label: 'Transaction Count', value: `${summary?.expenseCount || 0} Logs`, icon: Layers, color: 'text-slate-500' },
-                    { label: 'Daily Burn', value: `PKR ${(Math.round(summary?.totalExpenses / 30) || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-orange-500' }
+                    { label: 'Electricity Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
+                    { label: 'Snacks & Tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-orange-500' },
+                    { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-blue-500' },
+                    { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-500' },
+                    { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-slate-500' }
                 ],
                 tableCols: ['Date', 'Category', 'Description', 'Amount'],
-                cols: 4
+                cols: 3
             },
             returns: {
                 title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
@@ -485,6 +492,23 @@ const Reports = ({ currentUser }) => {
                                     </select>
                                 </div>
                             </>
+                        )}
+                        {activeModule === 'expenses' && (
+                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                <FileText size={14} className="text-slate-400 ml-3" />
+                                <select
+                                    value={selectedExpenseCategory}
+                                    onChange={(e) => setSelectedExpenseCategory(e.target.value)}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                >
+                                    <option value="all">All Expenses</option>
+                                    {expenseCategories.map(cat => (
+                                        <option key={cat} value={cat}>
+                                            {cat}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         )}
 
                         <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">

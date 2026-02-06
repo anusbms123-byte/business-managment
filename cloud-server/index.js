@@ -1829,6 +1829,12 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         }
 
+        // Expense filters
+        const expenseWhere = { companyId, date: { gte: start, lte: end } };
+        if (req.query.expenseCategory && req.query.expenseCategory !== 'all') {
+            expenseWhere.category = req.query.expenseCategory;
+        }
+
         const [sales, purchases, expenses, products, customers, vendors, saleReturns, purchaseReturns, employees, salaries] = await Promise.all([
             prisma.sale.findMany({
                 where: salesWhere,
@@ -1841,7 +1847,7 @@ app.get('/api/reports/summary', async (req, res) => {
                 orderBy: { date: 'desc' }
             }),
             prisma.expense.findMany({
-                where: { companyId, date: { gte: start, lte: end } }
+                where: expenseWhere
             }),
             prisma.product.findMany({
                 where: productsWhere,
@@ -2094,6 +2100,11 @@ app.get('/api/reports/summary', async (req, res) => {
             .slice(0, 5);
 
 
+        const expenseCategoryBreakdown = {};
+        Object.keys(expenseCategoryMap).forEach(key => {
+            expenseCategoryBreakdown[key] = expenseCategoryMap[key].total;
+        });
+
         res.json({
             totalSales,
             totalPurchases,
@@ -2114,7 +2125,8 @@ app.get('/api/reports/summary', async (req, res) => {
             topVendors,
             topPurchasedProducts,
             topValuedItems,
-            topExpenseCategories, // New
+            topExpenseCategories,
+            expenseCategoryBreakdown, // New
             salesCount: sales.length,
             purchaseCount: purchases.length,
             expenseCount: expenses.length,
@@ -2127,7 +2139,7 @@ app.get('/api/reports/summary', async (req, res) => {
             detailedSales: sales,
             detailedPurchases: purchases,
             detailedInventory: products,
-            detailedExpenses: expenses, // New
+            detailedExpenses: expenses,
             recentDays
         });
     } catch (e) { handleError(res, e); }
