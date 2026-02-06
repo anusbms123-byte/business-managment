@@ -1874,9 +1874,9 @@ app.get('/api/reports/summary', async (req, res) => {
             })
         ]);
 
-        const totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
-        const totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
-        const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+        let totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
+        let totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
+        let totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
 
         // Inventory Valuation
         const inventoryValuationCost = products.reduce((acc, p) => acc + (p.stockQty * (p.costPrice || 0)), 0);
@@ -1947,10 +1947,19 @@ app.get('/api/reports/summary', async (req, res) => {
             return acc + saleCOGS;
         }, 0);
 
-        // Net Profit = Revenue - COGS - Expenses - Salaries? (Let's stick to simple logic for now)
-        const totalSalaries = salaries.reduce((acc, s) => acc + s.netSalary, 0);
-        const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
+        // Net Profit = Revenue - COGS - Expenses - Salaries
+        let totalSalaries = salaries.reduce((acc, s) => acc + s.netSalary, 0);
 
+        // If a specific category filter is active, adjust the totals for the filtered report view
+        if (req.query.expenseCategory && req.query.expenseCategory !== 'all') {
+            if (req.query.expenseCategory === 'Staff Payroll') {
+                totalExpenses = 0; // Hide regular expenses when viewing payroll
+            } else {
+                totalSalaries = 0; // Hide payroll when viewing specific expense categories
+            }
+        }
+
+        const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
         const totalReturns = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0) + purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
 
         // Calculate Daily/Monthly Summaries
