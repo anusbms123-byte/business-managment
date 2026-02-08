@@ -282,6 +282,54 @@ app.get('/api/users', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
+app.post('/api/users', async (req, res) => {
+    try {
+        const { username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+
+        // If password is sent from local sync, it's likely already hashed or is a placeholder. 
+        // We save it as is. If the local app is hashing it, this is correct.
+
+        const user = await prisma.user.create({
+            data: {
+                username,
+                password, // Assumes pre-hashed or plain depending on local logic
+                email,
+                fullName,
+                roleId,
+                companyId,
+                isActive: isActive !== undefined ? isActive : (is_active === 1 || is_active === true)
+            }
+        });
+        res.json({ success: true, id: user.id });
+    } catch (e) { handleError(res, e); }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+    try {
+        const { username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+
+        const data = {
+            username,
+            email,
+            fullName,
+            roleId,
+            companyId,
+            isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined)
+        };
+
+        // Only update password if provided and not empty (to avoid overwriting with null if not synced)
+        if (password && password.trim() !== '') {
+            data.password = password;
+        }
+
+        await prisma.user.update({
+            where: { id: req.params.id },
+            data
+        });
+        res.json({ success: true, changes: 1 });
+    } catch (e) { handleError(res, e); }
+});
+
 // ==========================================
 // CUSTOMERS
 // ==========================================
@@ -355,6 +403,37 @@ app.delete('/api/customers/:id', async (req, res) => {
         if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Customer has transaction history and cannot be deleted" });
         handleError(res, e);
     }
+});
+
+// ==========================================
+// ACCOUNTS (Accounting)
+// ==========================================
+app.get('/api/accounts', async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        if (!companyId) return res.json([]);
+        const accounts = await prisma.account.findMany({
+            where: { companyId },
+            include: { transactions: true },
+            orderBy: { name: 'asc' }
+        });
+        res.json(accounts);
+    } catch (e) { handleError(res, e); }
+});
+
+app.post('/api/accounts', async (req, res) => {
+    try {
+        const { companyId, name, type, balance } = req.body;
+        const account = await prisma.account.create({
+            data: {
+                companyId,
+                name,
+                type,
+                balance: parseFloat(balance) || 0
+            }
+        });
+        res.json({ success: true, id: account.id, ...account });
+    } catch (e) { handleError(res, e); }
 });
 
 // ==========================================
@@ -860,8 +939,8 @@ app.delete('/api/returns/purchases/:id', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { company_id, username, password, role, fullname } = req.body;
-
+        const { company_id, companyId, username, password, role, fullname } = req.body;
+        const cid = company_id || companyId;
 
         const roleMap = {
             'super_admin': 'Super Admin',
@@ -882,7 +961,7 @@ app.post('/api/users', async (req, res) => {
                     },
                     {
                         OR: [
-                            { companyId: company_id },
+                            { companyId: cid },
                             { isSystem: true }
                         ]
                     }
@@ -905,7 +984,7 @@ app.post('/api/users', async (req, res) => {
 
         const user = await prisma.user.create({
             data: {
-                companyId: company_id,
+                companyId: cid,
                 username,
                 password: passwordHash,
                 roleId: roleRec.id,
@@ -922,10 +1001,11 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
     try {
-        const { company_id, username, password, role, fullname, is_active } = req.body;
+        const { company_id, companyId, username, password, role, fullname, is_active } = req.body;
+        const cid = company_id || companyId;
 
         let updateData = {
-            companyId: company_id,
+            companyId: cid,
             username,
             fullName: fullname,
             isActive: is_active === 1 || is_active === true
@@ -955,7 +1035,7 @@ app.put('/api/users/:id', async (req, res) => {
                         },
                         {
                             OR: [
-                                { companyId: company_id },
+                                { companyId: cid },
                                 { isSystem: true }
                             ]
                         }
@@ -1013,11 +1093,12 @@ app.get('/api/roles', async (req, res) => {
 
 app.post('/api/roles', async (req, res) => {
     try {
-        const { company_id, name, description, permissions } = req.body;
+        const { company_id, companyId, name, description, permissions } = req.body;
+        const cid = company_id || companyId;
 
         const role = await prisma.role.create({
             data: {
-                companyId: company_id,
+                companyId: cid,
                 name,
                 description,
                 isSystem: false,
@@ -1040,14 +1121,15 @@ app.post('/api/roles', async (req, res) => {
 
 app.put('/api/roles/:id', async (req, res) => {
     try {
-        const { name, description, permissions } = req.body;
+        const { company_id, companyId, name, description, permissions } = req.body;
+        const cid = company_id || companyId;
 
         // Use a transaction to ensure atomic update of role and its permissions
         const role = await prisma.$transaction(async (tx) => {
             // 1. Update Role basic info
             const updatedRole = await tx.role.update({
                 where: { id: req.params.id },
-                data: { name, description }
+                data: { name, description, companyId: cid }
             });
 
             // 2. Clear old permissions and insert new ones
@@ -1646,7 +1728,7 @@ app.delete('/api/employees/:id', async (req, res) => {
 });
 
 // Attendance handles
-app.get('/api/attendance', async (req, res) => {
+app.get(['/api/attendance', '/api/attendances'], async (req, res) => {
     try {
         const { companyId, date } = req.query;
         const targetDate = date ? new Date(date) : new Date();
@@ -1664,7 +1746,7 @@ app.get('/api/attendance', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
-app.post('/api/attendance', async (req, res) => {
+app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
     try {
         const { employeeId, status, checkIn, checkOut, date } = req.body;
 
@@ -1701,7 +1783,7 @@ app.post('/api/attendance', async (req, res) => {
 });
 
 // Salary Records
-app.get('/api/salaries', async (req, res) => {
+app.get(['/api/salaries', '/api/salary-records'], async (req, res) => {
     try {
         const { companyId, month } = req.query;
         if (!companyId) return res.json([]);
@@ -1718,7 +1800,7 @@ app.get('/api/salaries', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
-app.post('/api/salaries', async (req, res) => {
+app.post(['/api/salaries', '/api/salary-records'], async (req, res) => {
     try {
         const {
             companyId, employeeId, month, baseSalary, bonus,

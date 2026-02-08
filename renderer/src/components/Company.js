@@ -485,7 +485,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
         setLoading(true);
         try {
             if (window.electronAPI) {
-                const companyId = isSuperAdmin ? null : currentUser?.company_id;
+                const companyId = isSuperAdmin ? null : (currentUser?.company_id || currentUser?.companyId);
                 const [usersData, rolesData] = await Promise.all([
                     window.electronAPI.getUsers(companyId),
                     window.electronAPI.getRoles(companyId)
@@ -493,7 +493,10 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 const filteredUsers = (usersData || []).filter(u => {
                     const isSuper = u.role?.toLowerCase() === 'super admin' || u.role?.toLowerCase() === 'super_admin';
                     if (isSuper) return false;
-                    if (!u.company_id) return false;
+
+                    // If companyId filter is active, ensure we only show those users
+                    const uCid = u.company_id || u.companyId;
+                    if (companyId && uCid !== companyId) return false;
 
                     // If Super Admin is viewing, only show company 'Admin' roles
                     if (isSuperAdmin) {
@@ -503,9 +506,9 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 });
                 setUsers(filteredUsers);
                 setRoles(rolesData || []);
-                if (isSuperAdmin) {
-                    setCompanies(await window.electronAPI.getCompanies() || []);
-                }
+                // Always fetch companies for dropdown
+                const comps = await window.electronAPI.getCompanies() || [];
+                setCompanies(comps);
             }
         } catch (err) {
             window.alert('Error: ' + err.message);
@@ -517,7 +520,16 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            const data = { ...formData, company_id: isSuperAdmin ? formData.company_id : currentUser?.company_id };
+            // Robust Role ID mapping
+            const selectedRole = roles.find(r => r.name.toLowerCase().replace(' ', '_') === formData.role);
+            const roleId = selectedRole ? (selectedRole.global_id || selectedRole.id) : formData.role_id;
+
+            const data = {
+                ...formData,
+                company_id: isSuperAdmin ? formData.company_id : (currentUser?.company_id || currentUser?.companyId),
+                role_id: roleId
+            };
+
             const result = formData.id
                 ? await window.electronAPI.updateUser(data)
                 : await window.electronAPI.createUser(data);
@@ -541,7 +553,12 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
 
     const openModal = (user = null) => {
         setFormData(user ? { ...user, password: '' } : {
-            company_id: currentUser?.company_id || '', username: '', password: '', role: 'admin', fullname: '', is_active: 1
+            company_id: currentUser?.company_id || currentUser?.companyId || '',
+            username: '',
+            password: '',
+            role: 'admin',
+            fullname: '',
+            is_active: 1
         });
         setShowPassword(false);
         setShowModal(true);
@@ -645,7 +662,15 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 <Modal title={formData.id ? 'Modify System Access' : 'Onboard New Principal'} onClose={() => setShowModal(false)} size="md">
                     <form onSubmit={handleSave} className="space-y-6">
                         {isSuperAdmin && (
-                            <FormSelect label="Assign to Tenant" required value={formData.company_id} onChange={v => setFormData({ ...formData, company_id: v })} options={companies.map(c => ({ value: c.id, label: c.name }))} placeholder="Select target organization" icon={Building2} />
+                            <FormSelect
+                                label="Assign to Organization"
+                                required
+                                value={formData.company_id}
+                                onChange={v => setFormData({ ...formData, company_id: v })}
+                                options={companies.map(c => ({ value: c.id, label: c.name }))}
+                                placeholder="Select organization"
+                                icon={Building2}
+                            />
                         )}
                         <div className="grid grid-cols-2 gap-4">
                             <FormInput label="Personnel Legal Name" required value={formData.fullname} onChange={v => setFormData({ ...formData, fullname: v })} placeholder="John Doe" icon={Users} />
@@ -795,7 +820,7 @@ const RolesPermissions = ({ currentUser }) => {
                             </span>
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
                                 <Check size={14} className="text-emerald-500" />
-                                {role.permissions?.filter(p => p.can_view).length || 0} Modules
+                                {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} Modules
                             </span>
                         </div>
                     </div>

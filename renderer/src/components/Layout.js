@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
     Receipt, BarChart3, UserCog, Settings, LogOut, Search, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy
+    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu
 } from 'lucide-react';
 
 // Define all menu items with their permission keys
@@ -17,6 +17,7 @@ const ALL_MENU_ITEMS = [
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
     { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
+    { key: 'accounting', icon: Receipt, label: 'Accounting', path: '/accounting' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
 ];
 
@@ -45,6 +46,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
 const Layout = ({ children, user, onLogout }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [company, setCompany] = useState(null);
     const [permissions, setPermissions] = useState([]);
     const [visibleMenuItems, setVisibleMenuItems] = useState([]);
     const [visibleSettingsItems, setVisibleSettingsItems] = useState([]);
@@ -108,7 +110,17 @@ const Layout = ({ children, user, onLogout }) => {
     };
 
     useEffect(() => {
-        // Load permissions from sessionStorage
+        const fetchCompany = async () => {
+            if (window.electronAPI && user?.company_id) {
+                try {
+                    const data = await window.electronAPI.getCompany(user.company_id);
+                    if (data) setCompany(data);
+                } catch (err) {
+                    console.error("Error fetching company details:", err);
+                }
+            }
+        };
+
         const savedPermissions = sessionStorage.getItem('permissions');
         if (savedPermissions) {
             try {
@@ -118,7 +130,8 @@ const Layout = ({ children, user, onLogout }) => {
                 console.error('Failed to parse permissions:', err);
             }
         }
-    }, []);
+        fetchCompany();
+    }, [user]);
 
     useEffect(() => {
         // Filter menu items based on permissions
@@ -132,11 +145,17 @@ const Layout = ({ children, user, onLogout }) => {
                 { key: 'backup', icon: HardDrive, label: 'Backup & Restore', path: '/backup' }
             ]);
             setVisibleSettingsItems([]);
+        } else if (isAdmin) {
+            // Admin sees everything
+            setVisibleMenuItems(ALL_MENU_ITEMS);
+            setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
         } else if (permissions && permissions.length > 0) {
-            // Filter based on can_view permission (Case-insensitive matching)
+            // Filter based on can_view permission
             const allowedKeys = permissions
-                .filter(p => p.can_view === 1)
+                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true)
                 .map(p => p.module.toLowerCase());
+
+            if (allowedKeys.includes('products')) allowedKeys.push('inventory');
 
             const filteredMenu = ALL_MENU_ITEMS.filter(item =>
                 allowedKeys.includes(item.key.toLowerCase())
@@ -147,12 +166,7 @@ const Layout = ({ children, user, onLogout }) => {
 
             setVisibleMenuItems(filteredMenu);
             setVisibleSettingsItems(filteredSettings);
-        } else if (isAdmin) {
-            // Fallback for Admin role if permissions aren't loaded yet
-            setVisibleMenuItems(ALL_MENU_ITEMS);
-            setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
         } else {
-            // For other roles, show nothing until permissions are confirmed
             setVisibleMenuItems([]);
             setVisibleSettingsItems([]);
         }
@@ -184,16 +198,16 @@ const Layout = ({ children, user, onLogout }) => {
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50">
+                <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50 bg-[#070B26]">
                     <div className="flex items-center space-x-3">
-                        <img
-                            src="./logo.png"
-                            alt="BMS Logo"
-                            className="h-[50px] w-[50px] object-contain rounded-lg"
-                        />
-                        <div>
-                            <span className="text-lg font-bold tracking-tight text-white block">Business</span>
-                            <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest leading-none">Management</p>
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-300">
+                            <LayoutDashboard className="text-white" size={20} />
+                        </div>
+                        <div className="overflow-hidden">
+                            <span className="text-sm font-bold tracking-tight text-white block truncate max-w-[160px]">
+                                {company?.name || 'My Business'}
+                            </span>
+                            <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest leading-none mt-1"> Management Portal</p>
                         </div>
                     </div>
                 </div>
@@ -268,12 +282,35 @@ const Layout = ({ children, user, onLogout }) => {
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="p-2 lg:hidden bg-slate-50 text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
                         >
-                            <Search size={22} className="rotate-90" /> {/* Reusing search or generic icon since Lucide menu wasn't in original imports */}
+                            <Menu size={22} />
                         </button>
+                        <div className="hidden md:block">
+                            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+                                {isActive('/') ? 'Control Center' : location.pathname.split('/')[1]?.replace('-', ' ')}
+                            </h2>
+                        </div>
                     </div>
 
                     {/* Right Side */}
-                    <div className="flex items-center space-x-2 md:space-x-3">
+                    <div className="flex items-center space-x-2 md:space-x-6">
+                        {/* Status indicators */}
+                        <div className="hidden lg:flex items-center space-x-4 px-4 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cloud Optimized</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 md:space-x-3 border-l border-slate-100 pl-4 md:pl-6">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight leading-none">{user?.fullname || user?.username}</p>
+                                <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-1">{user?.role}</p>
+                            </div>
+                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 border border-slate-200 shadow-sm overflow-hidden group hover:border-blue-400 transition-colors">
+                                <UserSquare size={20} className="group-hover:text-blue-500 transition-colors" />
+                            </div>
+                        </div>
+
                         <div className="relative">
                             <button
                                 onClick={() => {

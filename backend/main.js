@@ -67,6 +67,7 @@ const db = require("./database/db_manager");
 const syncService = require("./services/sync_service");
 
 const API_URL = syncService.CLOUD_URL;
+let currentCompanyId = null;
 
 // Helper: Generic API Call
 async function apiCall(method, endpoint, data = null, params = null) {
@@ -89,114 +90,1223 @@ async function apiCall(method, endpoint, data = null, params = null) {
     }
 }
 
+// Helper: Record Deletion for Sync
+async function recordDeletion(tableName, globalId) {
+    if (!globalId || globalId.includes('-')) return; // Don't sync temp IDs or nulls
+    return new Promise((resolve) => {
+        db.run("INSERT INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", [tableName, globalId], () => {
+            syncService.syncPendingRecords();
+            resolve();
+        });
+    });
+}
+
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
 // ==========================================
 
-// Auth
-ipcMain.handle("login", (e, credentials) => apiCall('post', '/auth/login', credentials));
+// Auth - LOCAL FIRST LOGIN (Cloud with local fallback)
+ipcMain.handle("login", async (e, credentials) => {
+    try {
+        // Try cloud login first to get updates
+        const response = await apiCall('post', '/auth/login', credentials);
+
+        if (response.success && response.user) {
+            // Cloud returned success. Let's resolve the user's company_id
+            let companyId = response.user.company_id || response.user.companyId;
+
+            // Ensure Super Admin is never tied to a specific company ID locally
+            const isSuperAdmin = response.user.role === 'Super Admin' || response.user.role === 'SuperAdmin';
+            if (isSuperAdmin) {
+                companyId = null;
+                console.log(`✓ Super Admin detected: Forcing null companyId.`);
+            }
+
+            // Check if user exists locally to preserve company_id (Only for non-super admins)
+            const existing = await new Promise((resolve) => {
+                db.get("SELECT id, company_id FROM users WHERE global_id = ? OR username = ?", [response.user.id, response.user.username], (err, row) => resolve(row));
+            });
+
+            if (!isSuperAdmin && existing && existing.company_id && (!companyId || companyId === 'null')) {
+                companyId = existing.company_id;
+                // Update response object for frontend
+                response.user.company_id = companyId;
+                response.user.companyId = companyId;
+                console.log(`✓ Preserving local Company ID: ${companyId} for user ${response.user.username}`);
+            }
+
+            console.log(`Login successful for user ${response.user.username} (Company: ${companyId})`);
+
+            // Update/Insert local user record
+            if (existing) {
+                const updateQuery = `
+                    UPDATE users SET 
+                        global_id = ?, 
+                        password = ?, 
+                        role = ?, 
+                        role_id = ?, 
+                        fullname = ?, 
+                        company_id = ?, 
+                        sync_status = 'synced' 
+                    WHERE id = ?
+                `;
+                const updateParams = [
+                    response.user.id,
+                    credentials.password,
+                    response.user.role,
+                    response.user.role_id,
+                    response.user.fullname,
+                    isSuperAdmin ? null : companyId,
+                    existing.id
+                ];
+
+                await new Promise((resolve) => db.run(updateQuery, updateParams, resolve));
+                console.log(`✓ User ${response.user.username} (ID: ${existing.id}) records updated and synced with cloud ID.`);
+            } else {
+                await new Promise((resolve) => {
+                    db.run(
+                        `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', 1)`,
+                        [response.user.id, response.user.username, credentials.password, response.user.role, response.user.role_id, response.user.fullname, companyId],
+                        resolve
+                    );
+                });
+                console.log(`✓ User ${response.user.username} created locally.`);
+            }
+
+            // Set global currentCompanyId for sync and other handlers
+            if (companyId) {
+                const isNewCompany = currentCompanyId !== companyId;
+                currentCompanyId = companyId;
+                syncService.setCompanyId(companyId); // Update sync service with current session
+
+                if (isNewCompany) {
+                    console.log(`[LOGIN] New Company (${companyId}) detected. Clearing local cache for fresh pull...`);
+                    // Use resetModules to clear Sales, Purchases, Users, etc. before pulling fresh
+                    syncService.resetModules(companyId).then(result => {
+                        console.log("✓ Module reset and fresh pull completed for new company session.");
+                    }).catch(err => {
+                        console.error("Failed to reset modules on login:", err.message);
+                    });
+                } else {
+                    console.log(`[LOGIN] Same company (${companyId}). Triggering update pull...`);
+                    syncService.pullAllData(companyId);
+                }
+            } else if (isSuperAdmin) {
+                // If Super Admin, pull shared data
+                console.log("Super Admin logged in. Pulling global data...");
+                syncService.pullAllData(null);
+            }
+
+            return response;
+        }
+    } catch (err) {
+        console.error("Cloud login failed or encountered error:", err.message);
+    }
+
+    // Offline Login Fallback
+    return new Promise((resolve) => {
+        db.get(
+            "SELECT * FROM users WHERE username = ? AND password = ?",
+            [credentials.username, credentials.password],
+            (err, user) => {
+                if (err || !user) {
+                    resolve({ success: false, message: "Invalid credentials or user not found offline." });
+                    return;
+                }
+
+                // Set currentCompanyId first
+                currentCompanyId = user.company_id;
+                syncService.setCompanyId(user.company_id);
+
+                console.log(`[OFFLINE LOGIN] User: ${user.username}, Role: ${user.role}, RoleID: ${user.role_id}, CompanyID: ${user.company_id}`);
+
+                // Fetch permissions for the role using robust lookup (works with both local and global IDs)
+                const permQuery = `
+                    SELECT *, 
+                           can_view as canView, 
+                           can_create as canCreate, 
+                           can_edit as canEdit, 
+                           can_delete as canDelete 
+                    FROM permissions 
+                    WHERE role_id = ? 
+                       OR role_id = (SELECT global_id FROM roles WHERE id = ?)
+                `;
+                db.all(permQuery, [user.role_id, user.role_id], (permErr, permissions) => {
+                    if (permErr) {
+                        console.error("[OFFLINE LOGIN] Error fetching permissions:", permErr);
+                    }
+
+                    console.log(`[OFFLINE LOGIN] Found ${permissions?.length || 0} permissions for role ${user.role_id}`);
+
+                    // Format permissions to match cloud response format
+                    const formattedPermissions = (permissions || []).map(p => ({
+                        id: p.global_id || p.id,
+                        roleId: p.role_id,
+                        module: p.module,
+                        can_view: p.can_view,
+                        can_create: p.can_create,
+                        can_edit: p.can_edit,
+                        can_delete: p.can_delete,
+                        canView: p.can_view === 1,
+                        canCreate: p.can_create === 1,
+                        canEdit: p.can_edit === 1,
+                        canDelete: p.can_delete === 1
+                    }));
+
+                    resolve({
+                        success: true,
+                        user: {
+                            id: user.global_id,
+                            username: user.username,
+                            role: user.role,
+                            fullName: user.fullname,
+                            company_id: user.company_id,
+                            companyId: user.company_id,
+                            role_id: user.role_id
+                        },
+                        permissions: formattedPermissions
+                    });
+                });
+            }
+        );
+    });
+});
 
 // Companies
-ipcMain.handle("get-companies", () => apiCall('get', '/companies'));
-ipcMain.handle("get-company", (e, id) => apiCall('get', `/companies/${id}`));
-ipcMain.handle("create-company", (e, data) => apiCall('post', '/companies', data));
-ipcMain.handle("update-company", (e, data) => apiCall('put', `/companies/${data.id}`, data));
-ipcMain.handle("delete-company", (e, id) => apiCall('delete', `/companies/${id}`));
-ipcMain.handle("get-company-requests", (e, params) => apiCall('get', '/company-requests', null, params));
-ipcMain.handle("approve-company-request", (e, id) => apiCall('post', `/company-requests/${id}/approve`));
-ipcMain.handle("reject-company-request", (e, id, notes) => apiCall('post', `/company-requests/${id}/reject`, { notes }));
+ipcMain.handle("get-companies", async () => {
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive FROM companies ORDER BY name ASC", [], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
 
-// Users
-ipcMain.handle("get-users", (e, companyId) => apiCall('get', '/users', null, { companyId }));
-ipcMain.handle("create-user", (e, data) => apiCall('post', '/users', data));
-ipcMain.handle("update-user", (e, data) => apiCall('put', `/users/${data.id}`, data));
-ipcMain.handle("delete-user", (e, id) => apiCall('delete', `/users/${id}`));
+ipcMain.handle("get-company", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT * FROM companies WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+});
 
-// Customers
-ipcMain.handle("get-customers", (e, companyId) => apiCall('get', '/customers', null, { companyId }));
-ipcMain.handle("create-customer", (e, data) => apiCall('post', '/customers', data));
-ipcMain.handle("update-customer", (e, data) => apiCall('put', `/customers/${data.id}`, data));
-ipcMain.handle("delete-customer", (e, id) => apiCall('delete', `/customers/${id}`));
-ipcMain.handle("delete-sale", (e, id) => apiCall('delete', `/sales/${id}`));
+ipcMain.handle("get-company-requests", async (e, filters) => {
+    // Local fallback/simulation if no cloud connection
+    return [];
+});
 
-// Vendors (Suppliers)
-ipcMain.handle("get-vendors", (e, companyId) => apiCall('get', '/vendors', null, { companyId }));
-ipcMain.handle("create-vendor", (e, data) => apiCall('post', '/vendors', data));
-ipcMain.handle("update-vendor", (e, data) => apiCall('put', `/vendors/${data.id}`, data));
-ipcMain.handle("delete-vendor", (e, id) => apiCall('delete', `/vendors/${id}`));
+ipcMain.handle("create-company", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, address, phone, email, tax_no } = data;
+        const tempId = randomUUID();
 
-// Roles & Permissions
-ipcMain.handle("get-roles", (e, companyId) => apiCall('get', '/roles', null, { companyId }));
-ipcMain.handle("get-permissions", (e, roleId) => apiCall('get', '/permissions', null, { roleId }));
-ipcMain.handle("create-role", (e, data) => apiCall('post', '/roles', data));
-ipcMain.handle("update-role", (e, data) => apiCall('put', `/roles/${data.id}`, data));
-ipcMain.handle("delete-role", (e, id) => apiCall('delete', `/roles/${id}`));
+        db.run(
+            `INSERT INTO companies (global_id, name, address, phone, email, tax_no, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, address, phone, email, tax_no],
+            function (err) {
+                if (err) return reject(err);
 
-// Inventory
-// Inventory - Categories
-ipcMain.handle("get-categories", (e, companyId) => apiCall('get', '/categories', null, { companyId }));
-ipcMain.handle("create-category", (e, data) => apiCall('post', '/categories', data));
-ipcMain.handle("update-category", (e, data) => apiCall('put', `/categories/${data.id}`, data));
-ipcMain.handle("delete-category", (e, id) => apiCall('delete', `/categories/${id}`));
+                // Also create default system roles locally for this company if needed
+                // (Usually pulled from cloud, but for offline-first, we might want local defaults)
 
-// Inventory - Brands
-ipcMain.handle("get-brands", (e, companyId) => apiCall('get', '/brands', null, { companyId }));
-ipcMain.handle("create-brand", (e, data) => apiCall('post', '/brands', data));
-ipcMain.handle("update-brand", (e, data) => apiCall('put', `/brands/${data.id}`, data));
-ipcMain.handle("delete-brand", (e, id) => apiCall('delete', `/brands/${id}`));
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Company created locally" });
+            }
+        );
+    });
+});
 
-// Inventory - Products
-ipcMain.handle("get-products", (e, companyId) => apiCall('get', '/products', null, { companyId }));
-ipcMain.handle("create-product", (e, data) => apiCall('post', '/products', data));
-ipcMain.handle("update-product", (e, data) => apiCall('put', `/products/${data.id}`, data));
-ipcMain.handle("delete-product", (e, id) => apiCall('delete', `/products/${id}`));
+ipcMain.handle("update-company", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, name, address, phone, email, tax_no, is_active } = data;
+        const active = (is_active === 1 || is_active === true) ? 1 : 0;
 
-// Sales
-ipcMain.handle("get-sales", (e, companyId) => apiCall('get', '/sales', null, { companyId }));
-ipcMain.handle("add-sale", (e, data) => apiCall('post', '/sales', data));
-ipcMain.handle("update-sale", (e, data) => apiCall('put', `/sales/${data.id}`, data));
+        db.run(
+            `UPDATE companies SET name=?, address=?, phone=?, email=?, tax_no=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+             WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)
+`,
+            [name, address, phone, email, tax_no, active, id, id],
+            function (err) {
+                if (err) return reject(err);
+                syncService.syncPendingRecords();
+                resolve({ success: true, message: "Company updated locally" });
+            }
+        );
+    });
+});
+ipcMain.handle("delete-company", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM companies WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            const gid = row?.global_id;
+            db.run(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                if (err) reject(err);
+                else {
+                    syncService.syncPendingRecords();
+                    resolve({ success: true, message: "Company marked for deletion locally." });
+                }
+            });
+        });
+    });
+});
 
-// Purchases
-ipcMain.handle("get-purchases", (e, companyId) => apiCall('get', '/purchases', null, { companyId }));
-ipcMain.handle("add-purchase", (e, data) => apiCall('post', '/purchases', data));
-ipcMain.handle("update-purchase", (e, data) => apiCall('put', `/purchases/${data.id}`, data));
-ipcMain.handle("delete-purchase", (e, id) => apiCall('delete', `/purchases/${id}`));
+// Users - LOCAL FIRST
+ipcMain.handle("get-users", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        if (!companyId) {
+            db.all("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE sync_status != 'deleted' OR sync_status IS NULL", (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+            return;
+        }
+        db.all("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
 
-// Returns
-ipcMain.handle("get-sale-returns", (e, companyId) => apiCall('get', '/returns/sales', null, { companyId }));
-ipcMain.handle("add-sale-return", (e, data) => apiCall('post', '/returns/sales', data));
-ipcMain.handle("delete-sale-return", (e, id) => apiCall('delete', `/returns/sales/${id}`));
+// Roles & Permissions - LOCAL FIRST
+ipcMain.handle("get-roles", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT r.*, 
+                   r.is_active as isActive, 
+                   r.is_system as isSystem,
+                   (SELECT COUNT(*) FROM permissions WHERE (role_id = r.global_id OR role_id = CAST(r.id AS TEXT)) AND can_view = 1) as moduleCount
+            FROM roles r 
+            WHERE ((r.company_id = ? OR r.company_id = ? OR r.company_id = ?) 
+               OR r.is_system = 1)
+               AND (r.sync_status != 'deleted' OR r.sync_status IS NULL)
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
 
-ipcMain.handle("get-purchase-returns", (e, companyId) => apiCall('get', '/returns/purchases', null, { companyId }));
-ipcMain.handle("add-purchase-return", (e, data) => apiCall('post', '/returns/purchases', data));
-ipcMain.handle("delete-purchase-return", (e, id) => apiCall('delete', `/returns/purchases/${id}`));
+ipcMain.handle("get-permissions", (e, roleId) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT *, 
+                   can_view, 
+                   can_create, 
+                   can_edit, 
+                   can_delete,
+                   can_view as canView, 
+                   can_create as canCreate, 
+                   can_edit as canEdit, 
+                   can_delete as canDelete 
+            FROM permissions 
+            WHERE role_id = ? 
+               OR role_id = (SELECT global_id FROM roles WHERE id = ?)
+        `;
+        db.all(query, [roleId, roleId], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
 
-// Expenses
-ipcMain.handle("get-expenses", (e, companyId) => apiCall('get', '/expenses', null, { companyId }));
-ipcMain.handle("create-expense", (e, data) => apiCall('post', '/expenses', data));
-ipcMain.handle("update-expense", (e, data) => apiCall('put', `/expenses/${data.id}`, data));
-ipcMain.handle("delete-expense", (e, id) => apiCall('delete', `/expenses/${id}`));
+// Users Management Handlers (Missing previously)
+ipcMain.handle("create-user", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { username, password, role, fullname, company_id, companyId, role_id, roleId } = data;
+        const cid = company_id || companyId || currentCompanyId;
+        const rid = role_id || roleId;
+        const tempId = randomUUID();
 
-// HRM - Employees
-ipcMain.handle("get-employees", (e, companyId) => apiCall('get', '/employees', null, { companyId }));
-ipcMain.handle("create-employee", (e, data) => apiCall('post', '/employees', data));
-ipcMain.handle("update-employee", (e, data) => apiCall('put', `/employees/${data.id}`, data));
-ipcMain.handle("delete-employee", (e, id) => apiCall('delete', `/employees/${id}`));
+        db.run(
+            `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
+            [tempId, username, password, role, rid, fullname, cid],
+            function (err) {
+                if (err) return reject(err);
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "User created locally" });
+            }
+        );
+    });
+});
 
-// HRM - Attendance
-ipcMain.handle("get-attendance", (e, params) => apiCall('get', '/attendance', null, params));
-ipcMain.handle("save-attendance", (e, data) => apiCall('post', '/attendance', data));
+ipcMain.handle("update-user", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, username, password, role, fullname, role_id, roleId, is_active } = data;
+        const rid = role_id || roleId;
+        const active = (is_active === 1 || is_active === true) ? 1 : 0;
 
-// HRM - Salaries
-ipcMain.handle("get-salaries", (e, params) => apiCall('get', '/salaries', null, params));
-ipcMain.handle("create-salary", (e, data) => apiCall('post', '/salaries', data));
+        let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP";
+        let params = [username, role, rid, fullname, active];
 
-// Reports
-ipcMain.handle("get-report-summary", (e, params) => apiCall('get', '/reports/summary', null, params));
+        if (password && password.trim() !== '') {
+            query += ", password=?";
+            params.push(password);
+        }
 
-// Audit Logs
-ipcMain.handle("get-audit-logs", (e, params) => apiCall('get', '/audit-logs', null, params));
-ipcMain.handle("create-audit-log", (e, data) => apiCall('post', '/audit-logs', data));
+        query += " WHERE id=? OR global_id=?";
+        params.push(id, id);
+
+        db.run(query, params, function (err) {
+            if (err) return reject(err);
+            syncService.syncPendingRecords();
+            resolve({ success: true, message: "User updated locally" });
+        });
+    });
+});
+
+ipcMain.handle("delete-user", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM users WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return reject("User not found");
+            const gid = row.global_id;
+
+            db.run("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [id, id], (delErr) => {
+                if (delErr) reject(delErr);
+                else {
+                    syncService.syncPendingRecords();
+                    resolve({ success: true, message: "User deleted locally" });
+                }
+            });
+        });
+    });
+});
+
+// Roles Management Handlers
+const { randomUUID } = require("crypto");
+
+// Helper: Resolve both local and global IDs for a company
+async function resolveCompanyIds(cid) {
+    return new Promise((resolve) => {
+        if (!cid || cid === 'null' || cid === 'undefined') {
+            return resolve({ localId: null, globalId: null, anyId: null });
+        }
+
+        db.get(
+            "SELECT id, global_id FROM companies WHERE id = ? OR global_id = ?",
+            [cid, cid],
+            (err, row) => {
+                if (row) {
+                    resolve({
+                        localId: row.id,
+                        globalId: row.global_id,
+                        anyId: row.global_id || row.id
+                    });
+                } else {
+                    // Fallback
+                    if (!isNaN(cid) && String(cid).length < 10) {
+                        resolve({ localId: parseInt(cid), globalId: null, anyId: cid });
+                    } else {
+                        resolve({ localId: null, globalId: cid, anyId: cid });
+                    }
+                }
+            }
+        );
+    });
+}
+
+ipcMain.handle("create-role", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, description, permissions, companyId, company_id } = data;
+        const cid = companyId || company_id;
+        const tempId = randomUUID(); // Generate temp ID for local linking
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            // 1. Insert Role
+            db.run(
+                `INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) 
+                 VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)`,
+                [tempId, name, description, cid],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+
+                    // 2. Insert Permissions
+                    if (permissions && permissions.length > 0) {
+                        const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+                        permissions.forEach(p => {
+                            // Map incoming UI permissions (camelCase or snake_case)
+                            const v = p.canView !== undefined ? p.canView : p.can_view;
+                            const c = p.canCreate !== undefined ? p.canCreate : p.can_create;
+                            const e = p.canEdit !== undefined ? p.canEdit : p.can_edit;
+                            const d = p.canDelete !== undefined ? p.canDelete : p.can_delete;
+                            stmt.run(tempId, p.module, v ? 1 : 0, c ? 1 : 0, e ? 1 : 0, d ? 1 : 0);
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", function () {
+                        // Trigger sync
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: this.lastID, global_id: tempId, message: "Role created locally" });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("update-role", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, global_id, name, description, permissions } = data;
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            // 1. Update Role
+            db.run(
+                "UPDATE roles SET name = ?, description = ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                [name, description, id],
+                (err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+
+                    // 2. Update Permissions (Delete all and re-insert is easiest for local update)
+                    // Use global_id if available (for mapped permissions), otherwise we might have issues?
+                    // Permissions table uses role_id. This role_id should be the global_id from role table.
+
+                    // Find the role's global_id if not passed?
+                    // Assuming frontend passes the correct identifier used in permissions table.
+                    const roleIdentifier = global_id; // Using global_id as the link
+
+                    db.run("DELETE FROM permissions WHERE role_id = ?", [roleIdentifier], (delErr) => {
+                        if (delErr) {
+                            db.run("ROLLBACK");
+                            return reject(delErr);
+                        }
+
+                        if (permissions && permissions.length > 0) {
+                            const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending')`);
+                            permissions.forEach(p => {
+                                const v = p.canView !== undefined ? p.canView : p.can_view;
+                                const c = p.canCreate !== undefined ? p.canCreate : p.can_create;
+                                const e = p.canEdit !== undefined ? p.canEdit : p.can_edit;
+                                const d = p.canDelete !== undefined ? p.canDelete : p.can_delete;
+                                stmt.run(roleIdentifier, p.module, v ? 1 : 0, c ? 1 : 0, e ? 1 : 0, d ? 1 : 0);
+                            });
+                            stmt.finalize();
+                        }
+
+                        db.run("COMMIT", () => {
+                            syncService.syncPendingRecords();
+                            resolve({ success: true });
+                        });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("delete-role", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err || !row) return reject("Role not found");
+            const gid = row.global_id;
+
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                db.run("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+
+                db.run("COMMIT", (commitErr) => {
+                    if (commitErr) {
+                        db.run("ROLLBACK");
+                        return reject(commitErr);
+                    }
+                    syncService.syncPendingRecords();
+                    resolve({ success: true, message: "Role deleted locally." });
+                });
+            });
+        });
+    });
+});
+
+// Periodic Sync (Every 1 minute for near real-time updates)
+setInterval(() => {
+    if (!currentCompanyId) return;
+
+    console.log(`[SYNC] Automated 1-minute sync check for company ${currentCompanyId}...`);
+    syncService.syncPendingRecords(); // Push local changes (Users, Sales, etc.)
+    // Pulling every 2 minutes or 5 minutes might be better for performance, 
+    // but user asked for 1 minute sync, so we keep them together for now.
+    syncService.pullAllData(currentCompanyId);
+}, 1 * 60 * 1000);
+
+// Products - LOCAL FIRST (Full Join for Details)
+ipcMain.handle("get-products", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT p.*,
+                   p.is_active as isActive,
+                   c.name as category_name,
+                   b.name as brand_name,
+                   v.name as vendor_name,
+                   p.cost_price as costPrice,
+                   p.sell_price as sellPrice,
+                   p.stock_quantity as stockQty,
+                   p.code as sku,
+                   p.alert_threshold as alertQty
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id
+            LEFT JOIN brands b ON p.brand_id = b.id OR p.brand_id = b.global_id
+            LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
+            WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
+              AND p.sync_status != 'deleted'
+            ORDER BY p.name ASC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) {
+                console.error("Local Products Query Error:", err);
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+});
+
+ipcMain.handle("create-product", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, code, cost_price, sell_price, stock_qty, stock_quantity, alert_qty, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        const finalCompanyId = companyId || company_id;
+        db.run(
+            `INSERT INTO products (global_id, name, code, cost_price, sell_price, stock_quantity, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, company_id, color, size, grade, condition, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [
+                randomUUID(),
+                name, code, cost_price || 0, sell_price || 0,
+                stock_qty || stock_quantity || 0,
+                alert_qty || alert_threshold || 5,
+                category_id, vendor_id, brand_id, unit || 'pcs',
+                weight || 0, expiry_date, description, finalCompanyId,
+                color, size, grade, condition
+            ],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, message: "Product saved locally and syncing..." });
+            }
+        );
+    });
+});
+
+ipcMain.handle("update-product", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        db.run(
+            `UPDATE products SET name=?, code=?, cost_price=?, sell_price=?, stock_quantity=?, alert_threshold=?, category_id=?, vendor_id=?, brand_id=?, unit=?, weight=?, expiry_date=?, description=?, company_id=?, color=?, size=?, grade=?, condition=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            [name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId || company_id, color, size, grade, condition, id, id],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, message: "Product updated locally and syncing..." });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-product", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        // 1. Check if product exists and get its global_id
+        db.get("SELECT global_id FROM products WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Product not found" });
+            const gid = row.global_id;
+
+            // 2. Check for Transaction History (Standard Protection)
+            // We check both sale_items and purchase_items
+            const checkQuery = `
+                SELECT 
+                    (SELECT COUNT(*) FROM sale_items WHERE product_id = ? OR product_id = ?) +
+                    (SELECT COUNT(*) FROM purchase_items WHERE product_id = ? OR product_id = ?) as linkedCount
+            `;
+
+            db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
+                if (countErr) return reject(countErr);
+
+                if (countRow && countRow.linkedCount > 0) {
+                    return resolve({
+                        success: false,
+                        message: "Ye product delete nahi hosakta kyunki iska Sales ya Purchase record maujood hai. Aap isay Deactivate kar saktay hain."
+                    });
+                }
+
+                // 3. No history? Mark for deletion
+                db.run(`UPDATE products SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], function (err) {
+                    if (err) return reject({ success: false, message: err.message });
+                    syncService.syncPendingRecords();
+                    resolve({ success: true, message: "Product deleted locally." });
+                });
+            });
+        });
+    });
+});
+
+// Sales - LOCAL FIRST
+ipcMain.handle("get-sales", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT s.*,
+                   s.is_active as isActive,
+                   c.name as customerName,
+                   u.fullname as userName,
+                   s.inv_number as invoiceNo,
+                   s.grand_total as grandTotal,
+                   s.amount_paid as amountPaid,
+                   s.payment_status as paymentStatus,
+                   s.sale_date as date,
+                   (SELECT COUNT(*) FROM sale_items WHERE sale_id = s.global_id OR sale_id = CAST(s.id AS TEXT)) as itemCount
+            FROM sales s
+            LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id
+            LEFT JOIN users u ON s.user_id = u.id OR s.user_id = u.global_id
+            WHERE (s.company_id = ? OR s.company_id = ? OR s.company_id = ?) 
+              AND s.sync_status != 'deleted'
+            ORDER BY s.sale_date DESC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) return reject(err);
+
+            // Transform rows to include nested objects if frontend expects them
+            const transformed = rows.map(row => ({
+                ...row,
+                customer: row.customerName ? { name: row.customerName } : null,
+                user: row.userName ? { fullname: row.userName } : null,
+                items: new Array(row.itemCount || 0).fill({}) // Mock items array for length check if needed
+            }));
+            resolve(transformed);
+        });
+    });
+});
+
+ipcMain.handle("add-sale", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        // Robust destructuring to handle both frontend (camelCase) and backend (snake_case) names
+        const customer_id = data.customer_id || data.customerId;
+        const user_id = data.user_id || data.userId;
+        const total_amount = data.total_amount || data.totalAmount || data.subTotal || 0;
+        const discount = data.discount || 0;
+        const grand_total = data.grand_total || data.grandTotal || 0;
+        const amount_paid = data.amount_paid || data.amountPaid || 0;
+        const payment_method = data.payment_method || data.paymentMethod || 'CASH';
+        const invoice_no = data.invoice_no || data.inv_number || data.invoiceNo || `INV-${Date.now()}`;
+        const notes = data.notes || "";
+        const tax_amount = data.tax_amount || data.tax || 0;
+        const shipping_cost = data.shipping_cost || data.shippingCost || 0;
+        const items = data.items || [];
+        const finalCompanyId = data.companyId || data.company_id;
+
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            db.run(
+                `INSERT INTO sales (global_id, customer_id, user_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, customer_id, user_id, invoice_no, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, finalCompanyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const saleId = this.lastID;
+
+                    // Add items
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: saleId, global_id: tempId, message: "Sale recorded locally." });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("update-sale", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, global_id, customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, items, notes, tax_amount, shipping_cost } = data;
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            db.run(
+                `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+                [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, id, id],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    // Update items: Simple approach is delete and re-insert 
+                    const parentGlobalId = global_id || id;
+                    db.run("DELETE FROM sale_items WHERE sale_id = ?", [parentGlobalId], (delErr) => {
+                        if (delErr) {
+                            db.run("ROLLBACK");
+                            return reject(delErr);
+                        }
+
+                        if (items && Array.isArray(items)) {
+                            const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
+                                                   VALUES (?, ?, ?, ?, ?, ?)`);
+                            items.forEach(item => {
+                                stmt.run(randomUUID(), parentGlobalId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
+                            });
+                            stmt.finalize();
+                        }
+
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) {
+                                db.run("ROLLBACK");
+                                return reject(commitErr);
+                            }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Sale updated locally." });
+                        });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("delete-sale", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        // Find global_id for cascading deletion
+        db.get("SELECT global_id FROM sales WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err || !row) return reject("Sale not found");
+            const gid = row.global_id;
+
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                db.run("UPDATE sales SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject(commitErr);
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Sale marked for deletion locally." });
+                    });
+                });
+            });
+        });
+    });
+});
+
+// Customers - LOCAL FIRST
+ipcMain.handle("get-customers", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive, current_balance as balance FROM customers WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY name ASC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-customer", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, phone, email, address, customer_type, companyId, company_id } = data;
+        const finalCompanyId = companyId || company_id;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO customers (global_id, name, phone, email, address, customer_type, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, phone, email, address, customer_type, finalCompanyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Customer saved locally." });
+            }
+        );
+    });
+});
+
+ipcMain.handle("update-customer", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, name, phone, email, address, customer_type, companyId, company_id } = data;
+        db.run(
+            `UPDATE customers SET name=?, phone=?, email=?, address=?, customer_type=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            [name, phone, email, address, customer_type, companyId || company_id, id, id],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-customer", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM customers WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Customer not found" });
+            const gid = row.global_id;
+
+            // Check if any sale is using this customer
+            db.get("SELECT COUNT(*) as count FROM sales WHERE customer_id = ? OR customer_id = ?", [id, gid], (countErr, countRow) => {
+                if (countErr) return reject(countErr);
+
+                if (countRow && countRow.count > 0) {
+                    return resolve({ success: false, message: "Is Customer ko delete nahi kiya ja sakta kyunke iske sales records maujood hain. Aap isay Deactivate kar saktay hain." });
+                }
+
+                db.run(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                    if (err) reject(err);
+                    else {
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Customer marked for deletion locally." });
+                    }
+                });
+            });
+        });
+    });
+});
+
+// Vendors (Suppliers) - LOCAL FIRST
+ipcMain.handle("get-vendors", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive, current_balance as balance FROM vendors WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY name ASC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-vendor", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, contact_person, phone, email, address, companyId, company_id } = data;
+        const finalCompanyId = companyId || company_id;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO vendors (global_id, name, contact_person, phone, email, address, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, contact_person, phone, email, address, finalCompanyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Vendor saved locally." });
+            }
+        );
+    });
+});
+
+ipcMain.handle("update-vendor", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, name, contact_person, phone, email, address, companyId, company_id } = data;
+        db.run(
+            `UPDATE vendors SET name=?, contact_person=?, phone=?, email=?, address=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            [name, contact_person, phone, email, address, companyId || company_id, id, id],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-vendor", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM vendors WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Vendor not found" });
+            const gid = row.global_id;
+
+            // Check if any purchase or product is using this vendor
+            const checkQuery = `
+                SELECT 
+                    (SELECT COUNT(*) FROM purchases WHERE vendor_id = ? OR vendor_id = ?) +
+                    (SELECT COUNT(*) FROM products WHERE vendor_id = ? OR vendor_id = ?) as linkedCount
+            `;
+
+            db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
+                if (countErr) return reject(countErr);
+
+                if (countRow && countRow.linkedCount > 0) {
+                    return resolve({ success: false, message: "Is Vendor ko delete nahi kiya ja sakta kyunke iske purchases ya items records maujood hain. Aap isay Deactivate kar saktay hain." });
+                }
+
+                db.run(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                    if (err) reject(err);
+                    else {
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Vendor marked for deletion locally." });
+                    }
+                });
+            });
+        });
+    });
+});
+
+// Expenses - LOCAL FIRST
+ipcMain.handle("get-expenses", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive FROM expenses WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-expense", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { title, amount, date, description, category, companyId, company_id } = data;
+        const finalCompanyId = companyId || company_id;
+        db.run(
+            `INSERT INTO expenses (global_id, title, amount, date, description, category, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [randomUUID(), title, amount || 0, date, description, category, finalCompanyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, message: "Expense saved locally." });
+            }
+        );
+    });
+});
+
+// Inventory - Categories - LOCAL FIRST
+ipcMain.handle("get-categories", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive FROM categories WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-category", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, companyId, company_id } = data;
+        const cid = companyId || company_id;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO categories (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, cid],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+// Inventory - Brands - LOCAL FIRST
+ipcMain.handle("get-brands", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT *, is_active as isActive FROM brands WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-brand", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, companyId, company_id } = data;
+        const cid = companyId || company_id;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO brands (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, cid],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-category", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM categories WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Category not found" });
+            const gid = row.global_id;
+
+            // Check if any product is using this category
+            db.get("SELECT COUNT(*) as count FROM products WHERE category_id = ? OR category_id = ?", [id, gid], (countErr, countRow) => {
+                if (countRow && countRow.count > 0) {
+                    return resolve({ success: false, message: "Is Category ko delete nahi kiya ja sakta kyunke is mein products maujood hain." });
+                }
+
+                db.run(`UPDATE categories SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                    if (err) reject(err);
+                    else {
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Category marked for deletion locally." });
+                    }
+                });
+            });
+        });
+    });
+});
+
+ipcMain.handle("delete-brand", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM brands WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Brand not found" });
+            const gid = row.global_id;
+
+            // Check if any product is using this brand
+            db.get("SELECT COUNT(*) as count FROM products WHERE brand_id = ? OR brand_id = ?", [id, gid], (countErr, countRow) => {
+                if (countRow && countRow.count > 0) {
+                    return resolve({ success: false, message: "Is Brand ko delete nahi kiya ja sakta kyunke ye products mein use horahi hai." });
+                }
+
+                db.run(`UPDATE brands SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                    if (err) reject(err);
+                    else {
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Brand marked for deletion locally." });
+                    }
+                });
+            });
+        });
+    });
+});
+ipcMain.handle("get-purchases", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT p.*, 
+                   v.name as vendor_name,
+                   p.ref_number as invoiceNo,
+                   p.total_amount as totalAmount,
+                   p.paid_amount as paidAmount,
+                   p.status as paymentStatus
+            FROM purchases p
+            LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
+            WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) AND (p.sync_status != 'deleted' OR p.sync_status IS NULL)
+            ORDER BY p.purchase_date DESC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("add-purchase", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { vendor_id, total_amount, paid_amount, ref_number, companyId, company_id, items } = data;
+        const finalCompanyId = companyId || company_id;
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+            db.run(
+                `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, ref_number, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, vendor_id, total_amount, paid_amount, ref_number, finalCompanyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const purchaseId = this.lastID;
+
+                    // Add items if provided
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_cost, item.total || item.total_cost);
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: purchaseId, global_id: tempId });
+                    });
+                }
+            );
+        });
+    });
+});
+
+// HRM - Employees - LOCAL FIRST
+ipcMain.handle("get-employees", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM employees WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else {
+                // Map snake_case to camelCase for HRM component
+                const mapped = rows.map(emp => ({
+                    ...emp,
+                    firstName: emp.first_name,
+                    lastName: emp.last_name,
+                    hourlyRate: emp.hourly_rate,
+                    joiningDate: emp.joining_date
+                }));
+                resolve(mapped);
+            }
+        });
+    });
+});
+
+ipcMain.handle("create-employee", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { first_name, last_name, phone, designation, salary, companyId, company_id } = data;
+        const finalCompanyId = companyId || company_id;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, first_name, last_name, phone, designation, salary, finalCompanyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
 
 // Admin Messages
 ipcMain.handle("get-admin-messages", (e, params) => apiCall('get', '/admin-messages', null, params));
@@ -314,8 +1424,283 @@ ipcMain.handle("restore-backup", async (e, companyId) => {
     }
 });
 
-// Sync Trigger (No-op)
-ipcMain.handle("trigger-sync", async () => ({ success: true, message: "Apps is now pure cloud" }));
+// Reports - LOCAL FIRST
+ipcMain.handle("get-report-summary", async (e, params) => {
+    const rawCid = typeof params === 'object' ? params.companyId : params;
+    const ids = await resolveCompanyIds(rawCid);
+    const companyIdForQuery = ids.globalId || ids.localId; // We'll use one, but subquery will handle others
+
+    return new Promise((resolve, reject) => {
+        const period = typeof params === 'object' ? params.period : 'Monthly';
+
+        let dateFilter = "";
+        const now = new Date();
+        if (period === 'Daily') {
+            dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
+        } else if (period === 'Weekly') {
+            const lastWeek = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
+            dateFilter = ` AND sale_date >= '${lastWeek}'`;
+        } else if (period === 'Monthly') {
+            const lastMonth = new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
+            dateFilter = ` AND sale_date >= '${lastMonth}'`;
+        }
+
+        const stats = {
+            totalSales: 0,
+            totalExpenses: 0,
+            totalPurchases: 0,
+            netProfit: 0,
+            todaySales: 0,
+            totalCOGS: 0,
+            recentDays: []
+        };
+
+        const companyMatch = `(company_id = ? OR company_id = ? OR company_id = ?)`;
+        const qParams = [ids.localId, ids.globalId, String(ids.localId)];
+
+        db.serialize(() => {
+            // Get Total Sales
+            db.get(`SELECT SUM(grand_total) as total FROM sales WHERE ${companyMatch} ${dateFilter}`, qParams, (err, row) => {
+                if (row) stats.totalSales = row.total || 0;
+            });
+
+            // Get Total Purchases
+            db.get(`SELECT SUM(total_amount) as total FROM purchases WHERE ${companyMatch} ${dateFilter.replace('sale_date', 'purchase_date')}`, qParams, (err, row) => {
+                if (row) stats.totalPurchases = row.total || 0;
+            });
+
+            // Get Total Expenses
+            db.get(`SELECT SUM(amount) as total FROM expenses WHERE ${companyMatch} ${dateFilter.replace('sale_date', 'date')}`, qParams, (err, row) => {
+                if (row) stats.totalExpenses = row.total || 0;
+
+                stats.netProfit = stats.totalSales - stats.totalExpenses;
+                resolve({ ...stats, success: true });
+            });
+        });
+    });
+});
+
+// Returns - LOCAL FIRST
+ipcMain.handle("get-sale-returns", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM sale_returns WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-sale-return", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, companyId, items } = data;
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+            db.run(
+                `INSERT INTO sale_returns (global_id, invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, companyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const returnId = this.lastID;
+
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: returnId, global_id: tempId });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("get-purchase-returns", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM purchase_returns WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-purchase-return", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, companyId, items } = data;
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+            db.run(
+                `INSERT INTO purchase_returns (global_id, invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, companyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const returnId = this.lastID;
+
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost);
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: returnId, global_id: tempId });
+                    });
+                }
+            );
+        });
+    });
+});
+
+// Accounts & Accounting
+ipcMain.handle("get-accounts", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM accounts WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY name ASC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-account", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { name, type, balance, companyId } = data;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, type, balance || 0, companyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+ipcMain.handle("get-transactions", async (e, accountId) => {
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM transactions WHERE account_id = ? ORDER BY date DESC", [accountId], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-transaction", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { account_id, type, amount, date, description, companyId } = data;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO transactions (global_id, account_id, type, amount, date, description, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, account_id, type, amount, date, description, companyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+// HRM (Attendance & Salaries)
+ipcMain.handle("get-attendance", async (e, employeeId) => {
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM attendances WHERE employee_id = ? ORDER BY date DESC", [employeeId], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("create-attendance", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { employee_id, date, status, check_in, check_out, companyId } = data;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, employee_id, date, status, check_in, check_out, companyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+ipcMain.handle("get-salary-records", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM salary_records WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY month DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+// Audit Logs - LOCAL FIRST
+ipcMain.handle("get-audit-logs", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        db.all("SELECT * FROM audit_logs WHERE company_id = ? OR company_id = ? OR company_id = ? ORDER BY timestamp DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+// Full Reset and Sync (Deletes local sales/purchase/company/users and pulls fresh)
+ipcMain.handle("reset-modules-sync", async (e, companyGlobalId) => {
+    try {
+        console.log(`[IPC] Resetting modules for company: ${companyGlobalId}`);
+        const result = await syncService.resetModules(companyGlobalId);
+        return result;
+    } catch (error) {
+        console.error("Reset modules sync failed:", error);
+        return { success: false, message: error.message };
+    }
+});
+
+// Sync Trigger (Force background sync)
+ipcMain.handle("trigger-sync", async () => {
+    syncService.syncPendingRecords();
+    return { success: true, message: "Sync triggered in background." };
+});
 
 // Create window
 function createWindow() {

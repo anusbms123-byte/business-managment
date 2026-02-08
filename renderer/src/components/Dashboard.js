@@ -202,8 +202,12 @@ const Dashboard = ({ currentUser }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-black">Business Dashboard</h1>
-                    <p className="text-black text-lg mt-1 font-bold">Quick summary of your business performance.</p>
+                    <h1 className="text-2xl font-black tracking-tight text-black">
+                        {currentUser?.company_name || currentUser?.company?.name || 'Business Dashboard'}
+                    </h1>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
+                        Control Center • <span className="text-blue-600">{currentUser?.fullname || currentUser?.username}</span>
+                    </p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
@@ -367,13 +371,13 @@ const Dashboard = ({ currentUser }) => {
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black tracking-tight">{sale.createdAt ? new Date(sale.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black tracking-tight">{sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}</td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border bg-emerald-50 text-emerald-600 border-emerald-100">
-                                            Completed
+                                        <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                            {sale.paymentStatus || 'Completed'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-xs font-medium text-black tracking-tight">PKR {sale.totalAmount?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 text-right text-xs font-medium text-black tracking-tight">PKR {(sale.grandTotal || sale.totalAmount)?.toLocaleString() ?? '0'}</td>
                                 </tr>
                             ))}
                         </tbody>

@@ -37,12 +37,25 @@ function App() {
         setUser(userData);
         sessionStorage.setItem('user', JSON.stringify(userData));
         sessionStorage.setItem('permissions', JSON.stringify(permissions));
+
+        // CRITICAL: Store these for permission utility functions
+        sessionStorage.setItem('companyId', userData.company_id || userData.companyId || '');
+        sessionStorage.setItem('userRole', userData.role || '');
+
+        console.log('✓ Login successful:', {
+            user: userData.username,
+            role: userData.role,
+            companyId: userData.company_id || userData.companyId,
+            permissions: permissions.length
+        });
     };
 
     const handleLogout = () => {
         setUser(null);
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('permissions');
+        sessionStorage.removeItem('companyId');
+        sessionStorage.removeItem('userRole');
     };
 
     if (loading) {

@@ -1,50 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
     Plus, Search, Edit2, Trash2, User, Phone,
-    MapPin, Mail, CreditCard, TrendingUp, Users,
-    DollarSign, X, Check, Loader2, MoreVertical
+    MapPin, Mail, TrendingUp,
+    DollarSign, X, Check, Loader2
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 
 
 // Reusable Components matching the design system
 // Premium Stat Card Component
-const StatCard = ({ title, value, icon: Icon, color }) => {
-    const colors = {
-        orange: 'bg-white border-l-4 border-l-blue-500',
-        emerald: 'bg-white border-l-4 border-l-emerald-500',
-        red: 'bg-white border-l-4 border-l-red-500',
-        blue: 'bg-white border-l-4 border-l-blue-950',
-        purple: 'bg-white border-l-4 border-l-indigo-500',
-        gray: 'bg-white border-l-4 border-l-slate-400'
-    };
+// StatCard can be kept if needed elsewhere, but let's remove if unused in this file or mark it.
+// Removed StatCard as it was reported as unused
 
-    return (
-        <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-md group`}>
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
-                </div>
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                    <Icon size={20} />
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const Modal = ({ title, children, onClose }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-slate-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-                <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={18} /></button>
-            </div>
-            <div className="p-6 flex-1 overflow-y-auto">{children}</div>
-        </div>
-    </div>
-);
+// Modal component was unused as reported, but there's a modal logic below. 
+// Wait, actually there IS a modal logic at line 289 but it's not using this Modal component.
+// Removing unused Modal component.
 
 const Customers = ({ currentUser }) => {
     const [customers, setCustomers] = useState([]);
@@ -66,8 +36,6 @@ const Customers = ({ currentUser }) => {
         openingBalance: ''
     });
 
-    useEffect(() => { loadCustomers(); }, [currentUser]);
-
     const loadCustomers = async () => {
         setLoading(true);
         try {
@@ -82,6 +50,10 @@ const Customers = ({ currentUser }) => {
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadCustomers();
+    }, [currentUser]); // currentUser is enough here, or we can add loadCustomers if we wrap it in useCallback.
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -161,7 +133,7 @@ const Customers = ({ currentUser }) => {
         c.phone?.includes(search)
     );
 
-    const totalBalance = customers.reduce((acc, c) => acc + (c.balance || 0), 0);
+    // totalBalance removed as it was unused
 
     return (
         <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -219,7 +191,7 @@ const Customers = ({ currentUser }) => {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="text-sm font-bold text-black group-hover:text-black transition-colors leading-none">{customer.name}</p>
-                                                <p className="text-[10px] text-black font-bold uppercase tracking-tight mt-1">ID: {customer.id.slice(-6).toUpperCase()}</p>
+                                                <p className="text-[10px] text-black font-bold uppercase tracking-tight mt-1">ID: {String(customer.id).slice(-6).toUpperCase()}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

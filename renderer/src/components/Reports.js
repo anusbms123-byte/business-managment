@@ -7,11 +7,10 @@ import {
     Calendar, Download, ChevronRight,
     TrendingDown, Activity, Layers,
     Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X,
-    Zap, Coffee, Home, Truck, FileText
+    Zap, Coffee, Home, Truck, FileText, ShoppingCart as ShoppingCartIcon
 } from 'lucide-react';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Legend, Cell, PieChart, Pie
+    AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass }) => (
@@ -55,13 +54,14 @@ const Reports = ({ currentUser }) => {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState(null); // 'sales', 'purchases', etc.
-    const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
+    // lastUpdated removed as it was unused
+    const [vendors, setVendors] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState('all');
     const [selectedVendor, setSelectedVendor] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
     // Inventory Filters
-    const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
     const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
     // Expense Filters
@@ -79,34 +79,6 @@ const Reports = ({ currentUser }) => {
     const [dateRange, setDateRange] = useState({ start: firstDayOfMonth, end: today });
     const [overviewFilter, setOverviewFilter] = useState('All'); // For Dashboard
 
-    useEffect(() => {
-        loadCustomers();
-        loadVendors();
-        loadCategories();
-    }, [currentUser]);
-
-    useEffect(() => {
-        // Reset filters when switching modules, but not on initial load if just switching for first time
-        if (activeModule !== prevActiveModule) {
-            setSelectedCustomer('all');
-            setSelectedVendor('all');
-            setSelectedPaymentStatus('all');
-            setSelectedCategoryId('all');
-            setSelectedStockStatus('all');
-            setSelectedExpenseCategory('all');
-            setSelectedReturnType('all');
-            setPrevActiveModule(activeModule);
-        }
-    }, [activeModule, prevActiveModule]);
-
-    useEffect(() => {
-        if (activeModule) {
-            loadDetailedReport();
-        } else {
-            loadDashboardReport();
-        }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType]);
-
     const loadVendors = async () => {
         if (!currentUser?.company_id) return;
         try {
@@ -116,7 +88,6 @@ const Reports = ({ currentUser }) => {
             console.error('Error loading vendors:', err);
         }
     };
-    const [vendors, setVendors] = useState([]);
 
     const loadCategories = async () => {
         if (!currentUser?.company_id) return;
@@ -172,7 +143,6 @@ const Reports = ({ currentUser }) => {
                 paymentStatus: activeModule === 'sales' ? selectedPaymentStatus : undefined
             });
             setSummary(data);
-            setLastUpdated(new Date().toLocaleTimeString());
         } catch (err) {
             console.error('Error:', err);
         }
@@ -196,12 +166,39 @@ const Reports = ({ currentUser }) => {
                 returnType: activeModule === 'returns' ? selectedReturnType : undefined
             });
             setSummary(data);
-            setLastUpdated(new Date().toLocaleTimeString());
         } catch (err) {
             console.error('Error:', err);
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadCustomers();
+        loadVendors();
+        loadCategories();
+    }, [currentUser]);
+
+    useEffect(() => {
+        // Reset filters when switching modules, but not on initial load if just switching for first time
+        if (activeModule !== prevActiveModule) {
+            setSelectedCustomer('all');
+            setSelectedVendor('all');
+            setSelectedPaymentStatus('all');
+            setSelectedCategoryId('all');
+            setSelectedStockStatus('all');
+            setSelectedExpenseCategory('all');
+            setSelectedReturnType('all');
+            setPrevActiveModule(activeModule);
+        }
+    }, [activeModule, prevActiveModule]);
+
+    useEffect(() => {
+        if (activeModule) {
+            loadDetailedReport();
+        } else {
+            loadDashboardReport();
+        }
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType, dateRange.start, dateRange.end]);
 
     const handleBack = () => {
         setActiveModule(null);
