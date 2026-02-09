@@ -434,6 +434,7 @@ function initSchema() {
     )`);
 
     // Seed logic (kept basic for now)
+    runMigrations();
   });
 }
 
@@ -441,7 +442,7 @@ function initSchema() {
 function addColumnIfNotExists(table, column, type, defaultValue = null) {
   db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`, (err) => {
     if (err) {
-      if (!err.message.includes('duplicate column name')) {
+      if (!err.message.includes('duplicate column name') && !err.message.includes('no such table')) {
         console.error(`Migration Error (Adding ${column} to ${table}):`, err.message);
       }
     } else {
@@ -453,8 +454,8 @@ function addColumnIfNotExists(table, column, type, defaultValue = null) {
   });
 }
 
-// Run migrations for existing databases
-db.serialize(() => {
+// Function to handle database schema updates
+function runMigrations() {
   console.log("Checking for database schema updates...");
   const tables = [
     'companies', 'users', 'categories', 'vendors', 'employees',
@@ -462,8 +463,8 @@ db.serialize(() => {
     'audit_logs', 'brands', 'accounts', 'sale_returns',
     'purchase_returns', 'attendances', 'salary_records', 'roles', 'permissions'
   ];
+
   tables.forEach(table => {
-    // SQLite ALTER TABLE ADD COLUMN does not support UNIQUE or PRIMARY KEY
     addColumnIfNotExists(table, 'global_id', 'TEXT');
     addColumnIfNotExists(table, 'sync_status', "TEXT", "'synced'");
     addColumnIfNotExists(table, 'company_id', "TEXT");
@@ -550,32 +551,24 @@ db.serialize(() => {
   statusTables.forEach(t => addColumnIfNotExists(t, 'is_active', "INTEGER DEFAULT 1"));
 
   // ===== PERFORMANCE INDICES =====
-  // These indices dramatically improve query performance for company filtering and global_id lookups
   console.log("Creating performance indices...");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_users_global ON users(global_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_users_role ON users(role_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_roles_company ON roles(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_roles_global ON roles(global_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_permissions_role ON permissions(role_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_permissions_global ON permissions(global_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_products_global ON products(global_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_sales_company ON sales(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_sales_global ON sales(global_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_vendors_company ON vendors(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_categories_company ON categories(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_brands_company ON brands(company_id)");
-
   db.run("CREATE INDEX IF NOT EXISTS idx_purchases_company ON purchases(company_id)");
   db.run("CREATE INDEX IF NOT EXISTS idx_expenses_company ON expenses(company_id)");
-});
+}
 
 module.exports = db;
