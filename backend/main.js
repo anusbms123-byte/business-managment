@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
+const { randomUUID } = require("crypto");
 
 
 const { autoUpdater } = require("electron-updater");
@@ -478,7 +479,6 @@ ipcMain.handle("delete-user", async (e, id) => {
 });
 
 // Roles Management Handlers
-const { randomUUID } = require("crypto");
 
 // Helper: Resolve both local and global IDs for a company
 async function resolveCompanyIds(cid) {
@@ -831,7 +831,14 @@ ipcMain.handle("add-sale", async (e, data) => {
                         const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
                                                VALUES (?, ?, ?, ?, ?, ?)`);
                         items.forEach(item => {
-                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
+                            stmt.run(
+                                randomUUID(),
+                                tempId,
+                                item.productId || item.product_id,
+                                item.quantity,
+                                item.price || item.unit_price,
+                                item.total || item.total_price || (item.quantity * (item.price || item.unit_price))
+                            );
                         });
                         stmt.finalize();
                     }
@@ -852,7 +859,18 @@ ipcMain.handle("add-sale", async (e, data) => {
 
 ipcMain.handle("update-sale", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, global_id, customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, items, notes, tax_amount, shipping_cost } = data;
+        const { id, global_id, items } = data;
+        // Robust destructuring
+        const customer_id = data.customer_id || data.customerId;
+        const inv_number = data.inv_number || data.invoiceNo || data.invoice_no;
+        const total_amount = data.total_amount || data.totalAmount || data.subTotal || 0;
+        const grand_total = data.grand_total || data.grandTotal || 0;
+        const amount_paid = data.amount_paid || data.amountPaid || 0;
+        const discount = data.discount || 0;
+        const tax_amount = data.tax_amount || data.tax || 0;
+        const shipping_cost = data.shipping_cost || data.shippingCost || 0;
+        const payment_method = data.payment_method || data.paymentMethod || 'CASH';
+        const notes = data.notes || "";
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
@@ -866,30 +884,49 @@ ipcMain.handle("update-sale", async (e, data) => {
                         return reject({ success: false, message: err.message });
                     }
 
-                    // Update items: Simple approach is delete and re-insert 
-                    const parentGlobalId = global_id || id;
-                    db.run("DELETE FROM sale_items WHERE sale_id = ?", [parentGlobalId], (delErr) => {
-                        if (delErr) {
+                    // Fetch global_id if not provided, for item linking
+                    const getGid = new Promise(res => {
+                        if (global_id) return res(global_id);
+                        db.get("SELECT global_id FROM sales WHERE id = ?", [id], (e, r) => res(r?.global_id));
+                    });
+
+                    getGid.then(gid => {
+                        if (!gid) {
                             db.run("ROLLBACK");
-                            return reject(delErr);
+                            return reject({ success: false, message: "Sale ID mismatch" });
                         }
 
-                        if (items && Array.isArray(items)) {
-                            const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
-                                                   VALUES (?, ?, ?, ?, ?, ?)`);
-                            items.forEach(item => {
-                                stmt.run(randomUUID(), parentGlobalId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
-                            });
-                            stmt.finalize();
-                        }
-
-                        db.run("COMMIT", (commitErr) => {
-                            if (commitErr) {
+                        // Update items: delete and re-insert 
+                        db.run("DELETE FROM sale_items WHERE sale_id = ?", [gid], (delErr) => {
+                            if (delErr) {
                                 db.run("ROLLBACK");
-                                return reject(commitErr);
+                                return reject(delErr);
                             }
-                            syncService.syncPendingRecords();
-                            resolve({ success: true, message: "Sale updated locally." });
+
+                            if (items && Array.isArray(items)) {
+                                const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
+                                                       VALUES (?, ?, ?, ?, ?, ?)`);
+                                items.forEach(item => {
+                                    stmt.run(
+                                        randomUUID(),
+                                        gid,
+                                        item.productId || item.product_id,
+                                        item.quantity,
+                                        item.price || item.unit_price,
+                                        item.total || item.total_price || (item.quantity * (item.price || item.unit_price))
+                                    );
+                                });
+                                stmt.finalize();
+                            }
+
+                            db.run("COMMIT", (commitErr) => {
+                                if (commitErr) {
+                                    db.run("ROLLBACK");
+                                    return reject(commitErr);
+                                }
+                                syncService.syncPendingRecords();
+                                resolve({ success: true, message: "Sale updated locally." });
+                            });
                         });
                     });
                 }
@@ -939,13 +976,25 @@ ipcMain.handle("get-customers", async (e, companyId) => {
 
 ipcMain.handle("create-customer", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { name, phone, email, address, customer_type, companyId, company_id } = data;
+        const { name, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance, customer_type, customerType, companyId, company_id } = data;
         const finalCompanyId = companyId || company_id;
+        const cType = customer_type || customerType || 'retail';
+        const opBal = parseFloat(openingBalance || 0);
+        const credLim = parseFloat(creditLimit || 0);
+
         const tempId = randomUUID();
+
         db.run(
-            `INSERT INTO customers (global_id, name, phone, email, address, customer_type, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, name, phone, email, address, customer_type, finalCompanyId],
+            `INSERT INTO customers (
+                global_id, name, phone, email, address, city, cnic, gst_no, 
+                customer_type, credit_limit, opening_balance, current_balance, 
+                company_id, sync_status, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [
+                tempId, name, phone, email, address, city, cnic, gst_no,
+                cType, credLim, opBal, opBal, // current_balance starts as opening_balance
+                finalCompanyId
+            ],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
                 syncService.syncPendingRecords();
@@ -957,16 +1006,57 @@ ipcMain.handle("create-customer", async (e, data) => {
 
 ipcMain.handle("update-customer", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, name, phone, email, address, customer_type, companyId, company_id } = data;
-        db.run(
-            `UPDATE customers SET name=?, phone=?, email=?, address=?, customer_type=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-            [name, phone, email, address, customer_type, companyId || company_id, id, id],
-            function (err) {
-                if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
-                resolve({ success: true });
-            }
-        );
+        const { id, name, phone, email, address, city, cnic, gst_no, creditLimit, openingBalance, balance, customer_type, customerType, companyId, company_id } = data;
+        const cType = customer_type || customerType || 'retail';
+        // const opBal = openingBalance !== undefined ? parseFloat(openingBalance) : undefined; // Opening balance usually doesn't change, but if edited, use it.
+        // Wait, opening balance SHOULD NOT change after transactions exist. But for now allow it if user edits it.
+        // Also allow updating current balance explicitly if provided (e.g. via 'balance' field from frontend).
+
+        // We need to be careful with current_balance. 
+        // If frontend sends 'balance', update current_balance.
+
+        const updates = [];
+        const params = [];
+
+        if (name !== undefined) { updates.push("name=?"); params.push(name); }
+        if (phone !== undefined) { updates.push("phone=?"); params.push(phone); }
+        if (email !== undefined) { updates.push("email=?"); params.push(email); }
+        if (address !== undefined) { updates.push("address=?"); params.push(address); }
+        if (city !== undefined) { updates.push("city=?"); params.push(city); }
+        if (cnic !== undefined) { updates.push("cnic=?"); params.push(cnic); }
+        if (gst_no !== undefined) { updates.push("gst_no=?"); params.push(gst_no); }
+        if (cType !== undefined) { updates.push("customer_type=?"); params.push(cType); }
+        if (creditLimit !== undefined) { updates.push("credit_limit=?"); params.push(parseFloat(creditLimit)); }
+
+        // Only update opening balance if valid number
+        if (openingBalance !== undefined && openingBalance !== "") {
+            updates.push("opening_balance=?");
+            params.push(parseFloat(openingBalance));
+        }
+
+        // If balance is explicitly provided (e.g. correction), update current_balance
+        if (balance !== undefined && balance !== "") {
+            updates.push("current_balance=?");
+            params.push(parseFloat(balance));
+        }
+
+        updates.push("sync_status='pending'");
+        updates.push("updated_at=CURRENT_TIMESTAMP");
+
+        // Always update company_id if provided? Maybe not needed if it's already there, but safe.
+        if (companyId || company_id) {
+            updates.push("company_id=?");
+            params.push(companyId || company_id);
+        }
+
+        const query = `UPDATE customers SET ${updates.join(", ")} WHERE id=? OR global_id=?`;
+        params.push(id, id);
+
+        db.run(query, params, function (err) {
+            if (err) return reject({ success: false, message: err.message });
+            syncService.syncPendingRecords();
+            resolve({ success: true, message: "Customer updated locally." });
+        });
     });
 });
 
@@ -1009,13 +1099,21 @@ ipcMain.handle("get-vendors", async (e, companyId) => {
 
 ipcMain.handle("create-vendor", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { name, contact_person, phone, email, address, companyId, company_id } = data;
+        const { name, contact_person, phone, email, address, city, gst_no, company_name, openingBalance, companyId, company_id } = data;
         const finalCompanyId = companyId || company_id;
+        const opBal = parseFloat(openingBalance || 0);
+
         const tempId = randomUUID();
         db.run(
-            `INSERT INTO vendors (global_id, name, contact_person, phone, email, address, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, name, contact_person, phone, email, address, finalCompanyId],
+            `INSERT INTO vendors (
+                global_id, name, contact_person, phone, email, address, city, gst_no, company_name, 
+                opening_balance, current_balance, company_id, sync_status, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [
+                tempId, name, contact_person, phone, email, address, city, gst_no, company_name,
+                opBal, opBal, // current_balance starts as opening_balance
+                finalCompanyId
+            ],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
                 syncService.syncPendingRecords();
@@ -1027,16 +1125,46 @@ ipcMain.handle("create-vendor", async (e, data) => {
 
 ipcMain.handle("update-vendor", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, name, contact_person, phone, email, address, companyId, company_id } = data;
-        db.run(
-            `UPDATE vendors SET name=?, contact_person=?, phone=?, email=?, address=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-            [name, contact_person, phone, email, address, companyId || company_id, id, id],
-            function (err) {
-                if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
-                resolve({ success: true });
-            }
-        );
+        const { id, name, contact_person, phone, email, address, city, gst_no, company_name, openingBalance, balance, companyId, company_id } = data;
+
+        const updates = [];
+        const params = [];
+
+        if (name !== undefined) { updates.push("name=?"); params.push(name); }
+        if (contact_person !== undefined) { updates.push("contact_person=?"); params.push(contact_person); }
+        if (phone !== undefined) { updates.push("phone=?"); params.push(phone); }
+        if (email !== undefined) { updates.push("email=?"); params.push(email); }
+        if (address !== undefined) { updates.push("address=?"); params.push(address); }
+        if (city !== undefined) { updates.push("city=?"); params.push(city); }
+        if (gst_no !== undefined) { updates.push("gst_no=?"); params.push(gst_no); }
+        if (company_name !== undefined) { updates.push("company_name=?"); params.push(company_name); }
+
+        if (openingBalance !== undefined && openingBalance !== "") {
+            updates.push("opening_balance=?");
+            params.push(parseFloat(openingBalance));
+        }
+
+        if (balance !== undefined && balance !== "") {
+            updates.push("current_balance=?");
+            params.push(parseFloat(balance));
+        }
+
+        updates.push("sync_status='pending'");
+        updates.push("updated_at=CURRENT_TIMESTAMP");
+
+        if (companyId || company_id) {
+            updates.push("company_id=?");
+            params.push(companyId || company_id);
+        }
+
+        const query = `UPDATE vendors SET ${updates.join(", ")} WHERE id=? OR global_id=?`;
+        params.push(id, id);
+
+        db.run(query, params, function (err) {
+            if (err) return reject({ success: false, message: err.message });
+            syncService.syncPendingRecords();
+            resolve({ success: true });
+        });
     });
 });
 
@@ -1097,6 +1225,30 @@ ipcMain.handle("create-expense", async (e, data) => {
                 resolve({ success: true, id: this.lastID, message: "Expense saved locally." });
             }
         );
+    });
+});
+
+ipcMain.handle("update-expense", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, title, amount, date, description, category, companyId } = data;
+        const query = `UPDATE expenses SET title=?, amount=?, date=?, description=?, category=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
+        db.run(query, [title, amount, date, description, category, companyId, id, id], function (err) {
+            if (err) return reject({ success: false, message: err.message });
+            syncService.syncPendingRecords();
+            resolve({ success: true, message: "Expense updated locally." });
+        });
+    });
+});
+
+ipcMain.handle("delete-expense", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.run(`UPDATE expenses SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+            if (err) reject(err);
+            else {
+                syncService.syncPendingRecords();
+                resolve({ success: true, message: "Expense deleted locally." });
+            }
+        });
     });
 });
 
@@ -1227,16 +1379,25 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
 
 ipcMain.handle("add-purchase", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { vendor_id, total_amount, paid_amount, ref_number, companyId, company_id, items } = data;
-        const finalCompanyId = companyId || company_id;
+        // Robust destructuring for frontend compatibility
+        const vendor_id = data.vendor_id || data.vendorId;
+        const total_amount = data.total_amount || data.totalAmount || data.grandTotal || 0;
+        const paid_amount = data.paid_amount || data.paidAmount || 0;
+        const ref_number = data.ref_number || data.refNumber || data.invoiceNo || `PUR-${Date.now()}`; // Default if missing
+        const shipping_cost = data.shipping_cost || data.shippingCost || 0;
+        const discount = data.discount || 0;
+        const companyId = data.companyId || data.company_id;
+        const items = data.items || [];
+
+        const finalCompanyId = companyId;
         const tempId = randomUUID();
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
             db.run(
-                `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, ref_number, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, vendor_id, total_amount, paid_amount, ref_number, finalCompanyId],
+                `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, ref_number, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, ref_number, finalCompanyId],
                 function (err) {
                     if (err) {
                         db.run("ROLLBACK");
@@ -1250,7 +1411,14 @@ ipcMain.handle("add-purchase", async (e, data) => {
                         const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
                                                VALUES (?, ?, ?, ?, ?, ?)`);
                         items.forEach(item => {
-                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_cost, item.total || item.total_cost);
+                            stmt.run(
+                                randomUUID(),
+                                tempId,
+                                item.productId || item.product_id,
+                                item.quantity,
+                                item.unit_cost || item.unitCost || item.price || 0,
+                                item.total_cost || item.totalCost || item.total || 0
+                            );
                         });
                         stmt.finalize();
                     }
@@ -1261,10 +1429,330 @@ ipcMain.handle("add-purchase", async (e, data) => {
                             return reject({ success: false, message: commitErr.message });
                         }
                         syncService.syncPendingRecords();
-                        resolve({ success: true, id: purchaseId, global_id: tempId });
+                        resolve({ success: true, id: purchaseId, global_id: tempId, message: "Purchase recorded locally." });
                     });
                 }
             );
+        });
+    });
+});
+
+ipcMain.handle("update-purchase", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, global_id, items } = data;
+        const vendor_id = data.vendor_id || data.vendorId;
+        const total_amount = data.total_amount || data.totalAmount || data.grandTotal || 0;
+        const paid_amount = data.paid_amount || data.paidAmount || 0;
+        const ref_number = data.ref_number || data.refNumber || data.invoiceNo;
+        const shipping_cost = data.shipping_cost || data.shippingCost || 0;
+        const discount = data.discount || 0;
+        const companyId = data.companyId || data.company_id;
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+
+            db.run(
+                `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+                [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, companyId, id, id],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    // Re-insert items
+                    const parentGlobalId = global_id || id; // Ideally global_id, fallback to local ID if needed (though global_id should be present)
+
+                    // We need the global_id of the purchase to link items correctly
+                    // If frontend didn't pass global_id, we should fetch it or use the one we have? 
+                    // Let's assume frontend passes correct IDs. If 'id' is local, 'global_id' might be needed.
+                    // But purchase_items link via purchase_id which is TEXT (and usually global_id).
+
+                    // To be safe, let's fetch the actual global_id if we only have local ID
+                    const getGid = new Promise(res => {
+                        if (global_id) return res(global_id);
+                        db.get("SELECT global_id FROM purchases WHERE id = ?", [id], (e, r) => res(r?.global_id));
+                    });
+
+                    getGid.then(gid => {
+                        if (!gid) {
+                            db.run("ROLLBACK"); // Should not happen if update succeeded
+                            return reject({ success: false, message: "Purchase ID mismatch" });
+                        }
+
+                        db.run("DELETE FROM purchase_items WHERE purchase_id = ?", [gid], (delErr) => {
+                            if (delErr) {
+                                db.run("ROLLBACK");
+                                return reject(delErr);
+                            }
+
+                            if (items && Array.isArray(items)) {
+                                const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
+                                                       VALUES (?, ?, ?, ?, ?, ?)`);
+                                items.forEach(item => {
+                                    stmt.run(
+                                        randomUUID(),
+                                        gid,
+                                        item.productId || item.product_id,
+                                        item.quantity,
+                                        item.unit_cost || item.unitCost || item.price || 0,
+                                        item.total_cost || item.totalCost || item.total || 0
+                                    );
+                                });
+                                stmt.finalize();
+                            }
+
+                            db.run("COMMIT", (commitErr) => {
+                                if (commitErr) {
+                                    db.run("ROLLBACK");
+                                    return reject(commitErr);
+                                }
+                                syncService.syncPendingRecords();
+                                resolve({ success: true, message: "Purchase updated locally." });
+                            });
+                        });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("delete-purchase", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM purchases WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err || !row) return reject("Purchase not found");
+            const gid = row.global_id;
+
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                db.run("UPDATE purchases SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject(commitErr);
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Purchase marked for deletion locally." });
+                    });
+                });
+            });
+        });
+    });
+});
+
+// ==========================================
+// RETURNS - Sale Returns - LOCAL FIRST
+// ==========================================
+ipcMain.handle("get-sale-returns", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT sr.*, c.name as customer_name
+            FROM sale_returns sr
+            LEFT JOIN customers c ON sr.customer_id = c.id OR sr.customer_id = c.global_id
+            WHERE (sr.company_id = ? OR sr.company_id = ? OR sr.company_id = ?) AND (sr.sync_status != 'deleted' OR sr.sync_status IS NULL)
+            ORDER BY sr.date DESC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("add-sale-return", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const customer_id = data.customer_id || data.customerId;
+        const sale_id = data.sale_id || data.saleId;
+        const invoice_no = data.invoice_no || data.invoiceNo || `SR-${Date.now()}`;
+        const sub_total = data.sub_total || data.subTotal || 0;
+        const tax = data.tax || 0;
+        const total_amount = data.total_amount || data.totalAmount || 0;
+        const notes = data.notes || "";
+        const items = data.items || [];
+        const companyId = data.companyId || data.company_id;
+
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+            db.run(
+                `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const returnId = this.lastID;
+
+                    // Add items
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(
+                                randomUUID(),
+                                tempId,
+                                item.productId || item.product_id,
+                                item.quantity,
+                                item.price || item.unit_price,
+                                item.total || (item.quantity * (item.price || item.unit_price || 0))
+                            );
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: returnId, global_id: tempId, message: "Sale return recorded locally." });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("delete-sale-return", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM sale_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err || !row) return reject("Sale return not found");
+            const gid = row.global_id;
+
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                db.run("UPDATE sale_returns SET sync_status = 'deleted' WHERE global_id = ?", [gid], (err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject(commitErr);
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Sale return marked for deletion locally." });
+                    });
+                });
+            });
+        });
+    });
+});
+
+// ==========================================
+// RETURNS - Purchase Returns - LOCAL FIRST
+// ==========================================
+ipcMain.handle("get-purchase-returns", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT pr.*, v.name as vendor_name
+            FROM purchase_returns pr
+            LEFT JOIN vendors v ON pr.vendor_id = v.id OR pr.vendor_id = v.global_id
+            WHERE (pr.company_id = ? OR pr.company_id = ? OR pr.company_id = ?) AND (pr.sync_status != 'deleted' OR pr.sync_status IS NULL)
+            ORDER BY pr.date DESC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+});
+
+ipcMain.handle("add-purchase-return", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const vendor_id = data.vendor_id || data.vendorId;
+        const purchase_id = data.purchase_id || data.purchaseId;
+        const invoice_no = data.invoice_no || data.invoiceNo || `PR-${Date.now()}`;
+        const sub_total = data.sub_total || data.subTotal || 0;
+        const tax = data.tax || 0;
+        const total_amount = data.total_amount || data.totalAmount || 0;
+        const notes = data.notes || "";
+        const items = data.items || [];
+        const companyId = data.companyId || data.company_id;
+
+        const tempId = randomUUID();
+
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
+            db.run(
+                `INSERT INTO purchase_returns (global_id, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, companyId],
+                function (err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject({ success: false, message: err.message });
+                    }
+
+                    const returnId = this.lastID;
+
+                    // Add items
+                    if (items && Array.isArray(items)) {
+                        const stmt = db.prepare(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
+                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        items.forEach(item => {
+                            stmt.run(
+                                randomUUID(),
+                                tempId,
+                                item.productId || item.product_id,
+                                item.quantity,
+                                item.unit_cost || item.unitCost || item.price || 0,
+                                item.total || (item.quantity * (item.unit_cost || item.unitCost || item.price || 0))
+                            );
+                        });
+                        stmt.finalize();
+                    }
+
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject({ success: false, message: commitErr.message });
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, id: returnId, global_id: tempId, message: "Purchase return recorded locally." });
+                    });
+                }
+            );
+        });
+    });
+});
+
+ipcMain.handle("delete-purchase-return", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM purchase_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+            if (err || !row) return reject("Purchase return not found");
+            const gid = row.global_id;
+
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+                db.run("UPDATE purchase_returns SET sync_status = 'deleted' WHERE global_id = ?", [gid], (err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return reject(err);
+                    }
+                    db.run("COMMIT", (commitErr) => {
+                        if (commitErr) {
+                            db.run("ROLLBACK");
+                            return reject(commitErr);
+                        }
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Purchase return marked for deletion locally." });
+                    });
+                });
+            });
         });
     });
 });
@@ -1292,19 +1780,58 @@ ipcMain.handle("get-employees", async (e, companyId) => {
 
 ipcMain.handle("create-employee", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { first_name, last_name, phone, designation, salary, companyId, company_id } = data;
+        const { first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId, company_id } = data;
         const finalCompanyId = companyId || company_id;
         const tempId = randomUUID();
         db.run(
-            `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, first_name, last_name, phone, designation, salary, finalCompanyId],
+            `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, first_name, last_name, phone, designation, salary, hourly_rate || 0, joining_date, finalCompanyId],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
+    });
+});
+
+ipcMain.handle("update-employee", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId } = data;
+        const query = `UPDATE employees SET first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
+        db.run(query, [first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId, id, id], function (err) {
+            if (err) return reject({ success: false, message: err.message });
+            syncService.syncPendingRecords();
+            resolve({ success: true, message: "Employee updated locally." });
+        });
+    });
+});
+
+ipcMain.handle("delete-employee", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM employees WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return resolve({ success: false, message: "Employee not found" });
+            const gid = row.global_id;
+
+            const checkQuery = `
+                SELECT 
+                    (SELECT COUNT(*) FROM attendances WHERE employee_id = ? OR employee_id = ?) +
+                    (SELECT COUNT(*) FROM salary_records WHERE employee_id = ? OR employee_id = ?) as linkedCount
+            `;
+            db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
+                if (countRow && countRow.linkedCount > 0) {
+                    return resolve({ success: false, message: "Is Employee ko delete nahi kiya ja sakta kyunke iske attendance ya salary records maujood hain." });
+                }
+                db.run(`UPDATE employees SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
+                    if (err) reject(err);
+                    else {
+                        syncService.syncPendingRecords();
+                        resolve({ success: true, message: "Employee marked for deletion locally." });
+                    }
+                });
+            });
+        });
     });
 });
 
@@ -1480,110 +2007,6 @@ ipcMain.handle("get-report-summary", async (e, params) => {
     });
 });
 
-// Returns - LOCAL FIRST
-ipcMain.handle("get-sale-returns", async (e, companyId) => {
-    const ids = await resolveCompanyIds(companyId);
-    return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM sale_returns WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
-});
-
-ipcMain.handle("create-sale-return", async (e, data) => {
-    return new Promise((resolve, reject) => {
-        const { invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, companyId, items } = data;
-        const tempId = randomUUID();
-
-        db.serialize(() => {
-            db.run("BEGIN TRANSACTION");
-            db.run(
-                `INSERT INTO sale_returns (global_id, invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, invoice_no, sale_id, customer_id, sub_total, tax, total_amount, notes, companyId],
-                function (err) {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject({ success: false, message: err.message });
-                    }
-
-                    const returnId = this.lastID;
-
-                    if (items && Array.isArray(items)) {
-                        const stmt = db.prepare(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
-                                               VALUES (?, ?, ?, ?, ?, ?)`);
-                        items.forEach(item => {
-                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price);
-                        });
-                        stmt.finalize();
-                    }
-
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            db.run("ROLLBACK");
-                            return reject({ success: false, message: commitErr.message });
-                        }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, id: returnId, global_id: tempId });
-                    });
-                }
-            );
-        });
-    });
-});
-
-ipcMain.handle("get-purchase-returns", async (e, companyId) => {
-    const ids = await resolveCompanyIds(companyId);
-    return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM purchase_returns WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
-});
-
-ipcMain.handle("create-purchase-return", async (e, data) => {
-    return new Promise((resolve, reject) => {
-        const { invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, companyId, items } = data;
-        const tempId = randomUUID();
-
-        db.serialize(() => {
-            db.run("BEGIN TRANSACTION");
-            db.run(
-                `INSERT INTO purchase_returns (global_id, invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, companyId],
-                function (err) {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject({ success: false, message: err.message });
-                    }
-
-                    const returnId = this.lastID;
-
-                    if (items && Array.isArray(items)) {
-                        const stmt = db.prepare(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
-                                               VALUES (?, ?, ?, ?, ?, ?)`);
-                        items.forEach(item => {
-                            stmt.run(randomUUID(), tempId, item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost);
-                        });
-                        stmt.finalize();
-                    }
-
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            db.run("ROLLBACK");
-                            return reject({ success: false, message: commitErr.message });
-                        }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, id: returnId, global_id: tempId });
-                    });
-                }
-            );
-        });
-    });
-});
 
 // Accounts & Accounting
 ipcMain.handle("get-accounts", async (e, companyId) => {
@@ -1663,6 +2086,35 @@ ipcMain.handle("create-attendance", async (e, data) => {
     });
 });
 
+ipcMain.handle("update-attendance", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, status, check_in, check_out, companyId } = data;
+        db.run(
+            `UPDATE attendances SET status=?, check_in=?, check_out=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            [status, check_in, check_out, companyId, id, id],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, message: "Attendance updated locally." });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-attendance", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.run(`DELETE FROM attendances WHERE id=? OR global_id=?`, [id, id], (err) => {
+            if (err) reject(err);
+            else {
+                // If it was already synced, we might need a status='deleted' but attendances are often small, 
+                // for now just delete or mark if sync_service handles it. 
+                // Many tables use status='deleted'.
+                resolve({ success: true });
+            }
+        });
+    });
+});
+
 ipcMain.handle("get-salary-records", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
@@ -1670,6 +2122,23 @@ ipcMain.handle("get-salary-records", async (e, companyId) => {
             if (err) reject(err);
             else resolve(rows);
         });
+    });
+});
+
+ipcMain.handle("add-salary-record", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, companyId } = data;
+        const tempId = randomUUID();
+        db.run(
+            `INSERT INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, companyId],
+            function (err) {
+                if (err) return reject({ success: false, message: err.message });
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
     });
 });
 

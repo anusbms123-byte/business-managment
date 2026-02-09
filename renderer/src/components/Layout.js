@@ -17,7 +17,6 @@ const ALL_MENU_ITEMS = [
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
     { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
-    { key: 'accounting', icon: Receipt, label: 'Accounting', path: '/accounting' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
 ];
 
@@ -293,23 +292,9 @@ const Layout = ({ children, user, onLogout }) => {
 
                     {/* Right Side */}
                     <div className="flex items-center space-x-2 md:space-x-6">
-                        {/* Status indicators */}
-                        <div className="hidden lg:flex items-center space-x-4 px-4 py-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cloud Optimized</span>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center space-x-2 md:space-x-3 border-l border-slate-100 pl-4 md:pl-6">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight leading-none">{user?.fullname || user?.username}</p>
-                                <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-1">{user?.role}</p>
-                            </div>
-                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 border border-slate-200 shadow-sm overflow-hidden group hover:border-blue-400 transition-colors">
-                                <UserSquare size={20} className="group-hover:text-blue-500 transition-colors" />
-                            </div>
-                        </div>
+
+
 
                         <div className="relative">
                             <button
