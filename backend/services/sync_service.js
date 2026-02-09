@@ -303,11 +303,11 @@ class SyncService {
                     } else if (table === 'purchases') {
                         const localVendorId = await this.resolveLocalId('vendors', cloudData.vendorId || cloudData.vendor_id);
                         if (existingRow) {
-                            query = `UPDATE purchases SET global_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, vendor_id=?, company_id=?, sync_status='synced', updated_at=?, purchase_date=? WHERE id=?`;
-                            params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost || 0, cloudData.discount || 0, localVendorId, companyId, cloudData.updatedAt || cloudData.updated_at, cloudData.createdAt || cloudData.date, existingRow.id];
+                            query = `UPDATE purchases SET global_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, vendor_id=?, company_id=?, sync_status='synced', updated_at=?, purchase_date=? WHERE id=?`;
+                            params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost || 0, cloudData.discount || 0, cloudData.tax || 0, cloudData.notes || '', cloudData.paymentMethod || 'CASH', cloudData.paymentStatus || 'RECEIVED', cloudData.dueDate, localVendorId, companyId, cloudData.updatedAt || cloudData.updated_at, cloudData.createdAt || cloudData.date, existingRow.id];
                         } else {
-                            query = `INSERT OR REPLACE INTO purchases (global_id, ref_number, total_amount, paid_amount, shipping_cost, discount, vendor_id, company_id, sync_status, updated_at, purchase_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`;
-                            params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost || 0, cloudData.discount || 0, localVendorId, companyId, cloudData.updatedAt || cloudData.updated_at, cloudData.createdAt || cloudData.date];
+                            query = `INSERT OR REPLACE INTO purchases (global_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, vendor_id, company_id, sync_status, updated_at, purchase_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`;
+                            params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost || 0, cloudData.discount || 0, cloudData.tax || 0, cloudData.notes || '', cloudData.paymentMethod || 'CASH', cloudData.paymentStatus || 'RECEIVED', cloudData.dueDate, localVendorId, companyId, cloudData.updatedAt || cloudData.updated_at, cloudData.createdAt || cloudData.date];
                         }
                     } else if (table === 'brands') {
                         query = `INSERT OR REPLACE INTO brands (global_id, name, description, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, 'synced', ?)`;
@@ -628,6 +628,11 @@ class SyncService {
                     payload.paidAmount = parseFloat(record.paid_amount || 0);
                     payload.shippingCost = parseFloat(record.shipping_cost || 0);
                     payload.discount = parseFloat(record.discount || 0);
+                    payload.tax = parseFloat(record.tax_amount || 0);
+                    payload.notes = record.notes || "";
+                    payload.paymentMethod = record.payment_method || "CASH";
+                    payload.paymentStatus = record.payment_status || "RECEIVED";
+                    payload.dueDate = record.due_date;
 
                     const vendorRow = await fetchNested(`SELECT global_id FROM vendors WHERE id = ? OR global_id = ?`, [record.vendor_id, record.vendor_id]);
                     payload.vendorId = (vendorRow && vendorRow.length > 0 && vendorRow[0].global_id) ? String(vendorRow[0].global_id) : null;
@@ -709,9 +714,9 @@ class SyncService {
                     payload.openingBalance = parseFloat(record.opening_balance || 0);
                     payload.balance = parseFloat(record.current_balance || record.balance || payload.openingBalance);
                 } else if (table === 'vendors') {
-                    payload.company_name = record.company_name;
-                    payload.contact_person = record.contact_person;
-                    payload.gst_no = record.gst_no;
+                    payload.companyName = record.company_name;
+                    payload.contactPerson = record.contact_person;
+                    payload.gstNo = record.gst_no;
                     payload.openingBalance = parseFloat(record.opening_balance || 0);
                     payload.balance = parseFloat(record.current_balance || record.balance || payload.openingBalance);
                 } else if (table === 'expenses') {

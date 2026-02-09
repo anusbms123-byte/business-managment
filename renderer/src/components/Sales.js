@@ -454,7 +454,8 @@ const Sales = ({ currentUser }) => {
                                             onChange={(e) => {
                                                 const cid = e.target.value;
                                                 setSelectedCustomer(cid);
-                                                const cust = customers.find(c => c.id === cid);
+                                                // Use == for loose comparison or Number() for string/number match
+                                                const cust = customers.find(c => String(c.id) === String(cid));
                                                 setPreviousBalance(cust?.balance || 0);
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
@@ -463,7 +464,11 @@ const Sales = ({ currentUser }) => {
                                             }}
                                         >
                                             <option value="">Walk-in Customer</option>
-                                            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name} {c.balance > 0 ? `(Owes: ${c.balance.toLocaleString()})` : ''}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -734,7 +739,7 @@ const Sales = ({ currentUser }) => {
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Previous Balance</span>
                                         <div className="relative w-24 text-right px-2 py-1 bg-slate-100 rounded-md">
-                                            <span className="text-sm font-bold text-slate-700">{Number(previousBalance).toLocaleString()}</span>
+                                            <span className={`text-sm font-bold ${previousBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{Number(previousBalance).toLocaleString()}</span>
                                         </div>
                                     </div>
 

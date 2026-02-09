@@ -659,21 +659,29 @@ ipcMain.handle("get-products", async (e, companyId) => {
                    p.sell_price as sellPrice,
                    p.stock_quantity as stockQty,
                    p.code as sku,
-                   p.alert_threshold as alertQty
+                   p.alert_threshold as alertQty,
+                   p.expiry_date as expiryDate
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id
             LEFT JOIN brands b ON p.brand_id = b.id OR p.brand_id = b.global_id
             LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
             WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
               AND p.sync_status != 'deleted'
-            ORDER BY p.name ASC
+            ORDER BY p.id DESC
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) {
                 console.error("Local Products Query Error:", err);
                 reject(err);
             } else {
-                resolve(rows);
+                // Transform to nested objects for frontend compatibility
+                const transformed = rows.map(row => ({
+                    ...row,
+                    category: row.category_id ? { id: row.category_id, name: row.category_name } : null,
+                    brand: row.brand_id ? { id: row.brand_id, name: row.brand_name } : null,
+                    vendor: row.vendor_id ? { id: row.vendor_id, name: row.vendor_name } : null
+                }));
+                resolve(transformed);
             }
         });
     });
@@ -681,7 +689,8 @@ ipcMain.handle("get-products", async (e, companyId) => {
 
 ipcMain.handle("create-product", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { name, code, cost_price, sell_price, stock_qty, stock_quantity, alert_qty, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        const { name, cost_price, sell_price, stock_qty, stock_quantity, alert_qty, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        const code = data.sku || data.code; // Robust mapping for SKU
         const finalCompanyId = companyId || company_id;
         db.run(
             `INSERT INTO products (global_id, name, code, cost_price, sell_price, stock_quantity, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, company_id, color, size, grade, condition, sync_status, updated_at) 
@@ -706,7 +715,8 @@ ipcMain.handle("create-product", async (e, data) => {
 
 ipcMain.handle("update-product", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        const { id, name, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId, company_id, color, size, grade, condition } = data;
+        const code = data.sku || data.code; // Robust mapping for SKU
         db.run(
             `UPDATE products SET name=?, code=?, cost_price=?, sell_price=?, stock_quantity=?, alert_threshold=?, category_id=?, vendor_id=?, brand_id=?, unit=?, weight=?, expiry_date=?, description=?, company_id=?, color=?, size=?, grade=?, condition=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
             [name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId || company_id, color, size, grade, condition, id, id],
@@ -794,7 +804,6 @@ ipcMain.handle("get-sales", async (e, companyId) => {
 
 ipcMain.handle("add-sale", async (e, data) => {
     return new Promise((resolve, reject) => {
-        // Robust destructuring to handle both frontend (camelCase) and backend (snake_case) names
         const customer_id = data.customer_id || data.customerId;
         const user_id = data.user_id || data.userId;
         const total_amount = data.total_amount || data.totalAmount || data.subTotal || 0;
@@ -809,15 +818,16 @@ ipcMain.handle("add-sale", async (e, data) => {
         const items = data.items || [];
         const finalCompanyId = data.companyId || data.company_id;
 
+        const payment_status = data.payment_status || data.paymentStatus || 'PAID';
         const tempId = randomUUID();
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
 
             db.run(
-                `INSERT INTO sales (global_id, customer_id, user_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, customer_id, user_id, invoice_no, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, finalCompanyId],
+                `INSERT INTO sales (global_id, customer_id, user_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, customer_id, user_id, invoice_no, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, finalCompanyId],
                 function (err) {
                     if (err) {
                         db.run("ROLLBACK");
@@ -826,21 +836,27 @@ ipcMain.handle("add-sale", async (e, data) => {
 
                     const saleId = this.lastID;
 
-                    // Add items
+                    // 1. Add items and Update Stock
                     if (items && Array.isArray(items)) {
                         const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
                                                VALUES (?, ?, ?, ?, ?, ?)`);
+                        const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? OR global_id = ?`);
+
                         items.forEach(item => {
-                            stmt.run(
-                                randomUUID(),
-                                tempId,
-                                item.productId || item.product_id,
-                                item.quantity,
-                                item.price || item.unit_price,
-                                item.total || item.total_price || (item.quantity * (item.price || item.unit_price))
-                            );
+                            const pid = item.productId || item.product_id;
+                            const qty = item.quantity || 0;
+
+                            stmt.run(randomUUID(), tempId, pid, qty, item.price || item.unit_price, item.total || item.total_price || (qty * (item.price || item.unit_price)));
+                            stockStmt.run(qty, pid, pid);
                         });
                         stmt.finalize();
+                        stockStmt.finalize();
+                    }
+
+                    // 2. Update Customer Balance
+                    if (customer_id) {
+                        const balanceChange = grand_total - amount_paid;
+                        db.run(`UPDATE customers SET current_balance = current_balance + ? WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
                     }
 
                     db.run("COMMIT", (commitErr) => {
@@ -849,7 +865,7 @@ ipcMain.handle("add-sale", async (e, data) => {
                             return reject({ success: false, message: commitErr.message });
                         }
                         syncService.syncPendingRecords();
-                        resolve({ success: true, id: saleId, global_id: tempId, message: "Sale recorded locally." });
+                        resolve({ success: true, id: saleId, global_id: tempId, message: "Sale recorded and stock/balance updated." });
                     });
                 }
             );
@@ -860,7 +876,6 @@ ipcMain.handle("add-sale", async (e, data) => {
 ipcMain.handle("update-sale", async (e, data) => {
     return new Promise((resolve, reject) => {
         const { id, global_id, items } = data;
-        // Robust destructuring
         const customer_id = data.customer_id || data.customerId;
         const inv_number = data.inv_number || data.invoiceNo || data.invoice_no;
         const total_amount = data.total_amount || data.totalAmount || data.subTotal || 0;
@@ -871,91 +886,102 @@ ipcMain.handle("update-sale", async (e, data) => {
         const shipping_cost = data.shipping_cost || data.shippingCost || 0;
         const payment_method = data.payment_method || data.paymentMethod || 'CASH';
         const notes = data.notes || "";
+        const payment_status = data.payment_status || data.paymentStatus || 'PAID';
 
         db.serialize(() => {
-            db.run("BEGIN TRANSACTION");
+            // First, fetch the old sale to reverse stock and balance
+            db.get("SELECT * FROM sales WHERE id=? OR global_id=?", [id, id], (err, oldSale) => {
+                if (!oldSale) return reject("Old sale not found");
 
-            db.run(
-                `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-                [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, notes, tax_amount, shipping_cost, id, id],
-                function (err) {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject({ success: false, message: err.message });
+                const oldGid = oldSale.global_id;
+
+                db.all("SELECT * FROM sale_items WHERE sale_id=?", [oldGid], (err, oldItems) => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Reverse Old Stock
+                    const reverseStockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?");
+                    oldItems.forEach(item => reverseStockStmt.run(item.quantity, item.product_id, item.product_id));
+                    reverseStockStmt.finalize();
+
+                    // 2. Reverse Old Customer Balance
+                    if (oldSale.customer_id) {
+                        const oldDiff = oldSale.grand_total - oldSale.amount_paid;
+                        db.run("UPDATE customers SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [oldDiff, oldSale.customer_id, oldSale.customer_id]);
                     }
 
-                    // Fetch global_id if not provided, for item linking
-                    const getGid = new Promise(res => {
-                        if (global_id) return res(global_id);
-                        db.get("SELECT global_id FROM sales WHERE id = ?", [id], (e, r) => res(r?.global_id));
-                    });
+                    // 3. Update Sale Record
+                    db.run(
+                        `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, payment_status=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+                        [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, id, id],
+                        function (err) {
+                            if (err) { db.run("ROLLBACK"); return reject(err); }
 
-                    getGid.then(gid => {
-                        if (!gid) {
-                            db.run("ROLLBACK");
-                            return reject({ success: false, message: "Sale ID mismatch" });
-                        }
+                            // 4. Delete and Re-insert items, Update New Stock
+                            db.run("DELETE FROM sale_items WHERE sale_id = ?", [oldGid], (delErr) => {
+                                if (items && Array.isArray(items)) {
+                                    const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`);
+                                    const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?`);
 
-                        // Update items: delete and re-insert 
-                        db.run("DELETE FROM sale_items WHERE sale_id = ?", [gid], (delErr) => {
-                            if (delErr) {
-                                db.run("ROLLBACK");
-                                return reject(delErr);
-                            }
-
-                            if (items && Array.isArray(items)) {
-                                const stmt = db.prepare(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
-                                                       VALUES (?, ?, ?, ?, ?, ?)`);
-                                items.forEach(item => {
-                                    stmt.run(
-                                        randomUUID(),
-                                        gid,
-                                        item.productId || item.product_id,
-                                        item.quantity,
-                                        item.price || item.unit_price,
-                                        item.total || item.total_price || (item.quantity * (item.price || item.unit_price))
-                                    );
-                                });
-                                stmt.finalize();
-                            }
-
-                            db.run("COMMIT", (commitErr) => {
-                                if (commitErr) {
-                                    db.run("ROLLBACK");
-                                    return reject(commitErr);
+                                    items.forEach(item => {
+                                        const pid = item.productId || item.product_id;
+                                        const qty = item.quantity || 0;
+                                        stmt.run(randomUUID(), oldGid, pid, qty, item.price || item.unit_price, item.total || item.total_price);
+                                        stockStmt.run(qty, pid, pid);
+                                    });
+                                    stmt.finalize();
+                                    stockStmt.finalize();
                                 }
-                                syncService.syncPendingRecords();
-                                resolve({ success: true, message: "Sale updated locally." });
+
+                                // 5. Apply New Customer Balance
+                                if (customer_id) {
+                                    const newDiff = grand_total - amount_paid;
+                                    db.run("UPDATE customers SET current_balance = current_balance + ? WHERE id=? OR global_id=?", [newDiff, customer_id, customer_id]);
+                                }
+
+                                db.run("COMMIT", (commitErr) => {
+                                    if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                                    syncService.syncPendingRecords();
+                                    resolve({ success: true, message: "Sale updated and stock/balance adjusted." });
+                                });
                             });
-                        });
-                    });
-                }
-            );
+                        }
+                    );
+                });
+            });
         });
     });
 });
 
 ipcMain.handle("delete-sale", async (e, id) => {
     return new Promise((resolve, reject) => {
-        // Find global_id for cascading deletion
-        db.get("SELECT global_id FROM sales WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err || !row) return reject("Sale not found");
-            const gid = row.global_id;
+        db.get("SELECT * FROM sales WHERE id = ? OR global_id = ?", [id, id], (err, sale) => {
+            if (err || !sale) return reject("Sale not found");
+            const gid = sale.global_id;
 
-            db.serialize(() => {
-                db.run("BEGIN TRANSACTION");
-                db.run("UPDATE sales SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject(err);
+            db.all("SELECT * FROM sale_items WHERE sale_id = ?", [gid], (itemErr, items) => {
+                db.serialize(() => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Restore Stock
+                    const stockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?");
+                    items.forEach(item => stockStmt.run(item.quantity, item.product_id, item.product_id));
+                    stockStmt.finalize();
+
+                    // 2. Adjust Customer Balance
+                    if (sale.customer_id) {
+                        const diff = sale.grand_total - sale.amount_paid;
+                        db.run("UPDATE customers SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [diff, sale.customer_id, sale.customer_id]);
                     }
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            db.run("ROLLBACK");
-                            return reject(commitErr);
-                        }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, message: "Sale marked for deletion locally." });
+
+                    // 3. Mark Sale as Deleted (Soft delete for sync)
+                    db.run("UPDATE sales SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (delErr) => {
+                        if (delErr) { db.run("ROLLBACK"); return reject(delErr); }
+
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Sale deleted and stock/balance restored." });
+                        });
                     });
                 });
             });
@@ -967,7 +993,17 @@ ipcMain.handle("delete-sale", async (e, id) => {
 ipcMain.handle("get-customers", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
-        db.all("SELECT *, is_active as isActive, current_balance as balance FROM customers WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY name ASC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+        db.all(`SELECT *, 
+                       is_active as isActive, 
+                       current_balance as balance,
+                       credit_limit as creditLimit,
+                       opening_balance as openingBalance,
+                       gst_no as gstNo,
+                       customer_type as customerType
+                FROM customers 
+                WHERE (company_id = ? OR company_id = ? OR company_id = ?) 
+                  AND (sync_status != 'deleted' OR sync_status IS NULL) 
+                ORDER BY name ASC`, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -1026,18 +1062,20 @@ ipcMain.handle("update-customer", async (e, data) => {
         if (cnic !== undefined) { updates.push("cnic=?"); params.push(cnic); }
         if (gst_no !== undefined) { updates.push("gst_no=?"); params.push(gst_no); }
         if (cType !== undefined) { updates.push("customer_type=?"); params.push(cType); }
-        if (creditLimit !== undefined) { updates.push("credit_limit=?"); params.push(parseFloat(creditLimit)); }
 
-        // Only update opening balance if valid number
-        if (openingBalance !== undefined && openingBalance !== "") {
-            updates.push("opening_balance=?");
-            params.push(parseFloat(openingBalance));
+        if (creditLimit !== undefined) {
+            updates.push("credit_limit=?");
+            params.push(parseFloat(creditLimit) || 0);
         }
 
-        // If balance is explicitly provided (e.g. correction), update current_balance
-        if (balance !== undefined && balance !== "") {
+        if (openingBalance !== undefined) {
+            updates.push("opening_balance=?");
+            params.push(parseFloat(openingBalance) || 0);
+        }
+
+        if (balance !== undefined) {
             updates.push("current_balance=?");
-            params.push(parseFloat(balance));
+            params.push(parseFloat(balance) || 0);
         }
 
         updates.push("sync_status='pending'");
@@ -1090,7 +1128,17 @@ ipcMain.handle("delete-customer", async (e, id) => {
 ipcMain.handle("get-vendors", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
-        db.all("SELECT *, is_active as isActive, current_balance as balance FROM vendors WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY name ASC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+        db.all(`SELECT *, 
+                       is_active as isActive, 
+                       current_balance as balance,
+                       opening_balance as openingBalance,
+                       company_name as companyName,
+                       contact_person as contactPerson,
+                       gst_no as gstNo
+                FROM vendors 
+                WHERE (company_id = ? OR company_id = ? OR company_id = ?) 
+                  AND (sync_status != 'deleted' OR sync_status IS NULL) 
+                ORDER BY name ASC`, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -1099,9 +1147,12 @@ ipcMain.handle("get-vendors", async (e, companyId) => {
 
 ipcMain.handle("create-vendor", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { name, contact_person, phone, email, address, city, gst_no, company_name, openingBalance, companyId, company_id } = data;
+        const { name, contact_person, contactPerson, phone, email, address, city, gst_no, gstNo, company_name, companyName, openingBalance, companyId, company_id } = data;
         const finalCompanyId = companyId || company_id;
         const opBal = parseFloat(openingBalance || 0);
+        const cPerson = contact_person || contactPerson || "";
+        const cName = company_name || companyName || "";
+        const gNo = gst_no || gstNo || "";
 
         const tempId = randomUUID();
         db.run(
@@ -1110,7 +1161,7 @@ ipcMain.handle("create-vendor", async (e, data) => {
                 opening_balance, current_balance, company_id, sync_status, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [
-                tempId, name, contact_person, phone, email, address, city, gst_no, company_name,
+                tempId, name, cPerson, phone, email, address, city, gNo, cName,
                 opBal, opBal, // current_balance starts as opening_balance
                 finalCompanyId
             ],
@@ -1125,28 +1176,36 @@ ipcMain.handle("create-vendor", async (e, data) => {
 
 ipcMain.handle("update-vendor", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, name, contact_person, phone, email, address, city, gst_no, company_name, openingBalance, balance, companyId, company_id } = data;
+        const { id, name, contact_person, contactPerson, phone, email, address, city, gst_no, gstNo, company_name, companyName, openingBalance, balance, currentBalance, companyId, company_id } = data;
 
         const updates = [];
         const params = [];
 
         if (name !== undefined) { updates.push("name=?"); params.push(name); }
-        if (contact_person !== undefined) { updates.push("contact_person=?"); params.push(contact_person); }
+
+        const cPerson = contact_person !== undefined ? contact_person : contactPerson;
+        if (cPerson !== undefined) { updates.push("contact_person=?"); params.push(cPerson); }
+
         if (phone !== undefined) { updates.push("phone=?"); params.push(phone); }
         if (email !== undefined) { updates.push("email=?"); params.push(email); }
         if (address !== undefined) { updates.push("address=?"); params.push(address); }
         if (city !== undefined) { updates.push("city=?"); params.push(city); }
-        if (gst_no !== undefined) { updates.push("gst_no=?"); params.push(gst_no); }
-        if (company_name !== undefined) { updates.push("company_name=?"); params.push(company_name); }
+
+        const gNo = gst_no !== undefined ? gst_no : gstNo;
+        if (gNo !== undefined) { updates.push("gst_no=?"); params.push(gNo); }
+
+        const cName = company_name !== undefined ? company_name : companyName;
+        if (cName !== undefined) { updates.push("company_name=?"); params.push(cName); }
 
         if (openingBalance !== undefined && openingBalance !== "") {
             updates.push("opening_balance=?");
             params.push(parseFloat(openingBalance));
         }
 
-        if (balance !== undefined && balance !== "") {
+        const bal = balance !== undefined ? balance : currentBalance;
+        if (bal !== undefined && bal !== "") {
             updates.push("current_balance=?");
-            params.push(parseFloat(balance));
+            params.push(parseFloat(bal));
         }
 
         updates.push("sync_status='pending'");
@@ -1360,76 +1419,95 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT p.*, 
-                   v.name as vendor_name,
+                   v.name as vendorName,
                    p.ref_number as invoiceNo,
                    p.total_amount as totalAmount,
                    p.paid_amount as paidAmount,
-                   p.status as paymentStatus
+                   p.payment_status as paymentStatus,
+                   p.purchase_date as date,
+                   p.due_date as dueDate,
+                   p.shipping_cost as shippingCost,
+                   p.discount,
+                   p.tax_amount as tax,
+                   p.notes,
+                   p.payment_method as paymentMethod,
+                   (SELECT COUNT(*) FROM purchase_items WHERE purchase_id = p.global_id OR purchase_id = CAST(p.id AS TEXT)) as itemCount
             FROM purchases p
             LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
-            WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) AND (p.sync_status != 'deleted' OR p.sync_status IS NULL)
+            WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
+              AND (p.sync_status != 'deleted' OR p.sync_status IS NULL)
             ORDER BY p.purchase_date DESC
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+            if (err) return reject(err);
+
+            // Fetch items for each purchase if needed, or leave for individual fetch
+            // Modernizing to include vendor object for frontend
+            const transformed = rows.map(row => ({
+                ...row,
+                vendor: row.vendorName ? { name: row.vendorName } : null,
+                items: new Array(row.itemCount || 0).fill({})
+            }));
+            resolve(transformed);
         });
     });
 });
 
 ipcMain.handle("add-purchase", async (e, data) => {
     return new Promise((resolve, reject) => {
-        // Robust destructuring for frontend compatibility
         const vendor_id = data.vendor_id || data.vendorId;
         const total_amount = data.total_amount || data.totalAmount || data.grandTotal || 0;
         const paid_amount = data.paid_amount || data.paidAmount || 0;
-        const ref_number = data.ref_number || data.refNumber || data.invoiceNo || `PUR-${Date.now()}`; // Default if missing
+        const ref_number = data.ref_number || data.refNumber || data.invoiceNo || `PUR-${Date.now()}`;
         const shipping_cost = data.shipping_cost || data.shippingCost || 0;
         const discount = data.discount || 0;
+        const tax_amount = data.tax_amount || data.tax || 0;
+        const notes = data.notes || "";
+        const payment_method = data.payment_method || data.paymentMethod || "CASH";
+        const payment_status = data.payment_status || data.paymentStatus || "RECEIVED";
+        const due_date = data.due_date || data.dueDate || null;
         const companyId = data.companyId || data.company_id;
         const items = data.items || [];
 
-        const finalCompanyId = companyId;
         const tempId = randomUUID();
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
             db.run(
-                `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, ref_number, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, ref_number, finalCompanyId],
+                `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, company_id, sync_status, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, companyId],
                 function (err) {
                     if (err) {
                         db.run("ROLLBACK");
                         return reject({ success: false, message: err.message });
                     }
 
-                    const purchaseId = this.lastID;
-
-                    // Add items if provided
+                    // 1. Add Items and Update Stock
                     if (items && Array.isArray(items)) {
-                        const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
-                                               VALUES (?, ?, ?, ?, ?, ?)`);
+                        const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`);
+                        const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?`);
+
                         items.forEach(item => {
-                            stmt.run(
-                                randomUUID(),
-                                tempId,
-                                item.productId || item.product_id,
-                                item.quantity,
-                                item.unit_cost || item.unitCost || item.price || 0,
-                                item.total_cost || item.totalCost || item.total || 0
-                            );
+                            const pid = item.productId || item.product_id;
+                            const qty = item.quantity || 0;
+                            stmt.run(randomUUID(), tempId, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0);
+                            stockStmt.run(qty, pid, pid);
                         });
                         stmt.finalize();
+                        stockStmt.finalize();
+                    }
+
+                    // 2. Update Vendor Balance
+                    if (vendor_id) {
+                        const balanceChange = total_amount - paid_amount;
+                        db.run(`UPDATE vendors SET current_balance = current_balance + ? WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
                     }
 
                     db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            db.run("ROLLBACK");
-                            return reject({ success: false, message: commitErr.message });
-                        }
+                        if (commitErr) { db.run("ROLLBACK"); return reject({ success: false, message: commitErr.message }); }
                         syncService.syncPendingRecords();
-                        resolve({ success: true, id: purchaseId, global_id: tempId, message: "Purchase recorded locally." });
+                        resolve({ success: true, global_id: tempId, message: "Purchase recorded and stock/balance updated." });
                     });
                 }
             );
@@ -1446,98 +1524,106 @@ ipcMain.handle("update-purchase", async (e, data) => {
         const ref_number = data.ref_number || data.refNumber || data.invoiceNo;
         const shipping_cost = data.shipping_cost || data.shippingCost || 0;
         const discount = data.discount || 0;
+        const tax_amount = data.tax_amount || data.tax || 0;
+        const notes = data.notes || "";
+        const payment_method = data.payment_method || data.paymentMethod || "CASH";
+        const payment_status = data.payment_status || data.paymentStatus || "RECEIVED";
+        const due_date = data.due_date || data.dueDate || null;
         const companyId = data.companyId || data.company_id;
 
         db.serialize(() => {
-            db.run("BEGIN TRANSACTION");
+            // Fetch old purchase to reverse
+            db.get("SELECT * FROM purchases WHERE id=? OR global_id=?", [id, id], (err, oldPurchase) => {
+                if (!oldPurchase) return reject("Old purchase not found");
+                const oldGid = oldPurchase.global_id;
 
-            db.run(
-                `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-                [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, companyId, id, id],
-                function (err) {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject({ success: false, message: err.message });
+                db.all("SELECT * FROM purchase_items WHERE purchase_id=?", [oldGid], (itemErr, oldItems) => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Reverse Old Stock
+                    const reverseStockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?");
+                    oldItems.forEach(item => reverseStockStmt.run(item.quantity, item.product_id, item.product_id));
+                    reverseStockStmt.finalize();
+
+                    // 2. Reverse Old Vendor Balance
+                    if (oldPurchase.vendor_id) {
+                        const oldDiff = oldPurchase.total_amount - oldPurchase.paid_amount;
+                        db.run("UPDATE vendors SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [oldDiff, oldPurchase.vendor_id, oldPurchase.vendor_id]);
                     }
 
-                    // Re-insert items
-                    const parentGlobalId = global_id || id; // Ideally global_id, fallback to local ID if needed (though global_id should be present)
+                    // 3. Update Purchase Record
+                    db.run(
+                        `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+                        [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, companyId, id, id],
+                        function (err) {
+                            if (err) { db.run("ROLLBACK"); return reject(err); }
 
-                    // We need the global_id of the purchase to link items correctly
-                    // If frontend didn't pass global_id, we should fetch it or use the one we have? 
-                    // Let's assume frontend passes correct IDs. If 'id' is local, 'global_id' might be needed.
-                    // But purchase_items link via purchase_id which is TEXT (and usually global_id).
+                            // 4. Delete and Re-insert items, Update New Stock
+                            db.run("DELETE FROM purchase_items WHERE purchase_id = ?", [oldGid], (delErr) => {
+                                if (items && Array.isArray(items)) {
+                                    const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`);
+                                    const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?`);
 
-                    // To be safe, let's fetch the actual global_id if we only have local ID
-                    const getGid = new Promise(res => {
-                        if (global_id) return res(global_id);
-                        db.get("SELECT global_id FROM purchases WHERE id = ?", [id], (e, r) => res(r?.global_id));
-                    });
-
-                    getGid.then(gid => {
-                        if (!gid) {
-                            db.run("ROLLBACK"); // Should not happen if update succeeded
-                            return reject({ success: false, message: "Purchase ID mismatch" });
-                        }
-
-                        db.run("DELETE FROM purchase_items WHERE purchase_id = ?", [gid], (delErr) => {
-                            if (delErr) {
-                                db.run("ROLLBACK");
-                                return reject(delErr);
-                            }
-
-                            if (items && Array.isArray(items)) {
-                                const stmt = db.prepare(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
-                                                       VALUES (?, ?, ?, ?, ?, ?)`);
-                                items.forEach(item => {
-                                    stmt.run(
-                                        randomUUID(),
-                                        gid,
-                                        item.productId || item.product_id,
-                                        item.quantity,
-                                        item.unit_cost || item.unitCost || item.price || 0,
-                                        item.total_cost || item.totalCost || item.total || 0
-                                    );
-                                });
-                                stmt.finalize();
-                            }
-
-                            db.run("COMMIT", (commitErr) => {
-                                if (commitErr) {
-                                    db.run("ROLLBACK");
-                                    return reject(commitErr);
+                                    items.forEach(item => {
+                                        const pid = item.productId || item.product_id;
+                                        const qty = item.quantity || 0;
+                                        stmt.run(randomUUID(), oldGid, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0);
+                                        stockStmt.run(qty, pid, pid);
+                                    });
+                                    stmt.finalize();
+                                    stockStmt.finalize();
                                 }
-                                syncService.syncPendingRecords();
-                                resolve({ success: true, message: "Purchase updated locally." });
+
+                                // 5. Apply New Vendor Balance
+                                if (vendor_id) {
+                                    const newDiff = total_amount - paid_amount;
+                                    db.run("UPDATE vendors SET current_balance = current_balance + ? WHERE id=? OR global_id=?", [newDiff, vendor_id, vendor_id]);
+                                }
+
+                                db.run("COMMIT", (commitErr) => {
+                                    if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                                    syncService.syncPendingRecords();
+                                    resolve({ success: true, message: "Purchase updated and stock/balance adjusted." });
+                                });
                             });
-                        });
-                    });
-                }
-            );
+                        }
+                    );
+                });
+            });
         });
     });
 });
 
 ipcMain.handle("delete-purchase", async (e, id) => {
     return new Promise((resolve, reject) => {
-        db.get("SELECT global_id FROM purchases WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err || !row) return reject("Purchase not found");
-            const gid = row.global_id;
+        db.get("SELECT * FROM purchases WHERE id = ? OR global_id = ?", [id, id], (err, purchase) => {
+            if (err || !purchase) return reject("Purchase not found");
+            const gid = purchase.global_id;
 
-            db.serialize(() => {
-                db.run("BEGIN TRANSACTION");
-                db.run("UPDATE purchases SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject(err);
+            db.all("SELECT * FROM purchase_items WHERE purchase_id = ?", [gid], (itemErr, items) => {
+                db.serialize(() => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Reverse Stock
+                    const stockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?");
+                    items.forEach(item => stockStmt.run(item.quantity, item.product_id, item.product_id));
+                    stockStmt.finalize();
+
+                    // 2. Adjust Vendor Balance
+                    if (purchase.vendor_id) {
+                        const diff = purchase.total_amount - purchase.paid_amount;
+                        db.run("UPDATE vendors SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [diff, purchase.vendor_id, purchase.vendor_id]);
                     }
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            db.run("ROLLBACK");
-                            return reject(commitErr);
-                        }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, message: "Purchase marked for deletion locally." });
+
+                    // 3. Mark Purchase as Deleted
+                    db.run("UPDATE purchases SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (delErr) => {
+                        if (delErr) { db.run("ROLLBACK"); return reject(delErr); }
+
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Purchase deleted and stock/balance restored." });
+                        });
                     });
                 });
             });
@@ -1955,52 +2041,146 @@ ipcMain.handle("restore-backup", async (e, companyId) => {
 ipcMain.handle("get-report-summary", async (e, params) => {
     const rawCid = typeof params === 'object' ? params.companyId : params;
     const ids = await resolveCompanyIds(rawCid);
-    const companyIdForQuery = ids.globalId || ids.localId; // We'll use one, but subquery will handle others
+    const companyMatch = `(company_id = ? OR company_id = ? OR company_id = ?)`;
+    const qParams = [ids.localId, ids.globalId, String(ids.localId)];
 
     return new Promise((resolve, reject) => {
         const period = typeof params === 'object' ? params.period : 'Monthly';
+        const startDate = params?.startDate;
+        const endDate = params?.endDate;
 
         let dateFilter = "";
+        let trendFilter = "";
         const now = new Date();
-        if (period === 'Daily') {
-            dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
-        } else if (period === 'Weekly') {
-            const lastWeek = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
-            dateFilter = ` AND sale_date >= '${lastWeek}'`;
-        } else if (period === 'Monthly') {
-            const lastMonth = new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
-            dateFilter = ` AND sale_date >= '${lastMonth}'`;
+
+        if (startDate && endDate) {
+            dateFilter = ` AND sale_date BETWEEN '${startDate}' AND '${endDate}'`;
+        } else {
+            if (period === 'Daily') {
+                dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
+            } else if (period === 'Weekly') {
+                const lastWeek = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
+                dateFilter = ` AND sale_date >= '${lastWeek}'`;
+            } else if (period === 'Monthly') {
+                const lastMonth = new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
+                dateFilter = ` AND sale_date >= '${lastMonth}'`;
+            } else if (period === 'Yearly') {
+                const lastYear = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
+                dateFilter = ` AND sale_date >= '${lastYear}'`;
+            }
         }
 
         const stats = {
             totalSales: 0,
+            salesCount: 0,
             totalExpenses: 0,
+            expenseCount: 0,
             totalPurchases: 0,
+            purchaseCount: 0,
+            totalReturns: 0,
+            returnCount: 0,
+            totalSalesReturns: 0,
+            totalPurchaseReturns: 0,
             netProfit: 0,
             todaySales: 0,
             totalCOGS: 0,
-            recentDays: []
+            inventoryValuationCost: 0,
+            inventoryValuationSell: 0,
+            lowStockCount: 0,
+            recentDays: [],
+            topProducts: [],
+            topCustomers: []
         };
 
-        const companyMatch = `(company_id = ? OR company_id = ? OR company_id = ?)`;
-        const qParams = [ids.localId, ids.globalId, String(ids.localId)];
-
         db.serialize(() => {
-            // Get Total Sales
-            db.get(`SELECT SUM(grand_total) as total FROM sales WHERE ${companyMatch} ${dateFilter}`, qParams, (err, row) => {
-                if (row) stats.totalSales = row.total || 0;
+            // 1. Basic Summary Stats
+            db.get(`SELECT SUM(grand_total) as total, COUNT(*) as count FROM sales WHERE ${companyMatch} ${dateFilter}`, qParams, (err, row) => {
+                if (row) {
+                    stats.totalSales = row.total || 0;
+                    stats.salesCount = row.count || 0;
+                }
             });
 
-            // Get Total Purchases
-            db.get(`SELECT SUM(total_amount) as total FROM purchases WHERE ${companyMatch} ${dateFilter.replace('sale_date', 'purchase_date')}`, qParams, (err, row) => {
-                if (row) stats.totalPurchases = row.total || 0;
+            db.get(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchases WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'purchase_date')}`, qParams, (err, row) => {
+                if (row) {
+                    stats.totalPurchases = row.total || 0;
+                    stats.purchaseCount = row.count || 0;
+                }
             });
 
-            // Get Total Expenses
-            db.get(`SELECT SUM(amount) as total FROM expenses WHERE ${companyMatch} ${dateFilter.replace('sale_date', 'date')}`, qParams, (err, row) => {
-                if (row) stats.totalExpenses = row.total || 0;
+            db.get(`SELECT SUM(amount) as total, COUNT(*) as count FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
+                if (row) {
+                    stats.totalExpenses = row.total || 0;
+                    stats.expenseCount = row.count || 0;
+                }
+            });
 
-                stats.netProfit = stats.totalSales - stats.totalExpenses;
+            // 2. Returns
+            db.get(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
+                if (row) stats.totalSalesReturns = row.total || 0;
+            });
+            db.get(`SELECT SUM(total_amount) as total FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
+                if (row) stats.totalPurchaseReturns = row.total || 0;
+                stats.totalReturns = stats.totalSalesReturns + stats.totalPurchaseReturns;
+            });
+
+            // 3. Inventory & COGS
+            db.get(`SELECT SUM(stock_quantity * cost_price) as cost_val, SUM(stock_quantity * sell_price) as sell_val, COUNT(CASE WHEN stock_quantity <= alert_threshold THEN 1 END) as low FROM products WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams, (err, row) => {
+                if (row) {
+                    stats.inventoryValuationCost = row.cost_val || 0;
+                    stats.inventoryValuationSell = row.sell_val || 0;
+                    stats.lowStockCount = row.low || 0;
+                }
+            });
+
+            db.get(`
+                SELECT SUM(si.quantity * p.cost_price) as total_cogs
+                FROM sale_items si
+                JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
+                JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+                WHERE s.${companyMatch} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`, qParams, (err, row) => {
+                if (row) stats.totalCOGS = row.total_cogs || 0;
+            });
+
+            // 4. Trend Data (Last 7 Days)
+            const trendDays = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                trendDays.push(d.toISOString().split('T')[0]);
+            }
+
+            db.all(`
+                SELECT date(sale_date) as day, SUM(grand_total) as total
+                FROM sales
+                WHERE ${companyMatch} AND sale_date >= date('now', '-7 days')
+                GROUP BY day
+            `, qParams, (err, rows) => {
+                const salesByDay = {};
+                if (rows) rows.forEach(r => salesByDay[r.day] = r.total);
+
+                stats.recentDays = trendDays.map(day => ({
+                    date: day,
+                    sales: salesByDay[day] || 0,
+                    profit: (salesByDay[day] || 0) * 0.2 // Estimated 20% margin if exact COGS per day is too heavy
+                })).reverse();
+            });
+
+            // 5. Top Products
+            db.all(`
+                SELECT p.name, SUM(si.quantity) as qtySold
+                FROM sale_items si
+                JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+                JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
+                WHERE s.${companyMatch}
+                GROUP BY p.name
+                ORDER BY qtySold DESC
+                LIMIT 5
+            `, qParams, (err, rows) => {
+                if (rows) stats.topProducts = rows;
+
+                // Finalize Net Profit
+                stats.netProfit = stats.totalSales - stats.totalCOGS - stats.totalExpenses;
                 resolve({ ...stats, success: true });
             });
         });

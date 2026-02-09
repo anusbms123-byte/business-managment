@@ -272,9 +272,13 @@ function initSchema() {
       total_amount REAL,
       paid_amount REAL DEFAULT 0,
       shipping_cost REAL DEFAULT 0,
+      discount REAL DEFAULT 0,
+      tax_amount REAL DEFAULT 0,
+      notes TEXT,
+      payment_method TEXT DEFAULT 'CASH',
+      payment_status TEXT DEFAULT 'RECEIVED',
       purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
       due_date DATE,
-      payment_status TEXT DEFAULT 'received',
       status TEXT DEFAULT 'received',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -517,7 +521,21 @@ db.serialize(() => {
   addColumnIfNotExists('purchases', 'ref_number', "TEXT");
   addColumnIfNotExists('purchases', 'total_amount', "REAL DEFAULT 0");
   addColumnIfNotExists('purchases', 'paid_amount', "REAL DEFAULT 0");
+  addColumnIfNotExists('purchases', 'shipping_cost', "REAL DEFAULT 0");
+  addColumnIfNotExists('purchases', 'discount', "REAL DEFAULT 0");
+  addColumnIfNotExists('purchases', 'tax_amount', "REAL DEFAULT 0");
+  addColumnIfNotExists('purchases', 'notes', "TEXT");
+  addColumnIfNotExists('purchases', 'payment_method', "TEXT DEFAULT 'CASH'");
+  addColumnIfNotExists('purchases', 'payment_status', "TEXT DEFAULT 'RECEIVED'");
+  addColumnIfNotExists('purchases', 'due_date', "DATE");
   addColumnIfNotExists('purchases', 'vendor_id', "TEXT");
+
+  // Vendors matching
+  addColumnIfNotExists('vendors', 'company_name', "TEXT");
+  addColumnIfNotExists('vendors', 'contact_person', "TEXT");
+  addColumnIfNotExists('vendors', 'opening_balance', "REAL DEFAULT 0");
+  addColumnIfNotExists('vendors', 'current_balance', "REAL DEFAULT 0");
+  addColumnIfNotExists('vendors', 'gst_no', "TEXT");
 
   // Detail items
   addColumnIfNotExists('sale_items', 'global_id', 'TEXT');

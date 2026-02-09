@@ -408,13 +408,17 @@ const Purchase = ({ currentUser }) => {
                                             onChange={(e) => {
                                                 const vid = e.target.value;
                                                 setVendorId(vid);
-                                                const ven = vendors.find(v => v.id === vid);
+                                                const ven = vendors.find(v => String(v.id) === String(vid));
                                                 setPreviousBalance(ven?.balance || 0);
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
                                         >
                                             <option value="">Select Supplier</option>
-                                            {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                            {vendors.map(v => (
+                                                <option key={v.id} value={v.id}>
+                                                    {v.name} {v.balance > 0 ? `(Owe: ${v.balance.toLocaleString()})` : ''}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
