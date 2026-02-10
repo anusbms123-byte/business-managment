@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { MoreVertical, TrendingUp, FolderKanban, Wallet, UserPlus } from 'lucide-react';
 import {
-    BarChart,
-    Bar,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Cell,
-    Legend
+    Defs,
+    LinearGradient,
+    ReferenceLine
 } from 'recharts';
 
 // Circular Progress Component
@@ -96,24 +97,31 @@ const CHART_COLORS = [
 ];
 
 // Modern Bar Chart Component
+// Modern Analytics Chart Component
 const PerformanceChart = ({ data }) => {
     return (
         <div style={{ width: '100%', height: 350 }} className="mt-4">
             <ResponsiveContainer>
-                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 20 }} barGap={8}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <defs>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#babbbd', fontSize: 10, fontWeight: 800 }}
+                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                         tickFormatter={(str) => {
                             try {
                                 const d = new Date(str);
-                                if (isNaN(d)) return str;
-                                if (str.length === 7) {
-                                    return d.toLocaleDateString(undefined, { month: 'short' });
-                                }
                                 return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                             } catch (e) { return str; }
                         }}
@@ -122,36 +130,34 @@ const PerformanceChart = ({ data }) => {
                     <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#babbbd', fontSize: 10, fontWeight: 800 }}
+                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                         tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                    <Tooltip content={<CustomTooltip />} />
 
-
-                    {/* Sales Bar */}
-                    <Bar
+                    <Area
+                        type="monotone"
                         dataKey="sales"
                         name="Revenue"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={40}
-                    >
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-sales-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                    </Bar>
-
-                    {/* Net Profit Bar */}
-                    <Bar
+                        stroke="#2563eb"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorSales)"
+                        dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                    <Area
+                        type="monotone"
                         dataKey="profit"
                         name="Net Profit"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={40}
-                    >
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-profit-${index}`} fill={CHART_COLORS[(index + 3) % CHART_COLORS.length]} fillOpacity={0.7} />
-                        ))}
-                    </Bar>
-                </BarChart>
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorProfit)"
+                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                </AreaChart>
             </ResponsiveContainer>
         </div>
     );

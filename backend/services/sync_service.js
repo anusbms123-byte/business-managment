@@ -387,23 +387,21 @@ class SyncService {
                                                     [item.id, localReturnId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
                                             }
                                         } else if (table === 'roles' && cloudData.permissions && Array.isArray(cloudData.permissions)) {
-                                            const localRoleId = await this.resolveLocalId('roles', cloudData.id);
-                                            if (localRoleId) {
-                                                for (const perm of cloudData.permissions) {
-                                                    db.run(`INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                        VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
-                                                        [
-                                                            perm.id,
-                                                            localRoleId,  // Use LOCAL Integer ID or Global? Perm table uses role_id.
-                                                            perm.module,
-                                                            perm.canView ? 1 : 0,
-                                                            perm.canCreate ? 1 : 0,
-                                                            perm.canEdit ? 1 : 0,
-                                                            perm.canDelete ? 1 : 0,
-                                                            perm.updatedAt || perm.updated_at
-                                                        ]
-                                                    );
-                                                }
+                                            // Use global_id for role_id to ensure permissions can be matched during login
+                                            for (const perm of cloudData.permissions) {
+                                                db.run(`INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                    VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
+                                                    [
+                                                        perm.id,
+                                                        cloudData.id,  // Use global UUID for role_id (not local integer ID)
+                                                        perm.module,
+                                                        perm.canView ? 1 : 0,
+                                                        perm.canCreate ? 1 : 0,
+                                                        perm.canEdit ? 1 : 0,
+                                                        perm.canDelete ? 1 : 0,
+                                                        perm.updatedAt || perm.updated_at
+                                                    ]
+                                                );
                                             }
                                         }
                                     };
