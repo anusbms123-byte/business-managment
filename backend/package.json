@@ -1,6 +1,6 @@
 {
   "name": "businessmanagementapp",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "description": "Business Management Desktop Application",
   "main": "main.js",
   "author": "Huzaifa",
@@ -30,7 +30,9 @@
       "buildResources": "assets",
       "output": "dist"
     },
-    "asar": true,
+    "asar": false,
+    "fileAssociations": [],
+    "compression": "normal",
     "files": [
       "**/*",
       "!node_modules/.cache/**/*"

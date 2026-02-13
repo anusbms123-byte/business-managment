@@ -46,29 +46,42 @@ class SyncService {
     async pullAllData(companyGlobalId) {
         if (this.isSyncing) return;
         this.isSyncing = true;
-        console.log('Starting full data pull from cloud...');
+
+        // For Super Admin, companyGlobalId might be null/undefined to pull all data
+        // If it's explicitly null (not just undefined), we treat it as Global pull
+        let targetCompanyId = companyGlobalId;
+        if (targetCompanyId === undefined) {
+            targetCompanyId = this.currentCompanyId;
+        }
+
+        console.log(`[SYNC] Starting full data pull for Company ID: ${targetCompanyId || 'Global (Super Admin)'}`);
 
         try {
             // Priority order for pulling data
+            // We use targetCompanyId. If it's missing (e.g. Super Admin doing global pull), we might pass empty string or null depending on API needs.
+            // But for normal client sync, targetCompanyId MUST be present.
+
+            const cidParams = targetCompanyId ? `?companyId=${targetCompanyId}` : '';
+
             const endpoints = [
-                { table: 'companies', endpoint: `/companies/${companyGlobalId || ''}` },
-                { table: 'roles', endpoint: `/roles?companyId=${companyGlobalId || ''}` },
-                { table: 'users', endpoint: `/users?companyId=${companyGlobalId || ''}` }, // All users for offline login
-                { table: 'categories', endpoint: `/categories?companyId=${companyGlobalId || ''}` },
-                { table: 'brands', endpoint: `/brands?companyId=${companyGlobalId || ''}` },
-                { table: 'vendors', endpoint: `/vendors?companyId=${companyGlobalId || ''}` },
-                { table: 'customers', endpoint: `/customers?companyId=${companyGlobalId || ''}` },
-                { table: 'products', endpoint: `/products?companyId=${companyGlobalId || ''}` },
-                { table: 'employees', endpoint: `/employees?companyId=${companyGlobalId || ''}` },
-                { table: 'expenses', endpoint: `/expenses?companyId=${companyGlobalId || ''}` },
-                { table: 'sales', endpoint: `/sales?companyId=${companyGlobalId || ''}` },
-                { table: 'purchases', endpoint: `/purchases?companyId=${companyGlobalId || ''}` },
-                { table: 'accounts', endpoint: `/account?companyId=${companyGlobalId || ''}` },
-                { table: 'sale_returns', endpoint: `/returns/sales?companyId=${companyGlobalId || ''}` },
-                { table: 'purchase_returns', endpoint: `/returns/purchases?companyId=${companyGlobalId || ''}` },
-                { table: 'attendances', endpoint: `/attendance?companyId=${companyGlobalId || ''}` },
-                { table: 'salary_records', endpoint: `/salary-records?companyId=${companyGlobalId || ''}` },
-                { table: 'audit_logs', endpoint: `/audit-logs?companyId=${companyGlobalId || ''}` }
+                { table: 'companies', endpoint: (targetCompanyId && targetCompanyId !== 'null') ? `/companies/${targetCompanyId}` : '/companies' },
+                { table: 'roles', endpoint: `/roles${cidParams}` },
+                { table: 'users', endpoint: `/users${cidParams}` }, // All users for offline login
+                { table: 'categories', endpoint: `/categories${cidParams}` },
+                { table: 'brands', endpoint: `/brands${cidParams}` },
+                { table: 'vendors', endpoint: `/vendors${cidParams}` },
+                { table: 'customers', endpoint: `/customers${cidParams}` },
+                { table: 'products', endpoint: `/products${cidParams}` },
+                { table: 'employees', endpoint: `/employees${cidParams}` },
+                { table: 'expenses', endpoint: `/expenses${cidParams}` },
+                { table: 'sales', endpoint: `/sales${cidParams}` },
+                { table: 'purchases', endpoint: `/purchases${cidParams}` },
+                { table: 'accounts', endpoint: `/account${cidParams}` },
+                { table: 'sale_returns', endpoint: `/returns/sales${cidParams}` },
+                { table: 'purchase_returns', endpoint: `/returns/purchases${cidParams}` },
+                { table: 'attendances', endpoint: `/attendance${cidParams}` },
+                { table: 'salary_records', endpoint: `/salary-records${cidParams}` },
+                { table: 'audit_logs', endpoint: `/audit-logs${cidParams}` }
             ];
 
             const baseUrl = this.CLOUD_URL.trim();
@@ -123,7 +136,7 @@ class SyncService {
         const modulesToReset = [
             'sales', 'sale_items',
             'purchases', 'purchase_items',
-            'companies', 'users', 'roles', 'permissions',
+            'companies',
             'sale_returns', 'sale_return_items',
             'purchase_returns', 'purchase_return_items',
             'customers', 'vendors', 'expenses', 'audit_logs',
@@ -857,7 +870,7 @@ class SyncService {
                 SELECT * FROM ${table} 
                 WHERE sync_status = ? 
                 AND (
-                    updated_at <= datetime('now', '-5 minutes') 
+                    updated_at <= datetime('now', '-30 seconds') 
                     OR updated_at IS NULL
                 )
             `;

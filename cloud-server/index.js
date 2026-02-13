@@ -289,10 +289,13 @@ app.post('/api/users', async (req, res) => {
         // If password is sent from local sync, it's likely already hashed or is a placeholder. 
         // We save it as is. If the local app is hashing it, this is correct.
 
+        // Hash password before saving to cloud
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const user = await prisma.user.create({
             data: {
                 username,
-                password, // Assumes pre-hashed or plain depending on local logic
+                password: hashedPassword,
                 email,
                 fullName,
                 roleId,
@@ -317,9 +320,9 @@ app.put('/api/users/:id', async (req, res) => {
             isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined)
         };
 
-        // Only update password if provided and not empty (to avoid overwriting with null if not synced)
+        // Only update password if provided and not empty
         if (password && password.trim() !== '') {
-            data.password = password;
+            data.password = await bcrypt.hash(password, 10);
         }
 
         await prisma.user.update({

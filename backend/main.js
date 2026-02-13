@@ -102,14 +102,41 @@ async function recordDeletion(tableName, globalId) {
     });
 }
 
+// Global variable to track currently logged-in company for auto-sync (undefined = not logged in, null = Super Admin)
+let currentLoggedCompany = undefined;
+
+// Setup Background Sync Timer (Every 5 minutes)
+// - Pushes pending local changes to cloud
+// - Pulls fresh data from cloud (if user is logged in)
+setInterval(async () => {
+    console.log("[AUTO-SYNC] Running scheduled sync (every 5 minutes)...");
+
+    // Always push pending changes
+    syncService.syncPendingRecords();
+
+    // If a user is logged in (including Super Admin with null company), also pull fresh data
+    if (currentLoggedCompany !== undefined) {
+        console.log(`[AUTO-SYNC] Pulling fresh data for session: ${currentLoggedCompany === null ? 'Global (Super Admin)' : currentLoggedCompany}`);
+        try {
+            await syncService.pullAllData(currentLoggedCompany);
+            console.log("[AUTO-SYNC] Data pull completed successfully");
+        } catch (err) {
+            console.error("[AUTO-SYNC] Data pull failed:", err.message);
+        }
+    } else {
+        console.log("[AUTO-SYNC] No user logged in, skipping data pull");
+    }
+}, 300000); // 300,000ms = 5 minutes
+
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
 // ==========================================
 
 // Auth - LOCAL FIRST LOGIN (Cloud with local fallback)
 ipcMain.handle("login", async (e, credentials) => {
+    // Try cloud login first
+    let cloudError = null;
     try {
-        // Try cloud login first to get updates
         const response = await apiCall('post', '/auth/login', credentials);
 
         if (response.success && response.user) {
@@ -179,6 +206,7 @@ ipcMain.handle("login", async (e, credentials) => {
             if (companyId) {
                 const isNewCompany = currentCompanyId !== companyId;
                 currentCompanyId = companyId;
+                currentLoggedCompany = companyId; // Track for auto-sync
                 syncService.setCompanyId(companyId); // Update sync service with current session
 
                 if (isNewCompany) {
@@ -195,24 +223,35 @@ ipcMain.handle("login", async (e, credentials) => {
                 }
             } else if (isSuperAdmin) {
                 // If Super Admin, pull shared data
+                currentLoggedCompany = null; // Super admin has no specific company
                 console.log("Super Admin logged in. Pulling global data...");
                 syncService.pullAllData(null);
             }
 
             return response;
+        } else {
+            cloudError = response.message;
+            console.warn("Cloud login rejected:", cloudError);
         }
     } catch (err) {
-        console.error("Cloud login failed or encountered error:", err.message);
+        cloudError = err.message;
+        console.error("Cloud login endpoint unreachable or error:", err.message);
     }
 
-    // Offline Login Fallback
+    // Offline Login Fallback (If cloud failed or rejected)
     return new Promise((resolve) => {
         db.get(
             "SELECT * FROM users WHERE username = ? AND password = ?",
             [credentials.username, credentials.password],
             (err, user) => {
                 if (err || !user) {
-                    resolve({ success: false, message: "Invalid credentials or user not found offline." });
+                    // Optimized error reporting: If we had a specific rejection from the cloud, use it.
+                    // Otherwise, provide the generic combined error.
+                    const finalMessage = (cloudError && !cloudError.includes('ECONN') && !cloudError.includes('timeout'))
+                        ? cloudError
+                        : "Invalid credentials or user not found offline. Please check your internet or username/password.";
+
+                    resolve({ success: false, message: finalMessage });
                     return;
                 }
 
@@ -677,6 +716,8 @@ ipcMain.handle("get-products", async (e, companyId) => {
                 // Transform to nested objects for frontend compatibility
                 const transformed = rows.map(row => ({
                     ...row,
+                    costPrice: row.costPrice || 0,
+                    sellPrice: row.sellPrice || 0,
                     category: row.category_id ? { id: row.category_id, name: row.category_name } : null,
                     brand: row.brand_id ? { id: row.brand_id, name: row.brand_name } : null,
                     vendor: row.vendor_id ? { id: row.vendor_id, name: row.vendor_name } : null
@@ -1638,15 +1679,39 @@ ipcMain.handle("get-sale-returns", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT sr.*, c.name as customer_name
+            SELECT sr.*, c.name as customer_name,
+                   (SELECT json_group_array(json_object(
+                       'productId', sri.product_id,
+                       'quantity', sri.quantity,
+                       'price', sri.price,
+                       'total', sri.total,
+                       'name', p.name
+                   )) FROM sale_return_items sri 
+                   LEFT JOIN products p ON sri.product_id = p.id OR sri.product_id = p.global_id
+                   WHERE sri.return_id = sr.global_id OR sri.return_id = sr.id) as items
             FROM sale_returns sr
             LEFT JOIN customers c ON sr.customer_id = c.id OR sr.customer_id = c.global_id
-            WHERE (sr.company_id = ? OR sr.company_id = ? OR sr.company_id = ?) AND (sr.sync_status != 'deleted' OR sr.sync_status IS NULL)
+            WHERE (sr.company_id = ? OR sr.company_id = ? OR sr.company_id = ?) 
+              AND (sr.sync_status != 'deleted' OR sr.sync_status IS NULL)
             ORDER BY sr.date DESC
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+            if (err) {
+                console.error("Error fetching sale returns:", err);
+                reject(err);
+            } else {
+                const mapped = rows.map(row => ({
+                    ...row,
+                    invoiceNo: row.invoice_no,
+                    totalAmount: row.total_amount || 0,
+                    subTotal: row.sub_total || 0,
+                    saleId: row.sale_id,
+                    customerId: row.customer_id,
+                    customer: { name: row.customer_name },
+                    items: row.items ? JSON.parse(row.items) : []
+                }));
+                resolve(mapped);
+            }
         });
     });
 });
@@ -1668,8 +1733,8 @@ ipcMain.handle("add-sale-return", async (e, data) => {
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
             db.run(
-                `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                 [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId],
                 function (err) {
                     if (err) {
@@ -1679,21 +1744,35 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 
                     const returnId = this.lastID;
 
-                    // Add items
+                    // Add items and Update Stock
                     if (items && Array.isArray(items)) {
-                        const stmt = db.prepare(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
+                        const itemStmt = db.prepare(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
                                                VALUES (?, ?, ?, ?, ?, ?)`);
+                        const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`);
+
                         items.forEach(item => {
-                            stmt.run(
+                            const pid = item.productId || item.product_id;
+                            const qty = parseInt(item.quantity || 0);
+
+                            itemStmt.run(
                                 randomUUID(),
                                 tempId,
-                                item.productId || item.product_id,
-                                item.quantity,
+                                pid,
+                                qty,
                                 item.price || item.unit_price,
-                                item.total || (item.quantity * (item.price || item.unit_price || 0))
+                                item.total || (qty * (item.price || item.unit_price || 0))
                             );
+
+                            // For Sale Return, Stock INCREASES
+                            stockStmt.run(qty, pid, pid);
                         });
-                        stmt.finalize();
+                        itemStmt.finalize();
+                        stockStmt.finalize();
+                    }
+
+                    // Update Customer Balance (Decrease Receivable)
+                    if (customer_id) {
+                        db.run(`UPDATE customers SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
                     }
 
                     db.run("COMMIT", (commitErr) => {
@@ -1702,7 +1781,7 @@ ipcMain.handle("add-sale-return", async (e, data) => {
                             return reject({ success: false, message: commitErr.message });
                         }
                         syncService.syncPendingRecords();
-                        resolve({ success: true, id: returnId, global_id: tempId, message: "Sale return recorded locally." });
+                        resolve({ success: true, id: returnId, global_id: tempId, message: "Sale return recorded locally, stock updated, and balance adjusted." });
                     });
                 }
             );
@@ -1712,24 +1791,42 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 
 ipcMain.handle("delete-sale-return", async (e, id) => {
     return new Promise((resolve, reject) => {
-        db.get("SELECT global_id FROM sale_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+        db.get("SELECT * FROM sale_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
             if (err || !row) return reject("Sale return not found");
             const gid = row.global_id;
+            const customer_id = row.customer_id;
+            const total_amount = row.total_amount || 0;
 
-            db.serialize(() => {
-                db.run("BEGIN TRANSACTION");
-                db.run("UPDATE sale_returns SET sync_status = 'deleted' WHERE global_id = ?", [gid], (err) => {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject(err);
+            db.all("SELECT * FROM sale_return_items WHERE return_id = ?", [gid], (itemErr, items) => {
+                db.serialize(() => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Reverse Stock (Decrease Stock, as we are cancelling the return)
+                    if (items && items.length > 0) {
+                        const stockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?");
+                        items.forEach(item => stockStmt.run(item.quantity, item.product_id, item.product_id));
+                        stockStmt.finalize();
                     }
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
+
+                    // 2. Reverse Customer Balance (Increase Receivable, as we are cancelling the credit)
+                    if (customer_id) {
+                        db.run(`UPDATE customers SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
+                    }
+
+                    // 3. Mark as Deleted
+                    db.run("UPDATE sale_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
+                        if (err) {
                             db.run("ROLLBACK");
-                            return reject(commitErr);
+                            return reject(err);
                         }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, message: "Sale return marked for deletion locally." });
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) {
+                                db.run("ROLLBACK");
+                                return reject(commitErr);
+                            }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Sale return deleted, stock and balance reverted." });
+                        });
                     });
                 });
             });
@@ -1744,15 +1841,39 @@ ipcMain.handle("get-purchase-returns", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT pr.*, v.name as vendor_name
+            SELECT pr.*, v.name as vendor_name,
+                   (SELECT json_group_array(json_object(
+                       'productId', pri.product_id,
+                       'quantity', pri.quantity,
+                       'unitCost', pri.unit_cost,
+                       'total', pri.total,
+                       'name', p.name
+                   )) FROM purchase_return_items pri 
+                   LEFT JOIN products p ON pri.product_id = p.id OR pri.product_id = p.global_id
+                   WHERE pri.return_id = pr.global_id OR pri.return_id = pr.id) as items
             FROM purchase_returns pr
             LEFT JOIN vendors v ON pr.vendor_id = v.id OR pr.vendor_id = v.global_id
-            WHERE (pr.company_id = ? OR pr.company_id = ? OR pr.company_id = ?) AND (pr.sync_status != 'deleted' OR pr.sync_status IS NULL)
+            WHERE (pr.company_id = ? OR pr.company_id = ? OR pr.company_id = ?) 
+              AND (pr.sync_status != 'deleted' OR pr.sync_status IS NULL)
             ORDER BY pr.date DESC
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+            if (err) {
+                console.error("Error fetching purchase returns:", err);
+                reject(err);
+            } else {
+                const mapped = rows.map(row => ({
+                    ...row,
+                    invoiceNo: row.invoice_no,
+                    totalAmount: row.total_amount || 0,
+                    subTotal: row.sub_total || 0,
+                    purchaseId: row.purchase_id,
+                    vendorId: row.vendor_id,
+                    vendor: { name: row.vendor_name },
+                    items: row.items ? JSON.parse(row.items) : []
+                }));
+                resolve(mapped);
+            }
         });
     });
 });
@@ -1774,8 +1895,8 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
             db.run(
-                `INSERT INTO purchase_returns (global_id, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                `INSERT INTO purchase_returns (global_id, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                 [tempId, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, companyId],
                 function (err) {
                     if (err) {
@@ -1785,21 +1906,36 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
 
                     const returnId = this.lastID;
 
-                    // Add items
+                    // Add items and Update Stock
                     if (items && Array.isArray(items)) {
-                        const stmt = db.prepare(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
+                        const itemStmt = db.prepare(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
                                                VALUES (?, ?, ?, ?, ?, ?)`);
+                        const stockStmt = db.prepare(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`);
+
                         items.forEach(item => {
-                            stmt.run(
+                            const pid = item.productId || item.product_id;
+                            const qty = parseInt(item.quantity || 0);
+                            const uCost = item.unit_cost || item.unitCost || item.price || 0;
+
+                            itemStmt.run(
                                 randomUUID(),
                                 tempId,
-                                item.productId || item.product_id,
-                                item.quantity,
-                                item.unit_cost || item.unitCost || item.price || 0,
-                                item.total || (item.quantity * (item.unit_cost || item.unitCost || item.price || 0))
+                                pid,
+                                qty,
+                                uCost,
+                                item.total || (qty * uCost)
                             );
+
+                            // For Purchase Return, Stock DECREASES
+                            stockStmt.run(qty, pid, pid);
                         });
-                        stmt.finalize();
+                        itemStmt.finalize();
+                        stockStmt.finalize();
+                    }
+
+                    // Update Vendor Balance (Decrease Payable)
+                    if (vendor_id) {
+                        db.run(`UPDATE vendors SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
                     }
 
                     db.run("COMMIT", (commitErr) => {
@@ -1808,7 +1944,7 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
                             return reject({ success: false, message: commitErr.message });
                         }
                         syncService.syncPendingRecords();
-                        resolve({ success: true, id: returnId, global_id: tempId, message: "Purchase return recorded locally." });
+                        resolve({ success: true, id: returnId, global_id: tempId, message: "Purchase return recorded locally, stock updated, and balance adjusted." });
                     });
                 }
             );
@@ -1818,24 +1954,43 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
 
 ipcMain.handle("delete-purchase-return", async (e, id) => {
     return new Promise((resolve, reject) => {
-        db.get("SELECT global_id FROM purchase_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+        db.get("SELECT * FROM purchase_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
             if (err || !row) return reject("Purchase return not found");
             const gid = row.global_id;
+            const vendor_id = row.vendor_id;
+            const total_amount = row.total_amount || 0;
 
-            db.serialize(() => {
-                db.run("BEGIN TRANSACTION");
-                db.run("UPDATE purchase_returns SET sync_status = 'deleted' WHERE global_id = ?", [gid], (err) => {
-                    if (err) {
-                        db.run("ROLLBACK");
-                        return reject(err);
+            db.all("SELECT * FROM purchase_return_items WHERE return_id = ?", [gid], (itemErr, items) => {
+                db.serialize(() => {
+                    db.run("BEGIN TRANSACTION");
+
+                    // 1. Reverse Stock (Increase Stock, as we are cancelling the return - product comes back to us? No, wait)
+                    // Purchase Return Deletion: We sent goods back. Now we say "No, we didn't send them back".
+                    // So goods are back in our inventory. So INCREASE stock.
+                    if (items && items.length > 0) {
+                        const stockStmt = db.prepare("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?");
+                        items.forEach(item => stockStmt.run(item.quantity, item.product_id, item.product_id));
+                        stockStmt.finalize();
                     }
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
+
+                    // 2. Reverse Vendor Balance (Increase Payable, as we are cancelling the debit note)
+                    if (vendor_id) {
+                        db.run(`UPDATE vendors SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
+                    }
+
+                    db.run("UPDATE purchase_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
+                        if (err) {
                             db.run("ROLLBACK");
-                            return reject(commitErr);
+                            return reject(err);
                         }
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, message: "Purchase return marked for deletion locally." });
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) {
+                                db.run("ROLLBACK");
+                                return reject(commitErr);
+                            }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Purchase return deleted, stock and balance reverted." });
+                        });
                     });
                 });
             });
@@ -1843,83 +1998,6 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
     });
 });
 
-// HRM - Employees - LOCAL FIRST
-ipcMain.handle("get-employees", async (e, companyId) => {
-    const ids = await resolveCompanyIds(companyId);
-    return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM employees WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
-            else {
-                // Map snake_case to camelCase for HRM component
-                const mapped = rows.map(emp => ({
-                    ...emp,
-                    firstName: emp.first_name,
-                    lastName: emp.last_name,
-                    hourlyRate: emp.hourly_rate,
-                    joiningDate: emp.joining_date
-                }));
-                resolve(mapped);
-            }
-        });
-    });
-});
-
-ipcMain.handle("create-employee", async (e, data) => {
-    return new Promise((resolve, reject) => {
-        const { first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId, company_id } = data;
-        const finalCompanyId = companyId || company_id;
-        const tempId = randomUUID();
-        db.run(
-            `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, first_name, last_name, phone, designation, salary, hourly_rate || 0, joining_date, finalCompanyId],
-            function (err) {
-                if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
-                resolve({ success: true, id: this.lastID, global_id: tempId });
-            }
-        );
-    });
-});
-
-ipcMain.handle("update-employee", async (e, data) => {
-    return new Promise((resolve, reject) => {
-        const { id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId } = data;
-        const query = `UPDATE employees SET first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
-        db.run(query, [first_name, last_name, phone, designation, salary, hourly_rate, joining_date, companyId, id, id], function (err) {
-            if (err) return reject({ success: false, message: err.message });
-            syncService.syncPendingRecords();
-            resolve({ success: true, message: "Employee updated locally." });
-        });
-    });
-});
-
-ipcMain.handle("delete-employee", async (e, id) => {
-    return new Promise((resolve, reject) => {
-        db.get("SELECT global_id FROM employees WHERE id=? OR global_id=?", [id, id], (err, row) => {
-            if (err || !row) return resolve({ success: false, message: "Employee not found" });
-            const gid = row.global_id;
-
-            const checkQuery = `
-                SELECT 
-                    (SELECT COUNT(*) FROM attendances WHERE employee_id = ? OR employee_id = ?) +
-                    (SELECT COUNT(*) FROM salary_records WHERE employee_id = ? OR employee_id = ?) as linkedCount
-            `;
-            db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
-                if (countRow && countRow.linkedCount > 0) {
-                    return resolve({ success: false, message: "Is Employee ko delete nahi kiya ja sakta kyunke iske attendance ya salary records maujood hain." });
-                }
-                db.run(`UPDATE employees SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
-                    if (err) reject(err);
-                    else {
-                        syncService.syncPendingRecords();
-                        resolve({ success: true, message: "Employee marked for deletion locally." });
-                    }
-                });
-            });
-        });
-    });
-});
 
 // Admin Messages
 ipcMain.handle("get-admin-messages", (e, params) => apiCall('get', '/admin-messages', null, params));
@@ -2041,150 +2119,303 @@ ipcMain.handle("restore-backup", async (e, companyId) => {
 ipcMain.handle("get-report-summary", async (e, params) => {
     const rawCid = typeof params === 'object' ? params.companyId : params;
     const ids = await resolveCompanyIds(rawCid);
-    const companyMatch = `(company_id = ? OR company_id = ? OR company_id = ?)`;
-    const qParams = [ids.localId, ids.globalId, String(ids.localId)];
+    let companyMatch = `(company_id = ? OR company_id = ? OR company_id = ?)`;
+    let qParams = [ids.localId, ids.globalId, String(ids.localId)];
 
-    return new Promise((resolve, reject) => {
-        const period = typeof params === 'object' ? params.period : 'Monthly';
-        const startDate = params?.startDate;
-        const endDate = params?.endDate;
+    if (ids.localId === null && ids.globalId === null) {
+        companyMatch = `1=1`;
+        qParams = [];
+    }
 
-        let dateFilter = "";
-        let trendFilter = "";
-        const now = new Date();
+    const period = typeof params === 'object' ? params.period : 'Monthly';
+    const startDate = params?.startDate;
+    const endDate = params?.endDate;
+    const customerId = params?.customerId;
+    const vendorId = params?.vendorId;
+    const paymentStatus = params?.paymentStatus;
+    const categoryId = params?.categoryId;
+    const stockStatus = params?.stockStatus;
+    const expenseCategory = params?.expenseCategory;
 
-        if (startDate && endDate) {
-            dateFilter = ` AND sale_date BETWEEN '${startDate}' AND '${endDate}'`;
-        } else {
-            if (period === 'Daily') {
-                dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
-            } else if (period === 'Weekly') {
-                const lastWeek = new Date(now.setDate(now.getDate() - 7)).toISOString().split('T')[0];
-                dateFilter = ` AND sale_date >= '${lastWeek}'`;
-            } else if (period === 'Monthly') {
-                const lastMonth = new Date(now.setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
-                dateFilter = ` AND sale_date >= '${lastMonth}'`;
-            } else if (period === 'Yearly') {
-                const lastYear = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
-                dateFilter = ` AND sale_date >= '${lastYear}'`;
-            }
+    let dateFilter = "";
+    const now = new Date();
+
+    const normalizeDate = (d) => {
+        if (!d) return null;
+        // If it's ISO like 2026-02-13T07:09:18.000Z, we want 2026-02-13 07:09:18 or just 2026-02-13
+        let clean = d.replace('T', ' ').split('.')[0].replace('Z', '');
+        return clean;
+    };
+
+    if (startDate && endDate) {
+        const startStr = normalizeDate(startDate).includes(' ') ? normalizeDate(startDate) : `${normalizeDate(startDate)} 00:00:00`;
+        const endStr = normalizeDate(endDate).includes(' ') ? normalizeDate(endDate) : `${normalizeDate(endDate)} 23:59:59`;
+        dateFilter = ` AND sale_date BETWEEN '${startStr}' AND '${endStr}'`;
+    } else {
+        if (period === 'Daily') {
+            dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
+        } else if (period === 'Weekly') {
+            const lastWeek = new Date(new Date().setDate(now.getDate() - 7)).toISOString().split('T')[0];
+            dateFilter = ` AND sale_date >= '${lastWeek} 00:00:00'`;
+        } else if (period === 'Monthly') {
+            const lastMonth = new Date(new Date().setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
+            dateFilter = ` AND sale_date >= '${lastMonth} 00:00:00'`;
+        } else if (period === 'Yearly') {
+            const lastYear = new Date(new Date().setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
+            dateFilter = ` AND sale_date >= '${lastYear} 00:00:00'`;
+        }
+    }
+
+    const stats = {
+        totalSales: 0,
+        salesCount: 0,
+        totalExpenses: 0,
+        expenseCount: 0,
+        totalPurchases: 0,
+        purchaseCount: 0,
+        totalReturns: 0,
+        returnCount: 0,
+        totalSalesReturns: 0,
+        totalPurchaseReturns: 0,
+        totalPayables: 0,
+        vendorCount: 0,
+        totalSalaries: 0,
+        employeeCount: 0,
+        netProfit: 0,
+        totalCOGS: 0,
+        inventoryValuationCost: 0,
+        inventoryValuationSell: 0,
+        lowStockCount: 0,
+        inStockCount: 0,
+        expiringSoonCount: 0,
+        expiredCount: 0,
+        recentDays: [],
+        topProducts: [],
+        topCustomers: [],
+        topVendors: [],
+        topValuedItems: [],
+        expenseCategoryBreakdown: {},
+        detailedSales: [],
+        detailedPurchases: [],
+        detailedInventory: [],
+        detailedExpenses: [],
+        detailedReturns: []
+    };
+
+    const dbGet = (sql, p) => new Promise(res => db.get(sql, p, (err, row) => res(row)));
+    const dbAll = (sql, p) => new Promise(res => db.all(sql, p, (err, rows) => res(rows || [])));
+
+    try {
+        // 1. Basic Stats
+        let salesSql = `SELECT SUM(grand_total) as total, COUNT(*) as count FROM sales WHERE ${companyMatch} ${dateFilter}`;
+        let salesP = [...qParams];
+        if (customerId && customerId !== 'all') {
+            salesSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+            salesP.push(customerId, customerId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            salesSql += ` AND LOWER(payment_status) = ?`;
+            salesP.push(paymentStatus.toLowerCase());
+        }
+        const sRow = await dbGet(salesSql, salesP);
+        stats.totalSales = sRow?.total || 0;
+        stats.salesCount = sRow?.count || 0;
+
+        let purSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchases WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'purchase_date')}`;
+        let purP = [...qParams];
+        if (vendorId && vendorId !== 'all') {
+            purSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
+            purP.push(vendorId, vendorId);
+        }
+        const pRow = await dbGet(purSql, purP);
+        stats.totalPurchases = pRow?.total || 0;
+        stats.purchaseCount = pRow?.count || 0;
+
+        let expSql = `SELECT SUM(amount) as total, COUNT(*) as count FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let expP = [...qParams];
+        if (expenseCategory && expenseCategory !== 'all') {
+            expSql += ` AND category = ?`;
+            expP.push(expenseCategory);
+        }
+        const eRow = await dbGet(expSql, expP);
+        stats.totalExpenses = eRow?.total || 0;
+        stats.expenseCount = eRow?.count || 0;
+
+        const expBreakdown = await dbAll(`SELECT category, SUM(amount) as total FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')} GROUP BY category`, qParams);
+        expBreakdown.forEach(r => stats.expenseCategoryBreakdown[r.category || 'General'] = r.total);
+
+        // 2. Returns
+        const srRow = await dbGet(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams);
+        stats.totalSalesReturns = srRow?.total || 0;
+        stats.returnCount += (srRow?.count || 0);
+
+        const prRow = await dbGet(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams);
+        stats.totalPurchaseReturns = prRow?.total || 0;
+        stats.returnCount += (prRow?.count || 0);
+        stats.totalReturns = stats.totalSalesReturns + stats.totalPurchaseReturns;
+
+        // 3. Inventory
+        const invRow = await dbGet(`SELECT SUM(stock_quantity * cost_price) as cost_val, SUM(stock_quantity * sell_price) as sell_val, 
+                COUNT(CASE WHEN stock_quantity <= alert_threshold THEN 1 END) as low,
+                COUNT(CASE WHEN stock_quantity > 0 THEN 1 END) as in_stock,
+                COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now', '+30 days') THEN 1 END) as expiring,
+                COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now') THEN 1 END) as expired
+                FROM products WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        stats.inventoryValuationCost = invRow?.cost_val || 0;
+        stats.inventoryValuationSell = invRow?.sell_val || 0;
+        stats.lowStockCount = invRow?.low || 0;
+        stats.inStockCount = invRow?.in_stock || 0;
+        stats.expiringSoonCount = invRow?.expiring || 0;
+        stats.expiredCount = invRow?.expired || 0;
+
+        const cRow = await dbGet(`SELECT SUM(si.quantity * p.cost_price) as total_cogs
+            FROM sale_items si
+            JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
+            JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+            WHERE s.${companyMatch} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`, qParams);
+        stats.totalCOGS = cRow?.total_cogs || 0;
+
+        // 4. HRM & Vendors
+        const vRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        stats.totalPayables = vRow?.total || 0;
+        stats.vendorCount = vRow?.count || 0;
+
+        const salRow = await dbGet(`SELECT SUM(net_salary) as total FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'payment_date')}`, qParams);
+        stats.totalSalaries = salRow?.total || 0;
+
+        const empRow = await dbGet(`SELECT COUNT(*) as count FROM employees WHERE ${companyMatch} AND is_active = 1 AND sync_status != 'deleted'`, qParams);
+        stats.employeeCount = empRow?.count || 0;
+
+        // 5. Detailed Lists (MAPPED)
+        let detSalesSql = `SELECT s.*, c.name as customer_name FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+        let detSalesP = [...qParams];
+        if (customerId && customerId !== 'all') {
+            detSalesSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+            detSalesP.push(customerId, customerId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            detSalesSql += ` AND LOWER(s.payment_status) = ?`;
+            detSalesP.push(paymentStatus.toLowerCase());
+        }
+        const detSales = await dbAll(detSalesSql + " ORDER BY s.sale_date DESC LIMIT 100", detSalesP);
+        for (const r of detSales) {
+            const items = await dbAll(`SELECT si.*, p.name FROM sale_items si JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE si.sale_id = ? OR si.sale_id = ?`, [r.id, r.global_id]);
+            stats.detailedSales.push({
+                ...r,
+                date: r.sale_date,
+                invoiceNo: r.inv_number,
+                grandTotal: r.grand_total,
+                totalAmount: r.total_amount,
+                paymentStatus: r.payment_status,
+                customer: { name: r.customer_name || 'Walk-in' },
+                items: items
+            });
         }
 
-        const stats = {
-            totalSales: 0,
-            salesCount: 0,
-            totalExpenses: 0,
-            expenseCount: 0,
-            totalPurchases: 0,
-            purchaseCount: 0,
-            totalReturns: 0,
-            returnCount: 0,
-            totalSalesReturns: 0,
-            totalPurchaseReturns: 0,
-            netProfit: 0,
-            todaySales: 0,
-            totalCOGS: 0,
-            inventoryValuationCost: 0,
-            inventoryValuationSell: 0,
-            lowStockCount: 0,
-            recentDays: [],
-            topProducts: [],
-            topCustomers: []
-        };
-
-        db.serialize(() => {
-            // 1. Basic Summary Stats
-            db.get(`SELECT SUM(grand_total) as total, COUNT(*) as count FROM sales WHERE ${companyMatch} ${dateFilter}`, qParams, (err, row) => {
-                if (row) {
-                    stats.totalSales = row.total || 0;
-                    stats.salesCount = row.count || 0;
-                }
+        let detPurSql = `SELECT p.*, v.name as vendor_name FROM purchases p LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
+        let detPurP = [...qParams];
+        if (vendorId && vendorId !== 'all') {
+            detPurSql += ` AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
+            detPurP.push(vendorId, vendorId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            detPurSql += ` AND LOWER(p.payment_status) = ?`;
+            detPurP.push(paymentStatus.toLowerCase());
+        }
+        const detPurchases = await dbAll(detPurSql + " ORDER BY p.purchase_date DESC LIMIT 100", detPurP);
+        for (const r of detPurchases) {
+            const items = await dbAll(`SELECT pi.*, pr.name FROM purchase_items pi JOIN products pr ON pi.product_id = pr.id OR pi.product_id = pr.global_id WHERE pi.purchase_id = ? OR pi.purchase_id = ?`, [r.id, r.global_id]);
+            stats.detailedPurchases.push({
+                ...r,
+                date: r.purchase_date,
+                invoiceNo: r.ref_number,
+                grandTotal: r.total_amount,
+                totalAmount: r.total_amount,
+                paymentStatus: r.payment_status,
+                vendor: { name: r.vendor_name || 'Unknown' },
+                items: items
             });
+        }
 
-            db.get(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchases WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'purchase_date')}`, qParams, (err, row) => {
-                if (row) {
-                    stats.totalPurchases = row.total || 0;
-                    stats.purchaseCount = row.count || 0;
-                }
-            });
+        let detInvSql = `SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} AND p.sync_status != 'deleted'`;
+        let detInvP = [...qParams];
+        if (categoryId && categoryId !== 'all') {
+            detInvSql += ` AND (p.category_id = ? OR p.category_id = (SELECT id FROM categories WHERE global_id = ?))`;
+            detInvP.push(categoryId, categoryId);
+        }
+        if (stockStatus === 'low') detInvSql += ` AND p.stock_quantity <= p.alert_threshold`;
+        else if (stockStatus === 'out') detInvSql += ` AND p.stock_quantity <= 0`;
+        else if (stockStatus === 'expired') detInvSql += ` AND p.expiry_date <= date('now')`;
 
-            db.get(`SELECT SUM(amount) as total, COUNT(*) as count FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
-                if (row) {
-                    stats.totalExpenses = row.total || 0;
-                    stats.expenseCount = row.count || 0;
-                }
-            });
+        const detInv = await dbAll(detInvSql + " LIMIT 100", detInvP);
+        stats.detailedInventory = detInv.map(r => ({ ...r, category: { name: r.cat_name }, costPrice: r.cost_price, sell_price: r.sell_price, stockQty: r.stock_quantity, alertQty: r.alert_threshold }));
 
-            // 2. Returns
-            db.get(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
-                if (row) stats.totalSalesReturns = row.total || 0;
-            });
-            db.get(`SELECT SUM(total_amount) as total FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams, (err, row) => {
-                if (row) stats.totalPurchaseReturns = row.total || 0;
-                stats.totalReturns = stats.totalSalesReturns + stats.totalPurchaseReturns;
-            });
+        let detExpSql = `SELECT * FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let detExpP = [...qParams];
+        if (expenseCategory && expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
+            detExpSql += ` AND category = ?`;
+            detExpP.push(expenseCategory);
+        }
+        const detExpRaw = await dbAll(detExpSql + " LIMIT 100", detExpP);
+        stats.detailedExpenses = detExpRaw;
 
-            // 3. Inventory & COGS
-            db.get(`SELECT SUM(stock_quantity * cost_price) as cost_val, SUM(stock_quantity * sell_price) as sell_val, COUNT(CASE WHEN stock_quantity <= alert_threshold THEN 1 END) as low FROM products WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams, (err, row) => {
-                if (row) {
-                    stats.inventoryValuationCost = row.cost_val || 0;
-                    stats.inventoryValuationSell = row.sell_val || 0;
-                    stats.lowStockCount = row.low || 0;
-                }
-            });
+        // If Staff Payroll, add salary records to expenses
+        if (expenseCategory === 'Staff Payroll') {
+            const salaries = await dbAll(`SELECT s.*, e.first_name || ' ' || e.last_name as title, 'Staff Payroll' as category, s.net_salary as amount, s.payment_date as date 
+                    FROM salary_records s 
+                    JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
+                    WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.payment_date')}`, qParams);
+            stats.detailedExpenses = salaries;
+        }
 
-            db.get(`
-                SELECT SUM(si.quantity * p.cost_price) as total_cogs
-                FROM sale_items si
-                JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
-                JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
-                WHERE s.${companyMatch} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`, qParams, (err, row) => {
-                if (row) stats.totalCOGS = row.total_cogs || 0;
-            });
+        // Detailed Returns
+        const sReturns = await dbAll(`SELECT r.*, 'Sale Return' as type, c.name as party, r.total_amount as amount, r.invoice_no as invoiceNo, r.date as date
+                FROM sale_returns r 
+                LEFT JOIN customers c ON r.customer_id = c.id OR r.customer_id = c.global_id 
+                WHERE ${companyMatch.replace(/company_id/g, 'r.company_id')} ${dateFilter.replace(/sale_date/g, 'r.date')}`, qParams);
+        for (const r of sReturns) {
+            const itms = await dbAll(`SELECT ri.*, p.name FROM sale_return_items ri JOIN products p ON ri.product_id = p.id OR ri.product_id = p.global_id WHERE ri.return_id = ? OR ri.return_id = ?`, [r.id, r.global_id]);
+            stats.detailedReturns.push({ ...r, party: r.party || 'Walk-in', returnDetail: itms.map(i => `${i.name} (x${i.quantity})`).join(', ') });
+        }
 
-            // 4. Trend Data (Last 7 Days)
-            const trendDays = [];
-            for (let i = 0; i < 7; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                trendDays.push(d.toISOString().split('T')[0]);
-            }
+        const pReturns = await dbAll(`SELECT r.*, 'Purchase Return' as type, v.name as party, r.total_amount as amount, r.invoice_no as invoiceNo, r.date as date
+                FROM purchase_returns r 
+                LEFT JOIN vendors v ON r.vendor_id = v.id OR r.vendor_id = v.global_id 
+                WHERE ${companyMatch.replace(/company_id/g, 'r.company_id')} ${dateFilter.replace(/sale_date/g, 'r.date')}`, qParams);
+        for (const r of pReturns) {
+            const itms = await dbAll(`SELECT ri.*, p.name FROM purchase_return_items ri JOIN products p ON pi.product_id = p.id OR pi.product_id = p.global_id WHERE ri.return_id = ? OR ri.return_id = ?`, [r.id, r.global_id]);
+            stats.detailedReturns.push({ ...r, party: r.party || 'Unknown', returnDetail: itms.map(i => `${i.name} (x${i.quantity})`).join(', ') });
+        }
 
-            db.all(`
-                SELECT date(sale_date) as day, SUM(grand_total) as total
-                FROM sales
-                WHERE ${companyMatch} AND sale_date >= date('now', '-7 days')
-                GROUP BY day
-            `, qParams, (err, rows) => {
-                const salesByDay = {};
-                if (rows) rows.forEach(r => salesByDay[r.day] = r.total);
+        // 6. Trend
+        const trendPoints = 7;
+        const startT = startDate ? new Date(startDate).getTime() : new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).getTime();
+        const endT = endDate ? new Date(endDate).getTime() : now.getTime();
+        const step = (endT - startT) / trendPoints;
 
-                stats.recentDays = trendDays.map(day => ({
-                    date: day,
-                    sales: salesByDay[day] || 0,
-                    profit: (salesByDay[day] || 0) * 0.2 // Estimated 20% margin if exact COGS per day is too heavy
-                })).reverse();
-            });
+        for (let i = 0; i <= trendPoints; i++) {
+            const d = new Date(startT + i * step);
+            const dStr = d.toISOString().split('T')[0];
+            const dS = await dbGet(`SELECT SUM(grand_total) as t, COUNT(*) as c FROM sales WHERE ${companyMatch} AND date(sale_date) = ?`, [...qParams, dStr]);
+            const dP = await dbGet(`SELECT SUM(total_amount) as t FROM purchases WHERE ${companyMatch} AND date(purchase_date) = ?`, [...qParams, dStr]);
+            const dE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND date(date) = ?`, [...qParams, dStr]);
+            stats.recentDays.push({ date: dStr, sales: dS?.t || 0, invoices: dS?.c || 0, purchases: dP?.t || 0, expenses: dE?.t || 0, profit: (dS?.t || 0) - (dE?.t || 0) });
+        }
 
-            // 5. Top Products
-            db.all(`
-                SELECT p.name, SUM(si.quantity) as qtySold
-                FROM sale_items si
-                JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
-                JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
-                WHERE s.${companyMatch}
-                GROUP BY p.name
-                ORDER BY qtySold DESC
-                LIMIT 5
-            `, qParams, (err, rows) => {
-                if (rows) stats.topProducts = rows;
+        // 7. Top Breakdowns
+        stats.topProducts = await dbAll(`SELECT p.name, SUM(si.quantity) as qtySold, SUM(si.total_price) as totalValue FROM sale_items si JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')} GROUP BY p.name ORDER BY qtySold DESC LIMIT 5`, qParams);
+        stats.topCustomers = await dbAll(`SELECT IFNULL(c.name, 'Walk-in') as name, SUM(s.grand_total) as totalSpent FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')} GROUP BY IFNULL(c.name, 'Walk-in') ORDER BY totalSpent DESC LIMIT 5`, qParams);
+        stats.topVendors = await dbAll(`SELECT v.name, SUM(p.total_amount) as totalSpent FROM purchases p JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')} GROUP BY v.name ORDER BY totalSpent DESC LIMIT 5`, qParams);
 
-                // Finalize Net Profit
-                stats.netProfit = stats.totalSales - stats.totalCOGS - stats.totalExpenses;
-                resolve({ ...stats, success: true });
-            });
-        });
-    });
+        const topVal = await dbAll(`SELECT p.name, (stock_quantity * cost_price) as val FROM products p WHERE ${companyMatch} AND sync_status != 'deleted' ORDER BY val DESC LIMIT 5`, qParams);
+        stats.topValuedItems = topVal.map(r => ({ name: r.name, costPrice: r.val, stockQty: 1 }));
+
+        stats.netProfit = (stats.totalSales - stats.totalSalesReturns) - stats.totalCOGS - stats.totalExpenses - stats.totalSalaries;
+        return { ...stats, success: true };
+    } catch (err) {
+        console.error("Report Generation Error:", err);
+        return { success: false, message: err.message };
+    }
 });
 
 
@@ -2240,13 +2471,191 @@ ipcMain.handle("create-transaction", async (e, data) => {
     });
 });
 
-// HRM (Attendance & Salaries)
-ipcMain.handle("get-attendance", async (e, employeeId) => {
+// ==========================================
+// HRM MODULE - EMPLOYEES
+// ==========================================
+
+// Employees - CRUD Operations
+ipcMain.handle("get-employees", async (e, companyId) => {
+    const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM attendances WHERE employee_id = ? ORDER BY date DESC", [employeeId], (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
+        const query = `
+            SELECT *,
+                   is_active as isActive,
+                   first_name as firstName,
+                   last_name as lastName,
+                   joining_date as joiningDate,
+                   hourly_rate as hourlyRate
+            FROM employees 
+            WHERE (company_id = ? OR company_id = ? OR company_id = ?) 
+              AND (sync_status != 'deleted' OR sync_status IS NULL)
+            ORDER BY id DESC
+        `;
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
+            if (err) {
+                console.error("Error loading employees:", err);
+                return reject(err);
+            }
+            resolve(rows || []);
         });
+    });
+});
+
+ipcMain.handle("create-employee", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { firstName, lastName, phone, designation, salary, hourly_rate, joiningDate, companyId } = data;
+        const tempId = randomUUID();
+
+        db.run(
+            `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
+            [tempId, firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, companyId],
+            function (err) {
+                if (err) {
+                    console.error("Error creating employee:", err);
+                    return reject({ success: false, message: err.message });
+                }
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Employee created locally" });
+            }
+        );
+    });
+});
+
+ipcMain.handle("update-employee", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { id, firstName, lastName, phone, designation, salary, hourly_rate, joiningDate } = data;
+
+        db.run(
+            `UPDATE employees SET 
+                first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?,
+                sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+             WHERE id=? OR global_id=?`,
+            [firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, id, id],
+            function (err) {
+                if (err) {
+                    console.error("Error updating employee:", err);
+                    return reject({ success: false, message: err.message });
+                }
+                syncService.syncPendingRecords();
+                resolve({ success: true, message: "Employee updated locally" });
+            }
+        );
+    });
+});
+
+ipcMain.handle("delete-employee", async (e, id) => {
+    return new Promise((resolve, reject) => {
+        db.get("SELECT global_id FROM employees WHERE id=? OR global_id=?", [id, id], (err, row) => {
+            if (err || !row) return reject({ success: false, message: "Employee not found" });
+
+            db.run(
+                `UPDATE employees SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+                [id, id],
+                function (err) {
+                    if (err) {
+                        console.error("Error deleting employee:", err);
+                        return reject({ success: false, message: err.message });
+                    }
+                    syncService.syncPendingRecords();
+                    resolve({ success: true, message: "Employee deleted locally" });
+                }
+            );
+        });
+    });
+});
+
+// ==========================================
+// HRM MODULE - ATTENDANCE & SALARIES
+// ==========================================
+// Attendance - By Company + Date (FIXED)
+ipcMain.handle("get-attendance", async (e, params) => {
+    const { companyId, date } = params;
+    const ids = await resolveCompanyIds(companyId);
+
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT a.*,
+                   a.employee_id as employeeId,
+                   a.check_in as checkIn,
+                   a.check_out as checkOut,
+                   e.first_name as firstName,
+                   e.last_name as lastName
+            FROM attendances a
+            LEFT JOIN employees e ON a.employee_id = e.id OR a.employee_id = e.global_id
+            WHERE (a.company_id = ? OR a.company_id = ? OR a.company_id = ?)
+              AND a.date = ?
+              AND (a.sync_status != 'deleted' OR a.sync_status IS NULL)
+            ORDER BY e.first_name ASC
+        `;
+
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId), date], (err, rows) => {
+            if (err) {
+                console.error("Error loading attendance:", err);
+                return reject(err);
+            }
+            resolve(rows || []);
+        });
+    });
+});
+
+// Save Attendance - CRITICAL FIX: Proper employeeId matching
+ipcMain.handle("save-attendance", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { employeeId, status, date } = data;
+
+        // CRITICAL: Check attendance for THIS SPECIFIC employee on THIS date
+        db.get(
+            "SELECT id, global_id FROM attendances WHERE (employee_id = ? OR employee_id = ?) AND date = ?",
+            [employeeId, employeeId, date],
+            (err, existing) => {
+                if (err) {
+                    console.error("Error checking attendance:", err);
+                    return reject({ success: false, message: err.message });
+                }
+
+                if (existing) {
+                    // Update existing record for THIS employee only
+                    db.run(
+                        `UPDATE attendances SET 
+                            status=?, 
+                            sync_status='pending', 
+                            updated_at=CURRENT_TIMESTAMP 
+                         WHERE id=? OR global_id=?`,
+                        [status, existing.id, existing.global_id],
+                        function (updateErr) {
+                            if (updateErr) {
+                                console.error("Error updating attendance:", updateErr);
+                                return reject({ success: false, message: updateErr.message });
+                            }
+                            syncService.syncPendingRecords();
+                            resolve({ success: true, message: "Attendance updated" });
+                        }
+                    );
+                } else {
+                    // Create new record for THIS employee
+                    const tempId = randomUUID();
+                    // Get companyId from employee
+                    db.get("SELECT company_id FROM employees WHERE id=? OR global_id=?", [employeeId, employeeId], (empErr, emp) => {
+                        const companyId = emp?.company_id;
+
+                        db.run(
+                            `INSERT INTO attendances (global_id, employee_id, date, status, company_id, sync_status, updated_at) 
+                             VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                            [tempId, employeeId, date, status, companyId],
+                            function (insertErr) {
+                                if (insertErr) {
+                                    console.error("Error creating attendance:", insertErr);
+                                    return reject({ success: false, message: insertErr.message });
+                                }
+                                syncService.syncPendingRecords();
+                                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Attendance created" });
+                            }
+                        );
+                    });
+                }
+            }
+        );
     });
 });
 
@@ -2292,6 +2701,77 @@ ipcMain.handle("delete-attendance", async (e, id) => {
                 resolve({ success: true });
             }
         });
+    });
+});
+
+// Salaries - For Payroll Component
+ipcMain.handle("get-salaries", async (e, params) => {
+    const { companyId, month } = params;
+    const ids = await resolveCompanyIds(companyId);
+
+    return new Promise((resolve, reject) => {
+        const query = `
+            SELECT s.*,
+                   s.employee_id as employeeId,
+                   s.base_salary as baseSalary,
+                   s.net_salary as netSalary,
+                   s.overtime_hours as overtimeHours,
+                   s.overtime_pay as overtimePay,
+                   e.first_name as firstName,
+                   e.last_name as lastName,
+                   e.designation,
+                   e.hourly_rate
+            FROM salary_records s
+            LEFT JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id
+            WHERE (s.company_id = ? OR s.company_id = ? OR s.company_id = ?)
+              AND s.month = ?
+              AND (s.sync_status != 'deleted' OR s.sync_status IS NULL)
+            ORDER BY e.first_name ASC
+        `;
+
+        db.all(query, [ids.localId, ids.globalId, String(ids.localId), month], (err, rows) => {
+            if (err) {
+                console.error("Error loading salaries:", err);
+                return reject(err);
+            }
+
+            // Transform to match frontend expectations
+            const transformed = (rows || []).map(row => ({
+                ...row,
+                employee: {
+                    id: row.employeeId,
+                    firstName: row.firstName,
+                    lastName: row.lastName,
+                    designation: row.designation,
+                    hourlyRate: row.hourly_rate
+                }
+            }));
+
+            resolve(transformed);
+        });
+    });
+});
+
+ipcMain.handle("create-salary", async (e, data) => {
+    return new Promise((resolve, reject) => {
+        const { companyId, employeeId, month, baseSalary, bonus, overtimeHours, overtimePay, deductions, netSalary, notes } = data;
+        const tempId = randomUUID();
+
+        db.run(
+            `INSERT INTO salary_records (
+                global_id, employee_id, month, base_salary, bonus, overtime_hours, 
+                overtime_pay, deductions, net_salary, notes, company_id, sync_status, updated_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, employeeId, month, baseSalary, bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', companyId],
+            function (err) {
+                if (err) {
+                    console.error("Error creating salary:", err);
+                    return reject({ success: false, message: err.message });
+                }
+                syncService.syncPendingRecords();
+                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Salary created locally" });
+            }
+        );
     });
 });
 

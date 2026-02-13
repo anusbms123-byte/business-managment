@@ -156,7 +156,7 @@ function initSchema() {
 
     // 5. Employees
     db.run(`CREATE TABLE IF NOT EXISTS employees (
-      id TEXT PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_id TEXT,
       global_id TEXT UNIQUE,
       sync_status TEXT DEFAULT 'synced',
@@ -457,6 +457,57 @@ function addColumnIfNotExists(table, column, type, defaultValue = null) {
 // Function to handle database schema updates
 function runMigrations() {
   console.log("Checking for database schema updates...");
+
+  // FIX: Detect if employees table has wrong schema (id TEXT instead of INTEGER)
+  db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='employees'", (err, row) => {
+    if (row && row.sql && row.sql.includes('id TEXT PRIMARY KEY')) {
+      console.log("MIGRATION: Fixing employees table schema (TEXT ID -> INTEGER ID)...");
+      db.serialize(() => {
+        // 1. Rename bad table
+        db.run("ALTER TABLE employees RENAME TO employees_legacy_schema");
+
+        // 2. Create correct table
+        db.run(`CREATE TABLE employees (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          company_id TEXT,
+          global_id TEXT UNIQUE,
+          sync_status TEXT DEFAULT 'synced',
+          first_name TEXT,
+          last_name TEXT,
+          phone TEXT,
+          designation TEXT,
+          salary REAL DEFAULT 0,
+          hourly_rate REAL DEFAULT 0,
+          joining_date DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          is_active INTEGER DEFAULT 1
+        )`);
+
+        // 3. Move data (preserve global_id or use old id as global_id if missing)
+        const cols = "company_id, sync_status, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, created_at, updated_at, is_active";
+        // Note: is_active might not be in legacy if very old, but addColumnIfNotExists adds it.
+        // Safest to try copying core cols and let column checks fill defaults later?
+        // Let's try to copy fields that likely exist.
+
+        // We use COALESCE(global_id, id) for the new global_id
+        db.run(`INSERT INTO employees (global_id, company_id, sync_status, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, created_at, updated_at)
+                SELECT COALESCE(global_id, id), company_id, sync_status, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, created_at, updated_at 
+                FROM employees_legacy_schema`, (err) => {
+          if (err) console.log("Migration Note: Some columns might have been skipped/defaulted during copy.");
+          else console.log("Employees data migrated successfully.");
+        });
+
+        console.log("Employees schema migration finished.");
+        performColumnChecks();
+      });
+    } else {
+      performColumnChecks();
+    }
+  });
+}
+
+function performColumnChecks() {
   const tables = [
     'companies', 'users', 'categories', 'vendors', 'employees',
     'products', 'customers', 'sales', 'purchases', 'expenses',

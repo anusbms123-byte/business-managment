@@ -467,7 +467,7 @@ const Purchase = ({ currentUser }) => {
                                                     <div
                                                         key={p.id}
                                                         className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 hover:bg-blue-50 transition-colors ${highlightedIndex === index ? 'bg-blue-50' : ''}`}
-                                                        onClick={() => handleProductSelect(p)}
+                                                        onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
                                                         onMouseEnter={() => setHoveredProduct(p)}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
