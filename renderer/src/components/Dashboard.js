@@ -208,12 +208,6 @@ const Dashboard = ({ currentUser }) => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight text-black">
-                        {currentUser?.company_name || currentUser?.company?.name || 'Business Dashboard'}
-                    </h1>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">
-                        Control Center • <span className="text-blue-600">{currentUser?.fullname || currentUser?.username}</span>
-                    </p>
                 </div>
                 <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (

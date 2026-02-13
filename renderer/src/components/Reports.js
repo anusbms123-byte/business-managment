@@ -339,7 +339,8 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total Purchased', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-amber-600' },
                     { label: 'Active Balance', value: summary?.totalPayables > 0 ? "Pending" : "Clear", icon: AlertTriangle, color: 'text-amber-500' }
                 ],
-                tableCols: ['Snapshot Date', 'Account Head', 'Balance Owed'],
+                tableCols: ['Supplier Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
+                tableTitle: 'Supplier Ledger Balance',
                 cols: 5
             },
             hrm: {
@@ -396,6 +397,11 @@ const Reports = ({ currentUser }) => {
                                         : 'bg-orange-100 text-orange-600'
                                         }`}>
                                         {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
+                                    </span>
+                                )}
+                                {activeModule === 'suppliers' && selectedVendor !== 'all' && (
+                                    <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                        {vendors.find(v => v.id === selectedVendor)?.name || 'Supplier'}
                                     </span>
                                 )}
                             </div>
@@ -527,6 +533,23 @@ const Reports = ({ currentUser }) => {
                                     {expenseCategories.map(cat => (
                                         <option key={cat} value={cat}>
                                             {cat}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        {activeModule === 'suppliers' && (
+                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                <Factory size={14} className="text-slate-400 ml-3" />
+                                <select
+                                    value={selectedVendor}
+                                    onChange={(e) => setSelectedVendor(e.target.value)}
+                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                >
+                                    <option value="all">All Suppliers</option>
+                                    {vendors.map(v => (
+                                        <option key={v.id} value={v.id}>
+                                            {v.name}
                                         </option>
                                     ))}
                                 </select>
@@ -948,6 +971,28 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
                                                     PKR {ret.amount?.toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : activeModule === 'suppliers' && summary?.detailedVendors ? (
+                                        summary.detailedVendors.map((vendor, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                    {vendor.name}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black align-top">
+                                                    {vendor.phone || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[200px] truncate">
+                                                    {vendor.address || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                    PKR {(vendor.current_balance || vendor.balance || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right align-top">
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                        {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))

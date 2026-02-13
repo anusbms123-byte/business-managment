@@ -284,9 +284,6 @@ const Layout = ({ children, user, onLogout }) => {
                             <Menu size={22} />
                         </button>
                         <div className="hidden md:block">
-                            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
-                                {isActive('/') ? 'Control Center' : location.pathname.split('/')[1]?.replace('-', ' ')}
-                            </h2>
                         </div>
                     </div>
 
