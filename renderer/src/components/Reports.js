@@ -170,9 +170,9 @@ const Reports = ({ currentUser }) => {
                 companyId: currentUser.company_id,
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
-                customerId: (activeModule === 'sales' || activeModule === 'netprofit') ? selectedCustomer : undefined,
+                customerId: (activeModule === 'sales' || activeModule === 'customers' || activeModule === 'netprofit') ? selectedCustomer : undefined,
                 vendorId: (activeModule === 'purchases' || activeModule === 'suppliers') ? selectedVendor : undefined,
-                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'netprofit') ? selectedPaymentStatus : undefined,
+                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'customers' || activeModule === 'netprofit') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
                 expenseCategory: (activeModule === 'expenses' || activeModule === 'netprofit') ? selectedExpenseCategory : undefined,
@@ -260,6 +260,7 @@ const Reports = ({ currentUser }) => {
                 <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Transactions`} icon={TrendingUp} colorClass="border-l-rose-500" onClick={() => setActiveModule('expenses')} />
                 <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Items Reversed`} icon={RotateCcw} colorClass="border-l-orange-500" onClick={() => setActiveModule('returns')} />
                 <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Account Payables" icon={Factory} colorClass="border-l-slate-600" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue={`${summary?.customerCount ?? 0} Registered Clients`} icon={Users} colorClass="border-l-teal-500" onClick={() => setActiveModule('customers')} />
                 <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue={`${summary?.employeeCount ?? 0} Active Staff`} icon={Users2} colorClass="border-l-emerald-500" onClick={() => setActiveModule('hrm')} />
                 <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Gross - Deductions" icon={CreditCard} colorClass="border-l-slate-900" onClick={() => setActiveModule('netprofit')} />
             </div>
@@ -360,6 +361,19 @@ const Reports = ({ currentUser }) => {
                 tableTitle: 'Supplier Ledger Balance',
                 cols: 5
             },
+            customers: {
+                title: 'Customer Accounts', icon: Users, color: '#14b8a6', dataKey: 'receivables',
+                miniStats: [
+                    { label: 'Total Receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-teal-600' },
+                    { label: 'Customer Count', value: `${summary?.customerCount || 0} Clients`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Avg Receivable', value: `PKR ${(Math.round(summary?.totalReceivables / (summary?.customerCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
+                    { label: 'Total Sales to Customers', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Active Balance', value: summary?.totalReceivables > 0 ? "Outstanding" : "Clear", icon: CheckCircle2, color: 'text-teal-500' }
+                ],
+                tableCols: ['Customer Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
+                tableTitle: 'Customer Ledger Balance',
+                cols: 5
+            },
             hrm: {
                 title: 'Staff Payroll Logs', icon: Users, color: '#6366f1', dataKey: 'salaries',
                 miniStats: [
@@ -423,6 +437,19 @@ const Reports = ({ currentUser }) => {
                                     </span>
                                 )}
                                 {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
+                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                        ? 'bg-emerald-100 text-emerald-600'
+                                        : 'bg-orange-100 text-orange-600'
+                                        }`}>
+                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                    </span>
+                                )}
+                                {activeModule === 'customers' && selectedCustomer !== 'all' && (
+                                    <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                        {customers.find(c => c.id === selectedCustomer)?.name || 'Customer'}
+                                    </span>
+                                )}
+                                {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
                                     <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
                                         ? 'bg-emerald-100 text-emerald-600'
                                         : 'bg-orange-100 text-orange-600'
@@ -587,6 +614,38 @@ const Reports = ({ currentUser }) => {
                                         {vendors.map(v => (
                                             <option key={v.id} value={v.id}>
                                                 {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedPaymentStatus}
+                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Payments</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="credit">Credit / Due</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {activeModule === 'customers' && (
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedCustomer}
+                                        onChange={(e) => setSelectedCustomer(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Customers</option>
+                                        {customers.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
                                             </option>
                                         ))}
                                     </select>
@@ -912,6 +971,30 @@ const Reports = ({ currentUser }) => {
                                             )}
                                         </div>
                                     </div>
+                                ) : activeModule === 'customers' ? (
+                                    /* Top Customers by Sales Volume */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Customers</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-400' : i === 1 ? 'bg-cyan-400' : 'bg-blue-400'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{c.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.totalSpent?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No customer data available</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ) : activeModule === 'hrm' ? (
                                     /* Top Staff View */
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -1152,6 +1235,28 @@ const Reports = ({ currentUser }) => {
                                                 <td className="px-8 py-5 text-right align-top">
                                                     <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                                         {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : activeModule === 'customers' && summary?.detailedCustomers ? (
+                                        summary.detailedCustomers.map((customer, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                    {customer.name}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black align-top">
+                                                    {customer.phone || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[200px] truncate">
+                                                    {customer.address || '-'}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black text-teal-600 text-xs align-top">
+                                                    PKR {(customer.current_balance || customer.balance || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right align-top">
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                        {(customer.current_balance || customer.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
                                                     </span>
                                                 </td>
                                             </tr>

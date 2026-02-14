@@ -2239,6 +2239,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         detailedExpenses: [],
         detailedReturns: [],
         detailedVendors: [],
+        detailedCustomers: [],
         detailedHRM: [],
         topStaff: []
     };
@@ -2342,6 +2343,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         const vRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
         stats.totalPayables = vRow?.total || 0;
         stats.vendorCount = vRow?.count || 0;
+
+        const custRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM customers WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        stats.totalReceivables = custRow?.total || 0;
+        stats.customerCount = custRow?.count || 0;
 
         const salRow = await dbGet(`SELECT SUM(net_salary) as total FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'payment_date')}`, qParams);
         stats.totalSalaries = salRow?.total || 0;
@@ -2502,6 +2507,26 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             balance: v.current_balance || v.balance || 0
         }));
 
+        // Detailed Customers
+        let detCustSql = `SELECT * FROM customers WHERE ${companyMatch} AND sync_status != 'deleted'`;
+        let detCustP = [...qParams];
+        if (customerId && customerId !== 'all') {
+            detCustSql += ` AND (id = ? OR global_id = ?)`;
+            detCustP.push(customerId, customerId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            if (paymentStatus.toLowerCase() === 'credit') {
+                detCustSql += ` AND current_balance > 0`;
+            } else if (paymentStatus.toLowerCase() === 'paid') {
+                detCustSql += ` AND (current_balance <= 0 OR current_balance IS NULL)`;
+            }
+        }
+        const detCustomers = await dbAll(detCustSql + " ORDER BY name ASC", detCustP);
+        stats.detailedCustomers = detCustomers.map(c => ({
+            ...c,
+            balance: c.current_balance || c.balance || 0
+        }));
+
         // 6. Trend
         const trendPoints = 7;
         const startT = startDate ? new Date(startDate).getTime() : new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).getTime();
@@ -2548,8 +2573,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
             const dSal = await dbGet(`SELECT SUM(net_salary) as t FROM salary_records WHERE ${companyMatch} AND (date(payment_date) = ? OR date(month) = ?)`, [...qParams, dStr, dStr]);
 
-            // Payables calculation - sum of current_balance for vendors with purchases on this date
-            let dPaySql = `SELECT SUM(DISTINCT v.current_balance) as t 
+            // Payables calculation
+            let dPaySql = `SELECT SUM(v.current_balance) as t 
                            FROM vendors v 
                            WHERE ${companyMatch.replace(/company_id/g, 'v.company_id')} 
                            AND v.sync_status != 'deleted'`;
@@ -2559,6 +2584,18 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 dPayP.push(vendorId, vendorId);
             }
             const dPay = await dbGet(dPaySql, dPayP);
+
+            // Receivables calculation
+            let dRecSql = `SELECT SUM(c.current_balance) as t 
+                           FROM customers c 
+                           WHERE ${companyMatch.replace(/company_id/g, 'c.company_id')} 
+                           AND c.sync_status != 'deleted'`;
+            let dRecP = [...qParams];
+            if (customerId && customerId !== 'all') {
+                dRecSql += ` AND (c.id = ? OR c.global_id = ?)`;
+                dRecP.push(customerId, customerId);
+            }
+            const dRec = await dbGet(dRecSql, dRecP);
 
             let dCogsSql = `SELECT SUM(si.quantity * p.cost_price) as t
                             FROM sale_items si
@@ -2584,7 +2621,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 cogs: dCogs?.t || 0,
                 returns: dSR?.t || 0,
                 profit: ((dS?.t || 0) - (dSR?.t || 0)) - (dailyOps + (dCogs?.t || 0)),
-                payables: dPay?.t || 0
+                payables: dPay?.t || 0,
+                receivables: dRec?.t || 0
             });
         }
 

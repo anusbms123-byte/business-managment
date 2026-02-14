@@ -8,8 +8,7 @@ const Signup = () => {
         username: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        referralCode: ''
+        confirmPassword: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -55,8 +54,7 @@ const Signup = () => {
                 body: JSON.stringify({
                     username: formData.username,
                     email: formData.email,
-                    password: formData.password,
-                    referralCode: formData.referralCode
+                    password: formData.password
                 })
             });
 
@@ -67,8 +65,7 @@ const Signup = () => {
                 navigate('/setup-company', {
                     state: {
                         userId: data.id,
-                        username: data.username,
-                        referralCode: formData.referralCode
+                        username: data.username
                     }
                 });
             } else {
@@ -154,14 +151,7 @@ const Signup = () => {
                                 onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
                             />
 
-                            <FormInput
-                                label="Referral Code (Optional)"
-                                name="referralCode"
-                                value={formData.referralCode}
-                                onChange={handleChange}
-                                icon={User}
-                                placeholder="Have a referral code?"
-                            />
+
 
                             <button
                                 type="submit"
