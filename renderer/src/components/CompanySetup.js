@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Mail, Phone, MapPin, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, ArrowRight, LayoutDashboard, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const CompanySetup = () => {
@@ -24,7 +24,8 @@ const CompanySetup = () => {
         companyPhone: '',
         companyAddress: '',
         officePhone: '',
-        city: ''
+        city: '',
+        referralCode: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -146,6 +147,21 @@ const CompanySetup = () => {
                                     />
                                 </div>
                                 <FormInput label="City" name="city" value={formData.city} onChange={handleChange} icon={MapPin} placeholder="City name" required />
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <Users size={14} />
+                                    Additional Info (Optional)
+                                </h4>
+                                <FormInput
+                                    label="Referral Code"
+                                    name="referralCode"
+                                    value={formData.referralCode}
+                                    onChange={handleChange}
+                                    icon={Users}
+                                    placeholder="Enter refral code if any"
+                                />
                             </div>
 
 

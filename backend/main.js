@@ -314,9 +314,31 @@ ipcMain.handle("login", async (e, credentials) => {
 });
 
 // Companies
-ipcMain.handle("get-companies", async () => {
+ipcMain.handle("get-companies", async (e, filters = {}) => {
+    const { search, referralType } = filters;
+    let query = "SELECT *, is_active as isActive FROM companies";
+    let conditions = ["(sync_status != 'deleted' OR sync_status IS NULL)"];
+    let params = [];
+
+    if (search) {
+        conditions.push("(name LIKE ? OR email LIKE ?)");
+        params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (referralType === 'with') {
+        conditions.push("referral_code IS NOT NULL AND referral_code != ''");
+    } else if (referralType === 'without') {
+        conditions.push("(referral_code IS NULL OR referral_code = '')");
+    }
+
+    if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+    }
+
+    query += " ORDER BY name ASC";
+
     return new Promise((resolve, reject) => {
-        db.all("SELECT *, is_active as isActive FROM companies ORDER BY name ASC", [], (err, rows) => {
+        db.all(query, params, (err, rows) => {
             if (err) reject(err);
             else resolve(rows);
         });
@@ -333,19 +355,26 @@ ipcMain.handle("get-company", async (e, id) => {
 });
 
 ipcMain.handle("get-company-requests", async (e, filters) => {
-    // Local fallback/simulation if no cloud connection
-    return [];
+    return await apiCall('get', '/company-requests', null, filters);
+});
+
+ipcMain.handle("approve-company-request", async (e, id) => {
+    return await apiCall('post', `/company-requests/${id}/approve`);
+});
+
+ipcMain.handle("reject-company-request", async (e, id, notes) => {
+    return await apiCall('post', `/company-requests/${id}/reject`, { notes });
 });
 
 ipcMain.handle("create-company", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { name, address, phone, email, tax_no } = data;
+        const { name, address, phone, email, tax_no, referral_code } = data;
         const tempId = randomUUID();
 
         db.run(
-            `INSERT INTO companies (global_id, name, address, phone, email, tax_no, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, name, address, phone, email, tax_no],
+            `INSERT INTO companies (global_id, name, address, phone, email, tax_no, referral_code, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, address, phone, email, tax_no, referral_code],
             function (err) {
                 if (err) return reject(err);
 
@@ -361,14 +390,13 @@ ipcMain.handle("create-company", async (e, data) => {
 
 ipcMain.handle("update-company", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, name, address, phone, email, tax_no, is_active } = data;
+        const { id, name, address, phone, email, tax_no, referral_code, is_active } = data;
         const active = (is_active === 1 || is_active === true) ? 1 : 0;
 
         db.run(
-            `UPDATE companies SET name=?, address=?, phone=?, email=?, tax_no=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
-             WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)
-`,
-            [name, address, phone, email, tax_no, active, id, id],
+            `UPDATE companies SET name=?, address=?, phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+             WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)`,
+            [name, address, phone, email, tax_no, referral_code, active, id, id],
             function (err) {
                 if (err) return reject(err);
                 syncService.syncPendingRecords();
@@ -2156,19 +2184,22 @@ ipcMain.handle("get-report-summary", async (e, params) => {
     if (startDate && endDate) {
         const startStr = normalizeDate(startDate).includes(' ') ? normalizeDate(startDate) : `${normalizeDate(startDate)} 00:00:00`;
         const endStr = normalizeDate(endDate).includes(' ') ? normalizeDate(endDate) : `${normalizeDate(endDate)} 23:59:59`;
-        dateFilter = ` AND sale_date BETWEEN '${startStr}' AND '${endStr}'`;
+        dateFilter = ` AND date(sale_date) BETWEEN date('${startStr}') AND date('${endStr}')`;
     } else {
         if (period === 'Daily') {
-            dateFilter = ` AND sale_date >= '${now.toISOString().split('T')[0]} 00:00:00'`;
+            dateFilter = ` AND date(sale_date) >= date('${now.toISOString().split('T')[0]}')`;
         } else if (period === 'Weekly') {
             const lastWeek = new Date(new Date().setDate(now.getDate() - 7)).toISOString().split('T')[0];
-            dateFilter = ` AND sale_date >= '${lastWeek} 00:00:00'`;
+            dateFilter = ` AND date(sale_date) >= date('${lastWeek}')`;
         } else if (period === 'Monthly') {
             const lastMonth = new Date(new Date().setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
-            dateFilter = ` AND sale_date >= '${lastMonth} 00:00:00'`;
+            dateFilter = ` AND date(sale_date) >= date('${lastMonth}')`;
         } else if (period === 'Yearly') {
             const lastYear = new Date(new Date().setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
-            dateFilter = ` AND sale_date >= '${lastYear} 00:00:00'`;
+            dateFilter = ` AND date(sale_date) >= date('${lastYear}')`;
+        } else {
+            // All Time
+            dateFilter = "";
         }
     }
 
@@ -2259,11 +2290,23 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         expBreakdown.forEach(r => stats.expenseCategoryBreakdown[r.category || 'General'] = r.total);
 
         // 2. Returns
-        const srRow = await dbGet(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams);
+        let srSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let srP = [...qParams];
+        if (customerId && customerId !== 'all') {
+            srSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?) OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+            srP.push(customerId, customerId, customerId);
+        }
+        const srRow = await dbGet(srSql, srP);
         stats.totalSalesReturns = srRow?.total || 0;
         stats.returnCount += (srRow?.count || 0);
 
-        const prRow = await dbGet(`SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`, qParams);
+        let prSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let prP = [...qParams];
+        if (vendorId && vendorId !== 'all') {
+            prSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?) OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
+            prP.push(vendorId, vendorId, vendorId);
+        }
+        const prRow = await dbGet(prSql, prP);
         stats.totalPurchaseReturns = prRow?.total || 0;
         stats.returnCount += (prRow?.count || 0);
         stats.totalReturns = stats.totalSalesReturns + stats.totalPurchaseReturns;
@@ -2286,7 +2329,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             FROM sale_items si
             JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
             JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
-            WHERE s.${companyMatch} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+            WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
         let cogsP = [...qParams];
         if (customerId && customerId !== 'all') {
             cogsSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
@@ -2495,6 +2538,16 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
             const dE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND date(date) = ?`, [...qParams, dStr]);
 
+            let dSRSql = `SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND date(date) = ?`;
+            let dSRP = [...qParams, dStr];
+            if (customerId && customerId !== 'all') {
+                dSRSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                dSRP.push(customerId, customerId);
+            }
+            const dSR = await dbGet(dSRSql, dSRP);
+
+            const dSal = await dbGet(`SELECT SUM(net_salary) as t FROM salary_records WHERE ${companyMatch} AND (date(payment_date) = ? OR date(month) = ?)`, [...qParams, dStr, dStr]);
+
             // Payables calculation - sum of current_balance for vendors with purchases on this date
             let dPaySql = `SELECT SUM(DISTINCT v.current_balance) as t 
                            FROM vendors v 
@@ -2507,13 +2560,30 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             }
             const dPay = await dbGet(dPaySql, dPayP);
 
+            let dCogsSql = `SELECT SUM(si.quantity * p.cost_price) as t
+                            FROM sale_items si
+                            JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
+                            JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+                            WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND date(s.sale_date) = ?`;
+            let dCogsP = [...qParams, dStr];
+            if (customerId && customerId !== 'all') {
+                dCogsSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                dCogsP.push(customerId, customerId);
+            }
+            const dCogs = await dbGet(dCogsSql, dCogsP);
+
+            const isF = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
+            const dailyOps = isF ? 0 : (dE?.t || 0) + (dSal?.t || 0);
+
             stats.recentDays.push({
                 date: dStr,
                 sales: dS?.t || 0,
                 invoices: dS?.c || 0,
                 purchases: dP?.t || 0,
-                expenses: dE?.t || 0,
-                profit: (dS?.t || 0) - (dE?.t || 0),
+                expenses: dailyOps,
+                cogs: dCogs?.t || 0,
+                returns: dSR?.t || 0,
+                profit: ((dS?.t || 0) - (dSR?.t || 0)) - (dailyOps + (dCogs?.t || 0)),
                 payables: dPay?.t || 0
             });
         }
@@ -2570,7 +2640,43 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                                       WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.payment_date')} 
                                       GROUP BY name ORDER BY totalEarned DESC LIMIT 5`, qParams);
 
-        stats.netProfit = (stats.totalSales - stats.totalSalesReturns) - stats.totalCOGS - stats.totalExpenses - stats.totalSalaries;
+        // Calculate Gross Profit: (Total Sales - Returns) - COGS
+        stats.grossProfit = (stats.totalSales - stats.totalSalesReturns) - stats.totalCOGS;
+
+        // Operating expenses are company-wide. If filtering by a specific person, 
+        // we show the Gross Profit (direct contribution) as the result since we 
+        // can't accurately attribute rent/salaries to one customer/vendor.
+        const isFiltered = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
+        stats.operatingExpenses = isFiltered ? 0 : (stats.totalExpenses + stats.totalSalaries);
+        stats.netProfit = stats.grossProfit - stats.operatingExpenses;
+
+        // 8. 3-Month Net Profit History (for cards)
+        stats.monthlyHistory = [];
+        for (let i = 0; i < 3; i++) {
+            const mDate = new Date();
+            mDate.setMonth(now.getMonth() - i);
+            const mStr = mDate.toISOString().slice(0, 7); // YYYY-MM
+
+            const mMatch = `strftime('%Y-%m', sale_date) = ?`;
+            const mEMatch = `strftime('%Y-%m', date) = ?`;
+            const mHMatch = `(strftime('%Y-%m', payment_date) = ? OR strftime('%Y-%m', month) = ?)`;
+
+            const mS = await dbGet(`SELECT SUM(grand_total) as t FROM sales WHERE ${companyMatch} AND ${mMatch}`, [...qParams, mStr]);
+            const mSR = await dbGet(`SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
+            const mCOGS = await dbGet(`SELECT SUM(si.quantity * p.cost_price) as t FROM sale_items si JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE s.${companyMatch} AND strftime('%Y-%m', s.sale_date) = ?`, [...qParams, mStr]);
+            const mE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
+            const mSal = await dbGet(`SELECT SUM(net_salary) as t FROM salary_records WHERE ${companyMatch} AND ${mHMatch}`, [...qParams, mStr, mStr]);
+
+            const monthName = mDate.toLocaleString('default', { month: 'short' });
+            const mNet = (mS?.t || 0) - (mSR?.t || 0) - (mCOGS?.t || 0) - (mE?.t || 0) - (mSal?.t || 0);
+
+            stats.monthlyHistory.push({
+                month: monthName,
+                year: mDate.getFullYear(),
+                profit: mNet
+            });
+        }
+
         return { ...stats, success: true };
     } catch (err) {
         console.error("Report Generation Error:", err);
@@ -2931,7 +3037,7 @@ ipcMain.handle("get-salaries", async (e, params) => {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT s.*,
-                   s.employee_id as employeeId,
+                   COALESCE(e.id, s.employee_id) as employeeId,
                    s.base_salary as baseSalary,
                    s.net_salary as netSalary,
                    s.overtime_hours as overtimeHours,
@@ -2979,9 +3085,9 @@ ipcMain.handle("create-salary", async (e, data) => {
         db.run(
             `INSERT INTO salary_records (
                 global_id, employee_id, month, base_salary, bonus, overtime_hours, 
-                overtime_pay, deductions, net_salary, notes, company_id, sync_status, updated_at
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, employeeId, month, baseSalary, bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', companyId],
+                overtime_pay, deductions, net_salary, notes, status, payment_date, company_id, sync_status, updated_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, employeeId, month, baseSalary, bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', data.status || 'PAID', data.paymentDate || new Date().toISOString(), companyId],
             function (err) {
                 if (err) {
                     console.error("Error creating salary:", err);
@@ -3009,9 +3115,9 @@ ipcMain.handle("add-salary-record", async (e, data) => {
         const { employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, companyId } = data;
         const tempId = randomUUID();
         db.run(
-            `INSERT INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, companyId],
+            `INSERT INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, notes, payment_date, status, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, data.notes || '', payment_date, status, companyId],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
                 syncService.syncPendingRecords();

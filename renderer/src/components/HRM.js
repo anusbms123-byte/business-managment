@@ -600,7 +600,7 @@ const Payroll = ({ employees, currentUser }) => {
                             `${emp.firstName} ${emp.lastName || ''}`.toLowerCase().includes(search.toLowerCase()) ||
                             emp.id.toString().toLowerCase().includes(search.toLowerCase())
                         ).map((emp) => {
-                            const record = salaries.find(s => s.employeeId === emp.id);
+                            const record = salaries.find(s => String(s.employeeId) === String(emp.id) || s.employeeId === emp.global_id);
                             return (
                                 <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">

@@ -131,14 +131,22 @@ const PerformanceChart = ({ data }) => {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                        tickFormatter={(value) => {
+                            if (value === 0) return '0';
+                            const abs = Math.abs(value);
+                            const sign = value < 0 ? '-' : '';
+                            if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(1)}M`;
+                            if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}k`;
+                            return `${sign}${abs}`;
+                        }}
                     />
                     <Tooltip content={<CustomTooltip />} />
+                    <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} strokeDasharray="3 3" />
 
                     <Area
                         type="monotone"
                         dataKey="sales"
-                        name="Revenue"
+                        name="Total Sales"
                         stroke="#2563eb"
                         strokeWidth={3}
                         fillOpacity={1}

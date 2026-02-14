@@ -402,6 +402,7 @@ function initSchema() {
       overtime_pay REAL DEFAULT 0,
       deductions REAL DEFAULT 0,
       net_salary REAL,
+      notes TEXT,
       payment_date DATETIME,
       status TEXT DEFAULT 'PAID'
     )`);
@@ -523,6 +524,9 @@ function performColumnChecks() {
     addColumnIfNotExists(table, 'updated_at', "DATETIME", "CURRENT_TIMESTAMP");
   });
 
+  addColumnIfNotExists('expenses', 'company_id', "TEXT");
+  addColumnIfNotExists('salary_records', 'notes', "TEXT");
+
   // Inventory matching
   addColumnIfNotExists('products', 'unit', "TEXT", "'pcs'");
   addColumnIfNotExists('products', 'brand_id', "TEXT");
@@ -600,6 +604,8 @@ function performColumnChecks() {
   // Status columns for all major tables
   const statusTables = ['customers', 'vendors', 'categories', 'brands', 'expenses', 'accounts', 'employees', 'purchases', 'sales', 'roles', 'products', 'users', 'companies'];
   statusTables.forEach(t => addColumnIfNotExists(t, 'is_active', "INTEGER DEFAULT 1"));
+
+  addColumnIfNotExists('companies', 'referral_code', 'TEXT');
 
   // ===== PERFORMANCE INDICES =====
   console.log("Creating performance indices...");

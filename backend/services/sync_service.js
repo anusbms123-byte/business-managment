@@ -349,10 +349,12 @@ class SyncService {
                         query = `INSERT OR REPLACE INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')`;
                         // Normalize date to YYYY-MM-DD for local query matching
                         const normalizedDate = cloudData.date ? cloudData.date.split('T')[0] : null;
-                        params = [cloudData.id, cloudData.employeeId, normalizedDate, cloudData.status, cloudData.checkIn, cloudData.checkOut, companyId];
+                        const localEmpId = await this.resolveLocalId('employees', cloudData.employeeId);
+                        params = [cloudData.id, localEmpId || cloudData.employeeId, normalizedDate, cloudData.status, cloudData.checkIn, cloudData.checkOut, companyId];
                     } else if (table === 'salary_records') {
-                        query = `INSERT OR REPLACE INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`;
-                        params = [cloudData.id, cloudData.employeeId, cloudData.month, cloudData.baseSalary, cloudData.bonus, cloudData.overtimeHours, cloudData.overtimePay, cloudData.deductions, cloudData.netSalary, cloudData.paymentDate, cloudData.status, companyId];
+                        const localEmpId = await this.resolveLocalId('employees', cloudData.employeeId);
+                        query = `INSERT OR REPLACE INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, notes, payment_date, status, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`;
+                        params = [cloudData.id, localEmpId || cloudData.employeeId, cloudData.month, cloudData.baseSalary, cloudData.bonus, cloudData.overtimeHours, cloudData.overtimePay, cloudData.deductions, cloudData.netSalary, cloudData.notes || '', cloudData.paymentDate, cloudData.status, companyId];
                     } else if (table === 'permissions') {
                         query = `INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
                         params = [cloudData.id, cloudData.roleId, cloudData.module, cloudData.canView ? 1 : 0, cloudData.canCreate ? 1 : 0, cloudData.canEdit ? 1 : 0, cloudData.canDelete ? 1 : 0, cloudData.updatedAt || cloudData.updated_at];
@@ -794,6 +796,7 @@ class SyncService {
                     payload.netSalary = parseFloat(record.net_salary || 0);
                     payload.paymentDate = record.payment_date;
                     payload.status = record.status;
+                    payload.notes = record.notes || "";
                 }
 
                 // Determine Method

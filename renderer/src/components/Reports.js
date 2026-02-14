@@ -170,12 +170,12 @@ const Reports = ({ currentUser }) => {
                 companyId: currentUser.company_id,
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
-                customerId: activeModule === 'sales' ? selectedCustomer : undefined,
+                customerId: (activeModule === 'sales' || activeModule === 'netprofit') ? selectedCustomer : undefined,
                 vendorId: (activeModule === 'purchases' || activeModule === 'suppliers') ? selectedVendor : undefined,
-                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers') ? selectedPaymentStatus : undefined,
+                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'netprofit') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
-                expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined,
+                expenseCategory: (activeModule === 'expenses' || activeModule === 'netprofit') ? selectedExpenseCategory : undefined,
                 returnType: activeModule === 'returns' ? selectedReturnType : undefined,
                 employeeId: activeModule === 'hrm' ? selectedEmployee : undefined,
                 employeeStatus: activeModule === 'hrm' ? selectedEmployeeStatus : undefined
@@ -282,7 +282,7 @@ const Reports = ({ currentUser }) => {
                 miniStats: [
                     { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-orange-500' },
-                    { label: 'Gross Profit', value: `PKR ${((summary?.totalSales || 0) - (summary?.totalCOGS || 0)).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
+                    { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
                     { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-indigo-500' },
                     { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
@@ -366,26 +366,24 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total Salaries', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CreditCard, color: 'text-indigo-600' },
                     { label: 'Active Staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-500' },
                     { label: 'Inactive/Exit', value: `${summary?.inactiveEmployees || 0} Members`, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Avg Salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
-                    { label: 'Total Logs', value: `${(summary?.detailedHRM || []).length} Records`, icon: Layers, color: 'text-amber-600' },
                     { label: 'Payout Frequency', value: "Monthly", icon: RefreshCw, color: 'text-emerald-500' }
                 ],
                 tableCols: ['Staff Name', 'Designation', 'Status', 'Payment Date', 'Base Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
                 tableTitle: 'Payroll History',
-                cols: 5
+                cols: 4
             },
             netprofit: {
                 title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
                 miniStats: [
                     { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
-                    { label: 'COGS Sum', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-orange-500' },
-                    { label: 'Gross Profit', value: `PKR ${((summary?.totalSales || 0) - (summary?.totalCOGS || 0)).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Operating Costs', value: `PKR ${((summary?.totalExpenses || 0) + (summary?.totalSalaries || 0)).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-400' },
+                    { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
+                    { label: 'Operating Costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-400' },
                     { label: 'Net Profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: summary?.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600' },
-                    { label: 'Profit Margin', value: `${summary?.totalSales > 0 ? Math.round((summary?.netProfit / summary?.totalSales) * 100) : 0}%`, icon: Activity, color: 'text-indigo-500' }
+                    { label: 'Profit Margin', value: `${summary?.totalSales > 0 ? Math.round((summary?.netProfit / (summary?.totalSales || 1)) * 100) : 0}%`, icon: Activity, color: 'text-indigo-500' }
                 ],
-                tableCols: ['Audit Date', 'Operational Delta', 'Net Bottom Line'],
-                cols: 3
+                tableCols: ['Date', 'Total Sales', 'COGS', 'Expenses', 'Net Profit'],
+                tableTitle: 'Profitability Ledger',
+                cols: 5
             }
         };
 
@@ -448,7 +446,7 @@ const Reports = ({ currentUser }) => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {activeModule === 'sales' && (
+                        {(activeModule === 'sales' || activeModule === 'netprofit') && (
                             <>
                                 <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
                                     <Users size={14} className="text-slate-400 ml-3" />
@@ -559,7 +557,7 @@ const Reports = ({ currentUser }) => {
                                 </select>
                             </div>
                         )}
-                        {activeModule === 'expenses' && (
+                        {(activeModule === 'expenses' || activeModule === 'netprofit') && (
                             <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
                                 <FileText size={14} className="text-slate-400 ml-3" />
                                 <select
@@ -938,6 +936,35 @@ const Reports = ({ currentUser }) => {
                                             )}
                                         </div>
                                     </div>
+                                ) : activeModule === 'netprofit' ? (
+                                    /* Profitability History View (3 Months) */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Quarterly Net Logs</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Past 3 Months</span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {(summary?.monthlyHistory || []).map((m, i) => (
+                                                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${m.profit >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                            {m.month[0]}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-black uppercase leading-tight">{m.month} {m.year}</span>
+                                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Verified Profit</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-[11px] font-black font-mono ${m.profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                        {m.profit >= 0 ? '+' : ''}{m.profit?.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.monthlyHistory || summary.monthlyHistory.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No historical data available</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ) : (
                                     /* Default View */
                                     <>
@@ -970,7 +997,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
-                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Total Sales' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -1161,19 +1188,44 @@ const Reports = ({ currentUser }) => {
                                             </tr>
                                         ))
                                     ) : (
-                                        chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || d[config.dataKey] > 0).map((row, i) => (
+                                        chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || activeModule === 'netprofit' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
-                                                <td className="px-8 py-5">
-                                                    <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                                    <span className="text-xs font-black text-black uppercase italic">
-                                                        {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
-                                                            activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
-                                                                activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
-                                                                    `Activity_ID_${i + 1} Log`}
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-5 text-right font-medium text-black text-xs">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">{row.date}</td>
+                                                {activeModule === 'netprofit' ? (
+                                                    <>
+                                                        <td className="px-8 py-5 text-right align-top">
+                                                            <span className="text-xs font-bold text-blue-600 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
+                                                            <div className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{row.invoices || 0} Invoices</div>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right align-top">
+                                                            <span className="text-xs font-bold text-orange-500 font-mono tracking-tighter">PKR {row.cogs?.toLocaleString()}</span>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right align-top">
+                                                            <span className="text-xs font-bold text-rose-500 font-mono tracking-tighter">PKR {row.expenses?.toLocaleString()}</span>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right align-top bg-slate-50/50">
+                                                            <span className={`text-xs font-black font-mono tracking-tighter ${row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                PKR {row.profit?.toLocaleString()}
+                                                            </span>
+                                                            <div className={`text-[9px] font-black uppercase mt-0.5 ${row.profit >= 0 ? 'text-emerald-400' : 'text-rose-300'}`}>
+                                                                {row.profit >= 0 ? 'Surplus' : 'Deficit'}
+                                                            </div>
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-8 py-5 align-top">
+                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
+                                                            <span className="text-xs font-black text-black uppercase italic">
+                                                                {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
+                                                                    activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
+                                                                        activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
+                                                                            `Activity_ID_${i + 1} Log`}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                                    </>
+                                                )}
                                             </tr>
                                         ))
                                     )}

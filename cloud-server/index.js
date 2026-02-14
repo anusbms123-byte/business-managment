@@ -116,7 +116,29 @@ app.post('/api/auth/login', async (req, res) => {
 // ==========================================
 app.get('/api/companies', async (req, res) => {
     try {
-        const companies = await prisma.company.findMany({ orderBy: { createdAt: 'desc' } });
+        const { search, referralType } = req.query;
+        const where = {};
+
+        if (search) {
+            where.OR = [
+                { name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        if (referralType === 'with') {
+            where.referralCode = { not: null, not: '' };
+        } else if (referralType === 'without') {
+            where.OR = [
+                { referralCode: null },
+                { referralCode: '' }
+            ];
+        }
+
+        const companies = await prisma.company.findMany({
+            where,
+            orderBy: { name: 'asc' }
+        });
         res.json(companies);
     } catch (e) { handleError(res, e); }
 });
@@ -155,6 +177,7 @@ app.post('/api/companies', async (req, res) => {
                 state,
                 zipCode: zip_code,
                 country: country || 'Pakistan',
+                referralCode: req.body.referral_code || req.body.referralCode,
                 website,
                 isActive: is_active === undefined ? true : (is_active === 1 || is_active === true)
             }
@@ -186,6 +209,7 @@ app.put('/api/companies/:id', async (req, res) => {
                 zipCode: zip_code,
                 country,
                 website,
+                referralCode: req.body.referral_code || req.body.referralCode,
                 isActive: is_active === undefined ? undefined : (is_active === 1 || is_active === true)
             }
         });
@@ -2426,7 +2450,7 @@ app.post('/api/company-requests', async (req, res) => {
     try {
         const {
             userId, companyName, companyEmail, companyPhone, companyAddress,
-            officePhone, privatePhone, website, secondaryAddress, city, state, zipCode, country
+            officePhone, privatePhone, website, secondaryAddress, city, state, zipCode, country, referralCode
         } = req.body;
 
         // Check if user already has a pending or approved request
@@ -2449,7 +2473,9 @@ app.post('/api/company-requests', async (req, res) => {
                 city,
                 state,
                 zipCode,
+                zipCode,
                 country: country || 'Pakistan',
+                referralCode,
                 status: 'PENDING'
             }
         });
@@ -2479,7 +2505,10 @@ app.get('/api/company-requests/my-status', async (req, res) => {
         const { userId } = req.query;
         if (!userId) return res.status(400).json({ message: 'UserId required' });
 
-        const request = await prisma.companyRequest.findUnique({ where: { userId } });
+        const request = await prisma.companyRequest.findUnique({
+            where: { userId },
+            include: { user: true }
+        });
         if (!request) return res.json({ status: 'NONE' });
 
         res.json({ status: request.status, companyId: request.user?.companyId }); // If approved, might want companyId logic elsewhere
@@ -2512,6 +2541,7 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
                     state: request.state,
                     zipCode: request.zipCode,
                     country: request.country,
+                    referralCode: request.referralCode,
                     currency: 'PKR' // Default
                 }
             });

@@ -123,20 +123,23 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     const [companyUsers, setCompanyUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', address: '', phone: '', email: '', office_phone: '', city: ''
+        name: '', address: '', phone: '', email: '', office_phone: '', city: '', referral_code: ''
     });
 
-    useEffect(() => { loadData(); }, [currentUser, isSuperAdmin]);
+    const [companySearch, setCompanySearch] = useState('');
+    const [companyReferralFilter, setCompanyReferralFilter] = useState('all');
+
+    useEffect(() => { loadData(); }, [currentUser, isSuperAdmin, companySearch, companyReferralFilter]);
 
     const loadData = async () => {
         setLoading(true);
         try {
             if (window.electronAPI) {
                 if (isSuperAdmin) {
-                    const data = await window.electronAPI.getCompanies();
-                    console.log("🔍 [DEBUG] Raw data from getCompanies:", data);
-                    console.log("🔍 [DEBUG] Is Array?", Array.isArray(data));
-                    console.log("🔍 [DEBUG] Data length:", data?.length);
+                    const data = await window.electronAPI.getCompanies({
+                        search: companySearch,
+                        referralType: companyReferralFilter
+                    });
                     setCompanies(Array.isArray(data) ? data : []);
                     console.log("🔍 [DEBUG] Companies state set to:", Array.isArray(data) ? data : []);
                     if (data?.success === false) console.error("Companies Error:", data.message);
@@ -194,7 +197,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         } else {
             setFormData({
                 name: '', address: '', phone: '', email: '',
-                office_phone: '', city: '', is_active: true
+                office_phone: '', city: '', referral_code: '', is_active: true
             });
         }
         setShowModal(true);
@@ -239,14 +242,47 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     if (isSuperAdmin) {
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 className="text-xl font-bold text-black tracking-tight">Registered Companies</h2>
                         <p className="text-sm text-black font-bold">Managing {companies.length} business entities</p>
                     </div>
-                    {canCreate('settings') && (
-                        <Button onClick={() => openModal()} icon={Plus}>Register Company</Button>
-                    )}
+
+                    <div className="flex flex-1 flex-col md:flex-row items-center gap-4 max-w-2xl justify-end">
+                        <div className="relative group w-full md:w-64">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+                            <input
+                                type="text"
+                                value={companySearch}
+                                onChange={e => setCompanySearch(e.target.value)}
+                                placeholder="Search companies..."
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                            {[
+                                { id: 'all', label: 'All' },
+                                { id: 'with', label: 'Referral' },
+                                { id: 'without', label: 'Direct' }
+                            ].map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setCompanyReferralFilter(f.id)}
+                                    className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${companyReferralFilter === f.id
+                                        ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {canCreate('settings') && (
+                            <Button onClick={() => openModal()} icon={Plus}>Register</Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -319,7 +355,10 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             Core Information
                                         </h4>
                                         <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
-                                        <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
+                                            <FormInput label="Referral Code" value={formData.referral_code} onChange={v => setFormData({ ...formData, referral_code: v })} placeholder="Refral (Optional)" icon={Users} />
+                                        </div>
                                     </div>
                                     <div className="space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -977,13 +1016,17 @@ const CompanyRequests = ({ currentUser, onAction }) => {
     const [loading, setLoading] = useState(true);
     const [rejecting, setRejecting] = useState(null); // { id, notes }
     const [isRejecting, setIsRejecting] = useState(false);
+    const [referralFilter, setReferralFilter] = useState('all'); // all, with, without
 
-    useEffect(() => { loadRequests(); }, []);
+    useEffect(() => { loadRequests(); }, [referralFilter]);
 
     const loadRequests = async () => {
         setLoading(true);
         try {
-            const data = await window.electronAPI.getCompanyRequests({ status: 'PENDING' });
+            const data = await window.electronAPI.getCompanyRequests({
+                status: 'PENDING',
+                referralType: referralFilter
+            });
             setRequests(data);
         } catch (err) {
             console.error('Failed to load requests:', err);
@@ -1061,11 +1104,31 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                     </div>
                 </Modal>
             )}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-xl font-bold text-black tracking-tight">Access Requests</h2>
                     <p className="text-sm text-black font-bold">Review pending organization registration requests</p>
                 </div>
+
+                <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                    {[
+                        { id: 'all', label: 'All Requests' },
+                        { id: 'with', label: 'Referral Only' },
+                        { id: 'without', label: 'Direct Signups' }
+                    ].map(f => (
+                        <button
+                            key={f.id}
+                            onClick={() => setReferralFilter(f.id)}
+                            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${referralFilter === f.id
+                                ? 'bg-white text-blue-600 shadow-sm border border-slate-200'
+                                : 'text-slate-400 hover:text-slate-600'
+                                }`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold uppercase tracking-widest border border-blue-100">
                     {requests.length} Pending
                 </div>
@@ -1082,7 +1145,14 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center border border-amber-100">
                                 <Building2 size={24} />
                             </div>
-                            <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-100">Pending</span>
+                            <div className="flex items-center gap-2">
+                                {req.referralCode && (
+                                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-100 flex items-center gap-1">
+                                        <Users size={10} /> {req.referralCode}
+                                    </span>
+                                )}
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-100">Pending</span>
+                            </div>
                         </div>
 
                         <h3 className="font-bold text-black text-lg mb-1">{req.companyName}</h3>

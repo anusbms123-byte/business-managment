@@ -30,6 +30,7 @@ model Company {
   state       String?
   zipCode     String?  @map("zip_code")
   country     String?  @default("Pakistan")
+  referralCode String? @map("referral_code")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -470,6 +471,7 @@ model CompanyRequest {
   state           String?
   zipCode         String?  @map("zip_code")
   country         String?  @default("Pakistan")
+  referralCode    String?  @map("referral_code")
   
   status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
   adminNotes      String?  @map("admin_notes")
