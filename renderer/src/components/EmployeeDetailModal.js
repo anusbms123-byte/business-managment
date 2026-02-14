@@ -7,21 +7,31 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // Date filtering
+    const today = new Date().toISOString().split('T')[0];
+    const [dateRange, setDateRange] = useState({ start: today, end: today });
+
+    const loadDetails = async () => {
+        if (!employee?.id) return;
+        setLoading(true);
+        try {
+            const data = await window.electronAPI.getEmployeeDetails({
+                employeeId: employee.id,
+                startDate: dateRange.start,
+                endDate: dateRange.end
+            });
+            setStats(data?.stats || { present: 0, absent: 0, late: 0, leave: 0 });
+            setLogs(data?.logs || []);
+        } catch (err) {
+            console.error("Error loading employee details:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadDetails = async () => {
-            if (!employee?.id) return;
-            try {
-                const data = await window.electronAPI.getEmployeeDetails(employee.id);
-                setStats(data?.stats || { present: 0, absent: 0, late: 0, leave: 0 });
-                setLogs(data?.logs || []);
-            } catch (err) {
-                console.error("Error loading employee details:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadDetails();
-    }, [employee]);
+    }, [employee, dateRange.start, dateRange.end]);
 
     if (!employee) return null;
 
@@ -50,6 +60,34 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-8">
+                {/* Date Filter */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <Calendar size={18} className="text-blue-600" />
+                        <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] italic">Attendance Archive</h3>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 bg-white px-4 py-2 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">From</span>
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                className="text-[10px] font-bold text-slate-900 outline-none uppercase bg-transparent cursor-pointer"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3 bg-white px-4 py-2 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">To</span>
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                className="text-[10px] font-bold text-slate-900 outline-none uppercase bg-transparent cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">

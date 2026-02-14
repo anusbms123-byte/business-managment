@@ -2869,17 +2869,22 @@ ipcMain.handle("delete-attendance", async (e, id) => {
 });
 
 // EMPLOYEE DETAILS HANDLER
-ipcMain.handle("get-employee-details", async (e, employeeId) => {
+ipcMain.handle("get-employee-details", async (e, params) => {
     return new Promise((resolve, reject) => {
-        // Query to get attendance stats
-        // We need to resolve employeeId which could be local or global
-        db.get("SELECT global_id FROM employees WHERE id = ? OR global_id = ?", [employeeId, employeeId], (err, emp) => {
-            if (err || !emp) {
-                // Try direct usage if not found (less likely)
-            }
-            const targetId = emp ? emp.global_id : employeeId; // Use global ID for attendance match if possible, or fallback
+        const employeeId = typeof params === 'object' ? params.employeeId : params;
+        const startDate = params?.startDate;
+        const endDate = params?.endDate;
 
-            // Stats Query
+        db.get("SELECT global_id FROM employees WHERE id = ? OR global_id = ?", [employeeId, employeeId], (err, emp) => {
+            const targetId = emp ? emp.global_id : employeeId;
+
+            let dateFilter = "";
+            let pExtra = [];
+            if (startDate && endDate) {
+                dateFilter = ` AND date BETWEEN ? AND ?`;
+                pExtra = [startDate, endDate];
+            }
+
             const statsQuery = `
                 SELECT 
                     COUNT(CASE WHEN status = 'Present' THEN 1 END) as present,
@@ -2887,27 +2892,26 @@ ipcMain.handle("get-employee-details", async (e, employeeId) => {
                     COUNT(CASE WHEN status = 'Late' THEN 1 END) as late,
                     COUNT(CASE WHEN status = 'Leave' THEN 1 END) as leave
                 FROM attendances 
-                WHERE employee_id = ? OR employee_id = ?
+                WHERE (employee_id = ? OR employee_id = ?) ${dateFilter}
             `;
 
-            // Logs Query (Last 30 records)
             const logsQuery = `
-                SELECT id, date, status, check_in, check_out 
+                SELECT id, date, status, check_in as checkIn, check_out as checkOut 
                 FROM attendances 
-                WHERE employee_id = ? OR employee_id = ?
+                WHERE (employee_id = ? OR employee_id = ?) ${dateFilter}
                 ORDER BY date DESC 
-                LIMIT 30
+                LIMIT 100
             `;
 
-            const params = [employeeId, targetId];
+            const queryParams = [employeeId, targetId, ...pExtra];
 
-            db.get(statsQuery, params, (err, stats) => {
+            db.get(statsQuery, queryParams, (err, stats) => {
                 if (err) {
                     console.error("Error fetching emp stats:", err);
                     return resolve({ stats: {}, logs: [] });
                 }
 
-                db.all(logsQuery, params, (err, logs) => {
+                db.all(logsQuery, queryParams, (err, logs) => {
                     if (err) {
                         console.error("Error fetching emp logs:", err);
                         return resolve({ stats: stats || {}, logs: [] });
