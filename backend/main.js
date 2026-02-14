@@ -2631,7 +2631,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                           FROM sale_items si 
                           JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id 
                           JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id 
-                          WHERE s.${companyMatch} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+                          WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
         let topProdP = [...qParams];
         if (customerId && customerId !== 'all') {
             topProdSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
@@ -2657,7 +2657,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                              FROM purchase_items pi 
                              JOIN products pr ON pi.product_id = pr.id OR pi.product_id = pr.global_id 
                              JOIN purchases p ON pi.purchase_id = p.id OR pi.purchase_id = p.global_id 
-                             WHERE p.${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
+                             WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
         let topPurProdP = [...qParams];
         if (vendorId && vendorId !== 'all') {
             topPurProdSql += ` AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
@@ -2701,7 +2701,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
             const mS = await dbGet(`SELECT SUM(grand_total) as t FROM sales WHERE ${companyMatch} AND ${mMatch}`, [...qParams, mStr]);
             const mSR = await dbGet(`SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
-            const mCOGS = await dbGet(`SELECT SUM(si.quantity * p.cost_price) as t FROM sale_items si JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE s.${companyMatch} AND strftime('%Y-%m', s.sale_date) = ?`, [...qParams, mStr]);
+            const mCOGS = await dbGet(`SELECT SUM(si.quantity * p.cost_price) as t FROM sale_items si JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND strftime('%Y-%m', s.sale_date) = ?`, [...qParams, mStr]);
             const mE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
             const mSal = await dbGet(`SELECT SUM(net_salary) as t FROM salary_records WHERE ${companyMatch} AND ${mHMatch}`, [...qParams, mStr, mStr]);
 
