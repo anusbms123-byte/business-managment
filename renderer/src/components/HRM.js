@@ -70,7 +70,7 @@ const HRM = ({ currentUser }) => {
 const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0] });
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0], isActive: true });
     const [saving, setSaving] = useState(false);
 
     const handleSave = async (e) => {
@@ -132,7 +132,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                 {canCreate('hrm') && (
                     <button
                         onClick={() => {
-                            setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0] });
+                            setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0], isActive: true });
                             setShowModal(true);
                         }}
                         className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
@@ -184,12 +184,17 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 <td className="px-6 py-4 font-bold text-black text-[10px]">PKR {emp.hourlyRate ?? 0}</td>
                                 <td className="px-6 py-4 text-black font-bold text-[10px] uppercase">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-center">
-                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">{emp.designation}</span>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">{emp.designation}</span>
+                                        <span className={`text-[9px] font-bold uppercase tracking-widest ${emp.isActive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {emp.isActive ? '• Active' : '• Inactive'}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
                                         {canEdit('hrm') && (
-                                            <button onClick={() => { setFormData(emp); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                            <button onClick={() => { setFormData({ ...emp }); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                                 <Edit size={16} />
                                             </button>
                                         )}
@@ -264,6 +269,27 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                     <div>
                                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Formal Joining Date</label>
                                         <input required type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 outline-none font-bold text-sm transition-all" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-6">
+                                    <div className="flex items-center gap-4">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Status:</label>
+                                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, isActive: true })}
+                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.isActive ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                Active
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, isActive: false })}
+                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${!formData.isActive ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                Inactive
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">

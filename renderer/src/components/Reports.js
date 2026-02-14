@@ -58,6 +58,8 @@ const Reports = ({ currentUser }) => {
     const [vendors, setVendors] = useState([]);
     const [categories, setCategories] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [employees, setEmployees] = useState([]);
+    const [selectedEmployee, setSelectedEmployee] = useState('all');
     const [selectedCustomer, setSelectedCustomer] = useState('all');
     const [selectedVendor, setSelectedVendor] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
@@ -106,6 +108,16 @@ const Reports = ({ currentUser }) => {
             setCustomers(data || []);
         } catch (err) {
             console.error('Error loading customers:', err);
+        }
+    };
+
+    const loadEmployees = async () => {
+        if (!currentUser?.company_id) return;
+        try {
+            const data = await window.electronAPI.getEmployees(currentUser.company_id);
+            setEmployees(data || []);
+        } catch (err) {
+            console.error('Error loading employees:', err);
         }
     };
 
@@ -158,12 +170,13 @@ const Reports = ({ currentUser }) => {
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
                 customerId: activeModule === 'sales' ? selectedCustomer : undefined,
-                vendorId: activeModule === 'purchases' ? selectedVendor : undefined,
-                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases') ? selectedPaymentStatus : undefined,
+                vendorId: (activeModule === 'purchases' || activeModule === 'suppliers') ? selectedVendor : undefined,
+                paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
                 expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined,
-                returnType: activeModule === 'returns' ? selectedReturnType : undefined
+                returnType: activeModule === 'returns' ? selectedReturnType : undefined,
+                employeeId: activeModule === 'hrm' ? selectedEmployee : undefined
             });
             setSummary(data);
         } catch (err) {
@@ -176,6 +189,7 @@ const Reports = ({ currentUser }) => {
         loadCustomers();
         loadVendors();
         loadCategories();
+        loadEmployees();
     }, [currentUser]);
 
     useEffect(() => {
@@ -344,15 +358,17 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             hrm: {
-                title: 'Payroll Summary', icon: Users2, color: '#10b981', dataKey: 'salaries',
+                title: 'Staff Payroll Logs', icon: Users, color: '#6366f1', dataKey: 'salaries',
                 miniStats: [
-                    { label: 'Total Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Staff Count', value: `${summary?.employeeCount || 0} Employees`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Total Salaries', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CreditCard, color: 'text-indigo-600' },
+                    { label: 'Staff Count', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-blue-500' },
                     { label: 'Avg Salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
-                    { label: 'Salary Status', value: 'Disbursed', icon: CheckCircle2, color: 'text-emerald-500' }
+                    { label: 'Total Logs', value: `${(summary?.detailedHRM || []).length} Records`, icon: Layers, color: 'text-amber-600' },
+                    { label: 'Payout Frequency', value: "Monthly", icon: RefreshCw, color: 'text-emerald-500' }
                 ],
-                tableCols: ['Disbursal Month', 'Headcount', 'Net Payroll'],
-                cols: 4
+                tableCols: ['Staff Name', 'Designation', 'Payment Date', 'Base Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
+                tableTitle: 'Payroll History',
+                cols: 5
             },
             netprofit: {
                 title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
@@ -402,6 +418,19 @@ const Reports = ({ currentUser }) => {
                                 {activeModule === 'suppliers' && selectedVendor !== 'all' && (
                                     <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
                                         {vendors.find(v => v.id === selectedVendor)?.name || 'Supplier'}
+                                    </span>
+                                )}
+                                {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
+                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                        ? 'bg-emerald-100 text-emerald-600'
+                                        : 'bg-orange-100 text-orange-600'
+                                        }`}>
+                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                    </span>
+                                )}
+                                {activeModule === 'hrm' && selectedEmployee !== 'all' && (
+                                    <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                        {employees.find(e => e.id === selectedEmployee)?.first_name || 'Staff Member'}
                                     </span>
                                 )}
                             </div>
@@ -539,17 +568,49 @@ const Reports = ({ currentUser }) => {
                             </div>
                         )}
                         {activeModule === 'suppliers' && (
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Factory size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedVendor}
+                                        onChange={(e) => setSelectedVendor(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Suppliers</option>
+                                        {vendors.map(v => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedPaymentStatus}
+                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Payments</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="credit">Credit / Due</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {activeModule === 'hrm' && (
                             <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                <Factory size={14} className="text-slate-400 ml-3" />
+                                <Users size={14} className="text-slate-400 ml-3" />
                                 <select
-                                    value={selectedVendor}
-                                    onChange={(e) => setSelectedVendor(e.target.value)}
+                                    value={selectedEmployee}
+                                    onChange={(e) => setSelectedEmployee(e.target.value)}
                                     className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                 >
-                                    <option value="all">All Suppliers</option>
-                                    {vendors.map(v => (
-                                        <option key={v.id} value={v.id}>
-                                            {v.name}
+                                    <option value="all">All Staff Members</option>
+                                    {employees.map(e => (
+                                        <option key={e.id} value={e.id}>
+                                            {e.first_name} {e.last_name}
                                         </option>
                                     ))}
                                 </select>
@@ -805,6 +866,54 @@ const Reports = ({ currentUser }) => {
                                             </div>
                                         </div>
                                     </div>
+                                ) : activeModule === 'suppliers' ? (
+                                    /* Top Vendors by Purchase Volume */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Vendors</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Purchases</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{v.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-600">PKR {v.totalSpent?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topVendors || summary.topVendors.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No vendor data available</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : activeModule === 'hrm' ? (
+                                    /* Top Staff View */
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Staff</span>
+                                            <span className="text-[9px] font-bold text-slate-400">Total Paid</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topStaff || []).slice(0, 3).map((s, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-600' : i === 1 ? 'bg-purple-500' : 'bg-blue-500'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{s.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-indigo-600">PKR {s.totalEarned?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topStaff || summary.topStaff.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No staff data available</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ) : (
                                     /* Default View */
                                     <>
@@ -837,7 +946,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
-                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : col === 'Items' ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -996,8 +1105,34 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                             </tr>
                                         ))
+                                    ) : activeModule === 'hrm' && summary?.detailedHRM ? (
+                                        summary.detailedHRM.map((rec, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top font-mono tracking-tighter">
+                                                    {rec.staffName}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 uppercase align-top">
+                                                    {rec.designation || 'Staff'}
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-black align-top">
+                                                    {new Date(rec.payment_date).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-bold text-slate-700 text-xs align-top">
+                                                    PKR {(rec.basic_salary || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-bold text-emerald-600 text-xs align-top">
+                                                    PKR {((rec.bonus || 0) + (rec.overtime_pay || 0)).toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-bold text-rose-600 text-xs align-top">
+                                                    PKR {(rec.deductions || 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black text-indigo-700 text-xs align-top bg-indigo-50/30">
+                                                    PKR {(rec.net_salary || 0).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))
                                     ) : (
-                                        chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || d[config.dataKey] > 0).map((row, i) => (
+                                        chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 transition-colors group">
                                                 <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase">{row.date}</td>
                                                 <td className="px-8 py-5">

@@ -311,8 +311,9 @@ class SyncService {
                             cloudData.updatedAt || cloudData.updated_at
                         ];
                     } else if (table === 'employees') {
-                        query = `INSERT OR REPLACE INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                        params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone, cloudData.designation, cloudData.salary, cloudData.hourlyRate || 0, cloudData.joiningDate, companyId, cloudData.updatedAt || cloudData.updated_at];
+                        const activeVal = cloudData.isActive !== undefined ? (cloudData.isActive ? 1 : 0) : (cloudData.is_active !== undefined ? cloudData.is_active : 1);
+                        query = `INSERT OR REPLACE INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`;
+                        params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone, cloudData.designation, cloudData.salary, cloudData.hourlyRate || 0, cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
                     } else if (table === 'purchases') {
                         const localVendorId = await this.resolveLocalId('vendors', cloudData.vendorId || cloudData.vendor_id);
                         if (existingRow) {
@@ -744,6 +745,7 @@ class SyncService {
                     payload.salary = parseFloat(record.salary || 0);
                     payload.hourly_rate = parseFloat(record.hourly_rate || 0);
                     payload.joiningDate = record.joining_date;
+                    payload.isActive = record.is_active === 1;
                 } else if (table === 'roles') {
                     const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
                     payload.permissions = permissions.map(p => ({

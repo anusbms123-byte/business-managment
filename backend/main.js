@@ -2136,6 +2136,11 @@ ipcMain.handle("get-report-summary", async (e, params) => {
     const categoryId = params?.categoryId;
     const stockStatus = params?.stockStatus;
     const expenseCategory = params?.expenseCategory;
+    const employeeId = params?.employeeId;
+
+    console.log('[REPORT DEBUG] Params:', JSON.stringify(params));
+    console.log('[REPORT DEBUG] IDs:', ids);
+
 
     let dateFilter = "";
     const now = new Date();
@@ -2201,7 +2206,9 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         detailedInventory: [],
         detailedExpenses: [],
         detailedReturns: [],
-        detailedVendors: []
+        detailedVendors: [],
+        detailedHRM: [],
+        topStaff: []
     };
 
     const dbGet = (sql, p) => new Promise(res => db.get(sql, p, (err, row) => res(row)));
@@ -2228,6 +2235,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         if (vendorId && vendorId !== 'all') {
             purSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
             purP.push(vendorId, vendorId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            purSql += ` AND LOWER(payment_status) = ?`;
+            purP.push(paymentStatus.toLowerCase());
         }
         const pRow = await dbGet(purSql, purP);
         stats.totalPurchases = pRow?.total || 0;
@@ -2293,6 +2304,27 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
         const empRow = await dbGet(`SELECT COUNT(*) as count FROM employees WHERE ${companyMatch} AND is_active = 1 AND sync_status != 'deleted'`, qParams);
         stats.employeeCount = empRow?.count || 0;
+
+        // 4.1 Detailed HRM / Salaries
+        let hrmSql = `SELECT s.*, e.first_name || ' ' || e.last_name as staff_name, e.designation 
+                      FROM salary_records s 
+                      JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
+                      WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 'date(s.payment_date)')}`;
+        let hrmP = [...qParams];
+        if (employeeId && employeeId !== 'all') {
+            hrmSql += ` AND (s.employee_id = ? OR s.employee_id = (SELECT id FROM employees WHERE global_id = ?))`;
+            hrmP.push(employeeId, employeeId);
+        }
+        const detHRM = await dbAll(hrmSql + " ORDER BY s.payment_date DESC LIMIT 100", hrmP);
+        stats.detailedHRM = detHRM.map(r => ({
+            ...r,
+            staffName: r.staff_name,
+            amount: r.net_salary,
+            date: r.payment_date,
+            basic_salary: r.base_salary || 0
+        }));
+
+        // 5. Detailed Lists (MAPPED)
 
         // 5. Detailed Lists (MAPPED)
         let detSalesSql = `SELECT s.*, c.name as customer_name FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
@@ -2402,6 +2434,14 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             detVendSql += ` AND (id = ? OR global_id = ?)`;
             detVendP.push(vendorId, vendorId);
         }
+        // Payment status filter for vendors: credit = due (balance > 0), paid = clear (balance = 0)
+        if (paymentStatus && paymentStatus !== 'all') {
+            if (paymentStatus.toLowerCase() === 'credit') {
+                detVendSql += ` AND current_balance > 0`;
+            } else if (paymentStatus.toLowerCase() === 'paid') {
+                detVendSql += ` AND (current_balance = 0 OR current_balance IS NULL)`;
+            }
+        }
         const detVendors = await dbAll(detVendSql + " ORDER BY name ASC", detVendP);
         stats.detailedVendors = detVendors.map(v => ({
             ...v,
@@ -2424,7 +2464,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 dSSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
                 dSP.push(customerId, customerId);
             }
-            if (paymentStatus && paymentStatus !== 'all' && activeModule === 'sales') {
+            if (paymentStatus && paymentStatus !== 'all') {
                 dSSql += ` AND LOWER(payment_status) = ?`;
                 dSP.push(paymentStatus.toLowerCase());
             }
@@ -2436,14 +2476,35 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 dPSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
                 dPP.push(vendorId, vendorId);
             }
-            if (paymentStatus && paymentStatus !== 'all' && activeModule === 'purchases') {
+            if (paymentStatus && paymentStatus !== 'all') {
                 dPSql += ` AND LOWER(payment_status) = ?`;
                 dPP.push(paymentStatus.toLowerCase());
             }
             const dP = await dbGet(dPSql, dPP);
 
             const dE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND date(date) = ?`, [...qParams, dStr]);
-            stats.recentDays.push({ date: dStr, sales: dS?.t || 0, invoices: dS?.c || 0, purchases: dP?.t || 0, expenses: dE?.t || 0, profit: (dS?.t || 0) - (dE?.t || 0) });
+
+            // Payables calculation - sum of current_balance for vendors with purchases on this date
+            let dPaySql = `SELECT SUM(DISTINCT v.current_balance) as t 
+                           FROM vendors v 
+                           WHERE ${companyMatch.replace(/company_id/g, 'v.company_id')} 
+                           AND v.sync_status != 'deleted'`;
+            let dPayP = [...qParams];
+            if (vendorId && vendorId !== 'all') {
+                dPaySql += ` AND (v.id = ? OR v.global_id = ?)`;
+                dPayP.push(vendorId, vendorId);
+            }
+            const dPay = await dbGet(dPaySql, dPayP);
+
+            stats.recentDays.push({
+                date: dStr,
+                sales: dS?.t || 0,
+                invoices: dS?.c || 0,
+                purchases: dP?.t || 0,
+                expenses: dE?.t || 0,
+                profit: (dS?.t || 0) - (dE?.t || 0),
+                payables: dPay?.t || 0
+            });
         }
 
         // 7. Top Breakdowns
@@ -2461,7 +2522,17 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
         stats.topCustomers = await dbAll(`SELECT IFNULL(c.name, 'Walk-in') as name, SUM(s.grand_total) as totalSpent FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')} GROUP BY IFNULL(c.name, 'Walk-in') ORDER BY totalSpent DESC LIMIT 5`, qParams);
 
-        stats.topVendors = await dbAll(`SELECT v.name, SUM(p.total_amount) as totalSpent FROM purchases p JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')} GROUP BY v.name ORDER BY totalSpent DESC LIMIT 5`, qParams);
+        let topVendSql = `SELECT v.name, SUM(p.total_amount) as totalSpent FROM purchases p JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
+        let topVendP = [...qParams];
+        if (vendorId && vendorId !== 'all') {
+            topVendSql += ` AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
+            topVendP.push(vendorId, vendorId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            topVendSql += ` AND LOWER(p.payment_status) = ?`;
+            topVendP.push(paymentStatus.toLowerCase());
+        }
+        stats.topVendors = await dbAll(topVendSql + ` GROUP BY v.name ORDER BY totalSpent DESC LIMIT 5`, topVendP);
 
         let topPurProdSql = `SELECT pr.name, SUM(pi.quantity) as qtyBought 
                              FROM purchase_items pi 
@@ -2473,10 +2544,20 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             topPurProdSql += ` AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
             topPurProdP.push(vendorId, vendorId);
         }
+        if (paymentStatus && paymentStatus !== 'all') {
+            topPurProdSql += ` AND LOWER(p.payment_status) = ?`;
+            topPurProdP.push(paymentStatus.toLowerCase());
+        }
         stats.topPurchasedProducts = await dbAll(topPurProdSql + ` GROUP BY pr.name ORDER BY qtyBought DESC LIMIT 5`, topPurProdP);
 
         const topVal = await dbAll(`SELECT p.name, (stock_quantity * cost_price) as val FROM products p WHERE ${companyMatch} AND sync_status != 'deleted' ORDER BY val DESC LIMIT 5`, qParams);
         stats.topValuedItems = topVal.map(r => ({ name: r.name, costPrice: r.val, stockQty: 1 }));
+
+        stats.topStaff = await dbAll(`SELECT e.first_name || ' ' || e.last_name as name, SUM(s.net_salary) as totalEarned 
+                                      FROM salary_records s 
+                                      JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
+                                      WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.payment_date')} 
+                                      GROUP BY name ORDER BY totalEarned DESC LIMIT 5`, qParams);
 
         stats.netProfit = (stats.totalSales - stats.totalSalesReturns) - stats.totalCOGS - stats.totalExpenses - stats.totalSalaries;
         return { ...stats, success: true };
@@ -2571,13 +2652,14 @@ ipcMain.handle("get-employees", async (e, companyId) => {
 
 ipcMain.handle("create-employee", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { firstName, lastName, phone, designation, salary, hourly_rate, joiningDate, companyId } = data;
+        const { firstName, lastName, phone, designation, salary, hourly_rate, joiningDate, companyId, isActive } = data;
         const tempId = randomUUID();
+        const activeVal = isActive === undefined ? 1 : (isActive ? 1 : 0);
 
         db.run(
             `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
-            [tempId, firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, companyId],
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP)`,
+            [tempId, firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, companyId, activeVal],
             function (err) {
                 if (err) {
                     console.error("Error creating employee:", err);
@@ -2592,14 +2674,15 @@ ipcMain.handle("create-employee", async (e, data) => {
 
 ipcMain.handle("update-employee", async (e, data) => {
     return new Promise((resolve, reject) => {
-        const { id, firstName, lastName, phone, designation, salary, hourly_rate, joiningDate } = data;
+        const { id, firstName, lastName, phone, designation, salary, hourly_rate, joiningDate, isActive } = data;
+        const activeVal = isActive === undefined ? 1 : (isActive ? 1 : 0);
 
         db.run(
             `UPDATE employees SET 
-                first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?,
+                first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?, is_active=?,
                 sync_status='pending', updated_at=CURRENT_TIMESTAMP 
              WHERE id=? OR global_id=?`,
-            [firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, id, id],
+            [firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, activeVal, id, id],
             function (err) {
                 if (err) {
                     console.error("Error updating employee:", err);

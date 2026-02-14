@@ -1687,7 +1687,7 @@ app.get('/api/employees', async (req, res) => {
 
 app.post('/api/employees', async (req, res) => {
     try {
-        const { companyId, firstName, lastName, phone, designation, salary, joiningDate } = req.body;
+        const { companyId, firstName, lastName, phone, designation, salary, joiningDate, isActive } = req.body;
         const employee = await prisma.employee.create({
             data: {
                 companyId,
@@ -1696,8 +1696,9 @@ app.post('/api/employees', async (req, res) => {
                 phone,
                 designation,
                 salary: parseFloat(salary) || 0,
-                hourlyRate: parseFloat(req.body.hourly_rate) || 0,
-                joiningDate: joiningDate ? new Date(joiningDate) : new Date()
+                hourlyRate: parseFloat(req.body.hourlyRate || req.body.hourly_rate) || 0,
+                joiningDate: joiningDate ? new Date(joiningDate) : new Date(),
+                isActive: isActive !== undefined ? (isActive === true || isActive === 1) : true
             }
         });
         res.json({ success: true, id: employee.id, ...employee });
@@ -1706,7 +1707,7 @@ app.post('/api/employees', async (req, res) => {
 
 app.put('/api/employees/:id', async (req, res) => {
     try {
-        const { firstName, lastName, phone, designation, salary, joiningDate } = req.body;
+        const { firstName, lastName, phone, designation, salary, joiningDate, isActive } = req.body;
         await prisma.employee.update({
             where: { id: req.params.id },
             data: {
@@ -1715,8 +1716,9 @@ app.put('/api/employees/:id', async (req, res) => {
                 phone,
                 designation,
                 salary: salary !== undefined ? parseFloat(salary) : undefined,
-                hourlyRate: req.body.hourly_rate !== undefined ? parseFloat(req.body.hourly_rate) : undefined,
-                joiningDate: joiningDate ? new Date(joiningDate) : undefined
+                hourlyRate: (req.body.hourlyRate !== undefined || req.body.hourly_rate !== undefined) ? parseFloat(req.body.hourlyRate || req.body.hourly_rate) : undefined,
+                joiningDate: joiningDate ? new Date(joiningDate) : undefined,
+                isActive: isActive !== undefined ? (isActive === true || isActive === 1) : undefined
             }
         });
         res.json({ success: true, changes: 1 });
