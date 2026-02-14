@@ -2137,6 +2137,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
     const stockStatus = params?.stockStatus;
     const expenseCategory = params?.expenseCategory;
     const employeeId = params?.employeeId;
+    const employeeStatus = params?.employeeStatus;
 
     console.log('[REPORT DEBUG] Params:', JSON.stringify(params));
     console.log('[REPORT DEBUG] IDs:', ids);
@@ -2302,11 +2303,17 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         const salRow = await dbGet(`SELECT SUM(net_salary) as total FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'payment_date')}`, qParams);
         stats.totalSalaries = salRow?.total || 0;
 
-        const empRow = await dbGet(`SELECT COUNT(*) as count FROM employees WHERE ${companyMatch} AND is_active = 1 AND sync_status != 'deleted'`, qParams);
-        stats.employeeCount = empRow?.count || 0;
+        const empStats = await dbGet(`SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive
+            FROM employees WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        stats.employeeCount = empStats?.active || 0;
+        stats.totalEmployees = empStats?.total || 0;
+        stats.inactiveEmployees = empStats?.inactive || 0;
 
         // 4.1 Detailed HRM / Salaries
-        let hrmSql = `SELECT s.*, e.first_name || ' ' || e.last_name as staff_name, e.designation 
+        let hrmSql = `SELECT s.*, e.first_name || ' ' || e.last_name as staff_name, e.designation, e.is_active 
                       FROM salary_records s 
                       JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
                       WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 'date(s.payment_date)')}`;
@@ -2314,6 +2321,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         if (employeeId && employeeId !== 'all') {
             hrmSql += ` AND (s.employee_id = ? OR s.employee_id = (SELECT id FROM employees WHERE global_id = ?))`;
             hrmP.push(employeeId, employeeId);
+        }
+        if (employeeStatus && employeeStatus !== 'all') {
+            hrmSql += ` AND e.is_active = ?`;
+            hrmP.push(employeeStatus === 'active' ? 1 : 0);
         }
         const detHRM = await dbAll(hrmSql + " ORDER BY s.payment_date DESC LIMIT 100", hrmP);
         stats.detailedHRM = detHRM.map(r => ({

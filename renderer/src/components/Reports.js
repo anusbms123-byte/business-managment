@@ -60,6 +60,7 @@ const Reports = ({ currentUser }) => {
     const [customers, setCustomers] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [selectedEmployee, setSelectedEmployee] = useState('all');
+    const [selectedEmployeeStatus, setSelectedEmployeeStatus] = useState('all'); // all, active, inactive
     const [selectedCustomer, setSelectedCustomer] = useState('all');
     const [selectedVendor, setSelectedVendor] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
@@ -176,7 +177,8 @@ const Reports = ({ currentUser }) => {
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
                 expenseCategory: activeModule === 'expenses' ? selectedExpenseCategory : undefined,
                 returnType: activeModule === 'returns' ? selectedReturnType : undefined,
-                employeeId: activeModule === 'hrm' ? selectedEmployee : undefined
+                employeeId: activeModule === 'hrm' ? selectedEmployee : undefined,
+                employeeStatus: activeModule === 'hrm' ? selectedEmployeeStatus : undefined
             });
             setSummary(data);
         } catch (err) {
@@ -202,6 +204,7 @@ const Reports = ({ currentUser }) => {
             setSelectedStockStatus('all');
             setSelectedExpenseCategory('all');
             setSelectedReturnType('all');
+            setSelectedEmployeeStatus('all');
             setPrevActiveModule(activeModule);
         }
     }, [activeModule, prevActiveModule]);
@@ -212,7 +215,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType, dateRange.start, dateRange.end]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType, selectedEmployee, selectedEmployeeStatus, dateRange.start, dateRange.end]);
 
     const handleBack = () => {
         setActiveModule(null);
@@ -361,12 +364,13 @@ const Reports = ({ currentUser }) => {
                 title: 'Staff Payroll Logs', icon: Users, color: '#6366f1', dataKey: 'salaries',
                 miniStats: [
                     { label: 'Total Salaries', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CreditCard, color: 'text-indigo-600' },
-                    { label: 'Staff Count', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Active Staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-500' },
+                    { label: 'Inactive/Exit', value: `${summary?.inactiveEmployees || 0} Members`, icon: AlertTriangle, color: 'text-rose-500' },
                     { label: 'Avg Salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
                     { label: 'Total Logs', value: `${(summary?.detailedHRM || []).length} Records`, icon: Layers, color: 'text-amber-600' },
                     { label: 'Payout Frequency', value: "Monthly", icon: RefreshCw, color: 'text-emerald-500' }
                 ],
-                tableCols: ['Staff Name', 'Designation', 'Payment Date', 'Base Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
+                tableCols: ['Staff Name', 'Designation', 'Status', 'Payment Date', 'Base Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
                 tableTitle: 'Payroll History',
                 cols: 5
             },
@@ -431,6 +435,11 @@ const Reports = ({ currentUser }) => {
                                 {activeModule === 'hrm' && selectedEmployee !== 'all' && (
                                     <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
                                         {employees.find(e => e.id === selectedEmployee)?.first_name || 'Staff Member'}
+                                    </span>
+                                )}
+                                {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (
+                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                        {selectedEmployeeStatus === 'active' ? 'Active Staff' : 'Inactive Staff'}
                                     </span>
                                 )}
                             </div>
@@ -600,21 +609,36 @@ const Reports = ({ currentUser }) => {
                             </>
                         )}
                         {activeModule === 'hrm' && (
-                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                <Users size={14} className="text-slate-400 ml-3" />
-                                <select
-                                    value={selectedEmployee}
-                                    onChange={(e) => setSelectedEmployee(e.target.value)}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
-                                >
-                                    <option value="all">All Staff Members</option>
-                                    {employees.map(e => (
-                                        <option key={e.id} value={e.id}>
-                                            {e.first_name} {e.last_name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            <>
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedEmployee}
+                                        onChange={(e) => setSelectedEmployee(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">All Staff Members</option>
+                                        {employees.map(e => (
+                                            <option key={e.id} value={e.id}>
+                                                {e.first_name} {e.last_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
+                                    <Activity size={14} className="text-slate-400 ml-3" />
+                                    <select
+                                        value={selectedEmployeeStatus}
+                                        onChange={(e) => setSelectedEmployeeStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all">Any Status</option>
+                                        <option value="active">Active Only</option>
+                                        <option value="inactive">Inactive Only</option>
+                                    </select>
+                                </div>
+                            </>
                         )}
 
                         <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
@@ -1113,6 +1137,11 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-slate-500 uppercase align-top">
                                                     {rec.designation || 'Staff'}
+                                                </td>
+                                                <td className="px-8 py-5 text-center align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${rec.is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                        {rec.is_active ? 'Active' : 'Inactive'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-medium text-black align-top">
                                                     {new Date(rec.payment_date).toLocaleDateString()}
