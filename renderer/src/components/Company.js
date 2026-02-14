@@ -263,8 +263,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
                             {[
                                 { id: 'all', label: 'All' },
-                                { id: 'with', label: 'Referral' },
-                                { id: 'without', label: 'Direct' }
+                                { id: 'with', label: 'Referral' }
                             ].map(f => (
                                 <button
                                     key={f.id}
@@ -1113,8 +1112,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                 <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
                     {[
                         { id: 'all', label: 'All Requests' },
-                        { id: 'with', label: 'Referral Only' },
-                        { id: 'without', label: 'Direct Signups' }
+                        { id: 'with', label: 'Referral Only' }
                     ].map(f => (
                         <button
                             key={f.id}

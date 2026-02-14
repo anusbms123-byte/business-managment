@@ -2487,8 +2487,17 @@ app.post('/api/company-requests', async (req, res) => {
 // 7.3 Get All Requests (Super Admin)
 app.get('/api/company-requests', async (req, res) => {
     try {
-        const { status } = req.query;
+        const { status, referralType } = req.query;
         const where = status ? { status } : {};
+
+        if (referralType === 'with') {
+            where.referralCode = { not: null, not: '' };
+        } else if (referralType === 'without') {
+            where.OR = [
+                { referralCode: null },
+                { referralCode: '' }
+            ];
+        }
 
         const requests = await prisma.companyRequest.findMany({
             where,
