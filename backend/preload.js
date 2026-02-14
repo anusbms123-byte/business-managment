@@ -93,6 +93,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteEmployee: (id) => ipcRenderer.invoke('delete-employee', id),
     getAttendance: (params) => ipcRenderer.invoke('get-attendance', params),
     saveAttendance: (data) => ipcRenderer.invoke('save-attendance', data),
+    getEmployeeDetails: (id) => ipcRenderer.invoke('get-employee-details', id),
     getSalaries: (params) => ipcRenderer.invoke('get-salaries', params),
     createSalary: (data) => ipcRenderer.invoke('create-salary', data),
 

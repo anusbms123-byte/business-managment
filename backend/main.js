@@ -2730,10 +2730,12 @@ ipcMain.handle("get-attendance", async (e, params) => {
                    a.employee_id as employeeId,
                    a.check_in as checkIn,
                    a.check_out as checkOut,
+                   e.id as localEmployeeId,
+                   e.global_id as employeeGlobalId,
                    e.first_name as firstName,
                    e.last_name as lastName
             FROM attendances a
-            LEFT JOIN employees e ON a.employee_id = e.id OR a.employee_id = e.global_id
+            LEFT JOIN employees e ON a.employee_id = e.global_id OR a.employee_id = CAST(e.id AS TEXT)
             WHERE (a.company_id = ? OR a.company_id = ? OR a.company_id = ?)
               AND a.date = ?
               AND (a.sync_status != 'deleted' OR a.sync_status IS NULL)
@@ -2851,6 +2853,57 @@ ipcMain.handle("delete-attendance", async (e, id) => {
                 // Many tables use status='deleted'.
                 resolve({ success: true });
             }
+        });
+    });
+});
+
+// EMPLOYEE DETAILS HANDLER
+ipcMain.handle("get-employee-details", async (e, employeeId) => {
+    return new Promise((resolve, reject) => {
+        // Query to get attendance stats
+        // We need to resolve employeeId which could be local or global
+        db.get("SELECT global_id FROM employees WHERE id = ? OR global_id = ?", [employeeId, employeeId], (err, emp) => {
+            if (err || !emp) {
+                // Try direct usage if not found (less likely)
+            }
+            const targetId = emp ? emp.global_id : employeeId; // Use global ID for attendance match if possible, or fallback
+
+            // Stats Query
+            const statsQuery = `
+                SELECT 
+                    COUNT(CASE WHEN status = 'Present' THEN 1 END) as present,
+                    COUNT(CASE WHEN status = 'Absent' THEN 1 END) as absent,
+                    COUNT(CASE WHEN status = 'Late' THEN 1 END) as late,
+                    COUNT(CASE WHEN status = 'Leave' THEN 1 END) as leave
+                FROM attendances 
+                WHERE employee_id = ? OR employee_id = ?
+            `;
+
+            // Logs Query (Last 30 records)
+            const logsQuery = `
+                SELECT id, date, status, check_in, check_out 
+                FROM attendances 
+                WHERE employee_id = ? OR employee_id = ?
+                ORDER BY date DESC 
+                LIMIT 30
+            `;
+
+            const params = [employeeId, targetId];
+
+            db.get(statsQuery, params, (err, stats) => {
+                if (err) {
+                    console.error("Error fetching emp stats:", err);
+                    return resolve({ stats: {}, logs: [] });
+                }
+
+                db.all(logsQuery, params, (err, logs) => {
+                    if (err) {
+                        console.error("Error fetching emp logs:", err);
+                        return resolve({ stats: stats || {}, logs: [] });
+                    }
+                    resolve({ stats: stats || {}, logs: logs || [] });
+                });
+            });
         });
     });
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Calendar, DollarSign, Plus, Search, Edit, Eye, X, Trash2, Check, UserPlus } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import EmployeeDetailModal from './EmployeeDetailModal';
 
 
 const tabs = [
@@ -31,11 +32,18 @@ const HRM = ({ currentUser }) => {
         }
         setLoading(false);
     };
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
 
     return (
         <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-
+            {selectedEmployee && (
+                <div role="presentation" className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <EmployeeDetailModal
+                        employee={selectedEmployee}
+                        onClose={() => setSelectedEmployee(null)}
+                    />
+                </div>
+            )}
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
                 <div className="flex border-b border-slate-100 bg-slate-50/20">
@@ -58,7 +66,7 @@ const HRM = ({ currentUser }) => {
                 </div>
 
                 <div className="p-8">
-                    {activeTab === 'employees' && <EmployeeList employees={employees} onRefresh={loadEmployees} currentUser={currentUser} loading={loading} />}
+                    {activeTab === 'employees' && <EmployeeList employees={employees} onRefresh={loadEmployees} currentUser={currentUser} loading={loading} setSelectedEmployee={setSelectedEmployee} />}
                     {activeTab === 'attendance' && <Attendance employees={employees} currentUser={currentUser} />}
                     {activeTab === 'payroll' && <Payroll employees={employees} currentUser={currentUser} />}
                 </div>
@@ -67,7 +75,7 @@ const HRM = ({ currentUser }) => {
     );
 };
 
-const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
+const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedEmployee }) => {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0], isActive: true });
@@ -172,7 +180,11 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees found</td>
                             </tr>
                         ) : filtered?.map((emp) => (
-                            <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <tr
+                                key={emp.id}
+                                onClick={() => setSelectedEmployee(emp)}
+                                className="hover:bg-blue-50/40 transition-colors group cursor-pointer border-b border-slate-50 relative"
+                            >
                                 <td className="px-6 py-4 font-bold text-black text-xs tracking-tight">
                                     HRM-{String(emp.id).slice(-4)}
                                 </td>
@@ -194,12 +206,12 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading }) => {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
                                         {canEdit('hrm') && (
-                                            <button onClick={() => { setFormData({ ...emp }); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                            <button onClick={(e) => { e.stopPropagation(); setFormData({ ...emp }); setShowModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                                 <Edit size={16} />
                                             </button>
                                         )}
                                         {canDelete('hrm') && (
-                                            <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(emp.id); }} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
                                                 <Trash2 size={16} />
                                             </button>
                                         )}
@@ -328,7 +340,11 @@ const Attendance = ({ employees, currentUser }) => {
 
             // Map employees with their existing attendance status
             const rows = (employees || []).map(emp => {
-                const att = safeExisting.find(a => a.employeeId === emp.id);
+                const att = safeExisting.find(a =>
+                    (a.localEmployeeId !== null && Number(a.localEmployeeId) === Number(emp.id)) ||
+                    (a.employeeGlobalId !== null && a.employeeGlobalId === emp.global_id) ||
+                    (a.employeeId === emp.global_id)
+                );
                 return {
                     employeeId: emp.id,
                     name: `${emp.firstName} ${emp.lastName || ''}`,

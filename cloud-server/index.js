@@ -1735,17 +1735,27 @@ app.delete('/api/employees/:id', async (req, res) => {
 // Attendance handles
 app.get(['/api/attendance', '/api/attendances'], async (req, res) => {
     try {
-        const { companyId, date } = req.query;
-        const targetDate = date ? new Date(date) : new Date();
-        const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+        const { companyId, employeeId, date } = req.query;
+
+        let whereClause = {};
+
+        if (companyId) {
+            whereClause.employee = { companyId };
+        } else if (employeeId) {
+            whereClause.employeeId = employeeId;
+        }
+
+        if (date) {
+            const targetDate = new Date(date);
+            const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+            whereClause.date = { gte: startOfDay, lte: endOfDay };
+        }
 
         const attendance = await prisma.attendance.findMany({
-            where: {
-                employee: { companyId },
-                date: { gte: startOfDay, lte: endOfDay }
-            },
-            include: { employee: true }
+            where: whereClause,
+            include: { employee: true },
+            orderBy: { date: 'desc' }
         });
         res.json(attendance);
     } catch (e) { handleError(res, e); }
@@ -1753,9 +1763,7 @@ app.get(['/api/attendance', '/api/attendances'], async (req, res) => {
 
 app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
     try {
-        const { employeeId, status, checkIn, checkOut, date } = req.body;
-
-        // Upsert logic for attendance on a specific day
+        const { id, employeeId, status, checkIn, checkOut, date } = req.body;
         const targetDate = date ? new Date(date) : new Date();
         const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
@@ -1770,16 +1778,21 @@ app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
         if (existing) {
             await prisma.attendance.update({
                 where: { id: existing.id },
-                data: { status, checkIn: checkIn ? new Date(checkIn) : undefined, checkOut: checkOut ? new Date(checkOut) : undefined }
+                data: {
+                    status,
+                    checkIn: checkIn ? new Date(checkIn) : undefined,
+                    checkOut: checkOut ? new Date(checkOut) : undefined
+                }
             });
         } else {
             await prisma.attendance.create({
                 data: {
+                    id: id && id !== 'null' ? id : undefined,
                     employeeId,
                     status,
                     date: startOfDay,
-                    checkIn: checkIn ? new Date(checkIn) : undefined,
-                    checkOut: checkOut ? new Date(checkOut) : undefined
+                    checkIn: checkIn ? new Date(checkIn) : null,
+                    checkOut: checkOut ? new Date(checkOut) : null
                 }
             });
         }

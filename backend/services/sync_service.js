@@ -346,8 +346,10 @@ class SyncService {
                         query = `INSERT OR REPLACE INTO purchase_returns (global_id, invoice_no, purchase_id, vendor_id, sub_total, tax, total_amount, notes, date, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`;
                         params = [cloudData.id, cloudData.invoiceNo, cloudData.purchaseId || cloudData.purchase_id, cloudData.vendorId || cloudData.vendor_id, cloudData.subTotal || cloudData.sub_total, cloudData.tax, cloudData.totalAmount || cloudData.total_amount, cloudData.notes, cloudData.createdAt || cloudData.date, companyId];
                     } else if (table === 'attendances') {
-                        query = `INSERT OR REPLACE INTO attendances (global_id, employee_id, date, status, check_in, check_out, sync_status) VALUES (?, ?, ?, ?, ?, ?, 'synced')`;
-                        params = [cloudData.id, cloudData.employeeId, cloudData.date, cloudData.status, cloudData.checkIn, cloudData.checkOut];
+                        query = `INSERT OR REPLACE INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')`;
+                        // Normalize date to YYYY-MM-DD for local query matching
+                        const normalizedDate = cloudData.date ? cloudData.date.split('T')[0] : null;
+                        params = [cloudData.id, cloudData.employeeId, normalizedDate, cloudData.status, cloudData.checkIn, cloudData.checkOut, companyId];
                     } else if (table === 'salary_records') {
                         query = `INSERT OR REPLACE INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, payment_date, status, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`;
                         params = [cloudData.id, cloudData.employeeId, cloudData.month, cloudData.baseSalary, cloudData.bonus, cloudData.overtimeHours, cloudData.overtimePay, cloudData.deductions, cloudData.netSalary, cloudData.paymentDate, cloudData.status, companyId];
@@ -415,6 +417,14 @@ class SyncService {
                                                         perm.canDelete ? 1 : 0,
                                                         perm.updatedAt || perm.updated_at
                                                     ]
+                                                );
+                                            }
+                                        } else if (table === 'employees' && cloudData.attendances && Array.isArray(cloudData.attendances)) {
+                                            for (const att of cloudData.attendances) {
+                                                const normalizedDate = att.date ? att.date.split('T')[0] : null;
+                                                db.run(`INSERT OR REPLACE INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status) 
+                                                    VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')`,
+                                                    [att.id, cloudData.id, normalizedDate, att.status, att.checkIn, att.checkOut, companyId]
                                                 );
                                             }
                                         }
@@ -766,6 +776,7 @@ class SyncService {
                     payload.balance = parseFloat(record.balance || 0);
                 } else if (table === 'attendances') {
                     const empRow = await fetchNested(`SELECT global_id FROM employees WHERE id = ? OR global_id = ?`, [record.employee_id, record.employee_id]);
+                    payload.id = record.global_id;
                     payload.employeeId = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
                     payload.date = record.date;
                     payload.status = record.status;
