@@ -336,4 +336,3 @@ const Expenses = ({ currentUser }) => {
 };
 
 export default Expenses;
-
