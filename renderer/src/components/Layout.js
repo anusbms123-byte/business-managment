@@ -197,16 +197,13 @@ const Layout = ({ children, user, onLogout }) => {
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50 bg-[#070B26]">
+                <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50">
                     <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-300">
                             <LayoutDashboard className="text-white" size={20} />
                         </div>
                         <div className="overflow-hidden">
-                            <span className="text-sm font-bold tracking-tight text-white block truncate max-w-[160px]">
-                                {company?.name || 'My Business'}
-                            </span>
-                            <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest leading-none mt-1"> Management Portal</p>
+                            <span className="text-xl font-extrabold tracking-tight text-white block truncate max-w-[180px]">BizNex</span>
                         </div>
                     </div>
                 </div>
