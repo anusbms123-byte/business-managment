@@ -105,28 +105,29 @@ async function recordDeletion(tableName, globalId) {
 // Global variable to track currently logged-in company for auto-sync (undefined = not logged in, null = Super Admin)
 let currentLoggedCompany = undefined;
 
-// Setup Background Sync Timer (Every 5 minutes)
+// Setup Background Sync Timer (Every 4 minutes)
 // - Pushes pending local changes to cloud
 // - Pulls fresh data from cloud (if user is logged in)
 setInterval(async () => {
-    console.log("[AUTO-SYNC] Running scheduled sync (every 5 minutes)...");
+    console.log(`\n[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Starting cycle...`);
 
-    // Always push pending changes
-    syncService.syncPendingRecords();
+    // Always push pending changes FIRST
+    // We MUST await this so it doesn't block pullAllData with its sync lock
+    await syncService.syncPendingRecords();
 
     // If a user is logged in (including Super Admin with null company), also pull fresh data
     if (currentLoggedCompany !== undefined) {
         console.log(`[AUTO-SYNC] Pulling fresh data for session: ${currentLoggedCompany === null ? 'Global (Super Admin)' : currentLoggedCompany}`);
         try {
             await syncService.pullAllData(currentLoggedCompany);
-            console.log("[AUTO-SYNC] Data pull completed successfully");
+            console.log("[AUTO-SYNC] Cycle completed successfully.");
         } catch (err) {
             console.error("[AUTO-SYNC] Data pull failed:", err.message);
         }
     } else {
-        console.log("[AUTO-SYNC] No user logged in, skipping data pull");
+        console.log("[AUTO-SYNC] No active session, skipped data pull.");
     }
-}, 300000); // 300,000ms = 5 minutes
+}, 240000); // 240,000ms = 4 minutes
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -339,7 +340,7 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
 
     return new Promise((resolve, reject) => {
         db.all(query, params, (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });
@@ -348,7 +349,7 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
 ipcMain.handle("get-company", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM companies WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err) reject(err);
+            if (err) resolve(null);
             else resolve(row);
         });
     });
@@ -376,7 +377,7 @@ ipcMain.handle("create-company", async (e, data) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, name, address, phone, email, tax_no, referral_code],
             function (err) {
-                if (err) return reject(err);
+                if (err) return resolve({ success: false, message: err.message });
 
                 // Also create default system roles locally for this company if needed
                 // (Usually pulled from cloud, but for offline-first, we might want local defaults)
@@ -398,7 +399,7 @@ ipcMain.handle("update-company", async (e, data) => {
              WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)`,
             [name, address, phone, email, tax_no, referral_code, active, id, id],
             function (err) {
-                if (err) return reject(err);
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, message: "Company updated locally" });
             }
@@ -410,7 +411,7 @@ ipcMain.handle("delete-company", async (e, id) => {
         db.get("SELECT global_id FROM companies WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
             const gid = row?.global_id;
             db.run(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
-                if (err) reject(err);
+                if (err) resolve({ success: false, message: err.message });
                 else {
                     syncService.syncPendingRecords();
                     resolve({ success: true, message: "Company marked for deletion locally." });
@@ -426,13 +427,13 @@ ipcMain.handle("get-users", async (e, companyId) => {
     return new Promise((resolve, reject) => {
         if (!companyId) {
             db.all("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE sync_status != 'deleted' OR sync_status IS NULL", (err, rows) => {
-                if (err) reject(err);
+                if (err) resolve([]);
                 else resolve(rows);
             });
             return;
         }
         db.all("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });
@@ -453,7 +454,7 @@ ipcMain.handle("get-roles", async (e, companyId) => {
                AND (r.sync_status != 'deleted' OR r.sync_status IS NULL)
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });
@@ -476,7 +477,7 @@ ipcMain.handle("get-permissions", (e, roleId) => {
                OR role_id = (SELECT global_id FROM roles WHERE id = ?)
         `;
         db.all(query, [roleId, roleId], (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });
@@ -495,7 +496,7 @@ ipcMain.handle("create-user", async (e, data) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
             [tempId, username, password, role, rid, fullname, cid],
             function (err) {
-                if (err) return reject(err);
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "User created locally" });
             }
@@ -521,7 +522,7 @@ ipcMain.handle("update-user", async (e, data) => {
         params.push(id, id);
 
         db.run(query, params, function (err) {
-            if (err) return reject(err);
+            if (err) return resolve({ success: false, message: err.message });
             syncService.syncPendingRecords();
             resolve({ success: true, message: "User updated locally" });
         });
@@ -531,11 +532,11 @@ ipcMain.handle("update-user", async (e, data) => {
 ipcMain.handle("delete-user", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT global_id FROM users WHERE id=? OR global_id=?", [id, id], (err, row) => {
-            if (err || !row) return reject("User not found");
+            if (err || !row) return resolve({ success: false, message: "User not found" });
             const gid = row.global_id;
 
             db.run("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [id, id], (delErr) => {
-                if (delErr) reject(delErr);
+                if (delErr) resolve({ success: false, message: delErr.message });
                 else {
                     syncService.syncPendingRecords();
                     resolve({ success: true, message: "User deleted locally" });
@@ -594,7 +595,7 @@ ipcMain.handle("create-role", async (e, data) => {
                 function (err) {
                     if (err) {
                         db.run("ROLLBACK");
-                        return reject(err);
+                        return resolve({ success: false, message: err.message });
                     }
 
                     // 2. Insert Permissions
@@ -637,7 +638,7 @@ ipcMain.handle("update-role", async (e, data) => {
                 (err) => {
                     if (err) {
                         db.run("ROLLBACK");
-                        return reject(err);
+                        return resolve({ success: false, message: err.message });
                     }
 
                     // 2. Update Permissions (Delete all and re-insert is easiest for local update)
@@ -651,7 +652,7 @@ ipcMain.handle("update-role", async (e, data) => {
                     db.run("DELETE FROM permissions WHERE role_id = ?", [roleIdentifier], (delErr) => {
                         if (delErr) {
                             db.run("ROLLBACK");
-                            return reject(delErr);
+                            return resolve({ success: false, message: delErr.message });
                         }
 
                         if (permissions && permissions.length > 0) {
@@ -681,7 +682,7 @@ ipcMain.handle("update-role", async (e, data) => {
 ipcMain.handle("delete-role", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err || !row) return reject("Role not found");
+            if (err || !row) return resolve({ success: false, message: "Role not found" });
             const gid = row.global_id;
 
             db.serialize(() => {
@@ -691,7 +692,7 @@ ipcMain.handle("delete-role", async (e, id) => {
                 db.run("COMMIT", (commitErr) => {
                     if (commitErr) {
                         db.run("ROLLBACK");
-                        return reject(commitErr);
+                        return resolve({ success: false, message: commitErr.message });
                     }
                     syncService.syncPendingRecords();
                     resolve({ success: true, message: "Role deleted locally." });
@@ -701,16 +702,7 @@ ipcMain.handle("delete-role", async (e, id) => {
     });
 });
 
-// Periodic Sync (Every 1 minute for near real-time updates)
-setInterval(() => {
-    if (!currentCompanyId) return;
 
-    console.log(`[SYNC] Automated 1-minute sync check for company ${currentCompanyId}...`);
-    syncService.syncPendingRecords(); // Push local changes (Users, Sales, etc.)
-    // Pulling every 2 minutes or 5 minutes might be better for performance, 
-    // but user asked for 1 minute sync, so we keep them together for now.
-    syncService.pullAllData(currentCompanyId);
-}, 1 * 60 * 1000);
 
 // Products - LOCAL FIRST (Full Join for Details)
 ipcMain.handle("get-products", async (e, companyId) => {
@@ -739,7 +731,7 @@ ipcMain.handle("get-products", async (e, companyId) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) {
                 console.error("Local Products Query Error:", err);
-                reject(err);
+                resolve([]);
             } else {
                 // Transform to nested objects for frontend compatibility
                 const transformed = rows.map(row => ({
@@ -774,7 +766,7 @@ ipcMain.handle("create-product", async (e, data) => {
                 color, size, grade, condition
             ],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, message: "Product saved locally and syncing..." });
             }
@@ -814,7 +806,7 @@ ipcMain.handle("delete-product", async (e, id) => {
             `;
 
             db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
-                if (countErr) return reject(countErr);
+                if (countErr) return resolve({ success: false, message: countErr.message });
 
                 if (countRow && countRow.linkedCount > 0) {
                     return resolve({
@@ -857,7 +849,7 @@ ipcMain.handle("get-sales", async (e, companyId) => {
             ORDER BY s.sale_date DESC
         `;
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) return reject(err);
+            if (err) return resolve([]);
 
             // Transform rows to include nested objects if frontend expects them
             const transformed = rows.map(row => ({
@@ -960,7 +952,7 @@ ipcMain.handle("update-sale", async (e, data) => {
         db.serialize(() => {
             // First, fetch the old sale to reverse stock and balance
             db.get("SELECT * FROM sales WHERE id=? OR global_id=?", [id, id], (err, oldSale) => {
-                if (!oldSale) return reject("Old sale not found");
+                if (!oldSale) return resolve({ success: false, message: "Old sale not found" });
 
                 const oldGid = oldSale.global_id;
 
@@ -983,7 +975,7 @@ ipcMain.handle("update-sale", async (e, data) => {
                         `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, payment_status=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
                         [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, id, id],
                         function (err) {
-                            if (err) { db.run("ROLLBACK"); return reject(err); }
+                            if (err) { db.run("ROLLBACK"); return resolve({ success: false, message: err.message }); }
 
                             // 4. Delete and Re-insert items, Update New Stock
                             db.run("DELETE FROM sale_items WHERE sale_id = ?", [oldGid], (delErr) => {
@@ -1008,7 +1000,7 @@ ipcMain.handle("update-sale", async (e, data) => {
                                 }
 
                                 db.run("COMMIT", (commitErr) => {
-                                    if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                                    if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
                                     syncService.syncPendingRecords();
                                     resolve({ success: true, message: "Sale updated and stock/balance adjusted." });
                                 });
@@ -1024,7 +1016,7 @@ ipcMain.handle("update-sale", async (e, data) => {
 ipcMain.handle("delete-sale", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM sales WHERE id = ? OR global_id = ?", [id, id], (err, sale) => {
-            if (err || !sale) return reject("Sale not found");
+            if (err || !sale) return resolve({ success: false, message: "Sale not found" });
             const gid = sale.global_id;
 
             db.all("SELECT * FROM sale_items WHERE sale_id = ?", [gid], (itemErr, items) => {
@@ -1044,10 +1036,10 @@ ipcMain.handle("delete-sale", async (e, id) => {
 
                     // 3. Mark Sale as Deleted (Soft delete for sync)
                     db.run("UPDATE sales SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (delErr) => {
-                        if (delErr) { db.run("ROLLBACK"); return reject(delErr); }
+                        if (delErr) { db.run("ROLLBACK"); return resolve({ success: false, message: delErr.message }); }
 
                         db.run("COMMIT", (commitErr) => {
-                            if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                            if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
                             syncService.syncPendingRecords();
                             resolve({ success: true, message: "Sale deleted and stock/balance restored." });
                         });
@@ -1101,7 +1093,7 @@ ipcMain.handle("create-customer", async (e, data) => {
                 finalCompanyId
             ],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Customer saved locally." });
             }
@@ -1160,7 +1152,7 @@ ipcMain.handle("update-customer", async (e, data) => {
         params.push(id, id);
 
         db.run(query, params, function (err) {
-            if (err) return reject({ success: false, message: err.message });
+            if (err) return resolve({ success: false, message: err.message });
             syncService.syncPendingRecords();
             resolve({ success: true, message: "Customer updated locally." });
         });
@@ -1175,14 +1167,14 @@ ipcMain.handle("delete-customer", async (e, id) => {
 
             // Check if any sale is using this customer
             db.get("SELECT COUNT(*) as count FROM sales WHERE customer_id = ? OR customer_id = ?", [id, gid], (countErr, countRow) => {
-                if (countErr) return reject(countErr);
+                if (countErr) return resolve({ success: false, message: countErr.message });
 
                 if (countRow && countRow.count > 0) {
                     return resolve({ success: false, message: "Is Customer ko delete nahi kiya ja sakta kyunke iske sales records maujood hain. Aap isay Deactivate kar saktay hain." });
                 }
 
                 db.run(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
-                    if (err) reject(err);
+                    if (err) resolve({ success: false, message: err.message });
                     else {
                         syncService.syncPendingRecords();
                         resolve({ success: true, message: "Customer marked for deletion locally." });
@@ -1235,7 +1227,7 @@ ipcMain.handle("create-vendor", async (e, data) => {
                 finalCompanyId
             ],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Vendor saved locally." });
             }
@@ -1289,7 +1281,7 @@ ipcMain.handle("update-vendor", async (e, data) => {
         params.push(id, id);
 
         db.run(query, params, function (err) {
-            if (err) return reject({ success: false, message: err.message });
+            if (err) return resolve({ success: false, message: err.message });
             syncService.syncPendingRecords();
             resolve({ success: true });
         });
@@ -1310,14 +1302,14 @@ ipcMain.handle("delete-vendor", async (e, id) => {
             `;
 
             db.get(checkQuery, [id, gid, id, gid], (countErr, countRow) => {
-                if (countErr) return reject(countErr);
+                if (countErr) return resolve({ success: false, message: countErr.message });
 
                 if (countRow && countRow.linkedCount > 0) {
                     return resolve({ success: false, message: "Is Vendor ko delete nahi kiya ja sakta kyunke iske purchases ya items records maujood hain. Aap isay Deactivate kar saktay hain." });
                 }
 
                 db.run(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
-                    if (err) reject(err);
+                    if (err) resolve({ success: false, message: err.message });
                     else {
                         syncService.syncPendingRecords();
                         resolve({ success: true, message: "Vendor marked for deletion locally." });
@@ -1361,7 +1353,7 @@ ipcMain.handle("update-expense", async (e, data) => {
         const { id, title, amount, date, description, category, companyId } = data;
         const query = `UPDATE expenses SET title=?, amount=?, date=?, description=?, category=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
         db.run(query, [title, amount, date, description, category, companyId, id, id], function (err) {
-            if (err) return reject({ success: false, message: err.message });
+            if (err) return resolve({ success: false, message: err.message });
             syncService.syncPendingRecords();
             resolve({ success: true, message: "Expense updated locally." });
         });
@@ -1371,7 +1363,7 @@ ipcMain.handle("update-expense", async (e, data) => {
 ipcMain.handle("delete-expense", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.run(`UPDATE expenses SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
-            if (err) reject(err);
+            if (err) resolve({ success: false, message: err.message });
             else {
                 syncService.syncPendingRecords();
                 resolve({ success: true, message: "Expense deleted locally." });
@@ -1400,7 +1392,7 @@ ipcMain.handle("create-category", async (e, data) => {
             `INSERT INTO categories (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, name, cid],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
@@ -1625,7 +1617,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
                         `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
                         [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, companyId, id, id],
                         function (err) {
-                            if (err) { db.run("ROLLBACK"); return reject(err); }
+                            if (err) { db.run("ROLLBACK"); return resolve({ success: false, message: err.message }); }
 
                             // 4. Delete and Re-insert items, Update New Stock
                             db.run("DELETE FROM purchase_items WHERE purchase_id = ?", [oldGid], (delErr) => {
@@ -1650,7 +1642,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
                                 }
 
                                 db.run("COMMIT", (commitErr) => {
-                                    if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                                    if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
                                     syncService.syncPendingRecords();
                                     resolve({ success: true, message: "Purchase updated and stock/balance adjusted." });
                                 });
@@ -1666,7 +1658,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
 ipcMain.handle("delete-purchase", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM purchases WHERE id = ? OR global_id = ?", [id, id], (err, purchase) => {
-            if (err || !purchase) return reject("Purchase not found");
+            if (err || !purchase) return resolve({ success: false, message: "Purchase not found" });
             const gid = purchase.global_id;
 
             db.all("SELECT * FROM purchase_items WHERE purchase_id = ?", [gid], (itemErr, items) => {
@@ -1686,10 +1678,10 @@ ipcMain.handle("delete-purchase", async (e, id) => {
 
                     // 3. Mark Purchase as Deleted
                     db.run("UPDATE purchases SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (delErr) => {
-                        if (delErr) { db.run("ROLLBACK"); return reject(delErr); }
+                        if (delErr) { db.run("ROLLBACK"); return resolve({ success: false, message: delErr.message }); }
 
                         db.run("COMMIT", (commitErr) => {
-                            if (commitErr) { db.run("ROLLBACK"); return reject(commitErr); }
+                            if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
                             syncService.syncPendingRecords();
                             resolve({ success: true, message: "Purchase deleted and stock/balance restored." });
                         });
@@ -1726,7 +1718,7 @@ ipcMain.handle("get-sale-returns", async (e, companyId) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) {
                 console.error("Error fetching sale returns:", err);
-                reject(err);
+                resolve([]);
             } else {
                 const mapped = rows.map(row => ({
                     ...row,
@@ -1820,7 +1812,7 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 ipcMain.handle("delete-sale-return", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM sale_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err || !row) return reject("Sale return not found");
+            if (err || !row) return resolve({ success: false, message: "Sale return not found" });
             const gid = row.global_id;
             const customer_id = row.customer_id;
             const total_amount = row.total_amount || 0;
@@ -1845,12 +1837,12 @@ ipcMain.handle("delete-sale-return", async (e, id) => {
                     db.run("UPDATE sale_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
                         if (err) {
                             db.run("ROLLBACK");
-                            return reject(err);
+                            return resolve({ success: false, message: err.message });
                         }
                         db.run("COMMIT", (commitErr) => {
                             if (commitErr) {
                                 db.run("ROLLBACK");
-                                return reject(commitErr);
+                                return resolve({ success: false, message: commitErr.message });
                             }
                             syncService.syncPendingRecords();
                             resolve({ success: true, message: "Sale return deleted, stock and balance reverted." });
@@ -1888,7 +1880,7 @@ ipcMain.handle("get-purchase-returns", async (e, companyId) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) {
                 console.error("Error fetching purchase returns:", err);
-                reject(err);
+                resolve([]);
             } else {
                 const mapped = rows.map(row => ({
                     ...row,
@@ -1983,7 +1975,7 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
 ipcMain.handle("delete-purchase-return", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT * FROM purchase_returns WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
-            if (err || !row) return reject("Purchase return not found");
+            if (err || !row) return resolve({ success: false, message: "Purchase return not found" });
             const gid = row.global_id;
             const vendor_id = row.vendor_id;
             const total_amount = row.total_amount || 0;
@@ -2009,12 +2001,12 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
                     db.run("UPDATE purchase_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid], (err) => {
                         if (err) {
                             db.run("ROLLBACK");
-                            return reject(err);
+                            return resolve({ success: false, message: err.message });
                         }
                         db.run("COMMIT", (commitErr) => {
                             if (commitErr) {
                                 db.run("ROLLBACK");
-                                return reject(commitErr);
+                                return resolve({ success: false, message: commitErr.message });
                             }
                             syncService.syncPendingRecords();
                             resolve({ success: true, message: "Purchase return deleted, stock and balance reverted." });
@@ -2742,7 +2734,7 @@ ipcMain.handle("create-account", async (e, data) => {
             `INSERT INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, name, type, balance || 0, companyId],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
@@ -2767,7 +2759,7 @@ ipcMain.handle("create-transaction", async (e, data) => {
             `INSERT INTO transactions (global_id, account_id, type, amount, date, description, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, account_id, type, amount, date, description, companyId],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
@@ -2798,7 +2790,7 @@ ipcMain.handle("get-employees", async (e, companyId) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
             if (err) {
                 console.error("Error loading employees:", err);
-                return reject(err);
+                return resolve([]);
             }
             resolve(rows || []);
         });
@@ -2818,7 +2810,7 @@ ipcMain.handle("create-employee", async (e, data) => {
             function (err) {
                 if (err) {
                     console.error("Error creating employee:", err);
-                    return reject({ success: false, message: err.message });
+                    return resolve({ success: false, message: err.message });
                 }
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Employee created locally" });
@@ -2841,7 +2833,7 @@ ipcMain.handle("update-employee", async (e, data) => {
             function (err) {
                 if (err) {
                     console.error("Error updating employee:", err);
-                    return reject({ success: false, message: err.message });
+                    return resolve({ success: false, message: err.message });
                 }
                 syncService.syncPendingRecords();
                 resolve({ success: true, message: "Employee updated locally" });
@@ -2853,7 +2845,7 @@ ipcMain.handle("update-employee", async (e, data) => {
 ipcMain.handle("delete-employee", async (e, id) => {
     return new Promise((resolve, reject) => {
         db.get("SELECT global_id FROM employees WHERE id=? OR global_id=?", [id, id], (err, row) => {
-            if (err || !row) return reject({ success: false, message: "Employee not found" });
+            if (err || !row) return resolve({ success: false, message: "Employee not found" });
 
             db.run(
                 `UPDATE employees SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
@@ -2861,7 +2853,7 @@ ipcMain.handle("delete-employee", async (e, id) => {
                 function (err) {
                     if (err) {
                         console.error("Error deleting employee:", err);
-                        return reject({ success: false, message: err.message });
+                        return resolve({ success: false, message: err.message });
                     }
                     syncService.syncPendingRecords();
                     resolve({ success: true, message: "Employee deleted locally" });
@@ -2900,7 +2892,7 @@ ipcMain.handle("get-attendance", async (e, params) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId), date], (err, rows) => {
             if (err) {
                 console.error("Error loading attendance:", err);
-                return reject(err);
+                return resolve([]);
             }
             resolve(rows || []);
         });
@@ -2919,7 +2911,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
             (err, existing) => {
                 if (err) {
                     console.error("Error checking attendance:", err);
-                    return reject({ success: false, message: err.message });
+                    return resolve({ success: false, message: err.message });
                 }
 
                 if (existing) {
@@ -2934,7 +2926,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
                         function (updateErr) {
                             if (updateErr) {
                                 console.error("Error updating attendance:", updateErr);
-                                return reject({ success: false, message: updateErr.message });
+                                return resolve({ success: false, message: updateErr.message });
                             }
                             syncService.syncPendingRecords();
                             resolve({ success: true, message: "Attendance updated" });
@@ -2954,7 +2946,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
                             function (insertErr) {
                                 if (insertErr) {
                                     console.error("Error creating attendance:", insertErr);
-                                    return reject({ success: false, message: insertErr.message });
+                                    return resolve({ success: false, message: insertErr.message });
                                 }
                                 syncService.syncPendingRecords();
                                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Attendance created" });
@@ -2975,7 +2967,7 @@ ipcMain.handle("create-attendance", async (e, data) => {
             `INSERT INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, employee_id, date, status, check_in, check_out, companyId],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
@@ -3095,7 +3087,7 @@ ipcMain.handle("get-salaries", async (e, params) => {
         db.all(query, [ids.localId, ids.globalId, String(ids.localId), month], (err, rows) => {
             if (err) {
                 console.error("Error loading salaries:", err);
-                return reject(err);
+                return resolve([]);
             }
 
             // Transform to match frontend expectations
@@ -3129,7 +3121,7 @@ ipcMain.handle("create-salary", async (e, data) => {
             function (err) {
                 if (err) {
                     console.error("Error creating salary:", err);
-                    return reject({ success: false, message: err.message });
+                    return resolve({ success: false, message: err.message });
                 }
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Salary created locally" });
@@ -3142,7 +3134,7 @@ ipcMain.handle("get-salary-records", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
         db.all("SELECT * FROM salary_records WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY month DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });
@@ -3157,7 +3149,7 @@ ipcMain.handle("add-salary-record", async (e, data) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, data.notes || '', payment_date, status, companyId],
             function (err) {
-                if (err) return reject({ success: false, message: err.message });
+                if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords();
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
@@ -3170,7 +3162,7 @@ ipcMain.handle("get-audit-logs", async (e, companyId) => {
     const ids = await resolveCompanyIds(companyId);
     return new Promise((resolve, reject) => {
         db.all("SELECT * FROM audit_logs WHERE company_id = ? OR company_id = ? OR company_id = ? ORDER BY timestamp DESC", [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) reject(err);
+            if (err) resolve([]);
             else resolve(rows);
         });
     });

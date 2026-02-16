@@ -201,7 +201,7 @@ class SyncService {
                     db.get(`SELECT id, global_id, updated_at, sync_status FROM ${table} WHERE global_id = ?`, [cloudData.id], (err, r1) => {
                         if (r1) return resolve(r1);
 
-                        // Fallback business key lookup
+                        // Fallback business key lookup (Only use if we don't have a solid cloud ID match)
                         let sql = "";
                         let val = "";
                         if (table === 'sales') { sql = `SELECT id, global_id, updated_at, sync_status FROM sales WHERE inv_number = ? AND company_id = ?`; val = cloudData.invoiceNo || cloudData.inv_number; }
@@ -213,7 +213,15 @@ class SyncService {
 
                         if (sql && val) {
                             const params = table === 'users' ? [val] : [val, companyId];
-                            db.get(sql, params, (e, r2) => resolve(r2));
+                            db.get(sql, params, (e, r2) => {
+                                // IMPORTANT: If we found a record by business key (like SKU) but it already has a DIFFERENT 
+                                // cloud global_id (CUID starting with 'c'), then it's a different record on the cloud.
+                                // We should NOT merge them.
+                                if (r2 && r2.global_id && r2.global_id.startsWith('c') && r2.global_id !== cloudData.id) {
+                                    return resolve(null);
+                                }
+                                resolve(r2);
+                            });
                         } else {
                             resolve(null);
                         }
@@ -865,8 +873,15 @@ class SyncService {
                     await new Promise(res => db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], res));
                 } else {
                     const msg = (response?.message || '').toLowerCase();
-                    if (msg.includes('not found') || msg.includes('404')) {
+                    // If it's already deleted on cloud, or cloud says it doesn't exist
+                    if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('404')) {
+                        console.log(`[SYNC] ${table} ID ${globalId} already gone from cloud. Removing local record.`);
                         await new Promise(res => db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], res));
+                    } else if (msg.includes('transaction history') || msg.includes('foreign key')) {
+                        console.warn(`[SYNC] Cloud deletion ignored for ${table} ID ${globalId} (Integrity constraint). Deleting local only.`);
+                        await new Promise(res => db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], res));
+                    } else {
+                        console.warn(`[SYNC API] ${table} DELETE failed: ${response?.message}`);
                     }
                 }
             } catch (err) {

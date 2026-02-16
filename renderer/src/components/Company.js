@@ -840,20 +840,18 @@ const RolesPermissions = ({ currentUser }) => {
                             <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                                 <Shield size={24} />
                             </div>
-                            {!role.is_system && (
-                                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {canEdit('settings') && (
-                                        <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                                            <Edit2 size={16} />
-                                        </button>
-                                    )}
-                                    {canDelete('settings') && (
-                                        <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                            <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                                {canEdit('settings') && (
+                                    <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                        <Edit2 size={16} />
+                                    </button>
+                                )}
+                                {canDelete('settings') && (
+                                    <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors uppercase tracking-tight">{role.name}</h3>
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>

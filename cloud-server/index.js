@@ -223,13 +223,20 @@ app.delete('/api/companies/:id', async (req, res) => {
 
         // Perform manual cascade delete in a transaction
         await prisma.$transaction(async (tx) => {
-            // 1. Delete grandchildren/dependent items
+            // 1. Delete grandchildren / dependent items with complex relations
             await tx.saleItem.deleteMany({ where: { sale: { companyId } } });
             await tx.purchaseItem.deleteMany({ where: { purchase: { companyId } } });
             await tx.transaction.deleteMany({ where: { account: { companyId } } });
             await tx.attendance.deleteMany({ where: { employee: { companyId } } });
 
+            // Delete Return Items (they cascade from returns, but just to be safe if deleting returns first)
+            await tx.saleReturnItem.deleteMany({ where: { saleReturn: { companyId } } });
+            await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { companyId } } });
+
             // 2. Delete main company-linked records
+            await tx.salaryRecord.deleteMany({ where: { companyId } });
+            await tx.saleReturn.deleteMany({ where: { companyId } });
+            await tx.purchaseReturn.deleteMany({ where: { companyId } });
             await tx.sale.deleteMany({ where: { companyId } });
             await tx.purchase.deleteMany({ where: { companyId } });
             await tx.expense.deleteMany({ where: { companyId } });
@@ -240,6 +247,7 @@ app.delete('/api/companies/:id', async (req, res) => {
             await tx.vendor.deleteMany({ where: { companyId } });
             await tx.employee.deleteMany({ where: { companyId } });
             await tx.account.deleteMany({ where: { companyId } });
+            await tx.supportRequest.deleteMany({ where: { companyId } });
 
             // 3. Delete Users and Roles (CompanyRequests and Permissions cascade automatically)
             await tx.user.deleteMany({ where: { companyId } });
@@ -461,6 +469,17 @@ app.post('/api/accounts', async (req, res) => {
         });
         res.json({ success: true, id: account.id, ...account });
     } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/accounts/:id', async (req, res) => {
+    try {
+        await prisma.account.delete({ where: { id: req.params.id } });
+        res.json({ success: true, changes: 1 });
+    } catch (e) {
+        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Account has transactions and cannot be deleted" });
+        if (e.code === 'P2025') return res.json({ success: true, message: "Account already deleted" });
+        handleError(res, e);
+    }
 });
 
 // ==========================================
@@ -1082,13 +1101,23 @@ app.put('/api/users/:id', async (req, res) => {
 
 app.delete('/api/users/:id', async (req, res) => {
     try {
+        const id = req.params.id;
+
+        // Prevent deleting superadmin by username if possible, or check if it's the last superadmin
+        const user = await prisma.user.findUnique({ where: { id } });
+        if (user && user.username === 'superadmin') {
+            return res.status(403).json({ success: false, message: "Cannot delete the master superadmin account" });
+        }
 
         await prisma.user.delete({
-            where: { id: req.params.id }
+            where: { id }
         });
         res.json({ success: true, changes: 1, message: "User deleted permanently" });
     } catch (e) {
-
+        // P2025 is Prisma's "Record to delete does not exist"
+        if (e.code === 'P2025') {
+            return res.json({ success: true, message: "User already deleted" });
+        }
         if (e.code === 'P2003') {
             await prisma.user.update({
                 where: { id: req.params.id },
@@ -1824,6 +1853,16 @@ app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
+app.delete(['/api/attendance/:id', '/api/attendances/:id'], async (req, res) => {
+    try {
+        await prisma.attendance.delete({ where: { id: req.params.id } });
+        res.json({ success: true, changes: 1 });
+    } catch (e) {
+        if (e.code === 'P2025') return res.json({ success: true, message: "Attendance already deleted" });
+        handleError(res, e);
+    }
+});
+
 // Salary Records
 app.get(['/api/salaries', '/api/salary-records'], async (req, res) => {
     try {
@@ -1866,6 +1905,16 @@ app.post(['/api/salaries', '/api/salary-records'], async (req, res) => {
         });
         res.json({ success: true, id: record.id });
     } catch (e) { handleError(res, e); }
+});
+
+app.delete(['/api/salaries/:id', '/api/salary-records/:id'], async (req, res) => {
+    try {
+        await prisma.salaryRecord.delete({ where: { id: req.params.id } });
+        res.json({ success: true, changes: 1 });
+    } catch (e) {
+        if (e.code === 'P2025') return res.json({ success: true, message: "Salary record already deleted" });
+        handleError(res, e);
+    }
 });
 
 // ==========================================
