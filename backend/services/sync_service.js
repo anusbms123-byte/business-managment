@@ -6,7 +6,9 @@ const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-ten.verc
 
 class SyncService {
     constructor() {
-        this.isSyncing = false;
+        this.isPulling = false;
+        this.isPushing = false;
+        this.pushQueue = [];
         this.CLOUD_URL = CLOUD_URL;
         this.currentCompanyId = null; // Store for fallback
     }
@@ -44,8 +46,8 @@ class SyncService {
     // INITIAL PULL (Cloud -> Local)
     // ==========================================
     async pullAllData(companyGlobalId) {
-        if (this.isSyncing) return;
-        this.isSyncing = true;
+        if (this.isPulling) return;
+        this.isPulling = true;
 
         // For Super Admin, companyGlobalId might be null/undefined to pull all data
         // If it's explicitly null (not just undefined), we treat it as Global pull
@@ -122,7 +124,7 @@ class SyncService {
             console.error('Pull failed:', error.message);
             return { success: false, message: error.message };
         } finally {
-            this.isSyncing = false;
+            this.isPulling = false;
         }
     }
 
@@ -458,46 +460,66 @@ class SyncService {
     // ==========================================
     // BACKGROUND PUSH (Local -> Cloud)
     // ==========================================
-    async syncPendingRecords() {
-        if (this.isSyncing) return;
-        this.isSyncing = true;
+    async syncPendingRecords(specificTable = null, specificUrl = null) {
+        // Add to queue
+        this.pushQueue.push({ table: specificTable, url: specificUrl });
 
+        if (this.isPushing) {
+            console.log("[SYNC] Push already in progress, request queued.");
+            return;
+        }
+
+        this.isPushing = true;
         try {
-            const pushOrder = [
-                { table: 'companies', url: '/companies' },
-                { table: 'categories', url: '/categories' },
-                { table: 'brands', url: '/brands' },
-                { table: 'vendors', url: '/vendors' },
-                { table: 'customers', url: '/customers' },
-                { table: 'roles', url: '/roles' },
-                { table: 'users', url: '/users' },
-                { table: 'products', url: '/products' },
-                { table: 'employees', url: '/employees' },
-                { table: 'expenses', url: '/expenses' },
-                { table: 'sales', url: '/sales' },
-                { table: 'purchases', url: '/purchases' },
-                { table: 'accounts', url: '/account' },
-                { table: 'sale_returns', url: '/returns/sales' },
-                { table: 'purchase_returns', url: '/returns/purchases' },
-                { table: 'attendances', url: '/attendance' },
-                { table: 'salary_records', url: '/salary-records' },
-                { table: 'audit_logs', url: '/audit-logs' }
-            ];
+            while (this.pushQueue.length > 0) {
+                const task = this.pushQueue.shift();
+                await this._doSync(task.table, task.url);
+            }
+        } finally {
+            this.isPushing = false;
+        }
+    }
 
-            for (const item of pushOrder) {
-                try {
-                    await this.pushEntity(item.table, item.url);
-                } catch (e) {
-                    console.error(`[SYNC] Failed to push ${item.table}:`, e.message);
+    async _doSync(specificTable = null, specificUrl = null) {
+        try {
+            if (specificTable && specificUrl) {
+                console.log(`[SYNC] Immediate push for ${specificTable}...`);
+                await this.pushEntity(specificTable, specificUrl);
+            } else {
+                const pushOrder = [
+                    { table: 'companies', url: '/companies' },
+                    { table: 'categories', url: '/categories' },
+                    { table: 'brands', url: '/brands' },
+                    { table: 'vendors', url: '/vendors' },
+                    { table: 'customers', url: '/customers' },
+                    { table: 'roles', url: '/roles' },
+                    { table: 'users', url: '/users' },
+                    { table: 'products', url: '/products' },
+                    { table: 'employees', url: '/employees' },
+                    { table: 'expenses', url: '/expenses' },
+                    { table: 'sales', url: '/sales' },
+                    { table: 'purchases', url: '/purchases' },
+                    { table: 'accounts', url: '/account' },
+                    { table: 'sale_returns', url: '/returns/sales' },
+                    { table: 'purchase_returns', url: '/returns/purchases' },
+                    { table: 'attendances', url: '/attendance' },
+                    { table: 'salary_records', url: '/salary-records' },
+                    { table: 'audit_logs', url: '/audit-logs' }
+                ];
+
+                for (const item of pushOrder) {
+                    try {
+                        await this.pushEntity(item.table, item.url);
+                    } catch (e) {
+                        console.error(`[SYNC] Failed to push ${item.table}:`, e.message);
+                    }
                 }
             }
 
             // After pushing pending records, sync pending deletions
             await this.syncPendingDeletions();
         } catch (error) {
-            console.error('Background sync master error:', error.message);
-        } finally {
-            this.isSyncing = false;
+            console.error('Background sync core error:', error.message);
         }
     }
 
@@ -558,11 +580,13 @@ class SyncService {
                 const globalId = payload.global_id;
 
                 // Basic Sanitization: Remove Internal fields
-                delete payload.id;
                 delete payload.sync_status;
-                delete payload.global_id;
                 delete payload.created_at;
                 delete payload.updated_at;
+
+                // Ensure the cloud sees this as the ID (Mapping global_id to id for Cloud API)
+                payload.id = globalId;
+                delete payload.global_id;
 
                 // Multi-tenancy Mapping (company_id -> companyId)
                 if (payload.company_id && !payload.companyId) {
@@ -570,15 +594,18 @@ class SyncService {
                 }
 
                 // Fallback to current session company if missing
+                if (!payload.companyId) {
+                    payload.companyId = this.currentCompanyId;
+                }
+
+                // If it's STILL missing after local and global check, log it
                 if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined') {
-                    if (this.currentCompanyId && table !== 'companies') {
-                        if ((table === 'roles' || table === 'permissions') && record.is_system === 1) {
-                            // Keep as is
-                        } else {
-                            payload.companyId = this.currentCompanyId;
-                        }
+                    // Skip logging for companies table which doesn't need companyId
+                    if (table !== 'companies') {
+                        console.warn(`[SYNC] Record in ${table} (ID: ${localId}) is missing companyId. Mapping from record/session failed.`);
                     }
                 }
+
                 delete payload.company_id;
 
                 // Handle Super Admin and Company exceptions
@@ -589,10 +616,12 @@ class SyncService {
                     } else if (table === 'roles' && record.is_system === 1) {
                         continue; // System roles don't need sync
                     } else {
-                        console.warn(`[SYNC] Skipping ${table} ID ${localId}: Missing companyId (Payload: ${JSON.stringify(payload)})`);
+                        console.error(`[SYNC SKIP] ${table} ID ${localId} has no company context. Cannot sync.`);
                         continue;
                     }
                 }
+
+                console.log(`[SYNC] Pushing ${table} (ID: ${localId}, GID: ${globalId}) to cloud...`);
 
                 // Helper to fetch nested items
                 const fetchNested = (sql, params) => new Promise((resolve, reject) => {
@@ -899,11 +928,7 @@ class SyncService {
             // Using SQLite datetime functions to filter for records updated > 5 mins ago
             const sql = `
                 SELECT * FROM ${table} 
-                WHERE sync_status = ? 
-                AND (
-                    updated_at <= datetime('now', '-30 seconds') 
-                    OR updated_at IS NULL
-                )
+                WHERE sync_status = ?
             `;
             db.all(sql, [status], (err, rows) => {
                 if (err) {
@@ -911,7 +936,7 @@ class SyncService {
                     reject(err);
                 } else {
                     if (rows.length > 0) {
-                        console.log(`[SYNC] Found ${rows.length} ${status} records in ${table} ready for sync (>5 mins old).`);
+                        console.log(`[SYNC] Found ${rows.length} ${status} records in ${table} ready for sync.`);
                     }
                     resolve(rows);
                 }

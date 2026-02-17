@@ -96,6 +96,7 @@ async function recordDeletion(tableName, globalId) {
     if (!globalId || globalId.includes('-')) return; // Don't sync temp IDs or nulls
     return new Promise((resolve) => {
         db.run("INSERT INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", [tableName, globalId], () => {
+            // Trigger a full sync for deletions to be safe, or just wait for the 5-min cycle
             syncService.syncPendingRecords();
             resolve();
         });
@@ -127,7 +128,7 @@ setInterval(async () => {
     } else {
         console.log("[AUTO-SYNC] No active session, skipped data pull.");
     }
-}, 240000); // 240,000ms = 4 minutes
+}, 300000); // 300,000ms = 5 minutes
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -382,7 +383,7 @@ ipcMain.handle("create-company", async (e, data) => {
                 // Also create default system roles locally for this company if needed
                 // (Usually pulled from cloud, but for offline-first, we might want local defaults)
 
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('companies', '/companies');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Company created locally" });
             }
         );
@@ -400,7 +401,7 @@ ipcMain.handle("update-company", async (e, data) => {
             [name, address, phone, email, tax_no, referral_code, active, id, id],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('companies', '/companies');
                 resolve({ success: true, message: "Company updated locally" });
             }
         );
@@ -413,7 +414,7 @@ ipcMain.handle("delete-company", async (e, id) => {
             db.run(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
                 if (err) resolve({ success: false, message: err.message });
                 else {
-                    syncService.syncPendingRecords();
+                    syncService.syncPendingRecords('companies', '/companies');
                     resolve({ success: true, message: "Company marked for deletion locally." });
                 }
             });
@@ -497,7 +498,7 @@ ipcMain.handle("create-user", async (e, data) => {
             [tempId, username, password, role, rid, fullname, cid],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('users', '/users');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "User created locally" });
             }
         );
@@ -523,7 +524,7 @@ ipcMain.handle("update-user", async (e, data) => {
 
         db.run(query, params, function (err) {
             if (err) return resolve({ success: false, message: err.message });
-            syncService.syncPendingRecords();
+            syncService.syncPendingRecords('users', '/users');
             resolve({ success: true, message: "User updated locally" });
         });
     });
@@ -538,7 +539,7 @@ ipcMain.handle("delete-user", async (e, id) => {
             db.run("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [id, id], (delErr) => {
                 if (delErr) resolve({ success: false, message: delErr.message });
                 else {
-                    syncService.syncPendingRecords();
+                    syncService.syncPendingRecords('users', '/users');
                     resolve({ success: true, message: "User deleted locally" });
                 }
             });
@@ -615,7 +616,7 @@ ipcMain.handle("create-role", async (e, data) => {
 
                     db.run("COMMIT", function () {
                         // Trigger sync
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('roles', '/roles');
                         resolve({ success: true, id: this.lastID, global_id: tempId, message: "Role created locally" });
                     });
                 }
@@ -669,7 +670,7 @@ ipcMain.handle("update-role", async (e, data) => {
                         }
 
                         db.run("COMMIT", () => {
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('roles', '/roles');
                             resolve({ success: true });
                         });
                     });
@@ -694,7 +695,7 @@ ipcMain.handle("delete-role", async (e, id) => {
                         db.run("ROLLBACK");
                         return resolve({ success: false, message: commitErr.message });
                     }
-                    syncService.syncPendingRecords();
+                    syncService.syncPendingRecords('roles', '/roles');
                     resolve({ success: true, message: "Role deleted locally." });
                 });
             });
@@ -767,7 +768,8 @@ ipcMain.handle("create-product", async (e, data) => {
             ],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                console.log(`[IPC] Product "${name}" saved locally (ID: ${this.lastID}). Triggering 1s sync...`);
+                syncService.syncPendingRecords('products', '/products');
                 resolve({ success: true, id: this.lastID, message: "Product saved locally and syncing..." });
             }
         );
@@ -783,7 +785,8 @@ ipcMain.handle("update-product", async (e, data) => {
             [name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId || company_id, color, size, grade, condition, id, id],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                console.log(`[IPC] Product "${name}" updated locally. Triggering 1s sync...`);
+                syncService.syncPendingRecords('products', '/products');
                 resolve({ success: true, message: "Product updated locally and syncing..." });
             }
         );
@@ -818,7 +821,7 @@ ipcMain.handle("delete-product", async (e, id) => {
                 // 3. No history? Mark for deletion
                 db.run(`UPDATE products SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], function (err) {
                     if (err) return reject({ success: false, message: err.message });
-                    syncService.syncPendingRecords();
+                    syncService.syncPendingRecords('products', '/products');
                     resolve({ success: true, message: "Product deleted locally." });
                 });
             });
@@ -925,7 +928,7 @@ ipcMain.handle("add-sale", async (e, data) => {
                             db.run("ROLLBACK");
                             return reject({ success: false, message: commitErr.message });
                         }
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('sales', '/sales');
                         resolve({ success: true, id: saleId, global_id: tempId, message: "Sale recorded and stock/balance updated." });
                     });
                 }
@@ -1001,7 +1004,7 @@ ipcMain.handle("update-sale", async (e, data) => {
 
                                 db.run("COMMIT", (commitErr) => {
                                     if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
-                                    syncService.syncPendingRecords();
+                                    syncService.syncPendingRecords('sales', '/sales');
                                     resolve({ success: true, message: "Sale updated and stock/balance adjusted." });
                                 });
                             });
@@ -1040,7 +1043,7 @@ ipcMain.handle("delete-sale", async (e, id) => {
 
                         db.run("COMMIT", (commitErr) => {
                             if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('sales', '/sales');
                             resolve({ success: true, message: "Sale deleted and stock/balance restored." });
                         });
                     });
@@ -1094,7 +1097,7 @@ ipcMain.handle("create-customer", async (e, data) => {
             ],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('customers', '/customers');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Customer saved locally." });
             }
         );
@@ -1153,7 +1156,7 @@ ipcMain.handle("update-customer", async (e, data) => {
 
         db.run(query, params, function (err) {
             if (err) return resolve({ success: false, message: err.message });
-            syncService.syncPendingRecords();
+            syncService.syncPendingRecords('customers', '/customers');
             resolve({ success: true, message: "Customer updated locally." });
         });
     });
@@ -1176,7 +1179,7 @@ ipcMain.handle("delete-customer", async (e, id) => {
                 db.run(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
                     if (err) resolve({ success: false, message: err.message });
                     else {
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('customers', '/customers');
                         resolve({ success: true, message: "Customer marked for deletion locally." });
                     }
                 });
@@ -1228,7 +1231,7 @@ ipcMain.handle("create-vendor", async (e, data) => {
             ],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('vendors', '/vendors');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Vendor saved locally." });
             }
         );
@@ -1282,7 +1285,7 @@ ipcMain.handle("update-vendor", async (e, data) => {
 
         db.run(query, params, function (err) {
             if (err) return resolve({ success: false, message: err.message });
-            syncService.syncPendingRecords();
+            syncService.syncPendingRecords('vendors', '/vendors');
             resolve({ success: true });
         });
     });
@@ -1311,7 +1314,7 @@ ipcMain.handle("delete-vendor", async (e, id) => {
                 db.run(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
                     if (err) resolve({ success: false, message: err.message });
                     else {
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('vendors', '/vendors');
                         resolve({ success: true, message: "Vendor marked for deletion locally." });
                     }
                 });
@@ -1341,7 +1344,7 @@ ipcMain.handle("create-expense", async (e, data) => {
             [randomUUID(), title, amount || 0, date, description, category, finalCompanyId],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('expenses', '/expenses');
                 resolve({ success: true, id: this.lastID, message: "Expense saved locally." });
             }
         );
@@ -1354,7 +1357,7 @@ ipcMain.handle("update-expense", async (e, data) => {
         const query = `UPDATE expenses SET title=?, amount=?, date=?, description=?, category=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
         db.run(query, [title, amount, date, description, category, companyId, id, id], function (err) {
             if (err) return resolve({ success: false, message: err.message });
-            syncService.syncPendingRecords();
+            syncService.syncPendingRecords('expenses', '/expenses');
             resolve({ success: true, message: "Expense updated locally." });
         });
     });
@@ -1365,7 +1368,7 @@ ipcMain.handle("delete-expense", async (e, id) => {
         db.run(`UPDATE expenses SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
             if (err) resolve({ success: false, message: err.message });
             else {
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('expenses', '/expenses');
                 resolve({ success: true, message: "Expense deleted locally." });
             }
         });
@@ -1393,7 +1396,7 @@ ipcMain.handle("create-category", async (e, data) => {
             [tempId, name, cid],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('categories', '/categories');
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
@@ -1421,7 +1424,7 @@ ipcMain.handle("create-brand", async (e, data) => {
             [tempId, name, cid],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('brands', '/brands');
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
@@ -1443,7 +1446,7 @@ ipcMain.handle("delete-category", async (e, id) => {
                 db.run(`UPDATE categories SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
                     if (err) reject(err);
                     else {
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('categories', '/categories');
                         resolve({ success: true, message: "Category marked for deletion locally." });
                     }
                 });
@@ -1467,7 +1470,7 @@ ipcMain.handle("delete-brand", async (e, id) => {
                 db.run(`UPDATE brands SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id], (err) => {
                     if (err) reject(err);
                     else {
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('brands', '/brands');
                         resolve({ success: true, message: "Brand marked for deletion locally." });
                     }
                 });
@@ -1567,7 +1570,7 @@ ipcMain.handle("add-purchase", async (e, data) => {
 
                     db.run("COMMIT", (commitErr) => {
                         if (commitErr) { db.run("ROLLBACK"); return reject({ success: false, message: commitErr.message }); }
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('purchases', '/purchases');
                         resolve({ success: true, global_id: tempId, message: "Purchase recorded and stock/balance updated." });
                     });
                 }
@@ -1643,7 +1646,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
 
                                 db.run("COMMIT", (commitErr) => {
                                     if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
-                                    syncService.syncPendingRecords();
+                                    syncService.syncPendingRecords('purchases', '/purchases');
                                     resolve({ success: true, message: "Purchase updated and stock/balance adjusted." });
                                 });
                             });
@@ -1682,7 +1685,7 @@ ipcMain.handle("delete-purchase", async (e, id) => {
 
                         db.run("COMMIT", (commitErr) => {
                             if (commitErr) { db.run("ROLLBACK"); return resolve({ success: false, message: commitErr.message }); }
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('purchases', '/purchases');
                             resolve({ success: true, message: "Purchase deleted and stock/balance restored." });
                         });
                     });
@@ -1800,7 +1803,7 @@ ipcMain.handle("add-sale-return", async (e, data) => {
                             db.run("ROLLBACK");
                             return reject({ success: false, message: commitErr.message });
                         }
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('sale_returns', '/returns/sales');
                         resolve({ success: true, id: returnId, global_id: tempId, message: "Sale return recorded locally, stock updated, and balance adjusted." });
                     });
                 }
@@ -1844,7 +1847,7 @@ ipcMain.handle("delete-sale-return", async (e, id) => {
                                 db.run("ROLLBACK");
                                 return resolve({ success: false, message: commitErr.message });
                             }
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('sale_returns', '/returns/sales');
                             resolve({ success: true, message: "Sale return deleted, stock and balance reverted." });
                         });
                     });
@@ -1963,7 +1966,7 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
                             db.run("ROLLBACK");
                             return reject({ success: false, message: commitErr.message });
                         }
-                        syncService.syncPendingRecords();
+                        syncService.syncPendingRecords('purchase_returns', '/returns/purchases');
                         resolve({ success: true, id: returnId, global_id: tempId, message: "Purchase return recorded locally, stock updated, and balance adjusted." });
                     });
                 }
@@ -2008,7 +2011,7 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
                                 db.run("ROLLBACK");
                                 return resolve({ success: false, message: commitErr.message });
                             }
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('purchase_returns', '/returns/purchases');
                             resolve({ success: true, message: "Purchase return deleted, stock and balance reverted." });
                         });
                     });
@@ -2735,7 +2738,7 @@ ipcMain.handle("create-account", async (e, data) => {
             [tempId, name, type, balance || 0, companyId],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('accounts', '/account');
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
@@ -2812,7 +2815,7 @@ ipcMain.handle("create-employee", async (e, data) => {
                     console.error("Error creating employee:", err);
                     return resolve({ success: false, message: err.message });
                 }
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('employees', '/employees');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Employee created locally" });
             }
         );
@@ -2835,7 +2838,7 @@ ipcMain.handle("update-employee", async (e, data) => {
                     console.error("Error updating employee:", err);
                     return resolve({ success: false, message: err.message });
                 }
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('employees', '/employees');
                 resolve({ success: true, message: "Employee updated locally" });
             }
         );
@@ -2855,7 +2858,7 @@ ipcMain.handle("delete-employee", async (e, id) => {
                         console.error("Error deleting employee:", err);
                         return resolve({ success: false, message: err.message });
                     }
-                    syncService.syncPendingRecords();
+                    syncService.syncPendingRecords('employees', '/employees');
                     resolve({ success: true, message: "Employee deleted locally" });
                 }
             );
@@ -2928,7 +2931,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
                                 console.error("Error updating attendance:", updateErr);
                                 return resolve({ success: false, message: updateErr.message });
                             }
-                            syncService.syncPendingRecords();
+                            syncService.syncPendingRecords('attendances', '/attendance');
                             resolve({ success: true, message: "Attendance updated" });
                         }
                     );
@@ -2948,7 +2951,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
                                     console.error("Error creating attendance:", insertErr);
                                     return resolve({ success: false, message: insertErr.message });
                                 }
-                                syncService.syncPendingRecords();
+                                syncService.syncPendingRecords('attendances', '/attendance');
                                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Attendance created" });
                             }
                         );
@@ -2968,7 +2971,7 @@ ipcMain.handle("create-attendance", async (e, data) => {
             [tempId, employee_id, date, status, check_in, check_out, companyId],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('attendances', '/attendance');
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
@@ -2983,7 +2986,7 @@ ipcMain.handle("update-attendance", async (e, data) => {
             [status, check_in, check_out, companyId, id, id],
             function (err) {
                 if (err) return reject({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('attendances', '/attendance');
                 resolve({ success: true, message: "Attendance updated locally." });
             }
         );
@@ -3123,7 +3126,7 @@ ipcMain.handle("create-salary", async (e, data) => {
                     console.error("Error creating salary:", err);
                     return resolve({ success: false, message: err.message });
                 }
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('salary_records', '/salary-records');
                 resolve({ success: true, id: this.lastID, global_id: tempId, message: "Salary created locally" });
             }
         );
@@ -3150,7 +3153,7 @@ ipcMain.handle("add-salary-record", async (e, data) => {
             [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, data.notes || '', payment_date, status, companyId],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
-                syncService.syncPendingRecords();
+                syncService.syncPendingRecords('salary_records', '/salary-records');
                 resolve({ success: true, id: this.lastID, global_id: tempId });
             }
         );
@@ -3186,6 +3189,16 @@ ipcMain.handle("trigger-sync", async () => {
     return { success: true, message: "Sync triggered in background." };
 });
 
+// Network Status Change - Trigger immediate sync when back online
+ipcMain.on("network-status-changed", (event, status) => {
+    if (status === 'online') {
+        console.log("[NETWORK] System is BACK ONLINE. Triggering immediate background sync...");
+        syncService.syncPendingRecords();
+    } else {
+        console.log("[NETWORK] System went OFFLINE. Sync paused.");
+    }
+});
+
 // Create window
 function createWindow() {
     Menu.setApplicationMenu(null);
@@ -3208,8 +3221,10 @@ function createWindow() {
         win.loadURL("http://localhost:3000");
     }
 
-    // Trigger update check after window is shown
+    // Trigger initial sync on startup to catch anything left over from previous sessions
     win.once('ready-to-show', () => {
+        console.log("[STARTUP] Checking for pending records to sync...");
+        syncService.syncPendingRecords();
         if (app.isPackaged) {
             autoUpdater.checkForUpdatesAndNotify();
         }

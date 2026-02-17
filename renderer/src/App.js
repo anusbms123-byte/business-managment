@@ -31,6 +31,29 @@ function App() {
             setUser(JSON.parse(savedUser));
         }
         setLoading(false);
+
+        // Network Status Listeners
+        const handleOnline = () => {
+            console.log("⚡ System is ONLINE. Notifying backend...");
+            if (window.electronAPI && window.electronAPI.sendNetworkStatus) {
+                window.electronAPI.sendNetworkStatus('online');
+            }
+        };
+
+        const handleOffline = () => {
+            console.log("🔌 System is OFFLINE.");
+            if (window.electronAPI && window.electronAPI.sendNetworkStatus) {
+                window.electronAPI.sendNetworkStatus('offline');
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, []);
 
     const handleLoginSuccess = (userData, permissions = []) => {

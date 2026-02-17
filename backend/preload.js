@@ -112,4 +112,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSupportRequests: (params) => ipcRenderer.invoke('get-support-requests', params),
     createSupportRequest: (data) => ipcRenderer.invoke('create-support-request', data),
     updateSupportStatus: (id, status) => ipcRenderer.invoke('update-support-status', id, status),
+
+    // Sync & Network
+    sendNetworkStatus: (status) => ipcRenderer.send('network-status-changed', status),
 });
