@@ -137,15 +137,19 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                 { key: 'backup', icon: HardDrive, label: 'Backup & Restore', path: '/backup' }
             ]);
             setVisibleSettingsItems([]);
-        } else if (isAdmin) {
-            // Admin sees everything
-            setVisibleMenuItems(ALL_MENU_ITEMS);
-            setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
         } else if (permissions && permissions.length > 0) {
             // Filter based on can_view permission
-            const allowedKeys = permissions
+            const allowedKeys = (permissions || [])
                 .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true')
                 .map(p => p.module ? p.module.toLowerCase().trim() : '');
+
+            // Admins get everything by default if no specific exclusions, but let's be strict
+            if (isAdmin && allowedKeys.length === 0) {
+                // Initial state for admin if permissions not yet loaded or empty
+                setVisibleMenuItems(ALL_MENU_ITEMS);
+                setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
+                return;
+            }
 
             // Special mappings to ensure compatibility with different naming conventions
             if (allowedKeys.includes('products')) allowedKeys.push('inventory');

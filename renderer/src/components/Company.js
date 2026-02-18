@@ -802,12 +802,23 @@ const RolesPermissions = ({ currentUser }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            const data = { ...formData, company_id: currentUser?.company_id };
-            formData.id ? await window.electronAPI.updateRole(data) : await window.electronAPI.createRole(data);
-            setShowModal(false);
-            loadRoles();
+            const data = {
+                ...formData,
+                company_id: currentUser?.company_id || currentUser?.companyId
+            };
+            const result = formData.id
+                ? await window.electronAPI.updateRole(data)
+                : await window.electronAPI.createRole(data);
+
+            if (result && result.success) {
+                setShowModal(false);
+                await loadRoles();
+            } else {
+                window.alert('Error: ' + (result?.message || 'Operation failed'));
+            }
         } catch (err) {
-            window.alert('Error: ' + err.message);
+            console.error("Save Role Error:", err);
+            window.alert('System Error: ' + err.message);
         }
         setSaving(false);
     };

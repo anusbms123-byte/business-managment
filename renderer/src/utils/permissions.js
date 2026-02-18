@@ -2,8 +2,8 @@ export const checkPermission = (moduleName, action) => {
     const savedPermissions = sessionStorage.getItem('permissions');
     const userRole = sessionStorage.getItem('userRole');
 
-    // Super Admin and Admin have all permissions
-    if (userRole === 'Super Admin' || userRole === 'Admin') {
+    // Super Admin has all permissions as a safety fallback
+    if (userRole === 'Super Admin' || userRole === 'super_admin') {
         return true;
     }
 
@@ -42,8 +42,8 @@ export const canDelete = (module) => checkPermission(module, 'delete');
 export const canAccessModule = (moduleName) => {
     const userRole = sessionStorage.getItem('userRole');
 
-    // Super Admin and Admin can access everything
-    if (userRole === 'Super Admin' || userRole === 'Admin') {
+    // Super Admin can access everything
+    if (userRole === 'Super Admin' || userRole === 'super_admin') {
         return true;
     }
 
