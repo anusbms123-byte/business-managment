@@ -796,6 +796,8 @@ class SyncService {
                     payload.joiningDate = record.joining_date;
                     payload.isActive = record.is_active === 1;
                 } else if (table === 'roles') {
+                    payload.isSystem = record.is_system === 1;
+                    delete payload.is_system;
                     const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
                     payload.permissions = permissions.map(p => ({
                         module: p.module,

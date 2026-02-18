@@ -420,7 +420,7 @@ const Reports = ({ currentUser }) => {
                                 <h1 className="text-xl font-black text-black tracking-tight uppercase italic">{config.title}</h1>
                                 {activeModule === 'sales' && selectedCustomer !== 'all' && (
                                     <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {customers.find(c => c.id === selectedCustomer)?.name || 'Customer'}
+                                        {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                     </span>
                                 )}
                                 {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
@@ -433,7 +433,7 @@ const Reports = ({ currentUser }) => {
                                 )}
                                 {activeModule === 'suppliers' && selectedVendor !== 'all' && (
                                     <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {vendors.find(v => v.id === selectedVendor)?.name || 'Supplier'}
+                                        {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
                                     </span>
                                 )}
                                 {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
@@ -446,7 +446,7 @@ const Reports = ({ currentUser }) => {
                                 )}
                                 {activeModule === 'customers' && selectedCustomer !== 'all' && (
                                     <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {customers.find(c => c.id === selectedCustomer)?.name || 'Customer'}
+                                        {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                     </span>
                                 )}
                                 {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
@@ -459,7 +459,7 @@ const Reports = ({ currentUser }) => {
                                 )}
                                 {activeModule === 'hrm' && selectedEmployee !== 'all' && (
                                     <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {employees.find(e => e.id === selectedEmployee)?.first_name || 'Staff Member'}
+                                        {employees.find(e => e.id == selectedEmployee)?.first_name || 'Staff Member'}
                                     </span>
                                 )}
                                 {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (

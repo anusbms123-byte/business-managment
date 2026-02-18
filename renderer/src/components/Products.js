@@ -243,13 +243,21 @@ const Products = ({ currentUser }) => {
     };
 
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.id?.toString().includes(searchTerm);
+        const lowerSearch = searchTerm.toLowerCase();
+        const matchesSearch =
+            p.name.toLowerCase().includes(lowerSearch) ||
+            p.sku?.toLowerCase().includes(lowerSearch) ||
+            p.id?.toString().includes(searchTerm) ||
+            p.category?.name?.toLowerCase().includes(lowerSearch) ||
+            p.brand?.name?.toLowerCase().includes(lowerSearch) ||
+            p.color?.toLowerCase().includes(lowerSearch) ||
+            p.size?.toLowerCase().includes(lowerSearch) ||
+            p.unit?.toLowerCase().includes(lowerSearch) ||
+            p.grade?.toLowerCase().includes(lowerSearch);
 
         const matchesUnit = filterUnit ? p.unit === filterUnit : true;
-        const matchesCategory = filterCategory ? p.category?.id === filterCategory : true;
-        const matchesBrand = filterBrand ? p.brand?.id === filterBrand : true;
+        const matchesCategory = filterCategory ? p.category?.id == filterCategory : true;
+        const matchesBrand = filterBrand ? p.brand?.id == filterBrand : true;
         const matchesColor = filterColor ? p.color === filterColor : true;
         const matchesSize = filterSize ? p.size === filterSize : true;
         const matchesGrade = filterGrade ? p.grade === filterGrade : true;
@@ -349,6 +357,25 @@ const Products = ({ currentUser }) => {
                             <option value="outofstock">Out of Stock</option>
                             <option value="expired">Expired</option>
                         </select>
+
+                        {/* Reset Filters Button */}
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setFilterCategory('');
+                                setFilterBrand('');
+                                setFilterUnit('');
+                                setFilterColor('');
+                                setFilterSize('');
+                                setFilterGrade('');
+                                setFilterStockStatus('');
+                            }}
+                            className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded-lg p-2.5 transition-all font-bold group"
+                            title="Clear All Filters"
+                        >
+                            <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                            <span className="lg:hidden xl:inline">Reset</span>
+                        </button>
                     </div>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -372,11 +399,16 @@ const Products = ({ currentUser }) => {
                                 <div className="absolute z-20 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                     <div className="max-h-64 overflow-y-auto scrollbar-hide">
                                         {products
-                                            .filter(p =>
-                                                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                p.id?.toString().includes(searchTerm)
-                                            )
+                                            .filter(p => {
+                                                const lowerSearch = searchTerm.toLowerCase();
+                                                return p.name.toLowerCase().includes(lowerSearch) ||
+                                                    p.sku?.toLowerCase().includes(lowerSearch) ||
+                                                    p.id?.toString().includes(searchTerm) ||
+                                                    p.category?.name?.toLowerCase().includes(lowerSearch) ||
+                                                    p.brand?.name?.toLowerCase().includes(lowerSearch) ||
+                                                    p.color?.toLowerCase().includes(lowerSearch) ||
+                                                    p.size?.toLowerCase().includes(lowerSearch);
+                                            })
                                             .slice(0, 8)
                                             .map(product => (
                                                 <div
@@ -403,12 +435,21 @@ const Products = ({ currentUser }) => {
                                                 </div>
                                             ))
                                         }
-                                        {products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku?.toLowerCase().includes(searchTerm.toLowerCase()) || p.id?.toString().includes(searchTerm)).length === 0 && (
-                                            <div className="p-8 text-center">
-                                                <Package size={24} className="mx-auto text-slate-200 mb-2" />
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No matching products</p>
-                                            </div>
-                                        )}
+                                        {products.filter(p => {
+                                            const lowerSearch = searchTerm.toLowerCase();
+                                            return p.name.toLowerCase().includes(lowerSearch) ||
+                                                p.sku?.toLowerCase().includes(lowerSearch) ||
+                                                p.id?.toString().includes(searchTerm) ||
+                                                p.category?.name?.toLowerCase().includes(lowerSearch) ||
+                                                p.brand?.name?.toLowerCase().includes(lowerSearch) ||
+                                                p.color?.toLowerCase().includes(lowerSearch) ||
+                                                p.size?.toLowerCase().includes(lowerSearch);
+                                        }).length === 0 && (
+                                                <div className="p-8 text-center">
+                                                    <Package size={24} className="mx-auto text-slate-200 mb-2" />
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No matching products</p>
+                                                </div>
+                                            )}
                                     </div>
                                     <div className="bg-slate-50 px-4 py-2 border-t border-slate-100">
                                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">Showing top results</p>

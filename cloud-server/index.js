@@ -366,6 +366,152 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // ==========================================
+// ROLES & PERMISSIONS
+// ==========================================
+
+// GET all roles (optionally filtered by companyId)
+app.get('/api/roles', async (req, res) => {
+    try {
+        const { companyId } = req.query;
+        const where = {};
+
+        if (companyId && companyId !== 'null' && companyId !== '') {
+            where.OR = [
+                { companyId },
+                { isSystem: true }
+            ];
+        }
+
+        const roles = await prisma.role.findMany({
+            where,
+            include: { permissions: true },
+            orderBy: { name: 'asc' }
+        });
+
+        // Map to format expected by sync service
+        const mapped = roles.map(r => ({
+            id: r.id,
+            name: r.name,
+            description: r.description,
+            isSystem: r.isSystem,
+            companyId: r.companyId,
+            createdAt: r.createdAt,
+            updatedAt: r.updatedAt,
+            permissions: r.permissions.map(p => ({
+                id: p.id,
+                roleId: p.roleId,
+                module: p.module,
+                canView: p.canView,
+                canCreate: p.canCreate,
+                canEdit: p.canEdit,
+                canDelete: p.canDelete
+            }))
+        }));
+
+        res.json(mapped);
+    } catch (e) { handleError(res, e); }
+});
+
+// GET single role by ID
+app.get('/api/roles/:id', async (req, res) => {
+    try {
+        const role = await prisma.role.findUnique({
+            where: { id: req.params.id },
+            include: { permissions: true }
+        });
+        if (!role) return res.status(404).json({ success: false, message: 'Role not found' });
+        res.json(role);
+    } catch (e) { handleError(res, e); }
+});
+
+// CREATE a new role with permissions
+app.post('/api/roles', async (req, res) => {
+    try {
+        const { name, description, companyId, isSystem, permissions } = req.body;
+
+        const role = await prisma.role.create({
+            data: {
+                name,
+                description,
+                companyId: companyId || null,
+                isSystem: isSystem === true || isSystem === 1,
+                permissions: {
+                    create: (permissions || []).map(p => ({
+                        module: p.module,
+                        canView: p.canView === true || p.canView === 1,
+                        canCreate: p.canCreate === true || p.canCreate === 1,
+                        canEdit: p.canEdit === true || p.canEdit === 1,
+                        canDelete: p.canDelete === true || p.canDelete === 1
+                    }))
+                }
+            },
+            include: { permissions: true }
+        });
+
+        res.json({ success: true, id: role.id, ...role });
+    } catch (e) { handleError(res, e); }
+});
+
+// UPDATE a role and replace its permissions
+app.put('/api/roles/:id', async (req, res) => {
+    try {
+        const { name, description, isSystem, permissions } = req.body;
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Update role details
+            await tx.role.update({
+                where: { id: req.params.id },
+                data: {
+                    name,
+                    description,
+                    isSystem: isSystem === true || isSystem === 1 ? true : undefined
+                }
+            });
+
+            // 2. Replace permissions (delete old, insert new)
+            if (permissions && Array.isArray(permissions)) {
+                await tx.permission.deleteMany({ where: { roleId: req.params.id } });
+
+                for (const p of permissions) {
+                    await tx.permission.create({
+                        data: {
+                            roleId: req.params.id,
+                            module: p.module,
+                            canView: p.canView === true || p.canView === 1,
+                            canCreate: p.canCreate === true || p.canCreate === 1,
+                            canEdit: p.canEdit === true || p.canEdit === 1,
+                            canDelete: p.canDelete === true || p.canDelete === 1
+                        }
+                    });
+                }
+            }
+        });
+
+        res.json({ success: true, changes: 1 });
+    } catch (e) { handleError(res, e); }
+});
+
+// DELETE a role (permissions cascade via Prisma onDelete: Cascade)
+app.delete('/api/roles/:id', async (req, res) => {
+    try {
+        // Check if any users are assigned to this role
+        const usersWithRole = await prisma.user.count({ where: { roleId: req.params.id } });
+        if (usersWithRole > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete role: ${usersWithRole} user(s) are still assigned to it.`
+            });
+        }
+
+        await prisma.role.delete({ where: { id: req.params.id } });
+        res.json({ success: true, changes: 1 });
+    } catch (e) {
+        if (e.code === 'P2025') return res.json({ success: true, message: "Role already deleted" });
+        handleError(res, e);
+    }
+});
+
+// ==========================================
 // CUSTOMERS
 // ==========================================
 app.get('/api/customers', async (req, res) => {

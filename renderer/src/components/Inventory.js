@@ -307,7 +307,7 @@ const BarcodePrinting = ({ currentUser }) => {
                             <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <select
                                 value={selectedProduct?.id || ''}
-                                onChange={(e) => setSelectedProduct(products.find(p => p.id === e.target.value))}
+                                onChange={(e) => setSelectedProduct(products.find(p => p.id == e.target.value))}
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700"
                             >
                                 {loading ? <option>Loading products...</option> :

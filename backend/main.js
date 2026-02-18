@@ -633,10 +633,10 @@ ipcMain.handle("update-role", async (e, data) => {
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
 
-            // 1. Update Role
+            // 1. Update Role (match by id OR global_id for robustness)
             db.run(
-                "UPDATE roles SET name = ?, description = ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                [name, description, id],
+                "UPDATE roles SET name = ?, description = ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?",
+                [name, description, id, id],
                 (err) => {
                     if (err) {
                         db.run("ROLLBACK");
@@ -653,8 +653,8 @@ ipcMain.handle("update-role", async (e, data) => {
                         }
 
                         if (permissions && permissions.length > 0) {
-                            const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status) 
-                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending')`);
+                            const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
                             permissions.forEach(p => {
                                 const v = p.canView !== undefined ? p.canView : p.can_view;
                                 const c = p.canCreate !== undefined ? p.canCreate : p.can_create;
@@ -678,13 +678,17 @@ ipcMain.handle("update-role", async (e, data) => {
 
 ipcMain.handle("delete-role", async (e, id) => {
     return new Promise((resolve, reject) => {
-        db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
+        db.get("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ?", [id, id], (err, row) => {
             if (err || !row) return resolve({ success: false, message: "Role not found" });
             const gid = row.global_id;
+            const localId = row.id;
 
             db.serialize(() => {
                 db.run("BEGIN TRANSACTION");
+                // Mark role as deleted
                 db.run("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+                // Delete associated permissions (they are nested in the role push, not synced independently)
+                db.run("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(gid), String(localId)]);
 
                 db.run("COMMIT", (commitErr) => {
                     if (commitErr) {

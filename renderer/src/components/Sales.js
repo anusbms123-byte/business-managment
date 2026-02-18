@@ -43,6 +43,7 @@ const Sales = ({ currentUser }) => {
     const productRef = useRef(null);
     const qtyRef = useRef(null);
     const addBtnRef = useRef(null);
+    const productListRef = useRef(null);
 
     const fetchData = useCallback(async () => {
         if (currentUser?.company_id) {
@@ -83,6 +84,39 @@ const Sales = ({ currentUser }) => {
         }
     }, [isModalOpen]);
 
+    const filteredProducts = useMemo(() => {
+        if (!productSearch) return products;
+        return products.filter(p =>
+            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+        );
+    }, [products, productSearch]);
+
+    // Scroll highlighted product into view
+    useEffect(() => {
+        if (isProductListVisible && productListRef.current) {
+            const container = productListRef.current;
+            const highlightedItem = container.children[highlightedIndex];
+            if (highlightedItem) {
+                const containerRect = container.getBoundingClientRect();
+                const itemRect = highlightedItem.getBoundingClientRect();
+
+                if (itemRect.bottom > containerRect.bottom) {
+                    container.scrollTop += (itemRect.bottom - containerRect.bottom);
+                } else if (itemRect.top < containerRect.top) {
+                    container.scrollTop -= (containerRect.top - itemRect.top);
+                }
+            }
+        }
+    }, [highlightedIndex, isProductListVisible]);
+
+    // Update hovered product when highlightedIndex changes from keyboard
+    useEffect(() => {
+        if (isProductListVisible && filteredProducts[highlightedIndex]) {
+            setHoveredProduct(filteredProducts[highlightedIndex]);
+        }
+    }, [highlightedIndex, isProductListVisible, filteredProducts]);
+
     // Cart Logic
     const addToCart = () => {
         if (!selectedProduct) return;
@@ -120,13 +154,7 @@ const Sales = ({ currentUser }) => {
         }, 50);
     };
 
-    const filteredProducts = useMemo(() => {
-        if (!productSearch) return products;
-        return products.filter(p =>
-            p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-            p.sku?.toLowerCase().includes(productSearch.toLowerCase())
-        );
-    }, [products, productSearch]);
+
 
     const handleProductSelect = (product) => {
         setSelectedProduct(product.id);
@@ -495,10 +523,18 @@ const Sales = ({ currentUser }) => {
                                             onKeyDown={(e) => {
                                                 if (e.key === 'ArrowDown') {
                                                     e.preventDefault();
-                                                    setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+                                                    setHighlightedIndex(prev => {
+                                                        const next = Math.min(prev + 1, filteredProducts.length - 1);
+                                                        setHoveredProduct(filteredProducts[next]);
+                                                        return next;
+                                                    });
                                                 } else if (e.key === 'ArrowUp') {
                                                     e.preventDefault();
-                                                    setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                    setHighlightedIndex(prev => {
+                                                        const next = Math.max(prev - 1, 0);
+                                                        setHoveredProduct(filteredProducts[next]);
+                                                        return next;
+                                                    });
                                                 } else if (e.key === 'Enter') {
                                                     if (isProductListVisible && filteredProducts[highlightedIndex]) {
                                                         e.preventDefault();
@@ -512,7 +548,10 @@ const Sales = ({ currentUser }) => {
                                             }}
                                         />
                                         {isProductListVisible && filteredProducts.length > 0 && (
-                                            <div className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                            <div
+                                                ref={productListRef}
+                                                className="absolute z-[110] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                                            >
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
