@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
     Receipt, BarChart3, UserCog, Settings, LogOut, Search, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu
+    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu, Calculator, HandCoins
 } from 'lucide-react';
 
 // Define all menu items with their permission keys
@@ -16,6 +16,7 @@ const ALL_MENU_ITEMS = [
     { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
+    { key: 'accounting', icon: Calculator, label: 'Accounting', path: '/accounting' },
     { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
 ];
@@ -42,11 +43,11 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
     </div>
 );
 
-const Layout = ({ children, user, onLogout }) => {
+const Layout = ({ children, user, permissions, onLogout }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [company, setCompany] = useState(null);
-    const [permissions, setPermissions] = useState([]);
+    // Removed internal permissions state to use prop
     const [visibleMenuItems, setVisibleMenuItems] = useState([]);
     const [visibleSettingsItems, setVisibleSettingsItems] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -119,20 +120,12 @@ const Layout = ({ children, user, onLogout }) => {
                 }
             }
         };
-
-        const savedPermissions = sessionStorage.getItem('permissions');
-        if (savedPermissions) {
-            try {
-                const perms = JSON.parse(savedPermissions);
-                setPermissions(perms);
-            } catch (err) {
-                console.error('Failed to parse permissions:', err);
-            }
-        }
         fetchCompany();
     }, [user]);
 
     useEffect(() => {
+        console.log("Layout Permissions Prop:", permissions);
+
         // Filter menu items based on permissions
         const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin';
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
@@ -151,10 +144,13 @@ const Layout = ({ children, user, onLogout }) => {
         } else if (permissions && permissions.length > 0) {
             // Filter based on can_view permission
             const allowedKeys = permissions
-                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true)
-                .map(p => p.module.toLowerCase());
+                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true')
+                .map(p => p.module ? p.module.toLowerCase().trim() : '');
 
+            // Special mappings to ensure compatibility with different naming conventions
             if (allowedKeys.includes('products')) allowedKeys.push('inventory');
+            if (allowedKeys.includes('items')) allowedKeys.push('inventory');
+            if (allowedKeys.includes('stock')) allowedKeys.push('inventory');
 
             const filteredMenu = ALL_MENU_ITEMS.filter(item =>
                 allowedKeys.includes(item.key.toLowerCase())
@@ -165,7 +161,11 @@ const Layout = ({ children, user, onLogout }) => {
 
             setVisibleMenuItems(filteredMenu);
             setVisibleSettingsItems(filteredSettings);
+
+            console.log("Allowed Keys:", allowedKeys);
+            console.log("Final Visible Menu Keys:", filteredMenu.map(m => m.key));
         } else {
+            console.warn("No permissions found for non-admin user");
             setVisibleMenuItems([]);
             setVisibleSettingsItems([]);
         }

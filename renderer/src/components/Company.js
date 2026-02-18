@@ -563,14 +563,17 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
         e.preventDefault();
         setSaving(true);
         try {
-            // Robust Role ID mapping
-            const selectedRole = roles.find(r => r.name.toLowerCase().replace(' ', '_') === formData.role);
-            const roleId = selectedRole ? (selectedRole.global_id || selectedRole.id) : formData.role_id;
+            // Find role ID if not already set (fallback)
+            let finalRoleId = formData.role_id;
+            if (!finalRoleId && formData.role) {
+                const selectedRole = roles.find(r => r.name === formData.role || r.name.toLowerCase().replace(/\s+/g, '_') === formData.role);
+                if (selectedRole) finalRoleId = selectedRole.global_id || selectedRole.id;
+            }
 
             const data = {
                 ...formData,
                 company_id: isSuperAdmin ? formData.company_id : (currentUser?.company_id || currentUser?.companyId),
-                role_id: roleId
+                role_id: finalRoleId
             };
 
             const result = formData.id
@@ -595,14 +598,23 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
     };
 
     const openModal = (user = null) => {
-        setFormData(user ? { ...user, password: '' } : {
-            company_id: currentUser?.company_id || currentUser?.companyId || '',
-            username: '',
-            password: '',
-            role: 'admin',
-            fullname: '',
-            is_active: 1
-        });
+        if (user) {
+            setFormData({
+                ...user,
+                role_id: user.role_id || user.roleId,
+                password: ''
+            });
+        } else {
+            setFormData({
+                company_id: currentUser?.company_id || currentUser?.companyId || '',
+                username: '',
+                password: '',
+                role: 'admin',
+                role_id: null,
+                fullname: '',
+                is_active: 1
+            });
+        }
         setShowPassword(false);
         setShowModal(true);
     };
@@ -732,7 +744,17 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     </button>
                                 }
                             />
-                            <FormSelect label="Assigned Privileges" required value={formData.role} onChange={v => setFormData({ ...formData, role: v })} options={roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map(r => ({ value: r.name.toLowerCase().replace(' ', '_'), label: r.name }))} icon={Shield} />
+                            <FormSelect
+                                label="Assigned Privileges"
+                                required
+                                value={formData.role_id || formData.roleId || ''}
+                                onChange={v => {
+                                    const roleObj = roles.find(r => (r.global_id || r.id) == v);
+                                    setFormData({ ...formData, role_id: v, role: roleObj ? roleObj.name : '' });
+                                }}
+                                options={roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map(r => ({ value: r.global_id || r.id, label: r.name }))}
+                                icon={Shield}
+                            />
                         </div>
                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200">
                             <input type="checkbox" checked={formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />

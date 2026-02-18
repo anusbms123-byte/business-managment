@@ -23,12 +23,20 @@ import Returns from './components/Returns';
 
 function App() {
     const [user, setUser] = useState(null);
+    const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const savedUser = sessionStorage.getItem('user');
+        const savedPerms = sessionStorage.getItem('permissions');
+
         if (savedUser) {
             setUser(JSON.parse(savedUser));
+        }
+        if (savedPerms) {
+            try {
+                setPermissions(JSON.parse(savedPerms));
+            } catch (e) { console.error("Error parsing permissions on load", e); }
         }
         setLoading(false);
 
@@ -56,10 +64,11 @@ function App() {
         };
     }, []);
 
-    const handleLoginSuccess = (userData, permissions = []) => {
+    const handleLoginSuccess = (userData, perms = []) => {
         setUser(userData);
+        setPermissions(perms);
         sessionStorage.setItem('user', JSON.stringify(userData));
-        sessionStorage.setItem('permissions', JSON.stringify(permissions));
+        sessionStorage.setItem('permissions', JSON.stringify(perms));
 
         // CRITICAL: Store these for permission utility functions
         sessionStorage.setItem('companyId', userData.company_id || userData.companyId || '');
@@ -69,12 +78,13 @@ function App() {
             user: userData.username,
             role: userData.role,
             companyId: userData.company_id || userData.companyId,
-            permissions: permissions.length
+            permissions: perms.length
         });
     };
 
     const handleLogout = () => {
         setUser(null);
+        setPermissions([]);
         sessionStorage.removeItem('user');
         sessionStorage.removeItem('permissions');
         sessionStorage.removeItem('companyId');
@@ -101,7 +111,7 @@ function App() {
 
                 {user ? (
                     <Route path="/*" element={
-                        <Layout user={user} onLogout={handleLogout}>
+                        <Layout user={user} permissions={permissions} onLogout={handleLogout}>
                             <Routes>
                                 <Route path="/" element={
                                     // Redirect Super Admin to Company page, regular users to Dashboard

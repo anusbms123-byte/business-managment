@@ -146,7 +146,7 @@ ipcMain.handle("login", async (e, credentials) => {
             let companyId = response.user.company_id || response.user.companyId;
 
             // Ensure Super Admin is never tied to a specific company ID locally
-            const isSuperAdmin = response.user.role === 'Super Admin' || response.user.role === 'SuperAdmin';
+            const isSuperAdmin = response.user.role === 'Super Admin' || response.user.role === 'SuperAdmin' || response.user.role?.toLowerCase() === 'super_admin';
             if (isSuperAdmin) {
                 companyId = null;
                 console.log(`✓ Super Admin detected: Forcing null companyId.`);
@@ -189,9 +189,7 @@ ipcMain.handle("login", async (e, credentials) => {
                     isSuperAdmin ? null : companyId,
                     existing.id
                 ];
-
                 await new Promise((resolve) => db.run(updateQuery, updateParams, resolve));
-                console.log(`✓ User ${response.user.username} (ID: ${existing.id}) records updated and synced with cloud ID.`);
             } else {
                 await new Promise((resolve) => {
                     db.run(
@@ -201,43 +199,67 @@ ipcMain.handle("login", async (e, credentials) => {
                         resolve
                     );
                 });
-                console.log(`✓ User ${response.user.username} created locally.`);
             }
 
             // Set global currentCompanyId for sync and other handlers
             if (companyId) {
-                const isNewCompany = currentCompanyId !== companyId;
                 currentCompanyId = companyId;
-                currentLoggedCompany = companyId; // Track for auto-sync
-                syncService.setCompanyId(companyId); // Update sync service with current session
-
-                if (isNewCompany) {
-                    console.log(`[LOGIN] New Company (${companyId}) detected. Clearing local cache for fresh pull...`);
-                    // Use resetModules to clear Sales, Purchases, Users, etc. before pulling fresh
-                    syncService.resetModules(companyId).then(result => {
-                        console.log("✓ Module reset and fresh pull completed for new company session.");
-                    }).catch(err => {
-                        console.error("Failed to reset modules on login:", err.message);
-                    });
-                } else {
-                    console.log(`[LOGIN] Same company (${companyId}). Triggering update pull...`);
-                    syncService.pullAllData(companyId);
-                }
-            } else if (isSuperAdmin) {
-                // If Super Admin, pull shared data
-                currentLoggedCompany = null; // Super admin has no specific company
-                console.log("Super Admin logged in. Pulling global data...");
-                syncService.pullAllData(null);
+                currentLoggedCompany = companyId;
+                syncService.setCompanyId(companyId);
+                // Trigger pull
+                syncService.pullAllData(companyId);
             }
 
+            // RESOLVE PERMISSIONS LOCALLY (Source of Truth for sidebar)
+            const roleIdForPerms = response.user.role_id || response.user.roleId;
+            const userRoleName = response.user.role;
+            const cid = response.user.company_id || response.user.companyId;
+
+            const permissions = await new Promise((resolvePerms) => {
+                // Try to find role by ID or by Name (within the company)
+                const roleLookupQuery = `
+                    SELECT global_id FROM roles 
+                    WHERE (id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1)))
+                    LIMIT 1
+                `;
+
+                db.get(roleLookupQuery, [roleIdForPerms, roleIdForPerms, userRoleName, cid], (err, roleRow) => {
+                    const roleKey = roleRow ? roleRow.global_id : roleIdForPerms;
+
+                    if (!roleKey) {
+                        console.warn(`[LOGIN] Could not resolve roleKey for role: ${userRoleName}, ID: ${roleIdForPerms}`);
+                        return resolvePerms([]);
+                    }
+
+                    db.all("SELECT * FROM permissions WHERE role_id = ?", [roleKey], (permErr, rows) => {
+                        if (permErr) {
+                            console.error("[LOGIN] Error fetching local permissions:", permErr);
+                            resolvePerms([]);
+                        } else {
+                            const formatted = (rows || []).map(p => ({
+                                id: p.global_id || p.id,
+                                roleId: p.role_id,
+                                module: p.module,
+                                can_view: p.can_view,
+                                can_create: p.can_create,
+                                can_edit: p.can_edit,
+                                can_delete: p.can_delete,
+                                canView: p.can_view === 1 || p.can_view === true
+                            }));
+                            resolvePerms(formatted);
+                        }
+                    });
+                });
+            });
+
+            response.permissions = permissions;
+            console.log(`✓ Attached ${permissions.length} permissions for user ${response.user.username} (Role Key: ${roleIdForPerms})`);
             return response;
         } else {
             cloudError = response.message;
-            console.warn("Cloud login rejected:", cloudError);
         }
     } catch (err) {
         cloudError = err.message;
-        console.error("Cloud login endpoint unreachable or error:", err.message);
     }
 
     // Offline Login Fallback (If cloud failed or rejected)
@@ -247,73 +269,48 @@ ipcMain.handle("login", async (e, credentials) => {
             [credentials.username, credentials.password],
             (err, user) => {
                 if (err || !user) {
-                    // Optimized error reporting: If we had a specific rejection from the cloud, use it.
-                    // Otherwise, provide the generic combined error.
-                    const finalMessage = (cloudError && !cloudError.includes('ECONN') && !cloudError.includes('timeout'))
-                        ? cloudError
-                        : "Invalid credentials or user not found offline. Please check your internet or username/password.";
-
-                    resolve({ success: false, message: finalMessage });
+                    resolve({ success: false, message: cloudError || "Invalid credentials" });
                     return;
                 }
 
-                // Set currentCompanyId first
                 currentCompanyId = user.company_id;
                 syncService.setCompanyId(user.company_id);
 
-                console.log(`[OFFLINE LOGIN] User: ${user.username}, Role: ${user.role}, RoleID: ${user.role_id}, CompanyID: ${user.company_id}`);
+                const cid = user.company_id;
+                db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1))", [user.role_id, user.role_id, user.role, cid], (err, roleRow) => {
+                    const roleKey = roleRow ? roleRow.global_id : user.role_id;
+                    db.all("SELECT * FROM permissions WHERE role_id = ?", [roleKey], (permErr, permissions) => {
+                        const formattedPermissions = (permissions || []).map(p => ({
+                            id: p.global_id || p.id,
+                            roleId: p.role_id,
+                            module: p.module,
+                            can_view: p.can_view,
+                            can_create: p.can_create,
+                            can_edit: p.can_edit,
+                            can_delete: p.can_delete,
+                            canView: p.can_view === 1 || p.can_view === true
+                        }));
 
-                // Fetch permissions for the role using robust lookup (works with both local and global IDs)
-                const permQuery = `
-                    SELECT *, 
-                           can_view as canView, 
-                           can_create as canCreate, 
-                           can_edit as canEdit, 
-                           can_delete as canDelete 
-                    FROM permissions 
-                    WHERE role_id = ? 
-                       OR role_id = (SELECT global_id FROM roles WHERE id = ?)
-                `;
-                db.all(permQuery, [user.role_id, user.role_id], (permErr, permissions) => {
-                    if (permErr) {
-                        console.error("[OFFLINE LOGIN] Error fetching permissions:", permErr);
-                    }
-
-                    console.log(`[OFFLINE LOGIN] Found ${permissions?.length || 0} permissions for role ${user.role_id}`);
-
-                    // Format permissions to match cloud response format
-                    const formattedPermissions = (permissions || []).map(p => ({
-                        id: p.global_id || p.id,
-                        roleId: p.role_id,
-                        module: p.module,
-                        can_view: p.can_view,
-                        can_create: p.can_create,
-                        can_edit: p.can_edit,
-                        can_delete: p.can_delete,
-                        canView: p.can_view === 1,
-                        canCreate: p.can_create === 1,
-                        canEdit: p.can_edit === 1,
-                        canDelete: p.can_delete === 1
-                    }));
-
-                    resolve({
-                        success: true,
-                        user: {
-                            id: user.global_id,
-                            username: user.username,
-                            role: user.role,
-                            fullName: user.fullname,
-                            company_id: user.company_id,
-                            companyId: user.company_id,
-                            role_id: user.role_id
-                        },
-                        permissions: formattedPermissions
+                        resolve({
+                            success: true,
+                            user: {
+                                id: user.global_id,
+                                username: user.username,
+                                role: user.role,
+                                fullName: user.fullname,
+                                company_id: user.company_id,
+                                companyId: user.company_id,
+                                role_id: user.role_id
+                            },
+                            permissions: formattedPermissions
+                        });
                     });
                 });
             }
         );
     });
 });
+
 
 // Companies
 ipcMain.handle("get-companies", async (e, filters = {}) => {
@@ -463,23 +460,27 @@ ipcMain.handle("get-roles", async (e, companyId) => {
 
 ipcMain.handle("get-permissions", (e, roleId) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            SELECT *, 
-                   can_view, 
-                   can_create, 
-                   can_edit, 
-                   can_delete,
-                   can_view as canView, 
-                   can_create as canCreate, 
-                   can_edit as canEdit, 
-                   can_delete as canDelete 
-            FROM permissions 
-            WHERE role_id = ? 
-               OR role_id = (SELECT global_id FROM roles WHERE id = ?)
-        `;
-        db.all(query, [roleId, roleId], (err, rows) => {
-            if (err) resolve([]);
-            else resolve(rows);
+        // Resolve the global_id of the role if an integer ID is passed
+        db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ?", [roleId, roleId], (err, row) => {
+            const targetId = row ? row.global_id : roleId;
+
+            const query = `
+                SELECT *, 
+                       can_view, 
+                       can_create, 
+                       can_edit, 
+                       can_delete,
+                       can_view as canView, 
+                       can_create as canCreate, 
+                       can_edit as canEdit, 
+                       can_delete as canDelete 
+                FROM permissions 
+                WHERE role_id = ? 
+            `;
+            db.all(query, [targetId], (err, rows) => {
+                if (err) resolve([]);
+                else resolve(rows);
+            });
         });
     });
 });
@@ -642,15 +643,10 @@ ipcMain.handle("update-role", async (e, data) => {
                         return resolve({ success: false, message: err.message });
                     }
 
-                    // 2. Update Permissions (Delete all and re-insert is easiest for local update)
-                    // Use global_id if available (for mapped permissions), otherwise we might have issues?
-                    // Permissions table uses role_id. This role_id should be the global_id from role table.
+                    // Find the role's identifier used in permissions table (global_id preferred)
+                    const roleIdentifier = global_id || id;
 
-                    // Find the role's global_id if not passed?
-                    // Assuming frontend passes the correct identifier used in permissions table.
-                    const roleIdentifier = global_id; // Using global_id as the link
-
-                    db.run("DELETE FROM permissions WHERE role_id = ?", [roleIdentifier], (delErr) => {
+                    db.run("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(global_id), String(id)], (delErr) => {
                         if (delErr) {
                             db.run("ROLLBACK");
                             return resolve({ success: false, message: delErr.message });
