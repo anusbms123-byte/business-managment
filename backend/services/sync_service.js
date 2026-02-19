@@ -231,7 +231,12 @@ class SyncService {
                 });
 
                 lookupRecord(table, cloudData).then(async existingRow => {
-                    // CONFLICT HANDLING: Latest Update Wins
+                    // CONFLICT HANDLING: Protect local changes
+                    if (existingRow && existingRow.sync_status === 'pending') {
+                        // console.log(`[SYNC] Protecting pending local record for ${table} ${cloudData.id}. Skipping pull.`);
+                        return resolve();
+                    }
+
                     if (existingRow && existingRow.sync_status !== 'pending') {
                         const cloudUpdated = new Date(cloudData.updatedAt || cloudData.updated_at || 0).getTime();
                         const localUpdated = new Date(existingRow.updated_at || 0).getTime();
@@ -415,22 +420,29 @@ class SyncService {
                                                     [item.id, localReturnId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
                                             }
                                         } else if (table === 'roles' && cloudData.permissions && Array.isArray(cloudData.permissions)) {
-                                            // Use global_id for role_id to ensure permissions can be matched during login
-                                            for (const perm of cloudData.permissions) {
-                                                db.run(`INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                    VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
-                                                    [
-                                                        perm.id,
-                                                        cloudData.id,  // Use global UUID for role_id (not local integer ID)
-                                                        perm.module,
-                                                        perm.canView ? 1 : 0,
-                                                        perm.canCreate ? 1 : 0,
-                                                        perm.canEdit ? 1 : 0,
-                                                        perm.canDelete ? 1 : 0,
-                                                        perm.updatedAt || perm.updated_at
-                                                    ]
-                                                );
-                                            }
+                                            // 1. Clear existing local permissions for this role to avoid duplicates
+                                            // Match by global_id, local ID, or anything else we might have used
+                                            const roleGid = String(cloudData.id);
+                                            db.run("DELETE FROM permissions WHERE role_id = ?", [roleGid], (delErr) => {
+                                                if (delErr) console.error("[SYNC] Error clearing permissions before pull:", delErr);
+
+                                                // 2. Insert fresh permissions from cloud
+                                                for (const perm of cloudData.permissions) {
+                                                    db.run(`INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                        VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
+                                                        [
+                                                            perm.id,
+                                                            roleGid,
+                                                            perm.module,
+                                                            perm.canView ? 1 : 0,
+                                                            perm.canCreate ? 1 : 0,
+                                                            perm.canEdit ? 1 : 0,
+                                                            perm.canDelete ? 1 : 0,
+                                                            perm.updatedAt || perm.updated_at
+                                                        ]
+                                                    );
+                                                }
+                                            });
                                         } else if (table === 'employees' && cloudData.attendances && Array.isArray(cloudData.attendances)) {
                                             for (const att of cloudData.attendances) {
                                                 const normalizedDate = att.date ? att.date.split('T')[0] : null;
@@ -801,10 +813,10 @@ class SyncService {
                     const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
                     payload.permissions = permissions.map(p => ({
                         module: p.module,
-                        canView: p.can_view === 1,
-                        canCreate: p.can_create === 1,
-                        canEdit: p.can_edit === 1,
-                        canDelete: p.can_delete === 1
+                        can_view: p.can_view === 1 ? 1 : 0,
+                        can_create: p.can_create === 1 ? 1 : 0,
+                        can_edit: p.can_edit === 1 ? 1 : 0,
+                        can_delete: p.can_delete === 1 ? 1 : 0
                     }));
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;
@@ -975,13 +987,8 @@ class SyncService {
                     // Update Children references if Global ID changed (e.g. Temp UUID -> Cloud CUID)
                     if (oldGlobalId && oldGlobalId !== globalId) {
                         if (table === 'roles') {
-                            // Update permissions linking to this role
                             db.run("UPDATE permissions SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
-                            // Update users linking to this role
                             db.run("UPDATE users SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
-
-                            // CRITICAL: Also mark permissions as synced because they were pushed nested in the Role
-                            db.run("UPDATE permissions SET global_id = (role_id || '_' || module), sync_status = 'synced' WHERE role_id = ?", [globalId]);
                         } else if (table === 'sales') {
                             db.run("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
                             db.run("UPDATE sale_returns SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
@@ -993,6 +1000,22 @@ class SyncService {
                         } else if (table === 'purchase_returns') {
                             db.run("UPDATE purchase_return_items SET return_id = ? WHERE return_id = ?", [globalId, oldGlobalId]);
                         }
+                    }
+
+                    // ALWAYS mark nested items as synced if the parent was just pushed
+                    // This is critical for edited records where the parent ID didn't change but items were re-inserted locally
+                    if (table === 'roles') {
+                        // Mark permissions as synced, but don't force a bogus global_id if it's missing
+                        // This prevents creating duplicate permission records when the cloud pulls later
+                        db.run("UPDATE permissions SET sync_status = 'synced' WHERE role_id = ?", [globalId]);
+                    } else if (table === 'sales') {
+                        db.run("UPDATE sale_items SET sync_status = 'synced' WHERE sale_id = ?", [globalId]);
+                    } else if (table === 'purchases') {
+                        db.run("UPDATE purchase_items SET sync_status = 'synced' WHERE purchase_id = ?", [globalId]);
+                    } else if (table === 'sale_returns') {
+                        db.run("UPDATE sale_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
+                    } else if (table === 'purchase_returns') {
+                        db.run("UPDATE purchase_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
                     }
 
                     db.run("COMMIT", (commitErr) => {

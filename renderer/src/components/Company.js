@@ -786,13 +786,17 @@ const RolesPermissions = ({ currentUser }) => {
         try {
             if (window.electronAPI) {
                 const data = await window.electronAPI.getRoles(currentUser?.company_id);
-                const rolesWithPerms = await Promise.all((data || []).map(async (role) => ({
-                    ...role,
-                    permissions: await window.electronAPI.getPermissions(role.id) || []
-                })));
+                // Ensure roles have unique IDs for React keys
+                const rolesWithPerms = await Promise.all((data || []).map(async (role) => {
+                    // Use the most specific ID for fetching permissions
+                    const perms = await window.electronAPI.getPermissions(role.global_id || role.id) || [];
+                    return { ...role, permissions: perms };
+                }));
+                console.log("Renders Roles with Perms:", rolesWithPerms.length);
                 setRoles(rolesWithPerms);
             }
         } catch (err) {
+            console.error("Load Roles Error:", err);
             window.alert('Error: ' + err.message);
         }
         setLoading(false);
@@ -806,13 +810,26 @@ const RolesPermissions = ({ currentUser }) => {
                 ...formData,
                 company_id: currentUser?.company_id || currentUser?.companyId
             };
+
+            // Log for visibility
+            console.info("--- SAVING ROLE CONFIGURATION ---");
+            console.log("Role Name:", data.name);
+            console.table(data.permissions.map(p => ({
+                Module: p.module,
+                V: p.can_view, C: p.can_create, E: p.can_edit, D: p.can_delete
+            })));
+
             const result = formData.id
                 ? await window.electronAPI.updateRole(data)
                 : await window.electronAPI.createRole(data);
 
             if (result && result.success) {
+                console.info("✓ ROLE SAVED SUCCESSFULLY");
                 setShowModal(false);
-                await loadRoles();
+                // Wait briefly for DB transaction to fully commit
+                setTimeout(async () => {
+                    await loadRoles();
+                }, 500);
             } else {
                 window.alert('Error: ' + (result?.message || 'Operation failed'));
             }

@@ -462,22 +462,45 @@ ipcMain.handle("get-permissions", (e, roleId) => {
     return new Promise((resolve) => {
         // Resolve the identities of the role for comprehensive matching
         db.get("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ?", [roleId, roleId], (err, row) => {
-            const localId = row ? String(row.id) : String(roleId);
-            const globalId = row ? String(row.global_id) : String(roleId);
+            const localId = row ? String(row.id) : null;
+            const globalId = (row && row.global_id) ? String(row.global_id) : null;
 
-            // Fetch permissions matching either identifier
+            // Build query params dynamically to avoid 'null' string matches
+            const params = [];
+            if (globalId) params.push(globalId);
+            if (localId) params.push(localId);
+
+            if (params.length === 0) return resolve([]);
+
+            const placeholders = params.map(() => "?").join(" OR role_id = ");
             const query = `
-                SELECT *, 
-                       can_view as canView, 
-                       can_create as canCreate, 
-                       can_edit as canEdit, 
-                       can_delete as canDelete 
-                FROM permissions 
-                WHERE role_id = ? OR role_id = ?
+                SELECT module, 
+                       can_view, can_create, can_edit, can_delete
+                FROM (
+                    SELECT * FROM permissions 
+                    WHERE role_id = ${placeholders}
+                    ORDER BY 
+                        CASE WHEN sync_status = 'pending' THEN 0 ELSE 1 END ASC,
+                        updated_at DESC,
+                        id DESC
+                )
+                GROUP BY module
             `;
-            db.all(query, [globalId, localId], (err, rows) => {
-                if (err) resolve([]);
-                else resolve(rows);
+            db.all(query, params, (err, rows) => {
+                if (err) {
+                    console.error("get-permissions Error:", err);
+                    resolve([]);
+                } else {
+                    // Normalize to provide both for compatibility but strictly based on snake_case source
+                    const normalized = rows.map(r => ({
+                        ...r,
+                        canView: r.can_view === 1,
+                        canCreate: r.can_create === 1,
+                        canEdit: r.can_edit === 1,
+                        canDelete: r.can_delete === 1
+                    }));
+                    resolve(normalized);
+                }
             });
         });
     });
@@ -651,11 +674,20 @@ ipcMain.handle("update-role", async (e, data) => {
                     }
 
                     // For permissions, we use global_id if available, otherwise fallback to local integer id
-                    // We need a string representation since role_id in permissions table is TEXT
                     const roleIdentifier = String(global_id || id);
 
-                    // Delete existing permissions for this role
-                    db.run("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(global_id), String(id)], (delErr) => {
+                    // Delete existing permissions: match by global_id, local id, OR any identifier passed
+                    const delParams = [];
+                    if (global_id) delParams.push(String(global_id));
+                    if (id) delParams.push(String(id));
+                    if (data.id && !delParams.includes(String(data.id))) delParams.push(String(data.id));
+
+                    const placeholders = delParams.map(() => "?").join(",");
+                    const delQuery = `DELETE FROM permissions WHERE role_id IN (${placeholders}) OR role_id = ?`;
+                    // Extra safety: also delete by the likely identifier we use for insertion
+                    delParams.push(roleIdentifier);
+
+                    db.run(delQuery, delParams, (delErr) => {
                         if (delErr) {
                             db.run("ROLLBACK");
                             return resolve({ success: false, message: delErr.message });
@@ -667,14 +699,13 @@ ipcMain.handle("update-role", async (e, data) => {
                                                      VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
 
                             permissions.forEach(p => {
-                                // Correctly resolve permission values by checking both snake_case (UI-updated)
-                                // and camelCase (backend-returned) fields.
-                                const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
-                                const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
-                                const e = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
-                                const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
+                                // STRICT MAPPING: Only believe the fields the UI actually sends (snake_case)
+                                const v = (p.can_view == 1 || p.can_view === true) ? 1 : 0;
+                                const c = (p.can_create == 1 || p.can_create === true) ? 1 : 0;
+                                const e = (p.can_edit == 1 || p.can_edit === true) ? 1 : 0;
+                                const d = (p.can_delete == 1 || p.can_delete === true) ? 1 : 0;
 
-                                stmt.run(roleIdentifier, p.module, v ? 1 : 0, c ? 1 : 0, e ? 1 : 0, d ? 1 : 0);
+                                stmt.run(roleIdentifier, p.module, v, c, e, d);
                             });
                             stmt.finalize();
                         }
