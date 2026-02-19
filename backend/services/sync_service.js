@@ -371,8 +371,13 @@ class SyncService {
                         query = `INSERT OR REPLACE INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, notes, payment_date, status, company_id, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`;
                         params = [cloudData.id, localEmpId || cloudData.employeeId, cloudData.month, cloudData.baseSalary, cloudData.bonus, cloudData.overtimeHours, cloudData.overtimePay, cloudData.deductions, cloudData.netSalary, cloudData.notes || '', cloudData.paymentDate, cloudData.status, companyId];
                     } else if (table === 'permissions') {
+                        const v = (cloudData.canView === true || cloudData.can_view === true || cloudData.canView == 1 || cloudData.can_view == 1) ? 1 : 0;
+                        const c = (cloudData.canCreate === true || cloudData.can_create === true || cloudData.canCreate == 1 || cloudData.can_create == 1) ? 1 : 0;
+                        const e = (cloudData.canEdit === true || cloudData.can_edit === true || cloudData.canEdit == 1 || cloudData.can_edit == 1) ? 1 : 0;
+                        const d = (cloudData.canDelete === true || cloudData.can_delete === true || cloudData.canDelete == 1 || cloudData.can_delete == 1) ? 1 : 0;
+
                         query = `INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                        params = [cloudData.id, cloudData.roleId, cloudData.module, cloudData.canView ? 1 : 0, cloudData.canCreate ? 1 : 0, cloudData.canEdit ? 1 : 0, cloudData.canDelete ? 1 : 0, cloudData.updatedAt || cloudData.updated_at];
+                        params = [cloudData.id, cloudData.roleId || cloudData.role_id, cloudData.module, v, c, e, d, cloudData.updatedAt || cloudData.updated_at];
                     }
 
                     if (query) {
@@ -428,16 +433,21 @@ class SyncService {
 
                                                 // 2. Insert fresh permissions from cloud
                                                 for (const perm of cloudData.permissions) {
+                                                    const v = (perm.canView === true || perm.can_view === true || perm.canView == 1 || perm.can_view == 1) ? 1 : 0;
+                                                    const c = (perm.canCreate === true || perm.can_create === true || perm.canCreate == 1 || perm.can_create == 1) ? 1 : 0;
+                                                    const e = (perm.canEdit === true || perm.can_edit === true || perm.canEdit == 1 || perm.can_edit == 1) ? 1 : 0;
+                                                    const d = (perm.canDelete === true || perm.can_delete === true || perm.canDelete == 1 || perm.can_delete == 1) ? 1 : 0;
+
                                                     db.run(`INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
                                                         VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
                                                         [
                                                             perm.id,
                                                             roleGid,
                                                             perm.module,
-                                                            perm.canView ? 1 : 0,
-                                                            perm.canCreate ? 1 : 0,
-                                                            perm.canEdit ? 1 : 0,
-                                                            perm.canDelete ? 1 : 0,
+                                                            v,
+                                                            c,
+                                                            e,
+                                                            d,
                                                             perm.updatedAt || perm.updated_at
                                                         ]
                                                     );
@@ -813,10 +823,15 @@ class SyncService {
                     const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
                     payload.permissions = permissions.map(p => ({
                         module: p.module,
-                        can_view: p.can_view === 1 ? 1 : 0,
-                        can_create: p.can_create === 1 ? 1 : 0,
-                        can_edit: p.can_edit === 1 ? 1 : 0,
-                        can_delete: p.can_delete === 1 ? 1 : 0
+                        canView: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
+                        canCreate: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
+                        canEdit: (p.can_edit === 1 || p.canEdit === 1) ? 1 : 0,
+                        canDelete: (p.can_delete === 1 || p.canDelete === 1) ? 1 : 0,
+                        // Keep snake_case for backward compatibility or if cloud uses both
+                        can_view: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
+                        can_create: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
+                        can_edit: (p.can_edit === 1 || p.canEdit === 1) ? 1 : 0,
+                        can_delete: (p.can_delete === 1 || p.canDelete === 1) ? 1 : 0
                     }));
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;
