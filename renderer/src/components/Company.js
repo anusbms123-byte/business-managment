@@ -72,7 +72,12 @@ const Company = () => {
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
-                        if ((tab.id === 'helpline' || tab.id === 'requests' || tab.id === 'broadcast') && !isSuperAdmin) return null;
+                        // FOR SUPER ADMIN: Only show Profile (as 'Companies'), Users, and Roles
+                        if (isSuperAdmin && !['profile', 'users', 'roles'].includes(tab.id)) return null;
+
+                        // FOR REGULAR USERS: Filter baseline
+                        if (!isSuperAdmin && (['helpline', 'requests', 'broadcast'].includes(tab.id))) return null;
+
                         const label = (tab.id === 'profile' && isSuperAdmin) ? 'Companies' : tab.label;
                         return (
                             <button
@@ -103,7 +108,7 @@ const Company = () => {
                 <div className="p-8 flex-1">
                     {activeTab === 'profile' && <CompanyProfile currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'users' && <UserManagement currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
-                    {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} />}
+                    {activeTab === 'roles' && <RolesPermissions currentUser={currentUser} isSuperAdmin={isSuperAdmin} />}
                     {activeTab === 'requests' && isSuperAdmin && <CompanyRequests currentUser={currentUser} onAction={fetchCounts} />}
                     {activeTab === 'helpline' && isSuperAdmin && <SupportRequests onAction={fetchCounts} />}
                     {activeTab === 'broadcast' && isSuperAdmin && <SystemBroadcast />}
@@ -773,23 +778,31 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
 };
 
 // ============ ROLES & PERMISSIONS ============
-const RolesPermissions = ({ currentUser }) => {
+const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     const [roles, setRoles] = useState([]);
+    const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [selectedCompany, setSelectedCompany] = useState('all');
     const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });
 
-    useEffect(() => { loadRoles(); }, [currentUser]);
+    useEffect(() => { loadRoles(); }, [currentUser, isSuperAdmin]);
 
     const loadRoles = async () => {
         setLoading(true);
         try {
             if (window.electronAPI) {
-                const data = await window.electronAPI.getRoles(currentUser?.company_id);
+                // Super Admin: load all companies first
+                if (isSuperAdmin) {
+                    const comps = await window.electronAPI.getCompanies() || [];
+                    setCompanies(comps);
+                }
+
+                const companyId = isSuperAdmin ? null : (currentUser?.company_id || currentUser?.companyId);
+                const data = await window.electronAPI.getRoles(companyId);
                 // Ensure roles have unique IDs for React keys
                 const rolesWithPerms = await Promise.all((data || []).map(async (role) => {
-                    // Use the most specific ID for fetching permissions
                     const perms = await window.electronAPI.getPermissions(role.global_id || role.id) || [];
                     return { ...role, permissions: perms };
                 }));
@@ -807,14 +820,19 @@ const RolesPermissions = ({ currentUser }) => {
         e.preventDefault();
         setSaving(true);
         try {
+            // For Super Admin creating role, use selectedCompany or formData.company_id
+            let targetCompanyId = formData.company_id || currentUser?.company_id || currentUser?.companyId;
+            if (isSuperAdmin && formData.target_company_id) {
+                targetCompanyId = formData.target_company_id;
+            }
+
             const data = {
                 ...formData,
-                company_id: currentUser?.company_id || currentUser?.companyId
+                company_id: targetCompanyId
             };
 
-            // Log for visibility
             console.info("--- SAVING ROLE CONFIGURATION ---");
-            console.log("Role Name:", data.name);
+            console.log("Role Name:", data.name, "Company:", data.company_id);
             console.table(data.permissions.map(p => ({
                 Module: p.module,
                 V: p.can_view, C: p.can_create, E: p.can_edit, D: p.can_delete
@@ -827,10 +845,7 @@ const RolesPermissions = ({ currentUser }) => {
             if (result && result.success) {
                 console.info("✓ ROLE SAVED SUCCESSFULLY");
                 setShowModal(false);
-                // Wait briefly for DB transaction to fully commit
-                setTimeout(async () => {
-                    await loadRoles();
-                }, 500);
+                setTimeout(async () => { await loadRoles(); }, 500);
             } else {
                 window.alert('Error: ' + (result?.message || 'Operation failed'));
             }
@@ -850,7 +865,6 @@ const RolesPermissions = ({ currentUser }) => {
     const openModal = (role = null) => {
         let initialPerms = [];
         if (role) {
-            // Merge existing permissions with the full list of modules to ensure new modules like 'returns' can be toggled
             initialPerms = MODULES.map(m => {
                 const existing = (role.permissions || []).find(p => p.module === m.key);
                 return existing ? { ...existing } : { module: m.key, can_view: 0, can_create: 0, can_edit: 0, can_delete: 0 };
@@ -858,7 +872,7 @@ const RolesPermissions = ({ currentUser }) => {
             setFormData({ ...role, permissions: initialPerms });
         } else {
             initialPerms = MODULES.map(m => ({ module: m.key, can_view: 1, can_create: 0, can_edit: 0, can_delete: 0 }));
-            setFormData({ name: '', description: '', permissions: initialPerms });
+            setFormData({ name: '', description: '', permissions: initialPerms, target_company_id: isSuperAdmin ? (selectedCompany !== 'all' ? selectedCompany : '') : '' });
         }
         setShowModal(true);
     };
@@ -872,60 +886,152 @@ const RolesPermissions = ({ currentUser }) => {
 
     if (loading) return <LoadingSpinner />;
 
+    // Filter roles: exclude Super Admin, and filter by selectedCompany for Super Admin
+    const filteredRoles = roles.filter(r => {
+        if (['super admin', 'super_admin'].includes(r.name?.toLowerCase())) return false;
+        if (isSuperAdmin && selectedCompany !== 'all') {
+            const roleCid = r.company_id || r.companyId;
+            if (selectedCompany === 'system') return r.is_system === 1 || r.isSystem === true;
+            return roleCid === selectedCompany || (!roleCid && (r.is_system === 1 || r.isSystem === true));
+        }
+        return true;
+    });
+
+    // Group roles: system roles first, then by company
+    const systemRoles = filteredRoles.filter(r => (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId));
+    const companyRoles = filteredRoles.filter(r => !((r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId)));
+
+    // Get company name helper
+    const getCompanyName = (cid) => {
+        const comp = companies.find(c => c.id === cid || c.global_id === cid);
+        return comp?.name || 'Unknown Company';
+    };
+
+    // For non-super-admin, just show all filtered roles in a flat grid
+    const renderRoleCard = (role) => (
+        <div key={role.id || role.global_id} className="group relative bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
+                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                    <Shield size={24} />
+                </div>
+                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                    {canEdit('settings') && (
+                        <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                            <Edit2 size={16} />
+                        </button>
+                    )}
+                    {canDelete('settings') && !role.is_system && !role.isSystem && (
+                        <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
+                            <Trash2 size={16} />
+                        </button>
+                    )}
+                </div>
+            </div>
+            <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors uppercase tracking-tight">{role.name}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>
+            {isSuperAdmin && (role.company_id || role.companyId) && (
+                <p className="text-[10px] text-blue-500 font-bold mt-1 uppercase tracking-widest">
+                    <Building2 size={10} className="inline mr-1" />{getCompanyName(role.company_id || role.companyId)}
+                </p>
+            )}
+            <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+                <span className={`px-2.5 py-1 rounded text-[10px] font-bold border uppercase tracking-tight ${(role.is_system || role.isSystem) ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                    {(role.is_system || role.isSystem) ? 'System Core' : 'Custom Config'}
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
+                    <Check size={14} className="text-emerald-500" />
+                    {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} Modules
+                </span>
+            </div>
+        </div>
+    );
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Control Roles</h2>
                     <p className="text-sm text-slate-500">Define custom permission sets for your team members</p>
                 </div>
-                {canCreate('settings') && (
-                    <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
-                )}
+                <div className="flex items-center gap-3">
+                    {isSuperAdmin && (
+                        <select
+                            value={selectedCompany}
+                            onChange={e => setSelectedCompany(e.target.value)}
+                            className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                        >
+                            <option value="all">All Companies</option>
+                            <option value="system">System Roles Only</option>
+                            {companies.map(c => (
+                                <option key={c.id || c.global_id} value={c.global_id || c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    )}
+                    {canCreate('settings') && (
+                        <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
+                    )}
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map((role) => (
-                    <div key={role.id} className="group relative bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                                <Shield size={24} />
-                            </div>
-                            <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                                {canEdit('settings') && (
-                                    <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                                        <Edit2 size={16} />
-                                    </button>
-                                )}
-                                {canDelete('settings') && (
-                                    <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                        <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors uppercase tracking-tight">{role.name}</h3>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>
-                        <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
-                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold border uppercase tracking-tight ${role.is_system ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                {role.is_system ? 'System Core' : 'Custom Config'}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
-                                <Check size={14} className="text-emerald-500" />
-                                {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} Modules
-                            </span>
-                        </div>
-                    </div>
-                ))}
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <StatCard title="Total Roles" value={filteredRoles.length} icon={Shield} color="blue" />
+                <StatCard title="System Roles" value={filteredRoles.filter(r => r.is_system || r.isSystem).length} icon={Shield} color="purple" />
+                <StatCard title="Custom Roles" value={filteredRoles.filter(r => !r.is_system && !r.isSystem).length} icon={Shield} color="emerald" />
             </div>
+
+            {/* System Roles Section (only for super admin or if present) */}
+            {systemRoles.length > 0 && isSuperAdmin && selectedCompany === 'all' && (
+                <div>
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                        <div className="w-1 h-3.5 bg-indigo-600 rounded-full"></div>
+                        Global System Roles (Available to All Companies)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {systemRoles.map(renderRoleCard)}
+                    </div>
+                </div>
+            )}
+
+            {/* Company Roles */}
+            {companyRoles.length > 0 && (
+                <div>
+                    {isSuperAdmin && selectedCompany === 'all' && (
+                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                            Company Roles
+                        </h3>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {companyRoles.map(renderRoleCard)}
+                    </div>
+                </div>
+            )}
+
+            {filteredRoles.length === 0 && (
+                <EmptyState message="No roles found for selected filter" icon={Shield} />
+            )}
 
             {showModal && (
-                <Modal title={formData.id ? 'Modify Access matrix' : 'Define New Permission Tier'} onClose={() => setShowModal(false)} size="lg">
+                <Modal title={formData.id ? 'Modify Access Matrix' : 'Define New Permission Tier'} onClose={() => setShowModal(false)} size="lg">
                     <form onSubmit={handleSave} className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormInput label="Administrative Title" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Sales Manager" />
                             <FormInput label="Functional Description" value={formData.description} onChange={v => setFormData({ ...formData, description: v })} placeholder="What can this role do?" />
                         </div>
+
+                        {/* Super Admin: select which company this role belongs to */}
+                        {isSuperAdmin && !formData.id && (
+                            <FormSelect
+                                label="Assign Role to Organization"
+                                required
+                                value={formData.target_company_id}
+                                onChange={v => setFormData({ ...formData, target_company_id: v })}
+                                options={companies.map(c => ({ value: c.global_id || c.id, label: c.name }))}
+                                placeholder="Select organization"
+                                icon={Building2}
+                            />
+                        )}
 
                         <div>
                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">

@@ -435,7 +435,28 @@ function initSchema() {
       total REAL
     )`);
 
-    // Seed logic (kept basic for now)
+    // Seed logic: Ensure Super Admin and default system roles exist
+    db.serialize(() => {
+      const superAdminGid = 'system-super-admin';
+      db.get("SELECT id FROM roles WHERE global_id = ?", [superAdminGid], (err, row) => {
+        if (!row) {
+          console.log("[SEED] Creating System Super Admin role...");
+          db.run(
+            "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'synced', 1, CURRENT_TIMESTAMP)",
+            [superAdminGid, 'Super Admin', 'System-wide administrative access', null]
+          );
+
+          const superAdminModules = ['users', 'roles', 'settings'];
+          superAdminModules.forEach(mod => {
+            db.run(
+              "INSERT OR IGNORE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, 1, 1, 1, 1, 'synced', CURRENT_TIMESTAMP)",
+              ['perm-' + superAdminGid + '-' + mod, superAdminGid, mod]
+            );
+          });
+        }
+      });
+    });
+
     runMigrations();
   });
 }

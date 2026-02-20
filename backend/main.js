@@ -411,9 +411,15 @@ ipcMain.handle("create-company", async (e, data) => {
 
                 // Create default roles for this company: Admin, Manager, Cashier
                 const defaultRoles = [
-                    { name: 'Admin', desc: 'Full access to company data' },
-                    { name: 'Manager', desc: 'Management and reporting access' },
-                    { name: 'Cashier', desc: 'Sales and basic access' }
+                    { name: 'Admin', desc: 'Full access to company data', type: 'full' },
+                    { name: 'Manager', desc: 'Management and reporting access', type: 'mid' },
+                    { name: 'Cashier', desc: 'Sales and basic access', type: 'retail' }
+                ];
+
+                const modules = [
+                    'dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory',
+                    'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting',
+                    'users', 'roles', 'settings', 'backup'
                 ];
 
                 for (const role of defaultRoles) {
@@ -422,7 +428,38 @@ ipcMain.handle("create-company", async (e, data) => {
                         db.run(
                             "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)",
                             [roleGid, role.name, role.desc, tempId],
-                            resRole
+                            async function (err) {
+                                if (err) return resRole();
+
+                                // Insert permissions for this role
+                                for (const mod of modules) {
+                                    let v = 0, c = 0, e = 0, d = 0;
+                                    if (role.type === 'full') {
+                                        v = 1; c = 1; e = 1; d = 1;
+                                    } else if (role.type === 'mid') {
+                                        v = 1;
+                                        if (['sales', 'customers', 'products', 'expenses'].includes(mod)) {
+                                            c = 1; e = 1;
+                                        }
+                                    } else if (role.type === 'retail') {
+                                        if (['dashboard', 'sales', 'customers', 'products'].includes(mod)) {
+                                            v = 1;
+                                            if (mod === 'sales' || mod === 'customers') c = 1;
+                                        }
+                                    }
+
+                                    const permGid = randomUUID();
+                                    await new Promise(rp => {
+                                        db.run(
+                                            `INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+                                            [permGid, roleGid, mod, v, c, e, d],
+                                            rp
+                                        );
+                                    });
+                                }
+                                resRole();
+                            }
                         );
                     });
                 }

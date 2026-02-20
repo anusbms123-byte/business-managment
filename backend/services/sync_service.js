@@ -656,15 +656,16 @@ class SyncService {
                 delete payload.global_id;
 
                 // Multi-tenancy Mapping (company_id -> companyId)
+                const isSuperAdminUser = table === 'users' && (record.role === 'Super Admin' || record.role === 'SuperAdmin' || record.role === 'super_admin');
+                const isSystemRole = table === 'roles' && (record.is_system === 1 || record.name === 'Super Admin');
+
                 if (record.company_id) {
                     // CRITICAL: Resolve the local company_id (integer) to its cloud global_id (CUID)
-                    // If the company_id itself looks like a global_id (non-empty string, not a small integer), use it directly.
                     const isGlobalFormat = record.company_id && isNaN(record.company_id) && String(record.company_id).length > 5;
 
                     if (isGlobalFormat) {
                         payload.companyId = String(record.company_id);
                     } else {
-                        // Query the companies table to find the global_id for this local ID
                         const companyRow = await new Promise((res) => {
                             db.get("SELECT global_id FROM companies WHERE id = ? OR global_id = ?", [record.company_id, record.company_id], (err, row) => res(row));
                         });
@@ -672,36 +673,20 @@ class SyncService {
                     }
                 }
 
-                // Final Fallback to session context if still missing
-                if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined' || payload.companyId === '') {
+                // If it's a Super Admin or System Role, FORCIBLY set companyId to null (Global context)
+                if (isSuperAdminUser || isSystemRole || table === 'companies') {
+                    payload.companyId = null;
+                } else if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined' || payload.companyId === '') {
+                    // Final Fallback for regular records only
                     payload.companyId = (this.currentCompanyId && this.currentCompanyId !== 'undefined' && this.currentCompanyId !== 'null') ? this.currentCompanyId : null;
                 }
 
                 delete payload.company_id;
 
-                // If companyId is null and it's not a global table, we might log a warning
-                const finalCompanyId = payload.companyId;
-                // If it's STILL missing after local and global check, log it
-                if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined') {
-                    // Skip logging for companies table which doesn't need companyId
-                    if (table !== 'companies') {
-                        console.warn(`[SYNC] Record in ${table} (ID: ${localId}) is missing companyId. Mapping from record/session failed.`);
-                    }
-                }
-
-                delete payload.company_id;
-
-                // Handle Super Admin and Company exceptions
-                if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined') {
-                    const isSuperAdmin = record.role === 'Super Admin' || record.role === 'SuperAdmin';
-                    if (table === 'companies' || (table === 'users' && isSuperAdmin)) {
-                        delete payload.companyId;
-                    } else if (table === 'roles' && record.is_system === 1) {
-                        continue; // System roles don't need sync
-                    } else {
-                        console.error(`[SYNC SKIP] ${table} ID ${localId} has no company context. Cannot sync.`);
-                        continue;
-                    }
+                // Final check to prevent syncing non-global records without a company
+                if (!payload.companyId && table !== 'companies' && !isSuperAdminUser && !isSystemRole) {
+                    console.error(`[SYNC SKIP] ${table} ID ${localId} has no company context. Cannot sync.`);
+                    continue;
                 }
 
                 console.log(`[SYNC] Pushing ${table} (ID: ${localId}, GID: ${globalId}) to cloud...`);
