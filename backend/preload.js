@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     updateRole: (data) => ipcRenderer.invoke('update-role', data),
     deleteRole: (id) => ipcRenderer.invoke('delete-role', id),
     getPermissions: (roleId) => ipcRenderer.invoke('get-permissions', roleId),
+    createPermission: (data) => ipcRenderer.invoke('create-permission', data),
+    updatePermission: (data) => ipcRenderer.invoke('update-permission', data),
+    deletePermission: (id) => ipcRenderer.invoke('delete-permission', id),
 
     // Inventory APIs
     getBrands: (companyId) => ipcRenderer.invoke('get-brands', companyId),
