@@ -105,6 +105,7 @@ async function recordDeletion(tableName, globalId) {
 
 // Global variable to track currently logged-in company for auto-sync (undefined = not logged in, null = Super Admin)
 let currentLoggedCompany = undefined;
+let currentLoggedRole = null;
 
 // Setup Background Sync Timer (Every 4 minutes)
 // - Pushes pending local changes to cloud
@@ -202,12 +203,20 @@ ipcMain.handle("login", async (e, credentials) => {
             }
 
             // Set global currentCompanyId for sync and other handlers
-            currentCompanyId = companyId;
-            currentLoggedCompany = companyId; // null for Super Admin, ID for others
-            syncService.setCompanyId(companyId);
-            // Trigger pull immediately after login
-            syncService.pullAllData(companyId);
-
+            currentLoggedRole = response.user.role;
+            if (isSuperAdmin) {
+                currentCompanyId = null;
+                currentLoggedCompany = null; // null represents Global/SuperAdmin context in sync
+                syncService.setCompanyId(null);
+                // Trigger full cloud pull for Super Admin
+                syncService.pullAllData(null);
+            } else if (companyId) {
+                currentCompanyId = companyId;
+                currentLoggedCompany = companyId;
+                syncService.setCompanyId(companyId);
+                // Trigger pull for this company
+                syncService.pullAllData(companyId);
+            }
             // ATTACH PERMISSIONS
             // Prefer permissions returned by cloud if available, otherwise resolve locally
             if (response.permissions && response.permissions.length > 0) {
@@ -318,10 +327,27 @@ ipcMain.handle("login", async (e, credentials) => {
 
 // Companies
 ipcMain.handle("get-companies", async (e, filters = {}) => {
-    const { search, referralType } = filters;
+    // Only Super Admin can see all companies
+    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+    if (!isSuperAdmin && currentLoggedCompany !== undefined) {
+        // If not super admin, non-global users shouldn't even call this, but let's be safe
+        // Only return their own company
+        if (currentLoggedCompany) {
+            filters.id = currentLoggedCompany;
+        } else {
+            return [];
+        }
+    }
+
+    const { search, referralType, id } = filters;
     let query = "SELECT *, is_active as isActive FROM companies";
     let conditions = ["(sync_status != 'deleted' OR sync_status IS NULL)"];
     let params = [];
+
+    if (id) {
+        conditions.push("(id = ? OR global_id = ?)");
+        params.push(id, id);
+    }
 
     if (search) {
         conditions.push("(name LIKE ? OR email LIKE ?)");
@@ -378,14 +404,33 @@ ipcMain.handle("create-company", async (e, data) => {
             `INSERT INTO companies (global_id, name, address, phone, email, tax_no, referral_code, sync_status, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, name, address, phone, email, tax_no, referral_code],
-            function (err) {
+            async function (err) {
                 if (err) return resolve({ success: false, message: err.message });
 
-                // Also create default system roles locally for this company if needed
-                // (Usually pulled from cloud, but for offline-first, we might want local defaults)
+                const companyId = this.lastID;
+
+                // Create default roles for this company: Admin, Manager, Cashier
+                const defaultRoles = [
+                    { name: 'Admin', desc: 'Full access to company data' },
+                    { name: 'Manager', desc: 'Management and reporting access' },
+                    { name: 'Cashier', desc: 'Sales and basic access' }
+                ];
+
+                for (const role of defaultRoles) {
+                    const roleGid = randomUUID();
+                    await new Promise((resRole) => {
+                        db.run(
+                            "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)",
+                            [roleGid, role.name, role.desc, tempId],
+                            resRole
+                        );
+                    });
+                }
 
                 syncService.syncPendingRecords('companies', '/companies');
-                resolve({ success: true, id: this.lastID, global_id: tempId, message: "Company created locally" });
+                syncService.syncPendingRecords('roles', '/roles');
+
+                resolve({ success: true, id: companyId, global_id: tempId, message: "Company and default roles created locally" });
             }
         );
     });
@@ -425,9 +470,19 @@ ipcMain.handle("delete-company", async (e, id) => {
 
 // Users - LOCAL FIRST
 ipcMain.handle("get-users", async (e, companyId) => {
-    const ids = await resolveCompanyIds(companyId);
+    // If no companyId provided, only Super Admin can see all users
+    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+
+    let targetCid = companyId;
+    if (!targetCid && !isSuperAdmin) {
+        targetCid = currentLoggedCompany;
+    }
+
+    const ids = targetCid ? await resolveCompanyIds(targetCid) : { localId: null, globalId: null };
+
     return new Promise((resolve, reject) => {
-        if (!companyId) {
+        if (!targetCid) {
+            // Super Admin global view
             db.all("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE sync_status != 'deleted' OR sync_status IS NULL", (err, rows) => {
                 if (err) resolve([]);
                 else resolve(rows);
