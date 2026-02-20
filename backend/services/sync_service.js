@@ -1087,67 +1087,78 @@ class SyncService {
                 }
                 const oldGlobalId = row.global_id;
 
-                db.serialize(() => {
-                    db.run("BEGIN TRANSACTION");
+                // Check for collision: Is another local record already using this cloud GID?
+                db.get(`SELECT id FROM ${table} WHERE global_id = ? AND id != ?`, [globalId, localId], (collErr, collision) => {
 
-                    // Update Parent Record
-                    db.run(
-                        `UPDATE ${table} SET sync_status = 'synced', global_id = ? WHERE id = ?`,
-                        [globalId, localId],
-                        (updateErr) => {
-                            if (updateErr) {
-                                db.run("ROLLBACK");
-                                return reject(updateErr);
-                            }
-                        }
-                    );
+                    db.serialize(() => {
+                        db.run("BEGIN TRANSACTION");
 
-                    // Update Children references if Global ID changed (e.g. Temp UUID -> Cloud CUID)
-                    if (oldGlobalId && oldGlobalId !== globalId) {
-                        if (table === 'roles') {
-                            // First handle potential UNIQUE(role_id, module) conflicts in permissions
-                            db.run("DELETE FROM permissions WHERE role_id = ? AND module IN (SELECT module FROM permissions WHERE role_id = ?)", [globalId, oldGlobalId]);
-                            db.run("UPDATE permissions SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
-                            db.run("UPDATE users SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
-                        } else if (table === 'sales') {
-                            db.run("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
-                            db.run("UPDATE sale_returns SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
-                        } else if (table === 'purchases') {
-                            db.run("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [globalId, oldGlobalId]);
-                            db.run("UPDATE purchase_returns SET purchase_id = ? WHERE purchase_id = ?", [globalId, oldGlobalId]);
-                        } else if (table === 'sale_returns') {
-                            db.run("UPDATE sale_return_items SET return_id = ? WHERE return_id = ?", [globalId, oldGlobalId]);
-                        } else if (table === 'purchase_returns') {
-                            db.run("UPDATE purchase_return_items SET return_id = ? WHERE return_id = ?", [globalId, oldGlobalId]);
-                        }
-                    }
-
-                    // ALWAYS mark nested items as synced if the parent was just pushed
-                    // This is critical for edited records where the parent ID didn't change but items were re-inserted locally
-                    if (table === 'roles') {
-                        // Mark permissions as synced, but don't force a bogus global_id if it's missing
-                        // This prevents creating duplicate permission records when the cloud pulls later
-                        db.run("UPDATE permissions SET sync_status = 'synced' WHERE role_id = ?", [globalId]);
-                    } else if (table === 'sales') {
-                        db.run("UPDATE sale_items SET sync_status = 'synced' WHERE sale_id = ?", [globalId]);
-                    } else if (table === 'purchases') {
-                        db.run("UPDATE purchase_items SET sync_status = 'synced' WHERE purchase_id = ?", [globalId]);
-                    } else if (table === 'sale_returns') {
-                        db.run("UPDATE sale_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
-                    } else if (table === 'purchase_returns') {
-                        db.run("UPDATE purchase_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
-                    }
-
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
-                            console.error("[SYNC] Commit failed in markSynced:", commitErr);
-                            reject(commitErr);
+                        if (collision) {
+                            console.log(`[SYNC] Merging duplicate ${table}: ID ${localId} -> ${collision.id} (GID: ${globalId})`);
+                            db.run(`DELETE FROM ${table} WHERE id = ?`, [localId]);
                         } else {
-                            if (oldGlobalId !== globalId) {
-                                console.log(`[SYNC] Updated ${table} ID ${localId} global_id: ${oldGlobalId} -> ${globalId}`);
-                            }
-                            resolve();
+                            // Update Parent Record
+                            db.run(
+                                `UPDATE ${table} SET sync_status = 'synced', global_id = ? WHERE id = ?`,
+                                [globalId, localId],
+                                (updateErr) => {
+                                    if (updateErr) {
+                                        db.run("ROLLBACK");
+                                        console.error(`[SYNC] Parent update failed for ${table} ${localId}:`, updateErr.message);
+                                        return reject(updateErr);
+                                    }
+                                }
+                            );
                         }
+
+                        // Update Children references if Global ID changed (e.g. Temp UUID -> Cloud CUID)
+                        if (oldGlobalId && oldGlobalId !== globalId) {
+                            if (table === 'roles') {
+                                // First handle potential UNIQUE(role_id, module) conflicts in permissions
+                                db.run("DELETE FROM permissions WHERE role_id = ? AND module IN (SELECT module FROM permissions WHERE role_id = ?)", [globalId, oldGlobalId]);
+                                db.run("UPDATE permissions SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
+                                db.run("UPDATE users SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
+                            } else if (table === 'sales') {
+                                db.run("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
+                                db.run("UPDATE sale_returns SET sale_id = ? WHERE sale_id = ?", [globalId, oldGlobalId]);
+                            } else if (table === 'purchases') {
+                                db.run("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [globalId, oldGlobalId]);
+                                db.run("UPDATE purchase_returns SET purchase_id = ? WHERE purchase_id = ?", [globalId, oldGlobalId]);
+                            } else if (table === 'sale_returns') {
+                                db.run("UPDATE sale_return_items SET return_id = ? WHERE return_id = ?", [globalId, oldGlobalId]);
+                            } else if (table === 'purchase_returns') {
+                                db.run("UPDATE purchase_return_items SET return_id = ? WHERE return_id = ?", [globalId, oldGlobalId]);
+                            }
+                        }
+
+                        // ALWAYS mark nested items as synced if the parent was just pushed
+                        // This is critical for edited records where the parent ID didn't change but items were re-inserted locally
+                        if (table === 'roles') {
+                            // Mark permissions as synced, but don't force a bogus global_id if it's missing
+                            // This prevents creating duplicate permission records when the cloud pulls later
+                            db.run("UPDATE permissions SET sync_status = 'synced' WHERE role_id = ?", [globalId]);
+                        } else if (table === 'sales') {
+                            db.run("UPDATE sale_items SET sync_status = 'synced' WHERE sale_id = ?", [globalId]);
+                        } else if (table === 'purchases') {
+                            db.run("UPDATE purchase_items SET sync_status = 'synced' WHERE purchase_id = ?", [globalId]);
+                        } else if (table === 'sale_returns') {
+                            db.run("UPDATE sale_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
+                        } else if (table === 'purchase_returns') {
+                            db.run("UPDATE purchase_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
+                        }
+
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) {
+                                console.error("[SYNC] Commit failed in markSynced:", commitErr);
+                                db.run("ROLLBACK");
+                                reject(commitErr);
+                            } else {
+                                if (oldGlobalId !== globalId) {
+                                    console.log(`[SYNC] ${collision ? 'Merged' : 'Updated'} ${table} ID ${localId} -> ${globalId}`);
+                                }
+                                resolve();
+                            }
+                        });
                     });
                 });
             });
