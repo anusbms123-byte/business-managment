@@ -429,6 +429,11 @@ app.post('/api/roles', async (req, res) => {
     try {
         const { name, description, companyId, isSystem, permissions } = req.body;
 
+        console.log(`[ROLE CREATE] Receiving role '${name}' with ${permissions ? permissions.length : 0} permissions.`);
+        if (permissions && permissions.length > 0) {
+            console.log(`[ROLE CREATE] Module list: ${permissions.map(p => p.module).join(', ')}`);
+        }
+
         const role = await prisma.role.create({
             data: {
                 name,
@@ -438,10 +443,10 @@ app.post('/api/roles', async (req, res) => {
                 permissions: {
                     create: (permissions || []).map(p => ({
                         module: p.module,
-                        canView: p.canView === true || p.canView === 1,
-                        canCreate: p.canCreate === true || p.canCreate === 1,
-                        canEdit: p.canEdit === true || p.canEdit === 1,
-                        canDelete: p.canDelete === true || p.canDelete === 1
+                        canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                        canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                        canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                        canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
                     }))
                 }
             },
@@ -456,6 +461,11 @@ app.post('/api/roles', async (req, res) => {
 app.put('/api/roles/:id', async (req, res) => {
     try {
         const { name, description, isSystem, permissions } = req.body;
+
+        console.log(`[ROLE UPDATE] Updating role ${req.params.id} with ${permissions ? permissions.length : 0} permissions.`);
+        if (permissions && permissions.length > 0) {
+            console.log(`[ROLE UPDATE] Module list: ${permissions.map(p => p.module).join(', ')}`);
+        }
 
         await prisma.$transaction(async (tx) => {
             // 1. Update role details
@@ -472,16 +482,20 @@ app.put('/api/roles/:id', async (req, res) => {
             if (permissions && Array.isArray(permissions)) {
                 await tx.permission.deleteMany({ where: { roleId: req.params.id } });
 
-                for (const p of permissions) {
-                    await tx.permission.create({
-                        data: {
-                            roleId: req.params.id,
-                            module: p.module,
-                            canView: p.canView === true || p.canView === 1,
-                            canCreate: p.canCreate === true || p.canCreate === 1,
-                            canEdit: p.canEdit === true || p.canEdit === 1,
-                            canDelete: p.canDelete === true || p.canDelete === 1
-                        }
+                // Use createMany for better performance and simplicity
+                // Note: createMany is supported on Postgres and recent SQLite versions with Prisma
+                const permsData = permissions.map(p => ({
+                    roleId: req.params.id,
+                    module: p.module,
+                    canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                    canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                    canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                    canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
+                }));
+
+                if (permsData.length > 0) {
+                    await tx.permission.createMany({
+                        data: permsData
                     });
                 }
             }

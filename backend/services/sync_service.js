@@ -825,13 +825,13 @@ class SyncService {
                         module: p.module,
                         canView: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
                         canCreate: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
-                        canEdit: (p.can_edit === 1 || p.canEdit === 1) ? 1 : 0,
-                        canDelete: (p.can_delete === 1 || p.canDelete === 1) ? 1 : 0,
+                        canEdit: (p.can_edit === 1 || p.canEdit == 1) ? 1 : 0,
+                        canDelete: (p.can_delete === 1 || p.canDelete == 1) ? 1 : 0,
                         // Keep snake_case for backward compatibility or if cloud uses both
                         can_view: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
                         can_create: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
-                        can_edit: (p.can_edit === 1 || p.canEdit === 1) ? 1 : 0,
-                        can_delete: (p.can_delete === 1 || p.canDelete === 1) ? 1 : 0
+                        can_edit: (p.can_edit === 1 || p.canEdit == 1) ? 1 : 0,
+                        can_delete: (p.can_delete === 1 || p.canDelete == 1) ? 1 : 0
                     }));
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;

@@ -1,0 +1,7 @@
+Role: employee, ID: 226, GID: cmltt9efs0001szosks9l9t7a
+Total Perms: 5
+ - ID: 1303, RoleID: cmltt9efs0001szosks9l9t7a, Module: dashboard, Sync: synced
+ - ID: 1304, RoleID: cmltt9efs0001szosks9l9t7a, Module: products, Sync: synced
+ - ID: 1305, RoleID: cmltt9efs0001szosks9l9t7a, Module: returns, Sync: synced
+ - ID: 1306, RoleID: cmltt9efs0001szosks9l9t7a, Module: purchase, Sync: synced
+ - ID: 1307, RoleID: cmltt9efs0001szosks9l9t7a, Module: sales, Sync: synced

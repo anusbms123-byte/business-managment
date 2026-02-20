@@ -623,22 +623,33 @@ ipcMain.handle("create-role", async (e, data) => {
 
                     const roleId = this.lastID;
 
-                    // 2. Insert Permissions
+                    // 2. Insert Permissions (Only Active Modules)
                     if (permissions && permissions.length > 0) {
-                        const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
-                        permissions.forEach(p => {
-                            // Correctly resolve permission values by checking both snake_case (UI-updated) 
-                            // and camelCase (backend-returned) fields.
-                            const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
-                            const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
-                            const e = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
-                            const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
+                        // FILTER: Only save permissions where at least one action is allowed
+                        const activePerms = permissions.filter(p =>
+                            (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ||
+                            (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ||
+                            (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ||
+                            (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true)
+                        );
 
-                            // Always use tempId (UUID) for linking
-                            stmt.run(tempId, p.module, v ? 1 : 0, c ? 1 : 0, e ? 1 : 0, d ? 1 : 0);
-                        });
-                        stmt.finalize();
+                        if (activePerms.length > 0) {
+                            const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+
+                            activePerms.forEach(p => {
+                                // Correctly resolve permission values by checking both snake_case (UI-updated) 
+                                // and camelCase (backend-returned) fields.
+                                const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
+                                const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
+                                const e = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
+                                const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
+
+                                // Always use tempId (UUID) for linking
+                                stmt.run(tempId, p.module, v, c, e, d);
+                            });
+                            stmt.finalize();
+                        }
                     }
 
                     db.run("COMMIT", (commitErr) => {
@@ -693,21 +704,31 @@ ipcMain.handle("update-role", async (e, data) => {
                             return resolve({ success: false, message: delErr.message });
                         }
 
-                        // Re-insert permissions
+                        // Re-insert permissions (Only Active Modules)
                         if (permissions && permissions.length > 0) {
-                            const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+                            // FILTER: Only save permissions where at least one action is allowed
+                            const activePerms = permissions.filter(p =>
+                                (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ||
+                                (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ||
+                                (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ||
+                                (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true)
+                            );
 
-                            permissions.forEach(p => {
-                                // STRICT MAPPING: Only believe the fields the UI actually sends (snake_case)
-                                const v = (p.can_view == 1 || p.can_view === true) ? 1 : 0;
-                                const c = (p.can_create == 1 || p.can_create === true) ? 1 : 0;
-                                const e = (p.can_edit == 1 || p.can_edit === true) ? 1 : 0;
-                                const d = (p.can_delete == 1 || p.can_delete === true) ? 1 : 0;
+                            if (activePerms.length > 0) {
+                                const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                         VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
 
-                                stmt.run(roleIdentifier, p.module, v, c, e, d);
-                            });
-                            stmt.finalize();
+                                activePerms.forEach(p => {
+                                    // Robust Mapping: Check both snake_case and camelCase
+                                    const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
+                                    const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
+                                    const e = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
+                                    const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
+
+                                    stmt.run(roleIdentifier, p.module, v, c, e, d);
+                                });
+                                stmt.finalize();
+                            }
                         }
 
                         db.run("COMMIT", (commitErr) => {
