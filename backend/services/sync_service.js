@@ -1105,6 +1105,8 @@ class SyncService {
                     // Update Children references if Global ID changed (e.g. Temp UUID -> Cloud CUID)
                     if (oldGlobalId && oldGlobalId !== globalId) {
                         if (table === 'roles') {
+                            // First handle potential UNIQUE(role_id, module) conflicts in permissions
+                            db.run("DELETE FROM permissions WHERE role_id = ? AND module IN (SELECT module FROM permissions WHERE role_id = ?)", [globalId, oldGlobalId]);
                             db.run("UPDATE permissions SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
                             db.run("UPDATE users SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);
                         } else if (table === 'sales') {
