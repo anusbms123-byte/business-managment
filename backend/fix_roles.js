@@ -43,7 +43,7 @@ async function fixRoles() {
 
                     // 2. Fix 'Super Admin' role
                     const superAdminGid = 'system-super-admin';
-                    const superAdminModules = ['users', 'roles', 'settings'];
+                    const superAdminModules = ['users', 'roles', 'settings', 'backup'];
 
                     console.log("Ensuring Super Admin has correct restricted permissions...");
 

@@ -126,21 +126,21 @@ const Layout = ({ children, user, permissions, onLogout }) => {
     useEffect(() => {
         console.log("Layout Permissions Prop:", permissions);
 
-        // Filter menu items based on permissions
-        const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin';
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
-
-        if (isSuperAdmin || isAdmin) {
-            // Super Admin and Admins see everything by default
+        if (isAdmin) {
             setVisibleMenuItems(ALL_MENU_ITEMS);
             setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
-        } else if (permissions && permissions.length > 0) {
-            // Filter based on can_view permission for other roles (Cashier, Manager, etc.)
+            return;
+        }
+
+        // Filter menu items based on permissions for ALL roles (now respects DB)
+        if (permissions && permissions.length > 0) {
+            // Filter based on can_view permission
             const allowedKeys = (permissions || [])
-                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true')
+                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true' || p.can_view === '1')
                 .map(p => p.module ? p.module.toLowerCase().trim() : '');
 
-            // Special mappings to ensure compatibility with different naming conventions
+            // Special mappings
             if (allowedKeys.includes('products')) allowedKeys.push('inventory');
             if (allowedKeys.includes('items')) allowedKeys.push('inventory');
             if (allowedKeys.includes('stock')) allowedKeys.push('inventory');
@@ -156,9 +156,8 @@ const Layout = ({ children, user, permissions, onLogout }) => {
             setVisibleSettingsItems(filteredSettings);
 
             console.log("Allowed Keys:", allowedKeys);
-            console.log("Final Visible Menu Keys:", filteredMenu.map(m => m.key));
         } else {
-            console.warn("No permissions found for non-admin user");
+            console.warn("No permissions found for user");
             setVisibleMenuItems([]);
             setVisibleSettingsItems([]);
         }

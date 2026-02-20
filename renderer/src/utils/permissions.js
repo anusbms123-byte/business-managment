@@ -2,10 +2,11 @@ export const checkPermission = (moduleName, action) => {
     const savedPermissions = sessionStorage.getItem('permissions');
     const userRole = sessionStorage.getItem('userRole');
 
-    // Super Admin has all permissions as a safety fallback
-    if (userRole === 'Super Admin' || userRole === 'super_admin') {
+    // Super Admin respects DB, but Admin (Company Owner) has full local access
+    if (userRole === 'Admin' || userRole === 'admin') {
         return true;
     }
+
 
     if (!savedPermissions) return false;
 
@@ -40,12 +41,8 @@ export const canDelete = (module) => checkPermission(module, 'delete');
 
 // Helper to check if module is accessible at all (has any permission)
 export const canAccessModule = (moduleName) => {
-    const userRole = sessionStorage.getItem('userRole');
+    // Super Admin check removed
 
-    // Super Admin can access everything
-    if (userRole === 'Super Admin' || userRole === 'super_admin') {
-        return true;
-    }
 
     return canView(moduleName);
 };

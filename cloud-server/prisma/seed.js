@@ -8,76 +8,47 @@ async function main() {
 
     // 1. Create System Roles & Permissions
     const systemRoles = [
-        { name: 'Super Admin', description: 'Full system access', isSystem: true },
-        { name: 'Admin', description: 'Full company access', isSystem: true },
-        { name: 'Manager', description: 'Management level access', isSystem: true },
-        { name: 'Cashier', description: 'Basic sales access', isSystem: true },
+        { name: 'Super Admin', description: 'Full system management access', isSystem: true, modules: ['users', 'roles', 'settings', 'backup'] },
+        { name: 'Admin', description: 'Full company access', isSystem: true, allModules: true },
+        { name: 'Manager', description: 'Management level access', isSystem: true, allModules: true },
     ];
 
-    const modules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
-        'customers', 'suppliers', 'expenses', 'reports', 'users', 'roles', 'settings', 'hrm', 'accounting', 'returns', 'backup'];
+    const allModules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
+        'customers', 'suppliers', 'expenses', 'reports', 'users', 'roles', 'settings', 'hrm', 'returns', 'backup'];
+
+    console.log('Cleaning up old system roles...');
+    await prisma.role.deleteMany({
+        where: {
+            isSystem: true,
+            companyId: null
+        }
+    });
 
     for (const role of systemRoles) {
-        // Upsert Role (Update if exists, Create if not)
-        // Since we don't have unique name yet (multi-tenant), we look for system roles with same name where companyId is null
-        // But for simplicity in seed, we can just delete old system roles or check existence.
-        // Let's check existence first.
-
-        // Find existing system role
-        let dbRole = await prisma.role.findFirst({
-            where: {
+        console.log(`Creating Role: ${role.name}`);
+        const dbRole = await prisma.role.create({
+            data: {
                 name: role.name,
+                description: role.description,
                 isSystem: true,
-                companyId: null
+                companyId: null // System role
             }
         });
 
-        if (!dbRole) {
-            console.log(`Creating Role: ${role.name}`);
-            dbRole = await prisma.role.create({
-                data: {
-                    name: role.name,
-                    description: role.description,
-                    isSystem: true,
-                    companyId: null // System role
-                }
-            });
-        } else {
-            console.log(`Role ${role.name} already exists. Updating permissions...`);
-        }
-
-        // Delete existing permissions for this role to reset/update
-        await prisma.permission.deleteMany({ where: { roleId: dbRole.id } });
+        const allowedModules = role.allModules ? allModules : (role.modules || []);
 
         // Define Permissions
-        for (const module of modules) {
-            let perms = { view: true, create: false, edit: false, delete: false };
-
-            if (role.name === 'Super Admin' || role.name === 'Admin') {
-                perms = { view: true, create: true, edit: true, delete: true };
-            } else if (role.name === 'Manager') {
-                perms = { view: true, create: true, edit: true, delete: false };
-                if (module === 'users' || module === 'settings' || module === 'roles') {
-                    perms = { view: true, create: false, edit: false, delete: false };
-                }
-            } else if (role.name === 'Cashier') {
-                perms = { view: true, create: false, edit: false, delete: false };
-                if (module === 'sales') {
-                    perms = { view: true, create: true, edit: false, delete: false };
-                }
-                if (module === 'users' || module === 'settings') {
-                    perms = { view: false, create: false, edit: false, delete: false };
-                }
-            }
+        for (const module of allModules) {
+            const isAllowed = allowedModules.includes(module);
 
             await prisma.permission.create({
                 data: {
                     roleId: dbRole.id,
                     module: module,
-                    canView: perms.view,
-                    canCreate: perms.create,
-                    canEdit: perms.edit,
-                    canDelete: perms.delete
+                    canView: isAllowed,
+                    canCreate: isAllowed,
+                    canEdit: isAllowed,
+                    canDelete: isAllowed
                 }
             });
         }
@@ -100,13 +71,15 @@ async function main() {
 
     // 3. Create Super Admin User
     const superAdminRole = await prisma.role.findFirst({ where: { name: 'Super Admin', isSystem: true } });
+    if (!superAdminRole) throw new Error("Super Admin role was not created!");
+
     const passwordHash = await bcrypt.hash('admin123', 10);
 
     const superAdmin = await prisma.user.upsert({
         where: { username: 'superadmin' },
         update: {
-            // Update role if changed
             roleId: superAdminRole.id,
+            companyId: null
         },
         create: {
             username: 'superadmin',
@@ -117,7 +90,7 @@ async function main() {
         }
     });
 
-    console.log(`Super Admin User: ${superAdmin.username} ready.`);
+    console.log(`Super Admin User: ${superAdmin.username} ready with role: ${superAdminRole.name}.`);
 }
 
 main()

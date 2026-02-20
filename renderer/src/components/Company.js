@@ -72,8 +72,8 @@ const Company = () => {
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
-                        // FOR SUPER ADMIN: Only show Profile (as 'Companies'), Users, and Roles
-                        if (isSuperAdmin && !['profile', 'users', 'roles'].includes(tab.id)) return null;
+                        // FOR SUPER ADMIN: Show Profile (Companies), Users, Roles, and Requests
+                        if (isSuperAdmin && !['profile', 'users', 'roles', 'requests'].includes(tab.id)) return null;
 
                         // FOR REGULAR USERS: Filter baseline
                         if (!isSuperAdmin && (['helpline', 'requests', 'broadcast'].includes(tab.id))) return null;
@@ -915,12 +915,12 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                     <Shield size={24} />
                 </div>
                 <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                    {canEdit('settings') && (
+                    {canEdit('roles') && (
                         <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
                             <Edit2 size={16} />
                         </button>
                     )}
-                    {canDelete('settings') && !role.is_system && !role.isSystem && (
+                    {(canDelete('roles') || isSuperAdmin) && (
                         <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
                             <Trash2 size={16} />
                         </button>
