@@ -424,38 +424,75 @@ app.get('/api/roles/:id', async (req, res) => {
     } catch (e) { handleError(res, e); }
 });
 
-// CREATE a new role with permissions
+// CREATE a new role with permissions (or update if same name+companyId already exists)
 app.post('/api/roles', async (req, res) => {
     try {
         const { name, description, companyId, isSystem, permissions } = req.body;
 
-        console.log(`[ROLE CREATE] Receiving role '${name}' with ${permissions ? permissions.length : 0} permissions.`);
+        console.log(`[ROLE CREATE] Receiving role '${name}' with ${permissions ? permissions.length : 0} permissions for company ${companyId}.`);
         if (permissions && permissions.length > 0) {
             console.log(`[ROLE CREATE] Module list: ${permissions.map(p => p.module).join(', ')}`);
         }
 
-        const role = await prisma.role.create({
-            data: {
-                name,
-                description,
-                companyId: companyId || null,
-                isSystem: isSystem === true || isSystem === 1,
-                permissions: {
-                    create: (permissions || []).map(p => ({
-                        module: p.module,
-                        canView: p.canView === true || p.canView === 1 || p.can_view === 1,
-                        canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
-                        canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
-                        canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
-                    }))
-                }
-            },
-            include: { permissions: true }
-        });
+        // Check if role with same name already exists for this company (collision prevention)
+        const existing = companyId ? await prisma.role.findFirst({
+            where: { name: { equals: name, mode: 'insensitive' }, companyId }
+        }) : null;
 
+        let role;
+
+        if (existing) {
+            // Role already exists on cloud — update permissions and return existing ID
+            console.log(`[ROLE CREATE] Role '${name}' already exists on cloud (${existing.id}). Updating permissions instead.`);
+            await prisma.$transaction(async (tx) => {
+                await tx.role.update({
+                    where: { id: existing.id },
+                    data: { description, isSystem: isSystem === true || isSystem === 1 }
+                });
+
+                if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+                    await tx.permission.deleteMany({ where: { roleId: existing.id } });
+                    await tx.permission.createMany({
+                        data: permissions.map(p => ({
+                            roleId: existing.id,
+                            module: p.module,
+                            canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                            canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                            canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                            canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
+                        }))
+                    });
+                }
+            });
+
+            role = await prisma.role.findUnique({ where: { id: existing.id }, include: { permissions: true } });
+        } else {
+            // No existing role — create fresh
+            const permsData = (permissions || []).map(p => ({
+                module: p.module,
+                canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
+            }));
+
+            role = await prisma.role.create({
+                data: {
+                    name,
+                    description,
+                    companyId: companyId || null,
+                    isSystem: isSystem === true || isSystem === 1,
+                    permissions: { create: permsData }
+                },
+                include: { permissions: true }
+            });
+        }
+
+        console.log(`[ROLE CREATE] ✓ Role '${name}' saved with ID: ${role.id}, permissions: ${role.permissions.length}`);
         res.json({ success: true, id: role.id, ...role });
     } catch (e) { handleError(res, e); }
 });
+
 
 // UPDATE a role and replace its permissions
 app.put('/api/roles/:id', async (req, res) => {

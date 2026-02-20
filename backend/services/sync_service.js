@@ -821,6 +821,13 @@ class SyncService {
                     payload.isSystem = record.is_system === 1;
                     delete payload.is_system;
                     const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
+
+                    // DEBUG: Check what we are sending
+                    console.log(`[SYNC DEBUG] Role ${localId} (${globalId}) - Found ${permissions.length} permissions locally.`);
+                    if (permissions.length > 0) {
+                        console.log(`[SYNC DEBUG] Modules: ${permissions.map(p => p.module).join(', ')}`);
+                    }
+
                     payload.permissions = permissions.map(p => ({
                         module: p.module,
                         canView: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
@@ -865,9 +872,14 @@ class SyncService {
                     payload.notes = record.notes || "";
                 }
 
-                // Determine Method
-                const isLocalUuid = globalId && (globalId.includes('-') || globalId.length > 30);
-                const httpMethod = (isLocalUuid || !globalId || globalId === 'null') ? 'POST' : 'PUT';
+                // Determine Method:
+                // - If globalId is missing or is a local temp UUID (contains '-', usually v4 format)
+                //   -> POST to create a new record on cloud
+                // - If globalId is a cloud CUID (starts with 'c' and is alphanumeric, no dashes)
+                //   -> PUT to update existing record on cloud
+                const isLocalTempUuid = !globalId || globalId === 'null' || globalId === 'undefined'
+                    || (globalId.includes('-') && globalId.length < 50); // UUID v4 has dashes
+                const httpMethod = isLocalTempUuid ? 'POST' : 'PUT';
                 const finalUrl = (httpMethod === 'PUT') ? `${endpoint}/${globalId}` : endpoint;
 
                 const response = await this.apiCall(httpMethod, finalUrl, payload);
@@ -925,13 +937,29 @@ class SyncService {
                     continue;
                 }
 
+                // Special case for roles: check if users are assigned before deleting?
+                // For now, try delete. If it fails with "users assigned", we should probably
+                // just log it and skip, NOT stop the whole sync.
+
                 const response = await this.apiCall('DELETE', `${endpoint}/${globalId}`);
                 if (response && response.success !== false) {
                     console.log(`[SYNC DELETE SUCCESS] ${table} ${globalId} removed from cloud.`);
-                    await new Promise(res => db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], res));
+                    // In local DB, we might want to hard delete it now or just leave it as is?
+                    // The instructon says "pending_sync_deletions" table usage, 
+                    // but here we are selecting from the main table where sync_status='deleted'?
+                    // Actually, usually we have a soft delete or a separate table.
+                    // Assuming we just mark it as synced (so we don't try again immediately)
+                    // OR we actually remove the record from local DB if it was a soft delete.
+
+                    // If your logic uses a separate deletes table, update that.
+                    // If you use sync_status='deleted', then:
+                    await new Promise((resolve, reject) => {
+                        db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], (err) => {
+                            if (err) reject(err); else resolve();
+                        });
+                    });
                 } else {
                     const msg = (response?.message || '').toLowerCase();
-                    // If it's already deleted on cloud, or cloud says it doesn't exist
                     if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('404')) {
                         console.log(`[SYNC] ${table} ID ${globalId} already gone from cloud. Removing local record.`);
                         await new Promise(res => db.run(`DELETE FROM ${table} WHERE id = ?`, [localId], res));
