@@ -202,13 +202,11 @@ ipcMain.handle("login", async (e, credentials) => {
             }
 
             // Set global currentCompanyId for sync and other handlers
-            if (companyId) {
-                currentCompanyId = companyId;
-                currentLoggedCompany = companyId;
-                syncService.setCompanyId(companyId);
-                // Trigger pull
-                syncService.pullAllData(companyId);
-            }
+            currentCompanyId = companyId;
+            currentLoggedCompany = companyId; // null for Super Admin, ID for others
+            syncService.setCompanyId(companyId);
+            // Trigger pull immediately after login
+            syncService.pullAllData(companyId);
 
             // ATTACH PERMISSIONS
             // Prefer permissions returned by cloud if available, otherwise resolve locally
@@ -277,7 +275,10 @@ ipcMain.handle("login", async (e, credentials) => {
                 }
 
                 currentCompanyId = user.company_id;
+                currentLoggedCompany = user.company_id;
                 syncService.setCompanyId(user.company_id);
+                // Trigger pull even for offline login (if internet is available)
+                syncService.pullAllData(user.company_id);
 
                 const cid = user.company_id;
                 db.get("SELECT global_id FROM roles WHERE id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1))", [user.role_id, user.role_id, user.role, cid], (err, roleRow) => {
@@ -648,7 +649,7 @@ async function resolveCompanyIds(cid) {
 ipcMain.handle("create-role", async (e, data) => {
     return new Promise((resolve) => {
         const { name, description, permissions, companyId, company_id } = data;
-        const cid = companyId || company_id;
+        let cid = companyId || company_id || currentCompanyId;
         const tempId = randomUUID(); // Generate temp ID for local linking
 
         db.serialize(() => {

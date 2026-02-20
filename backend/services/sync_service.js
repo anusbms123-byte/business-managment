@@ -14,7 +14,7 @@ class SyncService {
     }
 
     setCompanyId(id) {
-        if (id) this.currentCompanyId = String(id);
+        this.currentCompanyId = id ? String(id) : null;
     }
 
     async apiCall(method, endpoint, data = null, params = null) {
@@ -56,7 +56,19 @@ class SyncService {
             targetCompanyId = this.currentCompanyId;
         }
 
-        console.log(`[SYNC] Starting full data pull for Company ID: ${targetCompanyId || 'Global (Super Admin)'}`);
+        // Resolve Local ID to Global ID if necessary
+        if (targetCompanyId && !isNaN(targetCompanyId)) {
+            const companyRow = await new Promise((res) => {
+                db.get("SELECT global_id FROM companies WHERE id = ?", [targetCompanyId], (err, row) => res(row));
+            });
+            if (companyRow?.global_id) {
+                targetCompanyId = companyRow.global_id;
+            }
+        }
+
+        console.log(`\n[SYNC] -----------------------------------------`);
+        console.log(`[SYNC] Starting data pull for: ${targetCompanyId || 'Global (Super Admin)'}`);
+        console.log(`[SYNC] -----------------------------------------\n`);
 
         try {
             // Priority order for pulling data
@@ -92,7 +104,7 @@ class SyncService {
                     const endpointParam = entity.endpoint;
                     const url = `${baseUrl}${endpointParam}`;
 
-                    // console.log(`[SYNC] Pulling ${entity.table} from ${url}`);
+                    process.stdout.write(`[SYNC] Pulling ${entity.table}... `);
                     const response = await axios.get(url);
                     const records = response.data;
 
@@ -105,14 +117,15 @@ class SyncService {
                     await new Promise(resolve => setTimeout(resolve, 100));
 
                     if (Array.isArray(records)) {
-                        console.log(`Pulling ${records.length} records for ${entity.table}...`);
+                        console.log(`Done (${records.length} records)`);
                         for (const record of records) {
-                            await this.upsertLocalRecord(entity.table, record);
+                            await this.upsertLocalRecord(entity.table, record, targetCompanyId);
                         }
-                    } else if (typeof records === 'object') {
-                        // Single object response (e.g., /companies/:id)
-                        console.log(`Pulling single record for ${entity.table}...`);
-                        await this.upsertLocalRecord(entity.table, records);
+                    } else if (records && typeof records === 'object') {
+                        console.log(`Done (1 record)`);
+                        await this.upsertLocalRecord(entity.table, records, targetCompanyId);
+                    } else {
+                        console.log(`Done (0 records)`);
                     }
                 } catch (e) {
                     // console.error(`Failed to pull ${entity.table} from ${entity.endpoint}:`, e.message);
@@ -188,7 +201,7 @@ class SyncService {
         });
     }
 
-    async upsertLocalRecord(table, cloudData) {
+    async upsertLocalRecord(table, cloudData, passedCompanyId = null) {
         return new Promise((resolve, reject) => {
             // CRITICAL: Check if this record was intentionally deleted locally
             db.get(`SELECT id FROM pending_sync_deletions WHERE table_name = ? AND global_id = ?`, [table, cloudData.id], (delErr, delRow) => {
@@ -196,7 +209,8 @@ class SyncService {
                     return resolve();
                 }
 
-                const companyId = cloudData.companyId || cloudData.company_id;
+                // Use cloudData value if present, otherwise fallback to the company we're pulling for
+                let companyId = cloudData.companyId || cloudData.company_id || passedCompanyId;
 
                 // Robust Lookup to prevent duplicates
                 const lookupRecord = (table, cloudData) => new Promise((resolve) => {
@@ -391,39 +405,51 @@ class SyncService {
                                         if (table === 'sales' && cloudData.items && Array.isArray(cloudData.items)) {
                                             const localSaleId = await this.resolveLocalId('sales', cloudData.id);
                                             if (!localSaleId) return;
-                                            for (const item of cloudData.items) {
-                                                const localProductId = await this.resolveLocalId('products', item.productId || item.product?.global_id);
-                                                db.run(`INSERT OR REPLACE INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
-                                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                                    [item.id, localSaleId, localProductId || item.productId, item.quantity, item.price, item.total]);
-                                            }
+                                            db.run(`DELETE FROM sale_items WHERE sale_id = ? OR sale_id = ?`, [String(localSaleId), String(cloudData.id)], (delErr) => {
+                                                for (const item of cloudData.items) {
+                                                    this.resolveLocalId('products', item.productId || item.product?.global_id).then(localProductId => {
+                                                        db.run(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) 
+                                                            VALUES (?, ?, ?, ?, ?, ?)`,
+                                                            [item.id, localSaleId, localProductId || item.productId, item.quantity, item.price, item.total]);
+                                                    });
+                                                }
+                                            });
                                         } else if (table === 'purchases' && cloudData.items && Array.isArray(cloudData.items)) {
                                             const localPurchaseId = await this.resolveLocalId('purchases', cloudData.id);
                                             if (!localPurchaseId) return;
-                                            for (const item of cloudData.items) {
-                                                const localProductId = await this.resolveLocalId('products', item.productId || item.product?.global_id);
-                                                db.run(`INSERT OR REPLACE INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
-                                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                                    [item.id, localPurchaseId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
-                                            }
+                                            db.run(`DELETE FROM purchase_items WHERE purchase_id = ? OR purchase_id = ?`, [String(localPurchaseId), String(cloudData.id)], (delErr) => {
+                                                for (const item of cloudData.items) {
+                                                    this.resolveLocalId('products', item.productId || item.product?.global_id).then(localProductId => {
+                                                        db.run(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) 
+                                                            VALUES (?, ?, ?, ?, ?, ?)`,
+                                                            [item.id, localPurchaseId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
+                                                    });
+                                                }
+                                            });
                                         } else if (table === 'sale_returns' && cloudData.items && Array.isArray(cloudData.items)) {
                                             const localReturnId = await this.resolveLocalId('sale_returns', cloudData.id);
                                             if (!localReturnId) return;
-                                            for (const item of cloudData.items) {
-                                                const localProductId = await this.resolveLocalId('products', item.productId || item.product?.global_id);
-                                                db.run(`INSERT OR REPLACE INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
-                                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                                    [item.id, localReturnId, localProductId || item.productId, item.quantity, item.price, item.total]);
-                                            }
+                                            db.run(`DELETE FROM sale_return_items WHERE return_id = ? OR return_id = ?`, [String(localReturnId), String(cloudData.id)], (delErr) => {
+                                                for (const item of cloudData.items) {
+                                                    this.resolveLocalId('products', item.productId || item.product?.global_id).then(localProductId => {
+                                                        db.run(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) 
+                                                            VALUES (?, ?, ?, ?, ?, ?)`,
+                                                            [item.id, localReturnId, localProductId || item.productId, item.quantity, item.price, item.total]);
+                                                    });
+                                                }
+                                            });
                                         } else if (table === 'purchase_returns' && cloudData.items && Array.isArray(cloudData.items)) {
                                             const localReturnId = await this.resolveLocalId('purchase_returns', cloudData.id);
                                             if (!localReturnId) return;
-                                            for (const item of cloudData.items) {
-                                                const localProductId = await this.resolveLocalId('products', item.productId || item.product?.global_id);
-                                                db.run(`INSERT OR REPLACE INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
-                                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                                    [item.id, localReturnId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
-                                            }
+                                            db.run(`DELETE FROM purchase_return_items WHERE return_id = ? OR return_id = ?`, [String(localReturnId), String(cloudData.id)], (delErr) => {
+                                                for (const item of cloudData.items) {
+                                                    this.resolveLocalId('products', item.productId || item.product?.global_id).then(localProductId => {
+                                                        db.run(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) 
+                                                            VALUES (?, ?, ?, ?, ?, ?)`,
+                                                            [item.id, localReturnId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
+                                                    });
+                                                }
+                                            });
                                         } else if (table === 'roles' && cloudData.permissions && Array.isArray(cloudData.permissions)) {
                                             // Clear ALL existing local permissions for this role using ALL possible identifiers
                                             // (role might have been stored with temp UUID before sync, or with cloud CUID after sync)
@@ -470,6 +496,16 @@ class SyncService {
                                                     [att.id, cloudData.id, normalizedDate, att.status, att.checkIn, att.checkOut, companyId]
                                                 );
                                             }
+                                        } else if (table === 'accounts' && cloudData.transactions && Array.isArray(cloudData.transactions)) {
+                                            const localAccountId = await this.resolveLocalId('accounts', cloudData.id);
+                                            if (!localAccountId) return;
+                                            db.run(`DELETE FROM transactions WHERE account_id = ? OR account_id = ?`, [String(localAccountId), String(cloudData.id)], (delErr) => {
+                                                for (const t of cloudData.transactions) {
+                                                    db.run(`INSERT INTO transactions (global_id, account_id, date, description, debit, credit) 
+                                                        VALUES (?, ?, ?, ?, ?, ?)`,
+                                                        [t.id, localAccountId, t.date, t.description, t.debit, t.credit]);
+                                                }
+                                            });
                                         }
                                     };
                                     await handleNestedItems();
@@ -878,7 +914,7 @@ class SyncService {
                     }));
 
 
-                    
+
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;
                     payload.isActive = record.is_active === 1;
