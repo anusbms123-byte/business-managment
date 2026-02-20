@@ -430,11 +430,7 @@ app.post('/api/roles', async (req, res) => {
         const { name, description, companyId, isSystem, permissions } = req.body;
 
         console.log(`[ROLE CREATE] Receiving role '${name}' with ${permissions ? permissions.length : 0} permissions for company ${companyId}.`);
-        if (permissions && permissions.length > 0) {
-            console.log(`[ROLE CREATE] Module list: ${permissions.map(p => p.module).join(', ')}`);
-        }
 
-        // Check if role with same name already exists for this company (collision prevention)
         const existing = companyId ? await prisma.role.findFirst({
             where: { name: { equals: name, mode: 'insensitive' }, companyId }
         }) : null;
@@ -442,72 +438,76 @@ app.post('/api/roles', async (req, res) => {
         let role;
 
         if (existing) {
-            // Role already exists on cloud — update permissions and return existing ID
-            console.log(`[ROLE CREATE] Role '${name}' already exists on cloud (${existing.id}). Updating permissions instead.`);
+            console.log(`[ROLE CREATE] Role '${name}' already exists on cloud (${existing.id}). Updating.`);
             await prisma.$transaction(async (tx) => {
                 await tx.role.update({
                     where: { id: existing.id },
                     data: { description, isSystem: isSystem === true || isSystem === 1 }
                 });
 
-                if (permissions && Array.isArray(permissions) && permissions.length > 0) {
-                    await tx.permission.deleteMany({ where: { roleId: existing.id } });
-                    await tx.permission.createMany({
-                        data: permissions.map(p => ({
-                            roleId: existing.id,
+                if (permissions && Array.isArray(permissions)) {
+                    // Try to update or create permissions individually to maintain references
+                    for (const p of permissions) {
+                        const pId = p.id || p.global_id;
+                        const data = {
                             module: p.module,
                             canView: p.canView === true || p.canView === 1 || p.can_view === 1,
                             canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
                             canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
-                            canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
-                        }))
-                    });
+                            canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1,
+                        };
+
+                        if (pId) {
+                            await tx.permission.upsert({
+                                where: { id: pId },
+                                create: { id: pId, roleId: existing.id, ...data },
+                                update: data
+                            });
+                        } else {
+                            await tx.permission.create({
+                                data: { roleId: existing.id, ...data }
+                            });
+                        }
+                    }
                 }
             });
-
             role = await prisma.role.findUnique({ where: { id: existing.id }, include: { permissions: true } });
         } else {
-            // No existing role — create fresh
-            const permsData = (permissions || []).map(p => ({
-                module: p.module,
-                canView: p.canView === true || p.canView === 1 || p.can_view === 1,
-                canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
-                canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
-                canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
-            }));
-
+            // Fresh create
             role = await prisma.role.create({
                 data: {
                     name,
                     description,
                     companyId: companyId || null,
                     isSystem: isSystem === true || isSystem === 1,
-                    permissions: { create: permsData }
+                    permissions: {
+                        create: (permissions || []).map(p => ({
+                            id: p.id || p.global_id,
+                            module: p.module,
+                            canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                            canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                            canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                            canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1,
+                        }))
+                    }
                 },
                 include: { permissions: true }
             });
         }
 
-        console.log(`[ROLE CREATE] ✓ Role '${name}' saved with ID: ${role.id}, permissions: ${role.permissions.length}`);
         res.json({ success: true, id: role.id, ...role });
     } catch (e) { handleError(res, e); }
 });
 
-
-// UPDATE a role and replace its permissions
+// UPDATE a role and its referenced permissions
 app.put('/api/roles/:id', async (req, res) => {
     try {
         const { name, description, isSystem, permissions } = req.body;
-
-        console.log(`[ROLE UPDATE] Updating role ${req.params.id} with ${permissions ? permissions.length : 0} permissions.`);
-        if (permissions && permissions.length > 0) {
-            console.log(`[ROLE UPDATE] Module list: ${permissions.map(p => p.module).join(', ')}`);
-        }
+        const roleId = req.params.id;
 
         await prisma.$transaction(async (tx) => {
-            // 1. Update role details
             await tx.role.update({
-                where: { id: req.params.id },
+                where: { id: roleId },
                 data: {
                     name,
                     description,
@@ -515,30 +515,93 @@ app.put('/api/roles/:id', async (req, res) => {
                 }
             });
 
-            // 2. Replace permissions (delete old, insert new)
             if (permissions && Array.isArray(permissions)) {
-                await tx.permission.deleteMany({ where: { roleId: req.params.id } });
+                // To be robust, we delete permissions that aren't in the incoming list for this role
+                const incomingIds = permissions.map(p => p.id || p.global_id).filter(Boolean);
+                await tx.permission.deleteMany({
+                    where: {
+                        roleId,
+                        id: { notIn: incomingIds }
+                    }
+                });
 
-                // Use createMany for better performance and simplicity
-                // Note: createMany is supported on Postgres and recent SQLite versions with Prisma
-                const permsData = permissions.map(p => ({
-                    roleId: req.params.id,
-                    module: p.module,
-                    canView: p.canView === true || p.canView === 1 || p.can_view === 1,
-                    canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
-                    canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
-                    canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1
-                }));
+                for (const p of permissions) {
+                    const pId = p.id || p.global_id;
+                    const data = {
+                        module: p.module,
+                        canView: p.canView === true || p.canView === 1 || p.can_view === 1,
+                        canCreate: p.canCreate === true || p.canCreate === 1 || p.can_create === 1,
+                        canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
+                        canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1,
+                    };
 
-                if (permsData.length > 0) {
-                    await tx.permission.createMany({
-                        data: permsData
-                    });
+                    if (pId) {
+                        await tx.permission.upsert({
+                            where: { id: pId },
+                            create: { id: pId, roleId, ...data },
+                            update: data
+                        });
+                    } else {
+                        await tx.permission.create({
+                            data: { roleId, ...data }
+                        });
+                    }
                 }
             }
         });
 
         res.json({ success: true, changes: 1 });
+    } catch (e) { handleError(res, e); }
+});
+
+// STANDALONE PERMISSIONS API
+app.get('/api/permissions', async (req, res) => {
+    try {
+        const { roleId } = req.query;
+        const where = roleId ? { roleId } : {};
+        const perms = await prisma.permission.findMany({ where });
+        res.json(perms);
+    } catch (e) { handleError(res, e); }
+});
+
+app.post('/api/permissions', async (req, res) => {
+    try {
+        const { roleId, module, canView, canCreate, canEdit, canDelete, id } = req.body;
+        const perm = await prisma.permission.create({
+            data: {
+                id: id || undefined,
+                roleId,
+                module,
+                canView: !!canView,
+                canCreate: !!canCreate,
+                canEdit: !!canEdit,
+                canDelete: !!canDelete
+            }
+        });
+        res.json({ success: true, id: perm.id });
+    } catch (e) { handleError(res, e); }
+});
+
+app.put('/api/permissions/:id', async (req, res) => {
+    try {
+        const { canView, canCreate, canEdit, canDelete } = req.body;
+        await prisma.permission.update({
+            where: { id: req.params.id },
+            data: {
+                canView: canView !== undefined ? !!canView : undefined,
+                canCreate: canCreate !== undefined ? !!canCreate : undefined,
+                canEdit: canEdit !== undefined ? !!canEdit : undefined,
+                canDelete: canDelete !== undefined ? !!canDelete : undefined,
+            }
+        });
+        res.json({ success: true });
+    } catch (e) { handleError(res, e); }
+});
+
+app.delete('/api/permissions/:id', async (req, res) => {
+    try {
+        await prisma.permission.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
     } catch (e) { handleError(res, e); }
 });
 

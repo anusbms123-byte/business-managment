@@ -829,6 +829,7 @@ class SyncService {
                     }
 
                     payload.permissions = permissions.map(p => ({
+                        id: p.global_id || p.id,
                         module: p.module,
                         canView: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
                         canCreate: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
@@ -840,6 +841,9 @@ class SyncService {
                         can_edit: (p.can_edit === 1 || p.canEdit == 1) ? 1 : 0,
                         can_delete: (p.can_delete === 1 || p.canDelete == 1) ? 1 : 0
                     }));
+
+
+                    
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;
                     payload.isActive = record.is_active === 1;

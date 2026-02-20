@@ -460,12 +460,10 @@ ipcMain.handle("get-roles", async (e, companyId) => {
 
 ipcMain.handle("get-permissions", (e, roleId) => {
     return new Promise((resolve) => {
-        // Resolve the identities of the role for comprehensive matching
         db.get("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ?", [roleId, roleId], (err, row) => {
             const localId = row ? String(row.id) : null;
             const globalId = (row && row.global_id) ? String(row.global_id) : null;
 
-            // Build query params dynamically to avoid 'null' string matches
             const params = [];
             if (globalId) params.push(globalId);
             if (localId) params.push(localId);
@@ -474,25 +472,18 @@ ipcMain.handle("get-permissions", (e, roleId) => {
 
             const placeholders = params.map(() => "?").join(" OR role_id = ");
             const query = `
-                SELECT module, 
+                SELECT id, global_id, module, 
                        can_view, can_create, can_edit, can_delete
-                FROM (
-                    SELECT * FROM permissions 
-                    WHERE role_id = ${placeholders}
-                    ORDER BY 
-                        CASE WHEN sync_status = 'pending' THEN 0 ELSE 1 END ASC,
-                        updated_at DESC,
-                        id DESC
-                )
-                GROUP BY module
+                FROM permissions 
+                WHERE role_id = ${placeholders}
+                ORDER BY module ASC
             `;
             db.all(query, params, (err, rows) => {
                 if (err) {
                     console.error("get-permissions Error:", err);
                     resolve([]);
                 } else {
-                    // Normalize to provide both for compatibility but strictly based on snake_case source
-                    const normalized = rows.map(r => ({
+                    const normalized = (rows || []).map(r => ({
                         ...r,
                         canView: r.can_view === 1,
                         canCreate: r.can_create === 1,
@@ -503,6 +494,49 @@ ipcMain.handle("get-permissions", (e, roleId) => {
                 }
             });
         });
+    });
+});
+
+ipcMain.handle("create-permission", async (e, data) => {
+    return new Promise((resolve) => {
+        const { role_id, module, can_view, can_create, can_edit, can_delete } = data;
+        const tempId = randomUUID();
+        const v = (can_view === true || can_view == 1) ? 1 : 0;
+        const c = (can_create === true || can_create == 1) ? 1 : 0;
+        const ex = (can_edit === true || can_edit == 1) ? 1 : 0;
+        const d = (can_delete === true || can_delete == 1) ? 1 : 0;
+
+        db.run(
+            `INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, role_id, module, v, c, ex, d],
+            function (err) {
+                if (err) return resolve({ success: false, message: err.message });
+                syncService.syncPendingRecords('roles', '/roles');
+                resolve({ success: true, id: this.lastID, global_id: tempId });
+            }
+        );
+    });
+});
+
+ipcMain.handle("update-permission", async (e, data) => {
+    return new Promise((resolve) => {
+        const { id, can_view, can_create, can_edit, can_delete } = data;
+        const v = (can_view === true || can_view == 1) ? 1 : 0;
+        const c = (can_create === true || can_create == 1) ? 1 : 0;
+        const ex = (can_edit === true || can_edit == 1) ? 1 : 0;
+        const d = (can_delete === true || can_delete == 1) ? 1 : 0;
+
+        db.run(
+            `UPDATE permissions SET can_view=?, can_create=?, can_edit=?, can_delete=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+             WHERE id=? OR global_id=?`,
+            [v, c, ex, d, id, id],
+            function (err) {
+                if (err) return resolve({ success: false, message: err.message });
+                syncService.syncPendingRecords('roles', '/roles');
+                resolve({ success: true });
+            }
+        );
     });
 });
 
@@ -626,10 +660,11 @@ ipcMain.handle("create-role", async (e, data) => {
                     // 2. Insert ALL Permissions (ALL 15 modules - not just active ones)
                     // This ensures local and cloud always have the complete permission matrix
                     if (permissions && permissions.length > 0) {
-                        const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+                        const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at, global_id) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`);
 
                         permissions.forEach(p => {
+                            const pId = randomUUID();
                             // Resolve permission values checking both snake_case and camelCase
                             const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
                             const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
@@ -637,7 +672,7 @@ ipcMain.handle("create-role", async (e, data) => {
                             const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
 
                             // Always use tempId (UUID) for linking
-                            stmt.run(tempId, p.module, v, c, ex, d);
+                            stmt.run(tempId, p.module, v, c, ex, d, pId);
                         });
                         stmt.finalize();
                         console.log(`[ROLE CREATE] Saved ${permissions.length} permission rows for role '${name}'`);
@@ -650,7 +685,7 @@ ipcMain.handle("create-role", async (e, data) => {
                         }
                         // Trigger sync
                         syncService.syncPendingRecords('roles', '/roles');
-                        resolve({ success: true, id: roleId, global_id: tempId, message: "Role created successfully" });
+                        resolve({ success: true, id: roleId, global_id: tempId, message: "Role created successfully with separate permission references." });
                     });
                 }
             );
@@ -698,10 +733,11 @@ ipcMain.handle("update-role", async (e, data) => {
 
                             // 3. Re-insert ALL permissions (ALL 15 modules - full matrix)
                             if (permissions && permissions.length > 0) {
-                                const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                         VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+                                const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at, global_id) 
+                                                         VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`);
 
                                 permissions.forEach(p => {
+                                    const pId = p.global_id || p.id || randomUUID();
                                     // Robust: check both snake_case and camelCase
                                     const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
                                     const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
@@ -709,7 +745,7 @@ ipcMain.handle("update-role", async (e, data) => {
                                     const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
 
                                     // Use globalId as the role_id for permissions (so sync can find them)
-                                    stmt.run(globalId, p.module, v, c, ex, d);
+                                    stmt.run(globalId, p.module, v, c, ex, d, pId);
                                 });
                                 stmt.finalize();
                                 console.log(`[ROLE UPDATE] Saved ${permissions.length} permission rows for role '${name}' (role_id: ${globalId})`);
@@ -722,7 +758,7 @@ ipcMain.handle("update-role", async (e, data) => {
                                 }
                                 // Trigger background sync
                                 syncService.syncPendingRecords('roles', '/roles');
-                                resolve({ success: true, message: "Role updated successfully" });
+                                resolve({ success: true, message: "Role and referenced permissions updated successfully." });
                             });
                         });
                     }
