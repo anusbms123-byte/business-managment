@@ -130,26 +130,15 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin';
         const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role === 'Admin';
 
-        if (isSuperAdmin) {
-            // Super Admin only sees Company & Users and Backup
-            setVisibleMenuItems([
-                { key: 'users', icon: UserCog, label: 'Company & Users', path: '/company' },
-                { key: 'backup', icon: HardDrive, label: 'Backup & Restore', path: '/backup' }
-            ]);
-            setVisibleSettingsItems([]);
+        if (isSuperAdmin || isAdmin) {
+            // Super Admin and Admins see everything by default
+            setVisibleMenuItems(ALL_MENU_ITEMS);
+            setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
         } else if (permissions && permissions.length > 0) {
-            // Filter based on can_view permission
+            // Filter based on can_view permission for other roles (Cashier, Manager, etc.)
             const allowedKeys = (permissions || [])
                 .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true')
                 .map(p => p.module ? p.module.toLowerCase().trim() : '');
-
-            // Admins get everything by default if no specific exclusions, but let's be strict
-            if (isAdmin && allowedKeys.length === 0) {
-                // Initial state for admin if permissions not yet loaded or empty
-                setVisibleMenuItems(ALL_MENU_ITEMS);
-                setVisibleSettingsItems(SETTINGS_MENU_ITEMS);
-                return;
-            }
 
             // Special mappings to ensure compatibility with different naming conventions
             if (allowedKeys.includes('products')) allowedKeys.push('inventory');

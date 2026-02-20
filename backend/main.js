@@ -210,50 +210,53 @@ ipcMain.handle("login", async (e, credentials) => {
                 syncService.pullAllData(companyId);
             }
 
-            // RESOLVE PERMISSIONS LOCALLY (Source of Truth for sidebar)
-            const roleIdForPerms = response.user.role_id || response.user.roleId;
-            const userRoleName = response.user.role;
-            const cid = response.user.company_id || response.user.companyId;
+            // ATTACH PERMISSIONS
+            // Prefer permissions returned by cloud if available, otherwise resolve locally
+            if (response.permissions && response.permissions.length > 0) {
+                console.log(`✓ Using ${response.permissions.length} permissions directly from cloud response.`);
+            } else {
+                const roleIdForPerms = response.user.role_id || response.user.roleId;
+                const userRoleName = response.user.role;
+                const cid = response.user.company_id || response.user.companyId;
 
-            const permissions = await new Promise((resolvePerms) => {
-                // Try to find role by ID or by Name (within the company)
-                const roleLookupQuery = `
-                    SELECT global_id FROM roles 
-                    WHERE (id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1)))
-                    LIMIT 1
-                `;
+                const localPermissions = await new Promise((resolvePerms) => {
+                    const roleLookupQuery = `
+                        SELECT global_id FROM roles 
+                        WHERE (id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1)))
+                        LIMIT 1
+                    `;
 
-                db.get(roleLookupQuery, [roleIdForPerms, roleIdForPerms, userRoleName, cid], (err, roleRow) => {
-                    const roleKey = roleRow ? roleRow.global_id : roleIdForPerms;
+                    db.get(roleLookupQuery, [roleIdForPerms, roleIdForPerms, userRoleName, cid], (err, roleRow) => {
+                        const roleKey = roleRow ? roleRow.global_id : roleIdForPerms;
 
-                    if (!roleKey) {
-                        console.warn(`[LOGIN] Could not resolve roleKey for role: ${userRoleName}, ID: ${roleIdForPerms}`);
-                        return resolvePerms([]);
-                    }
-
-                    db.all("SELECT * FROM permissions WHERE role_id = ?", [roleKey], (permErr, rows) => {
-                        if (permErr) {
-                            console.error("[LOGIN] Error fetching local permissions:", permErr);
-                            resolvePerms([]);
-                        } else {
-                            const formatted = (rows || []).map(p => ({
-                                id: p.global_id || p.id,
-                                roleId: p.role_id,
-                                module: p.module,
-                                can_view: p.can_view,
-                                can_create: p.can_create,
-                                can_edit: p.can_edit,
-                                can_delete: p.can_delete,
-                                canView: p.can_view === 1 || p.can_view === true
-                            }));
-                            resolvePerms(formatted);
+                        if (!roleKey) {
+                            console.warn(`[LOGIN] Could not resolve roleKey for role: ${userRoleName}, ID: ${roleIdForPerms}`);
+                            return resolvePerms([]);
                         }
+
+                        db.all("SELECT * FROM permissions WHERE role_id = ?", [roleKey], (permErr, rows) => {
+                            if (permErr) {
+                                console.error("[LOGIN] Error fetching local permissions:", permErr);
+                                resolvePerms([]);
+                            } else {
+                                const formatted = (rows || []).map(p => ({
+                                    id: p.global_id || p.id,
+                                    roleId: p.role_id,
+                                    module: p.module,
+                                    can_view: p.can_view,
+                                    can_create: p.can_create,
+                                    can_edit: p.can_edit,
+                                    can_delete: p.can_delete,
+                                    canView: p.can_view === 1 || p.can_view === true
+                                }));
+                                resolvePerms(formatted);
+                            }
+                        });
                     });
                 });
-            });
-
-            response.permissions = permissions;
-            console.log(`✓ Attached ${permissions.length} permissions for user ${response.user.username} (Role Key: ${roleIdForPerms})`);
+                response.permissions = localPermissions;
+                console.log(`✓ Resolved ${localPermissions.length} permissions locally.`);
+            }
             return response;
         } else {
             cloudError = response.message;
@@ -458,49 +461,34 @@ ipcMain.handle("get-roles", async (e, companyId) => {
     });
 });
 
+
 ipcMain.handle("get-permissions", (e, roleId) => {
     return new Promise((resolve) => {
-        // Resolve the identities of the role for comprehensive matching
         db.get("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ?", [roleId, roleId], (err, row) => {
             const localId = row ? String(row.id) : null;
             const globalId = (row && row.global_id) ? String(row.global_id) : null;
-
-            // Build query params dynamically to avoid 'null' string matches
-            const params = [];
-            if (globalId) params.push(globalId);
-            if (localId) params.push(localId);
-
+            const params = [...new Set([globalId, localId, String(roleId)].filter(Boolean))];
             if (params.length === 0) return resolve([]);
-
-            const placeholders = params.map(() => "?").join(" OR role_id = ");
+            const placeholders = params.map(() => "?").join(", ");
             const query = `
-                SELECT module, 
-                       can_view, can_create, can_edit, can_delete
-                FROM (
-                    SELECT * FROM permissions 
-                    WHERE role_id = ${placeholders}
-                    ORDER BY 
-                        CASE WHEN sync_status = 'pending' THEN 0 ELSE 1 END ASC,
-                        updated_at DESC,
-                        id DESC
-                )
-                GROUP BY module
+                SELECT module, can_view, can_create, can_edit, can_delete, sync_status
+                FROM permissions 
+                WHERE role_id IN (${placeholders})
+                ORDER BY CASE WHEN sync_status = 'pending' THEN 0 ELSE 1 END ASC, id DESC
             `;
-            db.all(query, params, (err, rows) => {
-                if (err) {
-                    console.error("get-permissions Error:", err);
-                    resolve([]);
-                } else {
-                    // Normalize to provide both for compatibility but strictly based on snake_case source
-                    const normalized = rows.map(r => ({
-                        ...r,
-                        canView: r.can_view === 1,
-                        canCreate: r.can_create === 1,
-                        canEdit: r.can_edit === 1,
-                        canDelete: r.can_delete === 1
-                    }));
-                    resolve(normalized);
-                }
+            db.all(query, params, (queryErr, rows) => {
+                if (queryErr) { console.error("get-permissions Error:", queryErr); return resolve([]); }
+                const seen = new Set();
+                const normalized = rows.filter(r => {
+                    if (seen.has(r.module)) return false;
+                    seen.add(r.module);
+                    return true;
+                }).map(r => ({
+                    module: r.module,
+                    can_view: r.can_view, can_create: r.can_create, can_edit: r.can_edit, can_delete: r.can_delete,
+                    canView: r.can_view === 1, canCreate: r.can_create === 1, canEdit: r.can_edit === 1, canDelete: r.can_delete === 1
+                }));
+                resolve(normalized);
             });
         });
     });
@@ -623,34 +611,43 @@ ipcMain.handle("create-role", async (e, data) => {
 
                     const roleId = this.lastID;
 
-                    // 2. Insert ALL Permissions (ALL 15 modules - not just active ones)
-                    // This ensures local and cloud always have the complete permission matrix
-                    if (permissions && permissions.length > 0) {
-                        const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                 VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
-
-                        permissions.forEach(p => {
-                            // Resolve permission values checking both snake_case and camelCase
-                            const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
-                            const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
-                            const ex = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
-                            const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
-
-                            // Always use tempId (UUID) for linking
-                            stmt.run(tempId, p.module, v, c, ex, d);
-                        });
-                        stmt.finalize();
-                        console.log(`[ROLE CREATE] Saved ${permissions.length} permission rows for role '${name}'`);
-                    }
-
-                    db.run("COMMIT", (commitErr) => {
-                        if (commitErr) {
+                    // 2. Delete any existing permissions for this role (in case of a retry or previous partial failure)
+                    // This ensures we always insert a fresh set.
+                    db.run("DELETE FROM permissions WHERE role_id = ?", [tempId], (delErr) => {
+                        if (delErr) {
                             db.run("ROLLBACK");
-                            return resolve({ success: false, message: commitErr.message });
+                            return resolve({ success: false, message: delErr.message });
                         }
-                        // Trigger sync
-                        syncService.syncPendingRecords('roles', '/roles');
-                        resolve({ success: true, id: roleId, global_id: tempId, message: "Role created successfully" });
+
+                        // 3. Insert ALL Permissions (ALL 15 modules - not just active ones)
+                        // This ensures local and cloud always have the complete permission matrix
+                        if (permissions && permissions.length > 0) {
+                            const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
+
+                            permissions.forEach(p => {
+                                // Resolve permission values checking both snake_case and camelCase
+                                const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
+                                const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
+                                const ex = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
+                                const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
+
+                                // Always use tempId (UUID) for linking
+                                stmt.run(tempId, p.module, v, c, ex, d);
+                            });
+                            stmt.finalize();
+                            console.log(`[ROLE CREATE] Saved ${permissions.length} permission rows for role '${name}'`);
+                        }
+
+                        db.run("COMMIT", (commitErr) => {
+                            if (commitErr) {
+                                db.run("ROLLBACK");
+                                return resolve({ success: false, message: commitErr.message });
+                            }
+                            // Trigger sync
+                            syncService.syncPendingRecords('roles', '/roles');
+                            resolve({ success: true, id: roleId, global_id: tempId, message: "Role created successfully" });
+                        });
                     });
                 }
             );
@@ -698,7 +695,7 @@ ipcMain.handle("update-role", async (e, data) => {
 
                             // 3. Re-insert ALL permissions (ALL 15 modules - full matrix)
                             if (permissions && permissions.length > 0) {
-                                const stmt = db.prepare(`INSERT INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
                                                          VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`);
 
                                 permissions.forEach(p => {

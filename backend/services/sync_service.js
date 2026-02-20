@@ -425,33 +425,42 @@ class SyncService {
                                                     [item.id, localReturnId, localProductId || item.productId, item.quantity, item.unitCost, item.total]);
                                             }
                                         } else if (table === 'roles' && cloudData.permissions && Array.isArray(cloudData.permissions)) {
-                                            // 1. Clear existing local permissions for this role to avoid duplicates
-                                            // Match by global_id, local ID, or anything else we might have used
-                                            const roleGid = String(cloudData.id);
-                                            db.run("DELETE FROM permissions WHERE role_id = ?", [roleGid], (delErr) => {
-                                                if (delErr) console.error("[SYNC] Error clearing permissions before pull:", delErr);
+                                            // Clear ALL existing local permissions for this role using ALL possible identifiers
+                                            // (role might have been stored with temp UUID before sync, or with cloud CUID after sync)
+                                            const roleCloudId = String(cloudData.id);
 
-                                                // 2. Insert fresh permissions from cloud
-                                                for (const perm of cloudData.permissions) {
-                                                    const v = (perm.canView === true || perm.can_view === true || perm.canView == 1 || perm.can_view == 1) ? 1 : 0;
-                                                    const c = (perm.canCreate === true || perm.can_create === true || perm.canCreate == 1 || perm.can_create == 1) ? 1 : 0;
-                                                    const e = (perm.canEdit === true || perm.can_edit === true || perm.canEdit == 1 || perm.can_edit == 1) ? 1 : 0;
-                                                    const d = (perm.canDelete === true || perm.can_delete === true || perm.canDelete == 1 || perm.can_delete == 1) ? 1 : 0;
+                                            // First look up the existing local role row to find any old temp UUID
+                                            db.get("SELECT id, global_id FROM roles WHERE global_id = ?", [roleCloudId], (lookErr, localRoleRow) => {
+                                                const idsToDelete = [...new Set([
+                                                    roleCloudId,
+                                                    localRoleRow ? String(localRoleRow.id) : null,
+                                                    localRoleRow ? localRoleRow.global_id : null
+                                                ].filter(Boolean))];
 
-                                                    db.run(`INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                                        VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
-                                                        [
-                                                            perm.id,
-                                                            roleGid,
-                                                            perm.module,
-                                                            v,
-                                                            c,
-                                                            e,
-                                                            d,
-                                                            perm.updatedAt || perm.updated_at
-                                                        ]
-                                                    );
-                                                }
+                                                const placeholders = idsToDelete.map(() => '?').join(', ');
+                                                db.run(`DELETE FROM permissions WHERE role_id IN (${placeholders})`, idsToDelete, (delErr) => {
+                                                    if (delErr) console.error("[SYNC] Error clearing permissions before pull:", delErr);
+
+                                                    // Insert fresh permissions from cloud using INSERT OR REPLACE (safe with UNIQUE constraint)
+                                                    for (const perm of cloudData.permissions) {
+                                                        const v = (perm.canView === true || perm.can_view === true || perm.canView == 1 || perm.can_view == 1) ? 1 : 0;
+                                                        const c = (perm.canCreate === true || perm.can_create === true || perm.canCreate == 1 || perm.can_create == 1) ? 1 : 0;
+                                                        const e = (perm.canEdit === true || perm.can_edit === true || perm.canEdit == 1 || perm.can_edit == 1) ? 1 : 0;
+                                                        const d = (perm.canDelete === true || perm.can_delete === true || perm.canDelete == 1 || perm.can_delete == 1) ? 1 : 0;
+
+                                                        db.run(`INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
+                                                            VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`,
+                                                            [
+                                                                perm.id,
+                                                                roleCloudId,
+                                                                perm.module,
+                                                                v, c, e, d,
+                                                                perm.updatedAt || perm.updated_at
+                                                            ]
+                                                        );
+                                                    }
+                                                    console.log(`[SYNC] Pulled ${cloudData.permissions.length} permissions for role '${cloudData.name}'`);
+                                                });
                                             });
                                         } else if (table === 'employees' && cloudData.attendances && Array.isArray(cloudData.attendances)) {
                                             for (const att of cloudData.attendances) {
@@ -611,15 +620,31 @@ class SyncService {
                 delete payload.global_id;
 
                 // Multi-tenancy Mapping (company_id -> companyId)
-                if (payload.company_id && !payload.companyId) {
-                    payload.companyId = String(payload.company_id);
+                if (record.company_id) {
+                    // CRITICAL: Resolve the local company_id (integer) to its cloud global_id (CUID)
+                    // If the company_id itself looks like a global_id (non-empty string, not a small integer), use it directly.
+                    const isGlobalFormat = record.company_id && isNaN(record.company_id) && String(record.company_id).length > 5;
+
+                    if (isGlobalFormat) {
+                        payload.companyId = String(record.company_id);
+                    } else {
+                        // Query the companies table to find the global_id for this local ID
+                        const companyRow = await new Promise((res) => {
+                            db.get("SELECT global_id FROM companies WHERE id = ? OR global_id = ?", [record.company_id, record.company_id], (err, row) => res(row));
+                        });
+                        payload.companyId = companyRow ? companyRow.global_id : this.currentCompanyId;
+                    }
                 }
 
-                // Fallback to current session company if missing
-                if (!payload.companyId) {
-                    payload.companyId = this.currentCompanyId;
+                // Final Fallback to session context if still missing
+                if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined' || payload.companyId === '') {
+                    payload.companyId = (this.currentCompanyId && this.currentCompanyId !== 'undefined' && this.currentCompanyId !== 'null') ? this.currentCompanyId : null;
                 }
 
+                delete payload.company_id;
+
+                // If companyId is null and it's not a global table, we might log a warning
+                const finalCompanyId = payload.companyId;
                 // If it's STILL missing after local and global check, log it
                 if (!payload.companyId || payload.companyId === 'null' || payload.companyId === 'undefined') {
                     // Skip logging for companies table which doesn't need companyId
@@ -820,12 +845,22 @@ class SyncService {
                 } else if (table === 'roles') {
                     payload.isSystem = record.is_system === 1;
                     delete payload.is_system;
-                    const permissions = await fetchNested("SELECT * FROM permissions WHERE role_id = ? OR role_id = ?", [localId, globalId]);
+
+                    // Fetch permissions: use BOTH localId (as string) and globalId since either
+                    // could be stored as role_id depending on when/how permissions were inserted
+                    const permParams = [...new Set([String(localId), String(globalId)].filter(Boolean))];
+                    const permPlaceholders = permParams.map(() => '?').join(' OR role_id = ');
+                    const permissions = await fetchNested(
+                        `SELECT * FROM permissions WHERE role_id = ${permPlaceholders}`,
+                        permParams
+                    );
 
                     // DEBUG: Check what we are sending
                     console.log(`[SYNC DEBUG] Role ${localId} (${globalId}) - Found ${permissions.length} permissions locally.`);
                     if (permissions.length > 0) {
                         console.log(`[SYNC DEBUG] Modules: ${permissions.map(p => p.module).join(', ')}`);
+                    } else {
+                        console.warn(`[SYNC WARN] Role ${localId} (${globalId}) has NO permissions to push! Check DB.`);
                     }
 
                     payload.permissions = permissions.map(p => ({

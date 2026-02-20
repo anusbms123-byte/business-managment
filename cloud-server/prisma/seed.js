@@ -15,7 +15,7 @@ async function main() {
     ];
 
     const modules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
-        'customers', 'suppliers', 'expenses', 'reports', 'users', 'settings', 'hrm', 'accounting', 'returns'];
+        'customers', 'suppliers', 'expenses', 'reports', 'users', 'roles', 'settings', 'hrm', 'accounting', 'returns', 'backup'];
 
     for (const role of systemRoles) {
         // Upsert Role (Update if exists, Create if not)
@@ -57,7 +57,7 @@ async function main() {
                 perms = { view: true, create: true, edit: true, delete: true };
             } else if (role.name === 'Manager') {
                 perms = { view: true, create: true, edit: true, delete: false };
-                if (module === 'users' || module === 'settings') {
+                if (module === 'users' || module === 'settings' || module === 'roles') {
                     perms = { view: true, create: false, edit: false, delete: false };
                 }
             } else if (role.name === 'Cashier') {

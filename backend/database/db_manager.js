@@ -99,7 +99,7 @@ function initSchema() {
     db.run(`CREATE TABLE IF NOT EXISTS permissions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role_id TEXT,
-      global_id TEXT UNIQUE,
+      global_id TEXT,
       sync_status TEXT DEFAULT 'synced',
       module TEXT NOT NULL,
       can_view INTEGER DEFAULT 0,
@@ -107,7 +107,8 @@ function initSchema() {
       can_edit INTEGER DEFAULT 0,
       can_delete INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(role_id, module)
     )`);
 
     // 3. Categories
@@ -439,6 +440,68 @@ function initSchema() {
   });
 }
 
+// Migration: Recreate permissions table with UNIQUE(role_id, module) constraint
+function migratePermissionsTable() {
+  db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='permissions'", (err, row) => {
+    if (err || !row) return;
+    // Check if the UNIQUE(role_id, module) constraint already exists
+    const hasDualUnique = row.sql && row.sql.toLowerCase().includes('unique(role_id, module)');
+    if (hasDualUnique) {
+      console.log('[MIGRATION] permissions table already has UNIQUE(role_id, module) - OK');
+      return;
+    }
+
+    console.log('[MIGRATION] Rebuilding permissions table with UNIQUE(role_id, module) constraint...');
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+
+      // 1. Create new table with correct constraint
+      db.run(`CREATE TABLE IF NOT EXISTS permissions_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role_id TEXT,
+        global_id TEXT,
+        sync_status TEXT DEFAULT 'synced',
+        module TEXT NOT NULL,
+        can_view INTEGER DEFAULT 0,
+        can_create INTEGER DEFAULT 0,
+        can_edit INTEGER DEFAULT 0,
+        can_delete INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(role_id, module)
+      )`);
+
+      // 2. Copy only unique (role_id, module) pairs, keeping the most recent (highest id)
+      db.run(`
+        INSERT OR IGNORE INTO permissions_new 
+          (role_id, global_id, sync_status, module, can_view, can_create, can_edit, can_delete, created_at, updated_at)
+        SELECT role_id, global_id, sync_status, module, can_view, can_create, can_edit, can_delete, created_at, updated_at
+        FROM permissions p1
+        WHERE p1.id = (
+          SELECT MAX(p2.id) FROM permissions p2 
+          WHERE p2.role_id = p1.role_id AND p2.module = p1.module
+        )
+      `);
+
+      // 3. Drop old table and rename new one
+      db.run('DROP TABLE permissions');
+      db.run('ALTER TABLE permissions_new RENAME TO permissions');
+
+      // 4. Recreate index
+      db.run('CREATE INDEX IF NOT EXISTS idx_permissions_role ON permissions(role_id)');
+
+      db.run('COMMIT', (commitErr) => {
+        if (commitErr) {
+          console.error('[MIGRATION] permissions table rebuild failed:', commitErr.message);
+          db.run('ROLLBACK');
+        } else {
+          console.log('[MIGRATION] permissions table rebuilt successfully with UNIQUE(role_id, module) constraint.');
+        }
+      });
+    });
+  });
+}
+
 // Helper to add column if it doesn't exist (useful for migration)
 function addColumnIfNotExists(table, column, type, defaultValue = null) {
   db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`, (err) => {
@@ -458,6 +521,8 @@ function addColumnIfNotExists(table, column, type, defaultValue = null) {
 // Function to handle database schema updates
 function runMigrations() {
   console.log("Checking for database schema updates...");
+  // Run permissions table migration first (critical for correct permission storage)
+  migratePermissionsTable();
 
   // FIX: Detect if employees table has wrong schema (id TEXT instead of INTEGER)
   db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='employees'", (err, row) => {
