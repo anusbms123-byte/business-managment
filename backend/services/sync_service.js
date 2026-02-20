@@ -1135,17 +1135,10 @@ class SyncService {
                         // This is critical for edited records where the parent ID didn't change but items were re-inserted locally
                         if (table === 'roles') {
                             // Mark permissions as synced, but don't force a bogus global_id if it's missing
-                            // This prevents creating duplicate permission records when the cloud pulls later
                             db.run("UPDATE permissions SET sync_status = 'synced' WHERE role_id = ?", [globalId]);
-                        } else if (table === 'sales') {
-                            db.run("UPDATE sale_items SET sync_status = 'synced' WHERE sale_id = ?", [globalId]);
-                        } else if (table === 'purchases') {
-                            db.run("UPDATE purchase_items SET sync_status = 'synced' WHERE purchase_id = ?", [globalId]);
-                        } else if (table === 'sale_returns') {
-                            db.run("UPDATE sale_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
-                        } else if (table === 'purchase_returns') {
-                            db.run("UPDATE purchase_return_items SET sync_status = 'synced' WHERE return_id = ?", [globalId]);
                         }
+                        // Note: sale_items, purchase_items, etc. do NOT have a sync_status column, 
+                        // they are synced as part of their parent record payload.
 
                         db.run("COMMIT", (commitErr) => {
                             if (commitErr) {
