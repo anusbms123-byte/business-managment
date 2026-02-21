@@ -437,23 +437,46 @@ function initSchema() {
 
     // Seed logic: Ensure Super Admin and default system roles exist
     db.serialize(() => {
-      const superAdminGid = 'system-super-admin';
-      db.get("SELECT id FROM roles WHERE global_id = ?", [superAdminGid], (err, row) => {
-        if (!row) {
-          console.log("[SEED] Creating System Super Admin role...");
-          db.run(
-            "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'synced', 1, CURRENT_TIMESTAMP)",
-            [superAdminGid, 'Super Admin', 'System-wide administrative access', null]
-          );
+      const systemRoles = [
+        { gid: 'system-super-admin', name: 'Super Admin', desc: 'System-wide administrative access', modules: ['users', 'roles', 'settings', 'backup'], type: 'full' },
+        { gid: 'system-admin-template', name: 'Admin', desc: 'Full company access (Template)', modules: 'all', type: 'full' },
+        { gid: 'system-manager-template', name: 'Manager', desc: 'Management level access (Template)', modules: 'all', type: 'mid' }
+      ];
 
-          const superAdminModules = ['users', 'roles', 'settings'];
-          superAdminModules.forEach(mod => {
+      const allModules = [
+        'dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory',
+        'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting',
+        'users', 'roles', 'settings', 'backup'
+      ];
+
+      systemRoles.forEach(role => {
+        db.get("SELECT id FROM roles WHERE global_id = ? OR name = ?", [role.gid, role.name], (err, row) => {
+          if (!row) {
+            console.log(`[SEED] Creating Global Role: ${role.name}...`);
             db.run(
-              "INSERT OR IGNORE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, 1, 1, 1, 1, 'synced', CURRENT_TIMESTAMP)",
-              ['perm-' + superAdminGid + '-' + mod, superAdminGid, mod]
+              "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'synced', 1, CURRENT_TIMESTAMP)",
+              [role.gid, role.name, role.desc, null]
             );
-          });
-        }
+
+            const targetModules = role.modules === 'all' ? allModules : role.modules;
+            targetModules.forEach(mod => {
+              let v = 0, c = 0, e = 0, d = 0;
+              if (role.type === 'full') {
+                v = 1; c = 1; e = 1; d = 1;
+              } else if (role.type === 'mid') {
+                v = 1;
+                if (['sales', 'customers', 'products', 'expenses'].includes(mod)) {
+                  c = 1; e = 1;
+                }
+              }
+
+              db.run(
+                "INSERT OR IGNORE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', CURRENT_TIMESTAMP)",
+                ['perm-' + role.gid + '-' + mod, role.gid, mod, v, c, e, d]
+              );
+            });
+          }
+        });
       });
     });
 

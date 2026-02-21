@@ -409,59 +409,10 @@ ipcMain.handle("create-company", async (e, data) => {
 
                 const companyId = this.lastID;
 
-                // Create EXACTLY 2 default roles for this company: Admin, Manager
-                const defaultRoles = [
-                    { name: 'Admin', desc: 'Full company access', type: 'full' },
-                    { name: 'Manager', desc: 'Management level access', type: 'mid' }
-                ];
-
-                const modules = [
-                    'dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory',
-                    'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting',
-                    'users', 'roles', 'settings', 'backup'
-                ];
-
-                for (const role of defaultRoles) {
-                    const roleGid = randomUUID();
-                    await new Promise((resRole) => {
-                        db.run(
-                            "INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)",
-                            [roleGid, role.name, role.desc, tempId],
-                            async function (err) {
-                                if (err) return resRole();
-
-                                // Insert permissions for this role
-                                for (const mod of modules) {
-                                    let v = 0, c = 0, e = 0, d = 0;
-                                    if (role.type === 'full') {
-                                        v = 1; c = 1; e = 1; d = 1;
-                                    } else if (role.type === 'mid') {
-                                        v = 1;
-                                        if (['sales', 'customers', 'products', 'expenses'].includes(mod)) {
-                                            c = 1; e = 1;
-                                        }
-                                    } else if (role.type === 'retail') {
-                                        if (['dashboard', 'sales', 'customers', 'products'].includes(mod)) {
-                                            v = 1;
-                                            if (mod === 'sales' || mod === 'customers') c = 1;
-                                        }
-                                    }
-
-                                    const permGid = randomUUID();
-                                    await new Promise(rp => {
-                                        db.run(
-                                            `INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                                            [permGid, roleGid, mod, v, c, e, d],
-                                            rp
-                                        );
-                                    });
-                                }
-                                resRole();
-                            }
-                        );
-                    });
-                }
+                // No longer automatically creating default roles (Admin/Manager).
+                // If a company needs roles, the owner or Super Admin will create them manually.
+                syncService.syncPendingRecords('companies', '/companies');
+                resolve({ success: true, id: companyId, global_id: tempId, message: "Company created locally. Please assign an Admin user manually." });
 
                 syncService.syncPendingRecords('companies', '/companies');
                 syncService.syncPendingRecords('roles', '/roles');
@@ -583,7 +534,7 @@ ipcMain.handle("get-permissions", (e, roleId) => {
 
             const placeholders = params.map(() => "?").join(", ");
             const query = `
-                SELECT module, can_view, can_create, can_edit, can_delete, sync_status
+                SELECT id, global_id, module, can_view, can_create, can_edit, can_delete, sync_status
                 FROM permissions 
                 WHERE role_id IN (${placeholders})
                 ORDER BY CASE WHEN sync_status = 'pending' THEN 0 ELSE 1 END ASC, id DESC
@@ -601,15 +552,14 @@ ipcMain.handle("get-permissions", (e, roleId) => {
                     seen.add(r.module);
                     return true;
                 }).map(r => ({
+                    id: r.id,
+                    global_id: r.global_id,
                     module: r.module,
-                    can_view: r.can_view,
-                    can_create: r.can_create,
-                    can_edit: r.can_edit,
-                    can_delete: r.can_delete,
-                    canView: r.can_view === 1,
-                    canCreate: r.can_create === 1,
-                    canEdit: r.can_edit === 1,
-                    canDelete: r.can_delete === 1
+                    // Always return strict integers — never boolean — to avoid type confusion in frontend
+                    can_view: r.can_view === 1 ? 1 : 0,
+                    can_create: r.can_create === 1 ? 1 : 0,
+                    can_edit: r.can_edit === 1 ? 1 : 0,
+                    can_delete: r.can_delete === 1 ? 1 : 0,
                 }));
                 resolve(normalized);
             });
@@ -793,10 +743,11 @@ ipcMain.handle("create-role", async (e, data) => {
             db.run("BEGIN TRANSACTION");
 
             // 1. Insert Role
+            const isSystem = (!cid || cid === 'null' || cid === 'undefined') ? 1 : 0;
             db.run(
                 `INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) 
-                 VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)`,
-                [tempId, name, description, cid],
+                 VALUES (?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP)`,
+                [tempId, name, description, cid, isSystem],
                 function (err) {
                     if (err) {
                         db.run("ROLLBACK");
@@ -867,46 +818,45 @@ ipcMain.handle("update-role", async (e, data) => {
                             return resolve({ success: false, message: err.message });
                         }
 
-                        // 2. Delete ALL existing permissions for this role (by all possible identifiers)
-                        // Collect all possible role_id values used in permissions table
-                        const identifiers = [...new Set([String(localId), String(globalId)].filter(Boolean))];
-                        const placeholders = identifiers.map(() => '?').join(', ');
-                        const delQuery = `DELETE FROM permissions WHERE role_id IN (${placeholders})`;
-
-                        db.run(delQuery, identifiers, (delErr) => {
+                        // 2. Delete ALL existing permissions for this role to ensure a clean slate
+                        // This is critical for roles where some modules are being disabled (1 -> 0)
+                        db.run("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(globalId), String(localId)], (delErr) => {
                             if (delErr) {
                                 db.run("ROLLBACK");
-                                return resolve({ success: false, message: delErr.message });
+                                return resolve({ success: false, message: "Failed to purge old permissions" });
                             }
 
-                            // 3. Re-insert ALL permissions (ALL 15 modules - full matrix)
-                            if (permissions && permissions.length > 0) {
+                            // 3. Re-insert the full permission matrix (usually 16 modules)
+                            if (permissions && Array.isArray(permissions)) {
                                 const stmt = db.prepare(`INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at, global_id) 
                                                          VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`);
 
                                 permissions.forEach(p => {
+                                    // Generate a NEW global_id for the permission record if not present, 
+                                    // OR use the existing one to maintain cloud references.
                                     const pId = p.global_id || p.id || randomUUID();
-                                    // Robust: check both snake_case and camelCase
+
+                                    // Srictly normalize to 1 or 0
                                     const v = (p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true) ? 1 : 0;
                                     const c = (p.can_create == 1 || p.canCreate == 1 || p.can_create === true || p.canCreate === true) ? 1 : 0;
                                     const ex = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
                                     const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
 
-                                    // Always use the role's primary globalId for permissions
+                                    // Primary role linkage is always the globalId (string)
                                     stmt.run(globalId, p.module, v, c, ex, d, pId);
                                 });
                                 stmt.finalize();
-                                console.log(`[ROLE UPDATE] Saved ${permissions.length} permission rows for role '${name}' (role_id: ${globalId})`);
+                                console.log(`[ACL UPDATE] Refreshed ${permissions.length} modules for role: ${name}`);
                             }
 
                             db.run("COMMIT", (commitErr) => {
                                 if (commitErr) {
                                     db.run("ROLLBACK");
-                                    return resolve({ success: false, message: commitErr.message });
+                                    return resolve({ success: false, message: "Commit error: " + commitErr.message });
                                 }
-                                // Trigger background sync
+                                // Background Sync
                                 syncService.syncPendingRecords('roles', '/roles');
-                                resolve({ success: true, message: "Role updated successfully" });
+                                resolve({ success: true, message: "Role & Permissions updated successfully" });
                             });
                         });
                     }

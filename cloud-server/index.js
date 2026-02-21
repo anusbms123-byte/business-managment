@@ -438,7 +438,7 @@ app.post('/api/roles', async (req, res) => {
         let role;
 
         if (existing) {
-            console.log(`[ROLE CREATE] Role '${name}' already exists on cloud (${existing.id}). Updating with full permission reset.`);
+            console.log(`[ROLE CREATE] Role '${name}' already exists on cloud (${existing.id}). Updating.`);
             await prisma.$transaction(async (tx) => {
                 await tx.role.update({
                     where: { id: existing.id },
@@ -446,11 +446,7 @@ app.post('/api/roles', async (req, res) => {
                 });
 
                 if (permissions && Array.isArray(permissions)) {
-                    // FIX: Delete ALL existing permissions first, then re-create fresh.
-                    // This ensures can_view=false (unchecked) is always correctly saved.
-                    // Using upsert was causing stale permissions to remain when IDs didn't match.
-                    await tx.permission.deleteMany({ where: { roleId: existing.id } });
-
+                    // Try to update or create permissions individually to maintain references
                     for (const p of permissions) {
                         const pId = p.id || p.global_id;
                         const data = {
@@ -460,9 +456,18 @@ app.post('/api/roles', async (req, res) => {
                             canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
                             canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1,
                         };
-                        await tx.permission.create({
-                            data: { ...(pId ? { id: pId } : {}), roleId: existing.id, ...data }
-                        });
+
+                        if (pId) {
+                            await tx.permission.upsert({
+                                where: { id: pId },
+                                create: { id: pId, roleId: existing.id, ...data },
+                                update: data
+                            });
+                        } else {
+                            await tx.permission.create({
+                                data: { roleId: existing.id, ...data }
+                            });
+                        }
                     }
                 }
             });
@@ -511,10 +516,14 @@ app.put('/api/roles/:id', async (req, res) => {
             });
 
             if (permissions && Array.isArray(permissions)) {
-                // FIX: Delete ALL existing permissions first, then re-create fresh.
-                // This is the only reliable way to ensure can_view=false is saved correctly.
-                // The previous notIn approach could leave stale permissions when IDs were missing/changed.
-                await tx.permission.deleteMany({ where: { roleId } });
+                // To be robust, we delete permissions that aren't in the incoming list for this role
+                const incomingIds = permissions.map(p => p.id || p.global_id).filter(Boolean);
+                await tx.permission.deleteMany({
+                    where: {
+                        roleId,
+                        id: { notIn: incomingIds }
+                    }
+                });
 
                 for (const p of permissions) {
                     const pId = p.id || p.global_id;
@@ -525,9 +534,18 @@ app.put('/api/roles/:id', async (req, res) => {
                         canEdit: p.canEdit === true || p.canEdit === 1 || p.can_edit === 1,
                         canDelete: p.canDelete === true || p.canDelete === 1 || p.can_delete === 1,
                     };
-                    await tx.permission.create({
-                        data: { ...(pId ? { id: pId } : {}), roleId, ...data }
-                    });
+
+                    if (pId) {
+                        await tx.permission.upsert({
+                            where: { id: pId },
+                            create: { id: pId, roleId, ...data },
+                            update: data
+                        });
+                    } else {
+                        await tx.permission.create({
+                            data: { roleId, ...data }
+                        });
+                    }
                 }
             }
         });

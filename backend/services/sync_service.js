@@ -363,8 +363,13 @@ class SyncService {
                         params = [cloudData.id, cloudData.title, cloudData.amount, cloudData.date, cloudData.description, cloudData.category, companyId, cloudData.updatedAt || cloudData.updated_at];
                     } else if (table === 'companies') {
                         const activeVal = cloudData.isActive !== undefined ? (cloudData.isActive ? 1 : 0) : (cloudData.is_active !== undefined ? cloudData.is_active : 1);
-                        query = `INSERT OR REPLACE INTO companies (global_id, name, address, phone, email, tax_no, currency_symbol, logo_path, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                        params = [cloudData.id, cloudData.name, cloudData.address, cloudData.phone, cloudData.email, cloudData.taxNo || cloudData.tax_no, cloudData.currency || cloudData.currency_symbol || 'PKR', cloudData.logo || cloudData.logo_path, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                        if (existingRow) {
+                            query = `UPDATE companies SET global_id=?, name=?, address=?, phone=?, email=?, tax_no=?, currency_symbol=?, logo_path=?, is_active=?, sync_status='synced', updated_at=? WHERE id=?`;
+                            params = [cloudData.id, cloudData.name, cloudData.address, cloudData.phone, cloudData.email, cloudData.taxNo || cloudData.tax_no, cloudData.currency || cloudData.currency_symbol || 'PKR', cloudData.logo || cloudData.logo_path, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                        } else {
+                            query = `INSERT INTO companies (global_id, name, address, phone, email, tax_no, currency_symbol, logo_path, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                            params = [cloudData.id, cloudData.name, cloudData.address, cloudData.phone, cloudData.email, cloudData.taxNo || cloudData.tax_no, cloudData.currency || cloudData.currency_symbol || 'PKR', cloudData.logo || cloudData.logo_path, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                        }
                     } else if (table === 'accounts') {
                         query = `INSERT OR REPLACE INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'synced', ?)`;
                         params = [cloudData.id, cloudData.name, cloudData.type, cloudData.balance, companyId, cloudData.updatedAt || cloudData.updated_at];
@@ -683,9 +688,10 @@ class SyncService {
 
                 delete payload.company_id;
 
-                // Final check to prevent syncing non-global records without a company
-                if (!payload.companyId && table !== 'companies' && !isSuperAdminUser && !isSystemRole) {
-                    console.error(`[SYNC SKIP] ${table} ID ${localId} has no company context. Cannot sync.`);
+                // Final check to prevent syncing non-global records without a proper cloud-synced company
+                const companySynced = payload.companyId && !payload.companyId.includes('-'); // UUIDs have dashes, CUIDs don't
+                if (!companySynced && table !== 'companies' && !isSuperAdminUser && !isSystemRole) {
+                    console.warn(`[SYNC DEFER] Skipping ${table} ID ${localId} - Parent company ${payload.companyId} not yet synced to cloud.`);
                     continue;
                 }
 
@@ -884,19 +890,19 @@ class SyncService {
                         console.warn(`[SYNC WARN] Role ${localId} (${globalId}) has NO permissions to push! Check DB.`);
                     }
 
-                    payload.permissions = permissions.map(p => ({
-                        id: p.global_id || p.id,
-                        module: p.module,
-                        canView: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
-                        canCreate: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
-                        canEdit: (p.can_edit === 1 || p.canEdit == 1) ? 1 : 0,
-                        canDelete: (p.can_delete === 1 || p.canDelete == 1) ? 1 : 0,
-                        // Keep snake_case for backward compatibility or if cloud uses both
-                        can_view: (p.can_view === 1 || p.canView === 1) ? 1 : 0,
-                        can_create: (p.can_create === 1 || p.canCreate === 1) ? 1 : 0,
-                        can_edit: (p.can_edit === 1 || p.canEdit == 1) ? 1 : 0,
-                        can_delete: (p.can_delete === 1 || p.canDelete == 1) ? 1 : 0
-                    }));
+                    payload.permissions = permissions.map(p => {
+                        const v = (p.can_view === 1 || p.canView === true || p.canView === 1) ? 1 : 0;
+                        const c = (p.can_create === 1 || p.canCreate === true || p.canCreate === 1) ? 1 : 0;
+                        const e = (p.can_edit === 1 || p.canEdit === true || p.canEdit === 1) ? 1 : 0;
+                        const d = (p.can_delete === 1 || p.canDelete === true || p.canDelete === 1) ? 1 : 0;
+
+                        return {
+                            id: p.global_id || p.id,
+                            module: p.module,
+                            canView: v, canCreate: c, canEdit: e, canDelete: d,
+                            can_view: v, can_create: c, can_edit: e, can_delete: d
+                        };
+                    });
 
 
 
@@ -1098,7 +1104,14 @@ class SyncService {
 
                         // Update Children references if Global ID changed (e.g. Temp UUID -> Cloud CUID)
                         if (oldGlobalId && oldGlobalId !== globalId) {
-                            if (table === 'roles') {
+                            if (table === 'companies') {
+                                // CRITICAL: Update ALL tables that reference this company
+                                const tablesToUpdate = ['roles', 'users', 'products', 'categories', 'brands', 'vendors', 'customers', 'employees', 'expenses', 'sales', 'purchases', 'accounts', 'sale_returns', 'purchase_returns', 'attendances', 'salary_records', 'audit_logs'];
+                                for (const t of tablesToUpdate) {
+                                    db.run(`UPDATE ${t} SET company_id = ? WHERE company_id = ?`, [globalId, oldGlobalId]);
+                                }
+                                console.log(`[SYNC] Updated company_id references for ${tablesToUpdate.length} tables: ${oldGlobalId} -> ${globalId}`);
+                            } else if (table === 'roles') {
                                 // First handle potential UNIQUE(role_id, module) conflicts in permissions
                                 db.run("DELETE FROM permissions WHERE role_id = ? AND module IN (SELECT module FROM permissions WHERE role_id = ?)", [globalId, oldGlobalId]);
                                 db.run("UPDATE permissions SET role_id = ? WHERE role_id = ?", [globalId, oldGlobalId]);

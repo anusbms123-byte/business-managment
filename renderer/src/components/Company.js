@@ -769,10 +769,14 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     const isNotSuper = !['super admin', 'superadmin', 'super_admin'].includes(roleName);
 
                                     if (isSuperAdmin) {
-                                        // ONLY show the standard 2 templates for Super Admin to keep it simple
-                                        // These are roles with no company_id and is_system=1
-                                        const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
-                                        return isNotSuper && isTemplate && (roleName === 'admin' || roleName === 'manager');
+                                        // Show ONLY global Admin & Manager templates (is_system=1, no company_id)
+                                        // Use loose check for is_system to handle int/bool/string from SQLite
+                                        const isSystemRole = r.is_system == 1 || r.isSystem == true || r.isSystem === 1;
+                                        const hasNoCompany = !r.company_id && !r.companyId;
+                                        const isAdminOrManager = roleName === 'admin' || roleName === 'manager';
+                                        // Also match by global_id prefix as guaranteed fallback
+                                        const isGlobalTemplate = (r.global_id || '').startsWith('system-');
+                                        return isNotSuper && (isAdminOrManager && (isSystemRole && hasNoCompany || isGlobalTemplate));
                                     }
 
                                     // For regular admins: show roles for their company
@@ -805,7 +809,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [selectedCompany, setSelectedCompany] = useState('all');
+    const [selectedCompany, setSelectedCompany] = useState('system');
     const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });
 
     useEffect(() => { loadRoles(); }, [currentUser, isSuperAdmin]);
@@ -884,11 +888,27 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     };
 
     const openModal = (role = null) => {
+        // Helper: Force any truthy/1/true value to integer 1, everything else to 0
+        // This prevents comparison bugs from mixed boolean/integer types from SQLite
+        const toInt = (v) => (v === 1 || v === true || v === '1') ? 1 : 0;
+
         let initialPerms = [];
         if (role) {
             initialPerms = MODULES.map(m => {
                 const existing = (role.permissions || []).find(p => p.module === m.key);
-                return existing ? { ...existing } : { module: m.key, can_view: 0, can_create: 0, can_edit: 0, can_delete: 0 };
+                if (existing) {
+                    // CRITICAL: Normalize ALL values to strict 0 or 1 integers
+                    // This prevents the edit bug where can_view = false (bool) doesn't match === 0
+                    return {
+                        module: m.key,
+                        global_id: existing.global_id || existing.id || null,
+                        can_view: toInt(existing.can_view ?? existing.canView),
+                        can_create: toInt(existing.can_create ?? existing.canCreate),
+                        can_edit: toInt(existing.can_edit ?? existing.canEdit),
+                        can_delete: toInt(existing.can_delete ?? existing.canDelete),
+                    };
+                }
+                return { module: m.key, can_view: 0, can_create: 0, can_edit: 0, can_delete: 0 };
             });
             setFormData({ ...role, permissions: initialPerms });
         } else {
@@ -900,10 +920,26 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
 
     const updatePerm = (mod, field, val) => setFormData(prev => ({
         ...prev,
-        permissions: prev.permissions.map(p => p.module === mod ? { ...p, [field]: val ? 1 : 0 } : p)
+        permissions: prev.permissions.map(p => {
+            if (p.module !== mod) return p;
+
+            // Logic: if unchecking view, uncheck EVERYTHING else for this module
+            if (field === 'can_view' && !val) {
+                return { ...p, can_view: 0, can_create: 0, can_edit: 0, can_delete: 0 };
+            }
+
+            // Logic: if checking any action, automatically check VIEW if it was off
+            // Use loose == 0 to handle integer 0, boolean false, or string '0'
+            if (field !== 'can_view' && val && p.can_view == 0) {
+                return { ...p, can_view: 1, [field]: 1 };
+            }
+
+            return { ...p, [field]: val ? 1 : 0 };
+        })
     }));
 
-    const getPerm = (mod, field) => formData.permissions.find(p => p.module === mod)?.[field] === 1;
+    // Use loose == 1 to safely handle int 1, bool true, or string '1'
+    const getPerm = (mod, field) => formData.permissions.find(p => p.module === mod)?.[field] == 1;
 
     if (loading) return <LoadingSpinner />;
 
@@ -913,18 +949,10 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
         if (roleName === 'super admin' || roleName === 'superadmin' || roleName === 'super_admin') return false;
 
         if (isSuperAdmin) {
-            // When 'All Companies' is selected, show only the core 2 templates
-            if (selectedCompany === 'all') {
-                const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
-                return isTemplate && (roleName === 'admin' || roleName === 'manager');
-            }
-
-            // For specifically 'system' filter
-            if (selectedCompany === 'system') return (r.is_system === 1 || r.isSystem === true);
-
-            // For specific company: show only its private roles
-            const roleCid = r.company_id || r.companyId;
-            return roleCid === selectedCompany;
+            // Strictly show ONLY the global templates (Admin & Manager) for Super Admin
+            const roleNameLower = (r.name || '').toLowerCase();
+            const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
+            return isTemplate && (roleNameLower === 'admin' || roleNameLower === 'manager');
         }
         return true;
     });
@@ -986,19 +1014,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                     <p className="text-sm text-slate-500">Define custom permission sets for your team members</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {isSuperAdmin && (
-                        <select
-                            value={selectedCompany}
-                            onChange={e => setSelectedCompany(e.target.value)}
-                            className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
-                        >
-                            <option value="all">All Companies</option>
-                            <option value="system">System Roles Only</option>
-                            {companies.map(c => (
-                                <option key={c.id || c.global_id} value={c.global_id || c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                    )}
+                    {/* Filter removed to strictly show only system templates for Super Admin */}
                     {canCreate('settings') && (
                         <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
                     )}
@@ -1012,33 +1028,10 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                 <StatCard title="Custom Roles" value={filteredRoles.filter(r => !r.is_system && !r.isSystem).length} icon={Shield} color="emerald" />
             </div>
 
-            {/* System Roles Section (only for super admin or if present) */}
-            {systemRoles.length > 0 && isSuperAdmin && selectedCompany === 'all' && (
-                <div>
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-                        <div className="w-1 h-3.5 bg-indigo-600 rounded-full"></div>
-                        Global System Roles (Available to All Companies)
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {systemRoles.map(renderRoleCard)}
-                    </div>
-                </div>
-            )}
-
-            {/* Company Roles */}
-            {companyRoles.length > 0 && (
-                <div>
-                    {isSuperAdmin && selectedCompany === 'all' && (
-                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                            Company Roles
-                        </h3>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {companyRoles.map(renderRoleCard)}
-                    </div>
-                </div>
-            )}
+            {/* Unified Grid for Roles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredRoles.map(renderRoleCard)}
+            </div>
 
             {filteredRoles.length === 0 && (
                 <EmptyState message="No roles found for selected filter" icon={Shield} />
@@ -1089,7 +1082,8 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                                                 type="checkbox"
                                                                 checked={getPerm(mod.key, f)}
                                                                 onChange={e => updatePerm(mod.key, f, e.target.checked)}
-                                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
+                                                                disabled={f !== 'can_view' && !getPerm(mod.key, 'can_view')}
+                                                                className={`w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer ${f !== 'can_view' && !getPerm(mod.key, 'can_view') ? 'opacity-20 cursor-not-allowed' : ''}`}
                                                             />
                                                         </td>
                                                     ))}
