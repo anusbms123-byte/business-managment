@@ -2,8 +2,9 @@ export const checkPermission = (moduleName, action) => {
     const savedPermissions = sessionStorage.getItem('permissions');
     const userRole = sessionStorage.getItem('userRole');
 
-    // Super Admin respects DB, but Admin (Company Owner) has full local access
-    if (userRole === 'Admin' || userRole === 'admin') {
+    // God Mode: Super Admin and Company Admin always have full access
+    const role = (userRole || '').toLowerCase();
+    if (['super admin', 'superadmin', 'admin'].includes(role)) {
         return true;
     }
 

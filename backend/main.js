@@ -409,11 +409,10 @@ ipcMain.handle("create-company", async (e, data) => {
 
                 const companyId = this.lastID;
 
-                // Create default roles for this company: Admin, Manager, Cashier
+                // Create EXACTLY 2 default roles for this company: Admin, Manager
                 const defaultRoles = [
-                    { name: 'Admin', desc: 'Full access to company data', type: 'full' },
-                    { name: 'Manager', desc: 'Management and reporting access', type: 'mid' },
-                    { name: 'Cashier', desc: 'Sales and basic access', type: 'retail' }
+                    { name: 'Admin', desc: 'Full company access', type: 'full' },
+                    { name: 'Manager', desc: 'Management level access', type: 'mid' }
                 ];
 
                 const modules = [
@@ -535,21 +534,39 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
 // Roles & Permissions - LOCAL FIRST
 ipcMain.handle("get-roles", async (e, companyId) => {
+    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
     const ids = await resolveCompanyIds(companyId);
+
     return new Promise((resolve, reject) => {
-        const query = `
+        let query = `
             SELECT r.*, 
                    r.is_active as isActive, 
                    r.is_system as isSystem,
                    (SELECT COUNT(*) FROM permissions WHERE (role_id = r.global_id OR role_id = CAST(r.id AS TEXT)) AND can_view = 1) as moduleCount
             FROM roles r 
-            WHERE ((r.company_id = ? OR r.company_id = ? OR r.company_id = ?) 
-               OR r.is_system = 1)
-               AND (r.sync_status != 'deleted' OR r.sync_status IS NULL)
         `;
-        db.all(query, [ids.localId, ids.globalId, String(ids.localId)], (err, rows) => {
-            if (err) resolve([]);
-            else resolve(rows);
+
+        let conditions = ["(r.sync_status != 'deleted' OR r.sync_status IS NULL)"];
+        let params = [];
+
+        if (isSuperAdmin && !companyId) {
+            // Super Admin viewing globally: show everything
+        } else {
+            // Regular company or Super Admin filtering by company: 
+            // ONLY show roles belonging to this company. 
+            // DO NOT show global system roles like 'Manager' or 'Admin' to prevent cross-company edits.
+            conditions.push("(r.company_id = ? OR r.company_id = ? OR r.company_id = ?)");
+            params.push(ids.localId, ids.globalId, String(ids.localId));
+        }
+
+        query += " WHERE " + conditions.join(" AND ");
+        query += " ORDER BY r.is_system DESC, r.name ASC";
+
+        db.all(query, params, (err, rows) => {
+            if (err) {
+                console.error("get-roles error:", err);
+                resolve([]);
+            } else resolve(rows);
         });
     });
 });
@@ -645,16 +662,29 @@ ipcMain.handle("update-permission", async (e, data) => {
 
 // Users Management Handlers (Missing previously)
 ipcMain.handle("create-user", async (e, data) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve) => {
         const { username, password, role, fullname, company_id, companyId, role_id, roleId } = data;
-        const cid = company_id || companyId || currentCompanyId;
-        const rid = role_id || roleId;
+        let cid = company_id || companyId || currentCompanyId;
+        let rid = role_id || roleId;
+        let finalRoleName = role;
         const tempId = randomUUID();
+
+        // If Super Admin is assigning a role to a company user, resolve to the company-specific role
+        const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+        if (isSuperAdmin && cid && rid && (finalRoleName === 'Admin' || finalRoleName === 'Manager')) {
+            const companyRole = await new Promise((res) => {
+                db.get("SELECT id, global_id, name FROM roles WHERE company_id = ? AND name = ?", [cid, finalRoleName], (err, row) => res(row));
+            });
+            if (companyRole) {
+                rid = companyRole.global_id || String(companyRole.id);
+                console.log(`[AUTO-LINK] Redirected User Role from System Template to Company Role: ${rid}`);
+            }
+        }
 
         db.run(
             `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
-            [tempId, username, password, role, rid, fullname, cid],
+            [tempId, username, password, finalRoleName, rid, fullname, cid],
             function (err) {
                 if (err) return resolve({ success: false, message: err.message });
                 syncService.syncPendingRecords('users', '/users');
@@ -665,13 +695,28 @@ ipcMain.handle("create-user", async (e, data) => {
 });
 
 ipcMain.handle("update-user", async (e, data) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve) => {
         const { id, username, password, role, fullname, role_id, roleId, is_active } = data;
-        const rid = role_id || roleId;
+        let rid = role_id || roleId;
+        let finalRoleName = role;
         const active = (is_active === 1 || is_active === true) ? 1 : 0;
 
+        // Resolve Company ID if not present
+        const userRow = await new Promise((res) => {
+            db.get("SELECT company_id FROM users WHERE id = ? OR global_id = ?", [id, id], (err, row) => res(row));
+        });
+        const cid = userRow?.company_id;
+
+        const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+        if (isSuperAdmin && cid && rid && (finalRoleName === 'Admin' || finalRoleName === 'Manager')) {
+            const companyRole = await new Promise((res) => {
+                db.get("SELECT id, global_id FROM roles WHERE company_id = ? AND name = ?", [cid, finalRoleName], (err, row) => res(row));
+            });
+            if (companyRole) rid = companyRole.global_id || String(companyRole.id);
+        }
+
         let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP";
-        let params = [username, role, rid, fullname, active];
+        let params = [username, finalRoleName, rid, fullname, active];
 
         if (password && password.trim() !== '') {
             query += ", password=?";
@@ -774,7 +819,7 @@ ipcMain.handle("create-role", async (e, data) => {
                             const ex = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
                             const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
 
-                            // Always use tempId (UUID) for linking
+                            // Use global_id (tempId) for linking consistency
                             stmt.run(tempId, p.module, v, c, ex, d, pId);
                         });
                         stmt.finalize();
@@ -847,7 +892,7 @@ ipcMain.handle("update-role", async (e, data) => {
                                     const ex = (p.can_edit == 1 || p.canEdit == 1 || p.can_edit === true || p.canEdit === true) ? 1 : 0;
                                     const d = (p.can_delete == 1 || p.canDelete == 1 || p.can_delete === true || p.canDelete === true) ? 1 : 0;
 
-                                    // Use globalId as the role_id for permissions (so sync can find them)
+                                    // Always use the role's primary globalId for permissions
                                     stmt.run(globalId, p.module, v, c, ex, d, pId);
                                 });
                                 stmt.finalize();

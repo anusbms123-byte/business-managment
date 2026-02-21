@@ -72,13 +72,19 @@ const Company = () => {
                 {/* Modern Tab Bar */}
                 <div className="flex items-center px-4 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => {
-                        // FOR SUPER ADMIN: Show Profile (Companies), Users, Roles, and Requests
-                        if (isSuperAdmin && !['profile', 'users', 'roles', 'requests'].includes(tab.id)) return null;
+                        // FOR SUPER ADMIN: Show Profile (Companies), Users, Roles, Requests, Helpline, and Broadcast
+                        if (isSuperAdmin && !['profile', 'users', 'roles', 'requests', 'helpline', 'broadcast'].includes(tab.id)) return null;
 
                         // FOR REGULAR USERS: Filter baseline
                         if (!isSuperAdmin && (['helpline', 'requests', 'broadcast'].includes(tab.id))) return null;
 
-                        const label = (tab.id === 'profile' && isSuperAdmin) ? 'Companies' : tab.label;
+                        let label = tab.label;
+                        if (isSuperAdmin) {
+                            if (tab.id === 'profile') label = 'Companies';
+                            if (tab.id === 'helpline') label = 'Helpline';
+                            if (tab.id === 'broadcast') label = 'Message Admins';
+                        }
+
                         return (
                             <button
                                 key={tab.id}
@@ -758,7 +764,22 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     const roleObj = roles.find(r => (r.global_id || r.id) == v);
                                     setFormData({ ...formData, role_id: v, role: roleObj ? roleObj.name : '' });
                                 }}
-                                options={roles.filter(r => !['super admin', 'super_admin'].includes(r.name.toLowerCase())).map(r => ({ value: r.global_id || r.id, label: r.name }))}
+                                options={roles.filter(r => {
+                                    const roleName = (r.name || '').toLowerCase();
+                                    const isNotSuper = !['super admin', 'superadmin', 'super_admin'].includes(roleName);
+
+                                    if (isSuperAdmin) {
+                                        // ONLY show the standard 2 templates for Super Admin to keep it simple
+                                        // These are roles with no company_id and is_system=1
+                                        const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
+                                        return isNotSuper && isTemplate && (roleName === 'admin' || roleName === 'manager');
+                                    }
+
+                                    // For regular admins: show roles for their company
+                                    const roleCid = r.company_id || r.companyId;
+                                    const targetCid = formData.company_id || currentUser?.company_id || currentUser?.companyId;
+                                    return isNotSuper && roleCid == targetCid;
+                                }).map(r => ({ value: r.global_id || r.id, label: r.name }))}
                                 icon={Shield}
                             />
                         </div>
@@ -888,11 +909,22 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
 
     // Filter roles: exclude Super Admin, and filter by selectedCompany for Super Admin
     const filteredRoles = roles.filter(r => {
-        if (['super admin', 'super_admin'].includes(r.name?.toLowerCase())) return false;
-        if (isSuperAdmin && selectedCompany !== 'all') {
+        const roleName = (r.name || '').toLowerCase();
+        if (roleName === 'super admin' || roleName === 'superadmin' || roleName === 'super_admin') return false;
+
+        if (isSuperAdmin) {
+            // When 'All Companies' is selected, show only the core 2 templates
+            if (selectedCompany === 'all') {
+                const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
+                return isTemplate && (roleName === 'admin' || roleName === 'manager');
+            }
+
+            // For specifically 'system' filter
+            if (selectedCompany === 'system') return (r.is_system === 1 || r.isSystem === true);
+
+            // For specific company: show only its private roles
             const roleCid = r.company_id || r.companyId;
-            if (selectedCompany === 'system') return r.is_system === 1 || r.isSystem === true;
-            return roleCid === selectedCompany || (!roleCid && (r.is_system === 1 || r.isSystem === true));
+            return roleCid === selectedCompany;
         }
         return true;
     });
@@ -1020,17 +1052,14 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             <FormInput label="Functional Description" value={formData.description} onChange={v => setFormData({ ...formData, description: v })} placeholder="What can this role do?" />
                         </div>
 
-                        {/* Super Admin: select which company this role belongs to */}
-                        {isSuperAdmin && !formData.id && (
-                            <FormSelect
-                                label="Assign Role to Organization"
-                                required
-                                value={formData.target_company_id}
-                                onChange={v => setFormData({ ...formData, target_company_id: v })}
-                                options={companies.map(c => ({ value: c.global_id || c.id, label: c.name }))}
-                                placeholder="Select organization"
-                                icon={Building2}
-                            />
+                        {/* Remove manual company assignment for Roles to keep it simple */}
+                        {isSuperAdmin && !formData.id && selectedCompany !== 'system' && (
+                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl mb-4">
+                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest leading-relaxed">
+                                    <Info size={12} className="inline mr-1" />
+                                    This role will be created for the currently selected company or as a system template.
+                                </p>
+                            </div>
                         )}
 
                         <div>
