@@ -84,10 +84,10 @@ db.initPromise = (async () => {
     // 1. CREATE CORE TABLES (IF NOT EXIST)
     const tables = [
       'pending_sync_deletions (id INTEGER PRIMARY KEY AUTOINCREMENT, table_name TEXT, global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
-      'companies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE)',
-      'roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, module TEXT NOT NULL)',
+      'companies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, email TEXT, tax_no TEXT, referral_code TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT, role_id TEXT, fullname TEXT, company_id TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, is_system INTEGER DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_id TEXT, module TEXT NOT NULL, can_view INTEGER DEFAULT 0, can_create INTEGER DEFAULT 0, can_edit INTEGER DEFAULT 0, can_delete INTEGER DEFAULT 0, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(role_id, module))',
       'categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
       'brands (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
       'vendors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
