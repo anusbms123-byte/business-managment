@@ -251,6 +251,31 @@ db.initPromise = (async () => {
     await ensureColumn('employees', 'hourly_rate', 'REAL', '0');
     await ensureColumn('employees', 'joining_date', 'DATETIME');
 
+    // Vendors
+    await ensureColumn('vendors', 'phone', 'TEXT');
+    await ensureColumn('vendors', 'email', 'TEXT');
+    await ensureColumn('vendors', 'address', 'TEXT');
+    await ensureColumn('vendors', 'city', 'TEXT');
+    await ensureColumn('vendors', 'contact_person', 'TEXT');
+    await ensureColumn('vendors', 'gst_no', 'TEXT');
+    await ensureColumn('vendors', 'company_name', 'TEXT');
+    await ensureColumn('vendors', 'opening_balance', 'REAL', '0');
+    await ensureColumn('vendors', 'current_balance', 'REAL', '0');
+
+    // Categories & Brands
+    await ensureColumn('categories', 'description', 'TEXT');
+    await ensureColumn('brands', 'description', 'TEXT');
+
+    // Expenses
+    await ensureColumn('expenses', 'amount', 'REAL', '0');
+    await ensureColumn('expenses', 'date', 'DATETIME', 'CURRENT_TIMESTAMP');
+    await ensureColumn('expenses', 'description', 'TEXT');
+    await ensureColumn('expenses', 'category', 'TEXT');
+
+    // Accounts
+    await ensureColumn('accounts', 'type', 'TEXT');
+    await ensureColumn('accounts', 'balance', 'REAL', '0');
+
     await ensureColumn('salary_records', 'employee_id', 'TEXT');
     await ensureColumn('salary_records', 'month', 'TEXT');
     await ensureColumn('salary_records', 'base_salary', 'REAL', '0');
