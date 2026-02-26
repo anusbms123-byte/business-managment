@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Calendar, DollarSign, Plus, Search, Edit, Eye, X, Trash2, Check, UserPlus } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 import EmployeeDetailModal from './EmployeeDetailModal';
 
 
@@ -81,6 +82,8 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
     const [formData, setFormData] = useState({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0], isActive: true });
     const [saving, setSaving] = useState(false);
 
+    const { showAlert, showConfirm, showError } = useDialog();
+
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -96,26 +99,27 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                 setShowModal(false);
                 onRefresh();
             } else {
-                alert(result.message || "Error saving employee");
+                showError(result.message || "Error saving employee");
             }
         } catch (err) {
-            alert("Error saving employee: " + err.message);
+            showError("Error saving employee: " + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this employee?")) return;
-        try {
-            const result = await window.electronAPI.deleteEmployee(id);
-            if (result.success !== false) {
-                onRefresh();
-            } else {
-                alert(result.message || "Error deleting employee");
+        showConfirm("Are you sure you want to delete this employee?", async () => {
+            try {
+                const result = await window.electronAPI.deleteEmployee(id);
+                if (result.success !== false) {
+                    onRefresh();
+                } else {
+                    showError(result.message || "Error deleting employee");
+                }
+            } catch (err) {
+                showError("Error deleting employee: " + err.message);
             }
-        } catch (err) {
-            alert("Error deleting employee: " + err.message);
-        }
+        });
     };
 
     const filtered = (employees || []).filter(e =>
@@ -325,6 +329,8 @@ const Attendance = ({ employees, currentUser }) => {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
 
+    const { showAlert, showError } = useDialog();
+
     useEffect(() => {
         loadAttendance();
     }, [date, employees]);
@@ -375,10 +381,10 @@ const Attendance = ({ employees, currentUser }) => {
                     date: date
                 });
             }
-            alert("Attendance updated successfully!");
+            showAlert("Attendance updated successfully!");
             loadAttendance();
         } catch (err) {
-            alert("Error saving attendance: " + err.message);
+            showError("Error saving attendance: " + err.message);
         }
         setSaving(false);
     };
@@ -509,6 +515,8 @@ const Payroll = ({ employees, currentUser }) => {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
 
+    const { showError } = useDialog();
+
     useEffect(() => {
         loadSalaries();
     }, [currentUser, month]);
@@ -551,10 +559,10 @@ const Payroll = ({ employees, currentUser }) => {
                 setShowModal(false);
                 loadSalaries();
             } else {
-                alert(result.message || "Error saving salary");
+                showError(result.message || "Error saving salary");
             }
         } catch (err) {
-            alert("Error: " + err.message);
+            showError("Error: " + err.message);
         }
         setSaving(false);
     };

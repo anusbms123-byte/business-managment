@@ -316,25 +316,39 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+        const { id, username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
 
-        // If password is sent from local sync, it's likely already hashed or is a placeholder. 
-        // We save it as is. If the local app is hashing it, this is correct.
+        // Validate roleId if provided - it must exist on cloud or be null
+        let finalRoleId = roleId || null;
+        if (finalRoleId && finalRoleId.startsWith('system-')) {
+            // system-* IDs don't exist on cloud. Try to find the matching company role by name
+            const roleName = finalRoleId.includes('admin') ? 'Admin' : 'Manager';
+            const companyRole = companyId ? await prisma.role.findFirst({
+                where: { companyId, name: { equals: roleName, mode: 'insensitive' } }
+            }) : null;
+            finalRoleId = companyRole ? companyRole.id : null;
+            console.log(`[USERS POST] Resolved system template '${roleId}' -> '${finalRoleId}' for company ${companyId}`);
+        }
 
         // Hash password before saving to cloud
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password || 'changeme', 10);
+        const activeVal = isActive !== undefined ? isActive : (is_active === 1 || is_active === true);
 
-        const user = await prisma.user.create({
-            data: {
-                username,
-                password: hashedPassword,
-                email,
-                fullName,
-                roleId,
-                companyId,
-                isActive: isActive !== undefined ? isActive : (is_active === 1 || is_active === true)
-            }
-        });
+        // Upsert by username to gracefully handle re-sync of same user
+        const existing = await prisma.user.findUnique({ where: { username } });
+        let user;
+        if (existing) {
+            console.log(`[USERS POST] Username '${username}' already exists (${existing.id}). Updating instead.`);
+            user = await prisma.user.update({
+                where: { username },
+                data: { email, fullName, roleId: finalRoleId, companyId, isActive: activeVal }
+            });
+        } else {
+            const createData = { username, password: hashedPassword, email, fullName, roleId: finalRoleId, companyId, isActive: activeVal };
+            // If a specific cloud ID is provided, use it
+            if (id && !id.includes('-')) createData.id = id;
+            user = await prisma.user.create({ data: createData });
+        }
         res.json({ success: true, id: user.id });
     } catch (e) { handleError(res, e); }
 });
@@ -342,25 +356,49 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
     try {
         const { username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+        const userId = req.params.id;
+
+        // Validate roleId
+        let finalRoleId = roleId || null;
+        if (finalRoleId && finalRoleId.startsWith('system-')) {
+            const roleName = finalRoleId.includes('admin') ? 'Admin' : 'Manager';
+            const companyRole = companyId ? await prisma.role.findFirst({
+                where: { companyId, name: { equals: roleName, mode: 'insensitive' } }
+            }) : null;
+            finalRoleId = companyRole ? companyRole.id : null;
+        }
 
         const data = {
             username,
             email,
             fullName,
-            roleId,
+            roleId: finalRoleId,
             companyId,
             isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined)
         };
 
-        // Only update password if provided and not empty
         if (password && password.trim() !== '') {
             data.password = await bcrypt.hash(password, 10);
         }
 
-        await prisma.user.update({
-            where: { id: req.params.id },
-            data
-        });
+        // Check if the record actually exists on cloud
+        const existing = await prisma.user.findUnique({ where: { id: userId } });
+        if (!existing) {
+            // Record not found - it was never synced. Create it instead.
+            console.log(`[USERS PUT] User ${userId} not found on cloud. Creating instead.`);
+            if (!data.password) data.password = await bcrypt.hash(password || 'changeme', 10);
+            // Check for username collision
+            const byUsername = await prisma.user.findUnique({ where: { username } });
+            if (byUsername) {
+                // Update the existing one and return its ID
+                await prisma.user.update({ where: { username }, data: { ...data, password: undefined } });
+                return res.json({ success: true, id: byUsername.id });
+            }
+            const created = await prisma.user.create({ data: { id: userId, ...data } });
+            return res.json({ success: true, id: created.id });
+        }
+
+        await prisma.user.update({ where: { id: userId }, data });
         res.json({ success: true, changes: 1 });
     } catch (e) { handleError(res, e); }
 });

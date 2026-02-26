@@ -4,6 +4,7 @@ import {
     Plus, Search, Edit, Trash2, Image, X,
     Check, TrendingUp, FolderKanban, Clock
 } from 'lucide-react';
+import { useDialog } from '../context/DialogContext';
 import Products from './Products';
 
 // Premium Stat Card Component
@@ -272,6 +273,8 @@ const BarcodePrinting = ({ currentUser }) => {
     const [numLabels, setNumLabels] = useState('');
     const [loading, setLoading] = useState(true);
 
+    const { showAlert } = useDialog();
+
     useEffect(() => {
         const fetchProducts = async () => {
             if (currentUser?.company_id) {
@@ -291,8 +294,8 @@ const BarcodePrinting = ({ currentUser }) => {
     }, [currentUser]);
 
     const handlePrint = () => {
-        if (!selectedProduct) return alert("Please select a product");
-        if (!numLabels || parseInt(numLabels) <= 0) return alert("Please enter a valid number of labels");
+        if (!selectedProduct) return showAlert("Please select a product");
+        if (!numLabels || parseInt(numLabels) <= 0) return showAlert("Please enter a valid number of labels");
         window.print();
     };
 

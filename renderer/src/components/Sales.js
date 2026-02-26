@@ -4,6 +4,7 @@ import {
     Trash2, Package, User, Printer
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 const Sales = ({ currentUser }) => {
     const [sales, setSales] = useState([]);
@@ -34,6 +35,8 @@ const Sales = ({ currentUser }) => {
     const [isProductListVisible, setIsProductListVisible] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [hoveredProduct, setHoveredProduct] = useState(null);
+
+    const { showAlert, showConfirm, showError } = useDialog();
 
     // Printing State
     const [printReceiptData, setPrintReceiptData] = useState(null);
@@ -124,7 +127,7 @@ const Sales = ({ currentUser }) => {
         if (!product) return;
 
         if (product.stockQty < qty) {
-            alert(`Insufficient Stock! Available: ${product.stockQty}`);
+            showAlert(`Insufficient Stock! Available: ${product.stockQty}`);
             return;
         }
 
@@ -192,29 +195,30 @@ const Sales = ({ currentUser }) => {
 
     const handleEdit = (sale) => {
         setEditingId(sale.id);
-        setSelectedCustomer(sale.customerId || '');
+        setSelectedCustomer(sale.customerId || sale.customer_id || '');
 
         // Reconstruct Cart
-        const loadedCart = (sale.items || []).map(item => ({
-            productId: item.productId || item.product?.id,
+        const items = sale.items || [];
+        const loadedCart = items.map(item => ({
+            productId: item.productId || item.product_id || item.product?.id,
             name: item.product?.name || item.name || 'Unknown Item',
-            sku: item.product?.sku,
-            price: item.price || item.unitPrice,
-            quantity: item.quantity,
-            total: (item.price || item.unitPrice) * item.quantity
+            sku: item.product?.sku || item.sku,
+            price: item.price || item.unitPrice || item.unit_price || 0,
+            quantity: item.quantity || 0,
+            total: item.total || item.total_price || ((item.price || item.unitPrice || item.unit_price || 0) * (item.quantity || 0))
         }));
         setCart(loadedCart);
 
-        setDiscount(sale.discount || 0);
+        setDiscount(sale.discount ?? 0);
         setDiscountType('FLAT');
-        setTax(sale.tax || 0);
+        setTax(sale.tax ?? sale.tax_amount ?? 0);
         setTaxType('FLAT');
-        setShippingCost(sale.shippingCost || 0);
-        setAmountPaid(sale.paidAmount || 0);
-        setPaymentMethod(sale.paymentMethod || 'CASH');
+        setShippingCost(sale.shippingCost ?? sale.shipping_cost ?? 0);
+        setAmountPaid(sale.paidAmount ?? sale.amountPaid ?? sale.amount_paid ?? 0);
+        setPaymentMethod(sale.paymentMethod || sale.payment_method || 'CASH');
         setNotes(sale.notes || '');
 
-        const cust = customers.find(c => c.id === sale.customerId);
+        const cust = customers.find(c => c.id === (sale.customerId || sale.customer_id));
         setPreviousBalance(cust?.balance || 0);
 
         setIsModalOpen(true);
@@ -248,17 +252,22 @@ const Sales = ({ currentUser }) => {
     };
 
     const handleSaveSale = async () => {
-        if (cart.length === 0) return alert("Please add items to cart!");
+        if (cart.length === 0) return showAlert("Please add items to cart!");
 
         // Credit Limit Check
         const cust = customers.find(c => c.id === selectedCustomer);
         if (cust && cust.creditLimit > 0 && netBalance > cust.creditLimit) {
-            const proceed = window.confirm(`Credit Limit Exceeded! \nLimit: PKR ${cust.creditLimit.toLocaleString()} \nNew Balance: PKR ${netBalance.toLocaleString()} \nDo you still want to proceed?`);
-            if (!proceed) return;
+            showConfirm(`Credit Limit Exceeded! \nLimit: PKR ${cust?.creditLimit?.toLocaleString() || 0} \nNew Balance: PKR ${netBalance?.toLocaleString() || 0} \nDo you still want to proceed?`, async () => {
+                await executeSaveSale();
+            }, 'Credit Limit Warning');
+            return;
         }
 
-        setSaving(true);
+        await executeSaveSale();
+    };
 
+    const executeSaveSale = async () => {
+        const cust = customers.find(c => c.id === selectedCustomer);
         try {
             const saleData = {
                 id: editingId,
@@ -295,11 +304,11 @@ const Sales = ({ currentUser }) => {
                 resetForm();
                 fetchData();
             } else {
-                alert("Error: " + result.message);
+                showError("Error: " + result.message);
             }
         } catch (error) {
             console.error("Sale Error:", error);
-            alert("An unexpected error occurred.");
+            showError("An unexpected error occurred.");
         } finally {
             setSaving(false);
         }
@@ -311,18 +320,19 @@ const Sales = ({ currentUser }) => {
     );
 
     const handleDeleteSale = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this sale? This will restore stock and reverse any customer balance changes.")) return;
-        try {
-            const result = await window.electronAPI.deleteSale(id);
-            if (result.success) {
-                fetchData();
-            } else {
-                alert("Error: " + result.message);
+        showConfirm("Are you sure you want to delete this sale? This will restore stock and reverse any customer balance changes.", async () => {
+            try {
+                const result = await window.electronAPI.deleteSale(id);
+                if (result.success) {
+                    fetchData();
+                } else {
+                    showError("Error: " + result.message);
+                }
+            } catch (error) {
+                console.error("Delete Error:", error);
+                showError("An unexpected error occurred.");
             }
-        } catch (error) {
-            console.error("Delete Error:", error);
-            alert("An unexpected error occurred.");
-        }
+        });
     };
 
     return (
@@ -372,7 +382,7 @@ const Sales = ({ currentUser }) => {
                                 <tr key={sale.id} className="hover:bg-slate-50/50 transition-all group border-b border-slate-50 last:border-0">
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-sm text-black group-hover:text-blue-600 transition-colors uppercase">{sale.invoiceNo}</div>
-                                        <div className="text-[10px] text-black font-bold mt-1">{new Date(sale.date).toLocaleString()}</div>
+                                        <div className="text-[10px] text-black font-bold mt-1">{sale.date ? new Date(sale.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-bold text-black">
                                         {sale.customer?.name || 'Walk-in Customer'}
@@ -494,7 +504,7 @@ const Sales = ({ currentUser }) => {
                                             <option value="">Walk-in Customer</option>
                                             {customers.map(c => (
                                                 <option key={c.id} value={c.id}>
-                                                    {c.name} {c.balance > 0 ? `(Owes: ${c.balance.toLocaleString()})` : ''}
+                                                    {c.name} {c.balance > 0 ? `(Owes: ${c?.balance?.toLocaleString() || 0})` : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -680,13 +690,13 @@ const Sales = ({ currentUser }) => {
                                                     <div className="font-bold text-black text-sm">{item.name}</div>
                                                     <div className="text-[10px] text-black font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-bold text-black text-xs">PKR {item.price.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-center font-bold text-black text-xs">PKR {(item.price || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="w-16 mx-auto px-2 py-1 bg-slate-100 rounded text-center font-bold text-xs text-black border border-slate-200">
                                                         {item.quantity}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-bold text-black text-sm">PKR {item.total.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-right font-bold text-black text-sm">PKR {(item.total || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
                                                         <Trash2 size={14} />
@@ -715,7 +725,7 @@ const Sales = ({ currentUser }) => {
                                 <div className="space-y-3 px-1">
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Subtotal</span>
-                                        <span className="text-slate-800">PKR {subTotal.toLocaleString()}</span>
+                                        <span className="text-slate-800">PKR {subTotal?.toLocaleString() || 0}</span>
                                     </div>
 
                                     {/* Tax & Discount Row */}
@@ -734,7 +744,7 @@ const Sales = ({ currentUser }) => {
                                                 <input
                                                     type="number"
                                                     className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                    value={tax || ''}
+                                                    value={tax ?? ''}
                                                     placeholder="0"
                                                     onChange={(e) => setTax(e.target.value)}
                                                 />
@@ -754,7 +764,7 @@ const Sales = ({ currentUser }) => {
                                                 <input
                                                     type="number"
                                                     className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-xs"
-                                                    value={discount || ''}
+                                                    value={discount ?? ''}
                                                     placeholder="0"
                                                     onChange={(e) => setDiscount(e.target.value)}
                                                 />
@@ -768,7 +778,7 @@ const Sales = ({ currentUser }) => {
                                             <input
                                                 type="number"
                                                 className="w-full px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-700 focus:border-blue-500 outline-none transition-all text-sm"
-                                                value={shippingCost || ''}
+                                                value={shippingCost ?? ''}
                                                 placeholder="0"
                                                 onChange={(e) => setShippingCost(e.target.value)}
                                             />
@@ -790,7 +800,7 @@ const Sales = ({ currentUser }) => {
                                             <div className="flex items-baseline gap-1">
                                                 <span className="text-xs font-bold text-slate-400 uppercase">PKR</span>
                                                 <span className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tighter">
-                                                    {grandTotal.toLocaleString()}
+                                                    {grandTotal?.toLocaleString() || 0}
                                                 </span>
                                             </div>
                                         </div>
@@ -813,7 +823,7 @@ const Sales = ({ currentUser }) => {
                                                 <input
                                                     type="number"
                                                     className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
-                                                    value={amountPaid || ''}
+                                                    value={amountPaid ?? ''}
                                                     placeholder="0"
                                                     onChange={(e) => setAmountPaid(e.target.value)}
                                                 />
@@ -838,12 +848,12 @@ const Sales = ({ currentUser }) => {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <span className={`text-xs font-bold ${returnChange ? 'text-slate-600' : 'text-slate-300 line-through'}`}>PKR {changeAmount.toLocaleString()}</span>
+                                                <span className={`text-xs font-bold ${returnChange ? 'text-slate-600' : 'text-slate-300 line-through'}`}>PKR {(changeAmount || 0).toLocaleString()}</span>
                                             </div>
                                             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                                 <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Net Balance</label>
                                                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${netBalance < 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-800'}`}>
-                                                    {netBalance < 0 ? `Credit: PKR ${Math.abs(netBalance).toLocaleString()}` : `PKR ${netBalance.toLocaleString()}`}
+                                                    {netBalance < 0 ? `Credit: PKR ${Math.abs(netBalance || 0).toLocaleString()}` : `PKR ${(netBalance || 0).toLocaleString()}`}
                                                 </span>
                                             </div>
                                         </div>

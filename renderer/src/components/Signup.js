@@ -93,8 +93,7 @@ const Signup = () => {
                             <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-50 text-blue-900 rounded-xl mb-4 border border-blue-100">
                                 <LayoutDashboard size={28} />
                             </div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Create Account</h1>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Start your journey</p>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Create Your Account</h1>
                         </div>
 
                         {error && (
@@ -111,7 +110,7 @@ const Signup = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 icon={User}
-                                placeholder="Choose a username"
+                                placeholder="Enter your Username"
                                 required
                             />
                             <FormInput
@@ -160,7 +159,7 @@ const Signup = () => {
                             >
                                 {loading ? 'Creating Account...' : (
                                     <>
-                                        <span>Continue to Setup</span>
+                                        <span>register account </span>
                                         <ArrowRight size={16} />
                                     </>
                                 )}

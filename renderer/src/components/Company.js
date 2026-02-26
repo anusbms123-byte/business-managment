@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin, Megaphone, Send } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 
 const tabs = [
@@ -141,6 +142,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     const [companySearch, setCompanySearch] = useState('');
     const [companyReferralFilter, setCompanyReferralFilter] = useState('all');
 
+    const { showAlert, showConfirm, showSuccess, showError } = useDialog();
+
     useEffect(() => { loadData(); }, [currentUser, isSuperAdmin, companySearch, companyReferralFilter]);
 
     const loadData = async () => {
@@ -187,14 +190,14 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                     ? await window.electronAPI.updateCompany(formData)
                     : await window.electronAPI.createCompany(formData);
                 if (result?.success === false) {
-                    window.alert(result.message);
+                    showError(result.message);
                 } else {
                     setShowModal(false);
                     loadData();
                 }
             }
         } catch (err) {
-            window.alert('Error: ' + err.message);
+            showError('Error: ' + err.message);
         }
         setSaving(false);
     };
@@ -234,19 +237,20 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
     const handleDeleteCompany = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm('Are you sure you want to PERMANENTLY delete this company and all its data?')) return;
-        try {
-            if (window.electronAPI) {
-                const result = await window.electronAPI.deleteCompany(id);
-                if (result?.success === false) {
-                    window.alert(result.message);
-                } else {
-                    loadData();
+        showConfirm('Are you sure you want to PERMANENTLY delete this company and all its data?', async () => {
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.deleteCompany(id);
+                    if (result?.success === false) {
+                        showError(result.message);
+                    } else {
+                        loadData();
+                    }
                 }
+            } catch (err) {
+                showError('Error: ' + err.message);
             }
-        } catch (err) {
-            window.alert('Error: ' + err.message);
-        }
+        });
     };
 
     if (loading) return <LoadingSpinner />;
@@ -534,6 +538,8 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({});
 
+    const { showConfirm, showError } = useDialog();
+
     useEffect(() => { loadData(); }, [currentUser, isSuperAdmin]);
 
     const loadData = async () => {
@@ -566,7 +572,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 setCompanies(comps);
             }
         } catch (err) {
-            window.alert('Error: ' + err.message);
+            showError('Error: ' + err.message);
         }
         setLoading(false);
     };
@@ -592,21 +598,22 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 ? await window.electronAPI.updateUser(data)
                 : await window.electronAPI.createUser(data);
             if (result?.success === false) {
-                window.alert(result.message);
+                showError(result.message);
             } else {
                 setShowModal(false);
                 loadData();
             }
         } catch (err) {
-            window.alert('Error: ' + err.message);
+            showError('Error: ' + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to deactivate this user?')) return;
-        await window.electronAPI.deleteUser(id);
-        loadData();
+        showConfirm('Are you sure you want to deactivate this user?', async () => {
+            await window.electronAPI.deleteUser(id);
+            loadData();
+        });
     };
 
     const openModal = (user = null) => {
@@ -812,6 +819,8 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     const [selectedCompany, setSelectedCompany] = useState('system');
     const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });
 
+    const { showConfirm, showError } = useDialog();
+
     useEffect(() => { loadRoles(); }, [currentUser, isSuperAdmin]);
 
     const loadRoles = async () => {
@@ -836,7 +845,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
             }
         } catch (err) {
             console.error("Load Roles Error:", err);
-            window.alert('Error: ' + err.message);
+            showError('Error: ' + err.message);
         }
         setLoading(false);
     };
@@ -872,19 +881,20 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                 setShowModal(false);
                 setTimeout(async () => { await loadRoles(); }, 500);
             } else {
-                window.alert('Error: ' + (result?.message || 'Operation failed'));
+                showError('Error: ' + (result?.message || 'Operation failed'));
             }
         } catch (err) {
             console.error("Save Role Error:", err);
-            window.alert('System Error: ' + err.message);
+            showError('System Error: ' + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this role definition?')) return;
-        await window.electronAPI.deleteRole(id);
-        loadRoles();
+        showConfirm('Delete this role definition?', async () => {
+            await window.electronAPI.deleteRole(id);
+            loadRoles();
+        });
     };
 
     const openModal = (role = null) => {
@@ -1197,6 +1207,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
 
     useEffect(() => { loadRequests(); }, [referralFilter]);
 
+    const { showAlert, showConfirm } = useDialog();
     const loadRequests = async () => {
         setLoading(true);
         try {
@@ -1212,22 +1223,23 @@ const CompanyRequests = ({ currentUser, onAction }) => {
     };
 
     const handleApprove = async (id) => {
-        if (!window.confirm('Approve this company request? This will create a new organization and activate the user.')) return;
-        try {
-            const res = await window.electronAPI.approveCompanyRequest(id);
-            if (res.success) {
-                loadRequests();
-                if (onAction) onAction();
-            } else {
-                alert(res.message);
+        showConfirm('Approve this company request? This will create a new organization and activate the user.', async () => {
+            try {
+                const res = await window.electronAPI.approveCompanyRequest(id);
+                if (res.success) {
+                    loadRequests();
+                    if (onAction) onAction();
+                } else {
+                    showAlert(res.message, 'Approval Failed');
+                }
+            } catch (err) {
+                console.error(err);
             }
-        } catch (err) {
-            console.error(err);
-        }
+        });
     };
 
     const confirmReject = async () => {
-        if (!rejecting.notes?.trim()) return alert('Please provide a reason for rejection.');
+        if (!rejecting.notes?.trim()) return showAlert('Please provide a reason for rejection.', 'Input Required');
         setIsRejecting(true);
         try {
             const res = await window.electronAPI.rejectCompanyRequest(rejecting.id, rejecting.notes);
@@ -1236,7 +1248,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                 loadRequests();
                 if (onAction) onAction();
             } else {
-                alert(res.message);
+                showAlert(res.message, 'Rejection Failed');
             }
         } catch (err) {
             console.error(err);
@@ -1633,6 +1645,8 @@ const SystemBroadcast = () => {
     const [sending, setSending] = useState(false);
     const [recentMessages, setRecentMessages] = useState([]);
 
+    const { showSuccess, showError } = useDialog();
+
     useEffect(() => { loadMessages(); }, []);
 
     const loadMessages = async () => {
@@ -1651,12 +1665,12 @@ const SystemBroadcast = () => {
             if (res.success) {
                 setMessage('');
                 loadMessages();
-                alert('Message broadcasted successfully!');
+                showSuccess('Message broadcasted successfully!');
             } else {
-                alert('Failed: ' + res.message);
+                showError('Failed: ' + res.message);
             }
         } catch (err) {
-            alert('Error: ' + err.message);
+            showError('Error: ' + err.message);
         }
         setSending(false);
     };

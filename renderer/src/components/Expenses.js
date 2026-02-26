@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, X, Edit2, Trash2, Home, Zap, Users, Coffee, DollarSign, TrendingUp, Loader2, Check } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 
 
@@ -38,6 +39,8 @@ const Expenses = ({ currentUser }) => {
     const [formData, setFormData] = useState({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
     const [saving, setSaving] = useState(false);
 
+    const { showAlert, showConfirm, showError } = useDialog();
+
     useEffect(() => {
         loadExpenses();
     }, [currentUser]);
@@ -72,26 +75,27 @@ const Expenses = ({ currentUser }) => {
                 loadExpenses();
                 setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
             } else {
-                alert(result.message || "Error saving expense");
+                showError(result.message || "Error saving expense");
             }
         } catch (err) {
-            alert("Error saving expense: " + err.message);
+            showError("Error saving expense: " + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this expense?")) return;
-        try {
-            const result = await window.electronAPI.deleteExpense(id);
-            if (result.success !== false) {
-                loadExpenses();
-            } else {
-                alert(result.message || "Error deleting expense");
+        showConfirm("Are you sure you want to delete this expense?", async () => {
+            try {
+                const result = await window.electronAPI.deleteExpense(id);
+                if (result.success !== false) {
+                    loadExpenses();
+                } else {
+                    showError(result.message || "Error deleting expense");
+                }
+            } catch (err) {
+                showError("Error deleting expense: " + err.message);
             }
-        } catch (err) {
-            alert("Error deleting expense: " + err.message);
-        }
+        });
     };
 
     const openEditModal = (expense) => {

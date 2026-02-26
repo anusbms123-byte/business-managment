@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HardDrive, Clock, RotateCcw, Download, Upload, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { useDialog } from '../context/DialogContext';
 
 const tabs = [
     { id: 'local', label: 'Local Backup', icon: HardDrive },
@@ -58,8 +59,10 @@ const LocalBackup = ({ currentUser }) => {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState(null);
 
+    const { showAlert } = useDialog();
+
     const handleBackup = async () => {
-        if (!currentUser?.company_id) return alert("Company identification missing.");
+        if (!currentUser?.company_id) return showAlert("Company identification missing.");
         setLoading(true);
         setStatus(null);
         try {
@@ -124,8 +127,10 @@ const RestoreBackup = ({ currentUser }) => {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState(null);
 
+    const { showAlert, showConfirm } = useDialog();
+
     const handleRestore = async () => {
-        if (!currentUser?.company_id) return alert("Company identification missing.");
+        if (!currentUser?.company_id) return showAlert("Company identification missing.");
         setLoading(true);
         setStatus(null);
         try {
@@ -139,6 +144,27 @@ const RestoreBackup = ({ currentUser }) => {
             setStatus({ type: 'error', message: err.message });
         }
         setLoading(false);
+    };
+
+    const handleResetSync = async () => {
+        if (!currentUser?.company_id) return showAlert("Company identification missing.");
+
+        showConfirm("Kya aap waqai local data reset karna chahte hain? Is se duplicates khatam ho jayenge aur sara data cloud se dobara download hoga.", async () => {
+            setLoading(true);
+            setStatus(null);
+            try {
+                const result = await window.electronAPI.resetSync(currentUser.company_id);
+                if (result.success) {
+                    setStatus({ type: 'success', message: "System re-synchronized successfully. Please restart the app for best results." });
+                    showAlert("System re-synchronized! Please restart the app if you see any display issues.");
+                } else {
+                    setStatus({ type: 'error', message: result.message });
+                }
+            } catch (err) {
+                setStatus({ type: 'error', message: err.message });
+            }
+            setLoading(false);
+        });
     };
 
     return (
@@ -155,26 +181,44 @@ const RestoreBackup = ({ currentUser }) => {
                 </div>
             </div>
 
-            <div className="p-12 bg-slate-50 rounded-xl border border-slate-200 text-center flex flex-col items-center group hover:bg-white transition-all">
-                <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-amber-100 shadow-sm shadow-amber-50">
-                    {loading ? <Loader2 size={40} className="animate-spin" /> : <Upload size={40} />}
-                </div>
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-2 uppercase">Initialize Data Recovery</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Select target snapshot binary (.json) for induction into the cloud ecosystem.</p>
-                <button
-                    onClick={handleRestore}
-                    disabled={loading}
-                    className="px-10 py-3.5 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-md active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-50"
-                >
-                    {loading ? 'Restoring Cloud Records...' : 'Upload Recovery File'}
-                </button>
-                {status && (
-                    <div className={`mt-6 p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest w-full max-w-md flex items-center gap-3 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                        {status.type === 'success' && <CheckCircle2 size={18} />}
-                        {status.message}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="p-12 bg-slate-50 rounded-xl border border-slate-200 text-center flex flex-col items-center group hover:bg-white transition-all">
+                    <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-amber-100 shadow-sm shadow-amber-50">
+                        {loading ? <Loader2 size={40} className="animate-spin" /> : <Upload size={40} />}
                     </div>
-                )}
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-2 uppercase">Initialize Data Recovery</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Select target snapshot binary (.json) for induction into the cloud ecosystem.</p>
+                    <button
+                        onClick={handleRestore}
+                        disabled={loading}
+                        className="px-10 py-3.5 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-md active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-50"
+                    >
+                        {loading ? 'Restoring Cloud Records...' : 'Upload Recovery File'}
+                    </button>
+                </div>
+
+                <div className="p-12 bg-slate-50 rounded-xl border border-slate-200 text-center flex flex-col items-center group hover:bg-white transition-all">
+                    <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-rose-100 shadow-sm shadow-rose-50">
+                        {loading ? <Loader2 size={40} className="animate-spin" /> : <RotateCcw size={40} />}
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight mb-2 uppercase">Fix Duplicates & Sync</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Clear local cache and re-download fresh data from cloud to fix duplicates or sync errors.</p>
+                    <button
+                        onClick={handleResetSync}
+                        disabled={loading}
+                        className="px-10 py-3.5 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 transition-all shadow-md active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-50"
+                    >
+                        {loading ? 'Resetting...' : 'Reset & Re-sync Now'}
+                    </button>
+                </div>
             </div>
+
+            {status && (
+                <div className={`p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest w-full flex items-center gap-3 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                    {status.type === 'success' && <CheckCircle2 size={18} />}
+                    {status.message}
+                </div>
+            )}
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, LayoutDashboard, HelpCircle, Phone, Mail, FileText, X, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDialog } from '../context/DialogContext';
 
 const Login = ({ onLoginSuccess }) => {
     const [username, setUsername] = useState('');
@@ -12,6 +13,8 @@ const Login = ({ onLoginSuccess }) => {
     const [supportData, setSupportData] = useState({ fullName: '', email: '', whatsapp: '', description: '' });
     const [supportLoading, setSupportLoading] = useState(false);
     const [supportSuccess, setSupportSuccess] = useState(false);
+
+    const { showError } = useDialog();
 
     const handleSupportSubmit = async (e) => {
         e.preventDefault();
@@ -34,7 +37,7 @@ const Login = ({ onLoginSuccess }) => {
             }
         } catch (err) {
             console.error(err);
-            window.alert('Failed to submit support request.');
+            showError('Failed to submit support request.');
         } finally {
             setSupportLoading(false);
         }
@@ -94,7 +97,7 @@ const Login = ({ onLoginSuccess }) => {
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-600 rounded-xl mb-6 border border-blue-100">
                                 <LayoutDashboard size={32} />
                             </div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">System Portal</h1>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">BizNex</h1>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Business Management System</p>
                         </div>
 
@@ -108,7 +111,7 @@ const Login = ({ onLoginSuccess }) => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Identity UID</label>
+                                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Username</label>
                                 <div className="relative group">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                     <input
@@ -123,7 +126,7 @@ const Login = ({ onLoginSuccess }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Security Key</label>
+                                <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Password</label>
                                 <div className="relative group">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
                                     <input
@@ -155,23 +158,16 @@ const Login = ({ onLoginSuccess }) => {
                                         <span>Authenticating...</span>
                                     </div>
                                 ) : (
-                                    <span>Access Control Unit</span>
+                                    <span>Login</span>
                                 )}
                             </button>
                             <div className="text-center mt-4">
                                 <p className="text-xs text-slate-400 font-bold">
                                     Don't have an account?{' '}
-                                    <Link to="/signup" className="text-blue-600 hover:text-blue-800 transition-colors">Register New Organization</Link>
+                                    <Link to="/signup" className="text-blue-600 hover:text-blue-800 transition-colors">Register New company</Link>
                                 </p>
                             </div>
                         </form>
-
-                        <div className="mt-12 text-center">
-                            <div className="h-px bg-slate-100 w-full mb-6"></div>
-                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                                Authorized Access Only • v2.0.4
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -279,7 +275,7 @@ const Login = ({ onLoginSuccess }) => {
                                         {supportLoading ? (
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         ) : (
-                                            <span>Submit Support Ticket</span>
+                                            <span>Submit report</span>
                                         )}
                                     </button>
                                 </form>

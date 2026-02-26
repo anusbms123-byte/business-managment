@@ -4,6 +4,7 @@ import {
     Mail, MapPin, Truck, X, Check, Home, User, Loader2
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 const Suppliers = ({ currentUser }) => {
     const [suppliers, setSuppliers] = useState([]);
@@ -23,6 +24,8 @@ const Suppliers = ({ currentUser }) => {
         gst_no: '',
         openingBalance: ''
     });
+
+    const { showAlert, showConfirm, showError } = useDialog();
 
     useEffect(() => { loadSuppliers(); }, [currentUser]);
 
@@ -59,29 +62,32 @@ const Suppliers = ({ currentUser }) => {
             }
 
             if (result?.success === false) {
-                window.alert(result.message);
+                showError(result.message, 'Save Failed');
             } else {
                 setShowModal(false);
                 loadSuppliers();
             }
         } catch (err) {
-            window.alert('Error saving supplier: ' + err.message);
+            showError('Error saving supplier: ' + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this supplier?')) return;
-        try {
-            const result = await window.electronAPI.deleteVendor(id);
-            if (result?.success === false) {
-                window.alert(result.message);
-            } else {
-                loadSuppliers();
+        showConfirm('Are you sure you want to delete this supplier?', async () => {
+            setLoading(true);
+            try {
+                const result = await window.electronAPI.deleteVendor(id);
+                if (result?.success === false) {
+                    showError(result.message, 'Cannot Delete');
+                } else {
+                    loadSuppliers();
+                }
+            } catch (err) {
+                showError('Error deleting supplier: ' + err.message);
             }
-        } catch (err) {
-            window.alert('Error deleting supplier: ' + err.message);
-        }
+            setLoading(false);
+        }, 'Confirm Deletion');
     };
 
     const openModal = (supplier = null) => {

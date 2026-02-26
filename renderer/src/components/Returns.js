@@ -4,6 +4,7 @@ import {
     Trash2, RefreshCcw
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 const Returns = ({ currentUser }) => {
     const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'purchases'
@@ -28,6 +29,8 @@ const Returns = ({ currentUser }) => {
     const [productSearch, setProductSearch] = useState('');
     const [isProductListVisible, setIsProductListVisible] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
+
+    const { showAlert, showConfirm, showError } = useDialog();
 
     const productRef = useRef(null);
     const qtyRef = useRef(null);
@@ -145,10 +148,11 @@ const Returns = ({ currentUser }) => {
                 resetForm();
                 fetchData();
             } else {
-                alert("Error: " + res.message);
+                showError("Error: " + res.message);
             }
         } catch (error) {
             console.error("Save error:", error);
+            showError("An unexpected error occurred.");
         } finally {
             setSaving(false);
         }
@@ -166,18 +170,24 @@ const Returns = ({ currentUser }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this return record? This will also revert stock and balances.")) return;
-        try {
-            let res;
-            if (activeTab === 'sales') {
-                res = await window.electronAPI.deleteSaleReturn(id);
-            } else {
-                res = await window.electronAPI.deletePurchaseReturn(id);
+        showConfirm("Are you sure you want to delete this return record? This will also revert stock and balances.", async () => {
+            try {
+                let res;
+                if (activeTab === 'sales') {
+                    res = await window.electronAPI.deleteSaleReturn(id);
+                } else {
+                    res = await window.electronAPI.deletePurchaseReturn(id);
+                }
+                if (res.success) {
+                    fetchData();
+                } else {
+                    showError("Error: " + res.message);
+                }
+            } catch (error) {
+                console.error("Delete error:", error);
+                showError("An unexpected error occurred.");
             }
-            if (res.success) fetchData();
-        } catch (error) {
-            console.error("Delete error:", error);
-        }
+        });
     };
 
     const filteredData = (activeTab === 'sales' ? saleReturns : purchaseReturns).filter(item => {
@@ -258,7 +268,7 @@ const Returns = ({ currentUser }) => {
                             ) : filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 text-sm text-slate-600 font-medium">
-                                        {new Date(item.date).toLocaleDateString()}
+                                        {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="text-sm font-bold text-slate-800">{item.invoiceNo}</span>
@@ -270,7 +280,7 @@ const Returns = ({ currentUser }) => {
                                         {item.items?.length || 0} product(s)
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="text-sm font-medium text-slate-900">PKR {item.totalAmount.toLocaleString()}</span>
+                                        <span className="text-sm font-medium text-slate-900">PKR {(item.totalAmount || 0).toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -376,7 +386,7 @@ const Returns = ({ currentUser }) => {
                                                             <div className="font-bold text-sm text-slate-800">{p.name}</div>
                                                             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
                                                         </div>
-                                                        <div className="font-bold text-blue-600 text-sm">PKR {(activeTab === 'sales' ? p.sellPrice : p.costPrice).toLocaleString()}</div>
+                                                        <div className="font-bold text-blue-600 text-sm">PKR {((activeTab === 'sales' ? p.sellPrice : p.costPrice) || 0).toLocaleString()}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -424,11 +434,11 @@ const Returns = ({ currentUser }) => {
                                                     <div className="text-sm font-bold text-slate-800">{item.name}</div>
                                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-medium text-slate-600 text-xs">PKR {item.price.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-center font-medium text-slate-600 text-xs">PKR {(item.price || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-700">{item.quantity}</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-medium text-slate-800 text-sm">PKR {item.total.toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-right font-medium text-slate-800 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all">
                                                         <Trash2 size={14} />
@@ -468,7 +478,7 @@ const Returns = ({ currentUser }) => {
                                 <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Subtotal</span>
-                                        <span className="text-slate-800 font-medium font-mono">PKR {subTotal.toLocaleString()}</span>
+                                        <span className="text-slate-800 font-medium font-mono">PKR {(subTotal || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-tight">
                                         <span>Handling / Tax</span>
@@ -483,7 +493,7 @@ const Returns = ({ currentUser }) => {
                                     <div className="pt-4 border-t border-slate-200 flex flex-col gap-1">
                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Credit Amount</span>
                                         <span className="text-2xl font-medium text-blue-950 tracking-tighter">
-                                            PKR {totalAmount.toLocaleString()}
+                                            PKR {(totalAmount || 0).toLocaleString()}
                                         </span>
                                     </div>
                                 </div>

@@ -21,7 +21,10 @@ import CompanySetup from './components/CompanySetup';
 import PendingApproval from './components/PendingApproval';
 import Returns from './components/Returns';
 
+import { DialogProvider } from './context/DialogContext';
+
 function App() {
+    // ... rest of state remain same
     const [user, setUser] = useState(null);
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -100,48 +103,49 @@ function App() {
     }
 
     return (
-        <Router>
-            <Routes>
+        <DialogProvider>
+            <Router>
+                <Routes>
+                    <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                    <Route path="/signup" element={!user ? <Signup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                    <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
+                    <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
 
-                <Route path="/login" element={!user ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
-                <Route path="/signup" element={!user ? <Signup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
-                <Route path="/setup-company" element={!user ? <CompanySetup /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
-                <Route path="/approval-pending" element={!user ? <PendingApproval /> : <Navigate to={(user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin') ? '/company' : '/'} replace />} />
 
-
-                {user ? (
-                    <Route path="/*" element={
-                        <Layout user={user} permissions={permissions} onLogout={handleLogout}>
-                            <Routes>
-                                <Route path="/" element={
-                                    // Redirect Super Admin to Company page, regular users to Dashboard
-                                    (user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin')
-                                        ? <Navigate to="/company" replace />
-                                        : <Dashboard currentUser={user} />
-                                } />
-                                <Route path="/inventory" element={<Inventory currentUser={user} />} />
-                                <Route path="/purchase" element={<Purchase currentUser={user} />} />
-                                <Route path="/sales" element={<Sales currentUser={user} />} />
-                                <Route path="/returns" element={<Returns currentUser={user} />} />
-                                <Route path="/customers" element={<Customers currentUser={user} />} />
-                                <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
-                                <Route path="/expenses" element={<Expenses currentUser={user} />} />
-                                <Route path="/reports" element={<Reports currentUser={user} />} />
-                                <Route path="/accounting" element={<Accounting currentUser={user} />} />
-                                <Route path="/hrm" element={<HRM currentUser={user} />} />
-                                <Route path="/backup" element={<Backup currentUser={user} />} />
-                                <Route path="/users" element={<Users currentUser={user} />} />
-                                <Route path="/settings" element={<Settings currentUser={user} />} />
-                                <Route path="/company" element={<Company currentUser={user} />} />
-                                <Route path="*" element={<Navigate to="/" replace />} />
-                            </Routes>
-                        </Layout>
-                    } />
-                ) : (
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                )}
-            </Routes>
-        </Router>
+                    {user ? (
+                        <Route path="/*" element={
+                            <Layout user={user} permissions={permissions} onLogout={handleLogout}>
+                                <Routes>
+                                    <Route path="/" element={
+                                        // Redirect Super Admin to Company page, regular users to Dashboard
+                                        (user?.role?.toLowerCase() === 'super_admin' || user?.role === 'Super Admin')
+                                            ? <Navigate to="/company" replace />
+                                            : <Dashboard currentUser={user} />
+                                    } />
+                                    <Route path="/inventory" element={<Inventory currentUser={user} />} />
+                                    <Route path="/purchase" element={<Purchase currentUser={user} />} />
+                                    <Route path="/sales" element={<Sales currentUser={user} />} />
+                                    <Route path="/returns" element={<Returns currentUser={user} />} />
+                                    <Route path="/customers" element={<Customers currentUser={user} />} />
+                                    <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
+                                    <Route path="/expenses" element={<Expenses currentUser={user} />} />
+                                    <Route path="/reports" element={<Reports currentUser={user} />} />
+                                    <Route path="/accounting" element={<Accounting currentUser={user} />} />
+                                    <Route path="/hrm" element={<HRM currentUser={user} />} />
+                                    <Route path="/backup" element={<Backup currentUser={user} />} />
+                                    <Route path="/users" element={<Users currentUser={user} />} />
+                                    <Route path="/settings" element={<Settings currentUser={user} />} />
+                                    <Route path="/company" element={<Company currentUser={user} />} />
+                                    <Route path="*" element={<Navigate to="/" replace />} />
+                                </Routes>
+                            </Layout>
+                        } />
+                    ) : (
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    )}
+                </Routes>
+            </Router>
+        </DialogProvider>
     );
 }
 

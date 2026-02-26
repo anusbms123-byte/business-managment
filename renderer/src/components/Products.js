@@ -5,6 +5,7 @@ import {
     Tag, DollarSign, Box, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 
 // Premium Stat Card Component
@@ -34,6 +35,77 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
     );
 };
 
+// Searchable and Creatable Dropdown Component
+const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(value || '');
+
+    // Sync search term with external value changes
+    useEffect(() => {
+        setSearchTerm(value || '');
+    }, [value]);
+
+    const filteredOptions = options.filter(opt =>
+        (opt.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div className="relative space-y-2">
+            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                <Icon size={12} className="text-black" /> {label}
+            </label>
+            <div className="relative">
+                <input
+                    type="text"
+                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        onChange(e.target.value);
+                        setIsOpen(true);
+                    }}
+                    onFocus={() => setIsOpen(true)}
+                    onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+                    placeholder={placeholder}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown
+                        size={16}
+                        className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                </div>
+
+                {isOpen && (searchTerm.length > 0 || filteredOptions.length > 0) && (
+                    <div className="absolute z-[100] w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar py-2 animate-in fade-in zoom-in-95 duration-200">
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map(opt => (
+                                <div
+                                    key={opt.id}
+                                    className="px-5 py-2.5 hover:bg-blue-50 cursor-pointer text-sm font-bold text-slate-700 hover:text-blue-700 transition-colors flex items-center justify-between"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setSearchTerm(opt.name);
+                                        onChange(opt.name);
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    <span>{opt.name}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">Select</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="px-5 py-3 text-xs font-bold text-blue-600 bg-blue-50/30 flex items-center gap-2">
+                                <Plus size={14} />
+                                <span>Add New: "{searchTerm}"</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const Products = ({ currentUser }) => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -56,10 +128,12 @@ const Products = ({ currentUser }) => {
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState({
         id: null, name: '', sku: '', description: '', unit: 'pcs',
-        cost_price: '', sell_price: '', stock_qty: '', alert_qty: '',
+        cost_price: '', sell_price: '', stock_qty: '', alert_qty: '5',
         weight: '', expiry_date: '', category_name: '', brand_name: '',
         color: '', size: '', grade: '', condition: ''
     });
+
+    const { showAlert, showConfirm, showError } = useDialog();
 
     const tableScrollRef = React.useRef(null);
 
@@ -139,7 +213,7 @@ const Products = ({ currentUser }) => {
                             if (created) categoryId = created.id;
                         }
                     } else {
-                        alert("Failed to create category: " + newCat.message);
+                        showError("Failed to create category: " + newCat.message);
                         setSaving(false);
                         return;
                     }
@@ -163,7 +237,7 @@ const Products = ({ currentUser }) => {
                             if (created) brandId = created.id;
                         }
                     } else {
-                        alert("Failed to create brand: " + newBrand.message);
+                        showError("Failed to create brand: " + newBrand.message);
                         setSaving(false);
                         return;
                     }
@@ -190,11 +264,11 @@ const Products = ({ currentUser }) => {
                 resetForm();
                 fetchData();
             } else {
-                alert("Error: " + result.message);
+                showError("Error: " + result.message);
             }
         } catch (error) {
             console.error("Submission Error:", error);
-            alert("An unexpected error occurred.");
+            showError("An unexpected error occurred.");
         } finally {
             setSaving(false);
         }
@@ -203,7 +277,7 @@ const Products = ({ currentUser }) => {
     const resetForm = () => {
         setFormData({
             id: null, name: '', sku: '', description: '', unit: 'pcs',
-            cost_price: '', sell_price: '', stock_qty: '', alert_qty: '',
+            cost_price: '', sell_price: '', stock_qty: '', alert_qty: '5',
             weight: '', expiry_date: '', category_name: '', brand_name: '',
             color: '', size: '', grade: '', condition: ''
         });
@@ -211,11 +285,11 @@ const Products = ({ currentUser }) => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to delete this product?")) {
+        showConfirm("Are you sure you want to delete this product?", async () => {
             const result = await window.electronAPI.deleteProduct(id);
             if (result.success) fetchData();
-            else alert("Error: " + result.message);
-        }
+            else showError("Error: " + result.message);
+        });
     };
 
     const openEdit = (product) => {
@@ -413,7 +487,8 @@ const Products = ({ currentUser }) => {
                                             .map(product => (
                                                 <div
                                                     key={product.id}
-                                                    onClick={() => {
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
                                                         setSearchTerm(product.name);
                                                         setShowSuggestions(false);
                                                     }}
@@ -605,30 +680,22 @@ const Products = ({ currentUser }) => {
                                             </label>
                                             <input type="text" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="e.g. PHN-APL-15" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black" /> Category
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
-                                                value={formData.category_name}
-                                                onChange={e => setFormData({ ...formData, category_name: e.target.value })}
-                                                placeholder="Enter category"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Tag size={12} className="text-black" /> Brand
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
-                                                value={formData.brand_name}
-                                                onChange={e => setFormData({ ...formData, brand_name: e.target.value })}
-                                                placeholder="Enter brand"
-                                            />
-                                        </div>
+                                        <CreatableSelect
+                                            label="Category"
+                                            icon={Box}
+                                            value={formData.category_name}
+                                            options={categories}
+                                            onChange={(val) => setFormData({ ...formData, category_name: val })}
+                                            placeholder="Select or type category"
+                                        />
+                                        <CreatableSelect
+                                            label="Brand"
+                                            icon={Tag}
+                                            value={formData.brand_name}
+                                            options={brands}
+                                            onChange={(val) => setFormData({ ...formData, brand_name: val })}
+                                            placeholder="Select or type brand"
+                                        />
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <Package size={12} className="text-black" /> Unit

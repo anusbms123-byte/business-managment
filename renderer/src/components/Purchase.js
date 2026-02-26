@@ -1,9 +1,80 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     Plus, Search, X, ShoppingCart,
-    Trash2, Package, User, Receipt, Eye
+    Trash2, Package, User, Receipt, Eye,
+    Box, Tag, ChevronDown, ChevronUp, AlertTriangle, Layers, DollarSign, Clock, Check
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
+
+const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(value || '');
+
+    useEffect(() => {
+        setSearchTerm(value || '');
+    }, [value]);
+
+    const filteredOptions = options.filter(opt =>
+        (opt.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div className="relative space-y-2">
+            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                <Icon size={12} className="text-black" /> {label}
+            </label>
+            <div className="relative">
+                <input
+                    type="text"
+                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none"
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        onChange(e.target.value);
+                        setIsOpen(true);
+                    }}
+                    onFocus={() => setIsOpen(true)}
+                    onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+                    placeholder={placeholder}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronDown
+                        size={16}
+                        className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                </div>
+
+                {isOpen && (searchTerm.length > 0 || filteredOptions.length > 0) && (
+                    <div className="absolute z-[130] w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar py-2 animate-in fade-in zoom-in-95 duration-200">
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map(opt => (
+                                <div
+                                    key={opt.id}
+                                    className="px-5 py-2.5 hover:bg-blue-50 cursor-pointer text-sm font-bold text-slate-700 hover:text-blue-700 transition-colors flex items-center justify-between"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setSearchTerm(opt.name);
+                                        onChange(opt.name);
+                                        setIsOpen(false);
+                                    }}
+                                >
+                                    <span>{opt.name}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">Select</span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="px-5 py-3 text-xs font-bold text-blue-600 bg-blue-50/30 flex items-center gap-2">
+                                <Plus size={14} />
+                                <span>Add New: "{searchTerm}"</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const Purchase = ({ currentUser }) => {
     const [purchases, setPurchases] = useState([]);
@@ -16,6 +87,16 @@ const Purchase = ({ currentUser }) => {
     const [editingId, setEditingId] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [detailProduct, setDetailProduct] = useState(null);
+    const [isQuickProductModalOpen, setIsQuickProductModalOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [quickProductForm, setQuickProductForm] = useState({
+        name: '', sku: '', cost_price: '', sell_price: '', unit: 'pcs',
+        category_name: '', brand_name: '', stock_qty: '', alert_qty: '5',
+        description: '', weight: '', expiry_date: '',
+        color: '', size: '', grade: '', condition: ''
+    });
+    const [showQuickOptional, setShowQuickOptional] = useState(false);
 
     // Form State for Interaction (Left Panel)
     const [vendorId, setVendorId] = useState('');
@@ -41,6 +122,8 @@ const Purchase = ({ currentUser }) => {
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [hoveredProduct, setHoveredProduct] = useState(null);
 
+    const { showAlert, showConfirm, showError } = useDialog();
+
     // Refs for keyboard navigation
     const vendorRef = useRef(null);
     const productRef = useRef(null);
@@ -52,15 +135,19 @@ const Purchase = ({ currentUser }) => {
         setLoading(true);
         try {
             if (window.electronAPI) {
-                const [pData, vData, prData] = await Promise.all([
+                const [pData, vData, prData, catData, brandData] = await Promise.all([
                     window.electronAPI.getPurchases(currentUser?.company_id),
                     window.electronAPI.getVendors(currentUser?.company_id),
-                    window.electronAPI.getProducts(currentUser?.company_id)
+                    window.electronAPI.getProducts(currentUser?.company_id),
+                    window.electronAPI.getCategories(currentUser?.company_id),
+                    window.electronAPI.getBrands(currentUser?.company_id)
                 ]);
 
                 setPurchases(Array.isArray(pData) ? pData : []);
                 setVendors(Array.isArray(vData) ? vData : []);
                 setProducts(Array.isArray(prData) ? prData : []);
+                setCategories(Array.isArray(catData) ? catData : []);
+                setBrands(Array.isArray(brandData) ? brandData : []);
             }
         } catch (err) {
             console.error('Error loading purchase data:', err);
@@ -186,8 +273,8 @@ const Purchase = ({ currentUser }) => {
     const balanceDue = Math.max(0, grandTotal - parseFloat(paidAmount || 0));
 
     const handleSave = async () => {
-        if (!vendorId) return window.alert('Please select a vendor');
-        if (cart.length === 0) return window.alert('Cart is empty');
+        if (!vendorId) return showAlert('Please select a vendor');
+        if (cart.length === 0) return showAlert('Cart is empty');
 
         setSaving(true);
         try {
@@ -217,63 +304,142 @@ const Purchase = ({ currentUser }) => {
                 ? await window.electronAPI.updatePurchase(data)
                 : await window.electronAPI.addPurchase(data);
             if (result?.success === false) {
-                window.alert(result.message);
+                showError(result.message, 'Save Failed');
             } else {
                 setIsModalOpen(false);
                 resetForm();
                 loadData();
             }
         } catch (err) {
-            window.alert('Error saving purchase: ' + err.message);
+            showError('Error saving purchase: ' + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this purchase? This will restore stock and update vendor balance.')) return;
-        try {
-            const result = await window.electronAPI.deletePurchase(id);
-            if (result?.success === false) {
-                window.alert(result.message);
-            } else {
-                loadData();
+        showConfirm('Are you sure you want to delete this purchase? This will restore stock and update vendor balance.', async () => {
+            try {
+                const result = await window.electronAPI.deletePurchase(id);
+                if (result?.success === false) {
+                    showError(result.message, 'Cannot Delete');
+                } else {
+                    loadData();
+                }
+            } catch (err) {
+                showError('Error deleting purchase: ' + err.message);
             }
-        } catch (err) {
-            window.alert('Error deleting purchase: ' + err.message);
-        }
+        });
     };
 
     const handleEdit = (purchase) => {
         setEditingId(purchase.id);
-        setVendorId(purchase.vendorId);
-        setInvoiceNo(purchase.invoiceNo || '');
-        setDueDate(purchase.dueDate ? new Date(purchase.dueDate).toISOString().split('T')[0] : '');
-        setPaymentStatus(purchase.paymentStatus || 'RECEIVED');
-        setPaymentMethod(purchase.paymentMethod || 'CASH');
-        setPaidAmount(purchase.paidAmount || 0);
-        setShippingCost(purchase.shippingCost || 0);
-        setDiscount(purchase.discount || 0);
+        setVendorId(purchase.vendorId || purchase.vendor_id || '');
+        setInvoiceNo(purchase.invoiceNo || purchase.ref_number || '');
+        setDueDate(purchase.dueDate || purchase.due_date ? new Date(purchase.dueDate || purchase.due_date).toISOString().split('T')[0] : '');
+        setPaymentStatus(purchase.paymentStatus || purchase.payment_status || 'RECEIVED');
+        setPaymentMethod(purchase.paymentMethod || purchase.payment_method || 'CASH');
+
+        setDiscount(purchase.discount ?? 0);
         setDiscountType('FLAT');
-        setTax(purchase.tax || 0);
-        setTaxType('FLAT'); // Loaded as flat value
+        setTax(purchase.tax ?? purchase.tax_amount ?? 0);
+        setTaxType('FLAT');
+        setShippingCost(purchase.shippingCost ?? purchase.shipping_cost ?? 0);
+        setPaidAmount(purchase.paidAmount ?? purchase.amount_paid ?? 0);
         setNotes(purchase.notes || '');
 
         // Reconstruct Cart
-        // Note: Backend response might have items nested or different key names
-        const loadedCart = (purchase.items || []).map(item => ({
-            id: item.productId || item.id, // Assuming productId is what we need for cart logic (which uses item.id as prodId)
-            name: item.product?.name || item.name || 'Unknown',
-            sku: item.product?.sku,
-            unitCost: item.unitCost || item.costPrice || 0,
-            quantity: item.quantity,
-            total: (item.unitCost || 0) * item.quantity
+        const items = purchase.items || [];
+        const loadedCart = items.map(item => ({
+            id: item.productId || item.product_id || item.product?.id,
+            name: item.product?.name || item.name || 'Unknown Item',
+            sku: item.product?.sku || item.sku,
+            unitCost: item.unitCost || item.unit_cost || item.costPrice || 0,
+            quantity: item.quantity || 0,
+            total: item.total || item.total_cost || ((item.unitCost || item.unit_cost || item.costPrice || 0) * (item.quantity || 0))
         }));
         setCart(loadedCart);
 
-        const ven = vendors.find(v => v.id === purchase.vendorId);
+        const ven = vendors.find(v => v.id === (purchase.vendorId || purchase.vendor_id));
         setPreviousBalance(ven?.balance || 0);
 
         setIsModalOpen(true);
+    };
+
+    const handleQuickProductSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            // Handle Category interaction
+            let categoryId = null;
+            if (quickProductForm.category_name) {
+                const existingCat = categories.find(c => c.name.toLowerCase() === quickProductForm.category_name.toLowerCase());
+                if (existingCat) categoryId = existingCat.id;
+                else {
+                    const newCat = await window.electronAPI.createCategory({ name: quickProductForm.category_name, companyId: currentUser.company_id });
+                    if (newCat.success) {
+                        const currentCats = await window.electronAPI.getCategories(currentUser.company_id);
+                        if (Array.isArray(currentCats)) {
+                            setCategories(currentCats);
+                            categoryId = currentCats.find(c => c.name.toLowerCase() === quickProductForm.category_name.toLowerCase())?.id;
+                        }
+                    }
+                }
+            }
+
+            // Handle Brand interaction
+            let brandId = null;
+            if (quickProductForm.brand_name) {
+                const existingBrand = brands.find(b => b.name.toLowerCase() === quickProductForm.brand_name.toLowerCase());
+                if (existingBrand) brandId = existingBrand.id;
+                else {
+                    const newBrand = await window.electronAPI.createBrand({ name: quickProductForm.brand_name, companyId: currentUser.company_id });
+                    if (newBrand.success) {
+                        const currentBrands = await window.electronAPI.getBrands(currentUser.company_id);
+                        if (Array.isArray(currentBrands)) {
+                            setBrands(currentBrands);
+                            brandId = currentBrands.find(b => b.name.toLowerCase() === quickProductForm.brand_name.toLowerCase())?.id;
+                        }
+                    }
+                }
+            }
+
+            const payload = {
+                ...quickProductForm,
+                category_id: categoryId,
+                brand_id: brandId,
+                companyId: currentUser.company_id
+            };
+            delete payload.category_name;
+            delete payload.brand_name;
+
+            const result = await window.electronAPI.createProduct(payload);
+            if (result.success) {
+                // Refresh product list
+                const prData = await window.electronAPI.getProducts(currentUser?.company_id);
+                const updatedProducts = Array.isArray(prData) ? prData : [];
+                setProducts(updatedProducts);
+
+                // Auto select the new product
+                const newlyCreated = updatedProducts.find(p => p.id === result.id);
+                if (newlyCreated) {
+                    handleProductSelect(newlyCreated);
+                }
+
+                setIsQuickProductModalOpen(false);
+                setQuickProductForm({
+                    name: '', sku: '', cost_price: '', sell_price: '', unit: 'pcs',
+                    category_name: '', brand_name: '', stock_qty: '', alert_qty: '5',
+                    description: '', weight: '', expiry_date: '',
+                    color: '', size: '', grade: '', condition: ''
+                });
+                setShowQuickOptional(false);
+            } else {
+                showError("Failed to create product: " + result.message);
+            }
+        } catch (err) {
+            showError("Error: " + err.message);
+        }
+        setSaving(false);
     };
 
     const resetForm = () => {
@@ -354,7 +520,7 @@ const Purchase = ({ currentUser }) => {
                                     <td className="px-6 py-4 text-[11px] font-bold text-black">
                                         {new Date(p.date).toLocaleDateString()}
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-sm text-black">PKR {p.totalAmount.toLocaleString()}</td>
+                                    <td className="px-6 py-4 font-bold text-sm text-black">PKR {(p.totalAmount || 0).toLocaleString()}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-bold text-black uppercase">{p.paymentMethod || 'CASH'}</span>
@@ -446,7 +612,7 @@ const Purchase = ({ currentUser }) => {
                                             <option value="">Select Supplier</option>
                                             {vendors.map(v => (
                                                 <option key={v.id} value={v.id}>
-                                                    {v.name} {v.balance > 0 ? `(Owe: ${v.balance.toLocaleString()})` : ''}
+                                                    {v.name} {v.balance > 0 ? `(Owe: ${v?.balance?.toLocaleString() || 0})` : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -454,7 +620,15 @@ const Purchase = ({ currentUser }) => {
                                 </div>
 
                                 <div className="space-y-1.5 lg:col-span-2">
-                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Product</label>
+                                    <div className="flex justify-between items-center ml-1">
+                                        <label className="text-[10px] font-bold text-black uppercase tracking-widest ">Product</label>
+                                        <button
+                                            onClick={() => setIsQuickProductModalOpen(true)}
+                                            className="text-[10px] font-bold text-blue-600 uppercase hover:underline"
+                                        >
+                                            + New Product
+                                        </button>
+                                    </div>
                                     <div className="relative">
                                         <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
@@ -646,13 +820,13 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="font-bold text-black text-sm">{item.name}</div>
                                                         <div className="text-[10px] text-black font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-center font-bold text-black text-xs">PKR {item.unitCost.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-center font-bold text-black text-xs">PKR {(item.unitCost || 0).toLocaleString()}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="w-16 mx-auto px-2 py-1 bg-slate-100 rounded text-center font-bold text-xs text-black border border-slate-200">
                                                             {item.quantity}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right font-bold text-black text-sm">PKR {item.total.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-right font-bold text-black text-sm">PKR {(item.total || 0).toLocaleString()}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button onClick={() => removeFromCart(item.id)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
                                                             <Trash2 size={14} />
@@ -707,14 +881,14 @@ const Purchase = ({ currentUser }) => {
                                 <div className="bg-slate-50/50 p-4 rounded-xl space-y-3 border border-slate-100">
                                     <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
                                         <span>Subtotal</span>
-                                        <span className="text-slate-800">PKR {subtotal.toLocaleString()}</span>
+                                        <span className="text-slate-800">PKR {(subtotal || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
                                         <span>Shipping</span>
                                         <input
                                             type="number"
                                             className="w-20 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
-                                            value={shippingCost || ''}
+                                            value={shippingCost ?? ''}
                                             onChange={(e) => setShippingCost(e.target.value)}
                                             placeholder="0"
                                         />
@@ -725,7 +899,7 @@ const Purchase = ({ currentUser }) => {
                                             <input
                                                 type="number"
                                                 className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
-                                                value={tax || ''}
+                                                value={tax ?? ''}
                                                 onChange={(e) => setTax(e.target.value)}
                                                 placeholder="0"
                                             />
@@ -741,7 +915,7 @@ const Purchase = ({ currentUser }) => {
                                             <input
                                                 type="number"
                                                 className="w-12 px-2 py-1 bg-white border border-slate-200 rounded text-right font-bold text-black focus:border-blue-500 outline-none transition-all text-xs"
-                                                value={discount || ''}
+                                                value={discount ?? ''}
                                                 onChange={(e) => setDiscount(e.target.value)}
                                                 placeholder="0"
                                             />
@@ -753,12 +927,12 @@ const Purchase = ({ currentUser }) => {
                                     </div>
                                     <div className="flex justify-between items-center text-xs font-bold text-black uppercase tracking-tight">
                                         <span>Previous Balance</span>
-                                        <span className="px-2 py-1 bg-slate-200 rounded text-black">{previousBalance.toLocaleString()}</span>
+                                        <span className="px-2 py-1 bg-slate-200 rounded text-black">{(previousBalance || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                                         <span className="text-[10px] font-bold text-black uppercase tracking-[0.2em] block">Grand Total</span>
                                         <span className="text-xl font-bold text-black tracking-tighter">
-                                            PKR {grandTotal.toLocaleString()}
+                                            PKR {(grandTotal || 0).toLocaleString()}
                                         </span>
                                     </div>
                                 </div>
@@ -782,14 +956,14 @@ const Purchase = ({ currentUser }) => {
                                         <input
                                             type="number"
                                             className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-black outline-none focus:border-blue-500"
-                                            value={paidAmount || ''}
+                                            value={paidAmount ?? ''}
                                             onChange={(e) => setPaidAmount(e.target.value)}
                                             placeholder="0"
                                         />
                                     </div>
                                     <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                                         <label className="text-[9px] font-bold text-black uppercase tracking-widest">Balance Due</label>
-                                        <span className="text-xs font-bold text-rose-600 px-2 py-0.5 bg-rose-50 rounded">PKR {balanceDue.toLocaleString()}</span>
+                                        <span className="text-xs font-bold text-rose-600 px-2 py-0.5 bg-rose-50 rounded">PKR {(balanceDue || 0).toLocaleString()}</span>
                                     </div>
                                 </div>
 
@@ -896,6 +1070,188 @@ const Purchase = ({ currentUser }) => {
                     </div>
                 )
             }
+            {/* Quick Add Product Modal */}
+            {isQuickProductModalOpen && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                    <Plus size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-black">Quick Add Product</h3>
+                                    <p className="text-[10px] text-black font-bold uppercase tracking-widest">Register product to add in procurement</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsQuickProductModalOpen(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/20">
+                            <form onSubmit={handleQuickProductSave} className="space-y-6">
+                                {/* Core Details */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-4 h-[1px] bg-slate-200" /> Primary Information
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="space-y-2 md:col-span-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <Box size={12} className="text-black" /> Product Name *
+                                            </label>
+                                            <input required type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="e.g. iPhone 15 Pro Max" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <Tag size={12} className="text-black" /> SKU / Code
+                                            </label>
+                                            <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="e.g. PHN-15-256" />
+                                        </div>
+
+                                        <CreatableSelect
+                                            label="Category"
+                                            icon={Layers}
+                                            options={categories}
+                                            value={quickProductForm.category_name}
+                                            onChange={(val) => setQuickProductForm({ ...quickProductForm, category_name: val })}
+                                            placeholder="Select or type category"
+                                        />
+                                        <CreatableSelect
+                                            label="Brand"
+                                            icon={Tag}
+                                            options={brands}
+                                            value={quickProductForm.brand_name}
+                                            onChange={(val) => setQuickProductForm({ ...quickProductForm, brand_name: val })}
+                                            placeholder="Select or type brand"
+                                        />
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <Box size={12} className="text-black" /> Unit
+                                            </label>
+                                            <select className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none cursor-pointer" value={quickProductForm.unit} onChange={e => setQuickProductForm({ ...quickProductForm, unit: e.target.value })}>
+                                                <option value="pcs">Pieces (pcs)</option>
+                                                <option value="kg">Kilogram (kg)</option>
+                                                <option value="ltr">Liter (ltr)</option>
+                                                <option value="box">Box</option>
+                                                <option value="pkt">Packet</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Inventory & Pricing */}
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-4 h-[1px] bg-slate-200" /> Pricing & Stock
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <DollarSign size={12} className="text-black" /> Cost Price *
+                                            </label>
+                                            <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.cost_price} onChange={e => setQuickProductForm({ ...quickProductForm, cost_price: e.target.value })} placeholder="0" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <DollarSign size={12} className="text-black" /> Sell Price *
+                                            </label>
+                                            <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.sell_price} onChange={e => setQuickProductForm({ ...quickProductForm, sell_price: e.target.value })} placeholder="0" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <AlertTriangle size={12} className="text-black" /> Alert Qty
+                                            </label>
+                                            <input type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.alert_qty} onChange={e => setQuickProductForm({ ...quickProductForm, alert_qty: e.target.value })} placeholder="5" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <Box size={12} className="text-black" /> Initial Stock *
+                                            </label>
+                                            <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.stock_qty} onChange={e => setQuickProductForm({ ...quickProductForm, stock_qty: e.target.value })} placeholder="0" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <Clock size={12} className="text-black" /> Expiry Date
+                                            </label>
+                                            <input type="date" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.expiry_date} onChange={e => setQuickProductForm({ ...quickProductForm, expiry_date: e.target.value })} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Optional Section Toggle */}
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowQuickOptional(!showQuickOptional)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-slate-100/50 hover:bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-widest transition-all"
+                                    >
+                                        {showQuickOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        {showQuickOptional ? 'Hide Additional Specs' : 'Add More Attributes (Color, Size...)'}
+                                    </button>
+                                </div>
+
+                                {showQuickOptional && (
+                                    <div className="space-y-6 animate-in slide-in-from-top-4 duration-300">
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Color</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={quickProductForm.color} onChange={e => setQuickProductForm({ ...quickProductForm, color: e.target.value })} placeholder="e.g. Natural Titanium" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Size / Storage</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={quickProductForm.size} onChange={e => setQuickProductForm({ ...quickProductForm, size: e.target.value })} placeholder="e.g. 256GB" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Grade / Quality</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={quickProductForm.grade} onChange={e => setQuickProductForm({ ...quickProductForm, grade: e.target.value })} placeholder="e.g. A+" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Condition</label>
+                                                <select className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={quickProductForm.condition} onChange={e => setQuickProductForm({ ...quickProductForm, condition: e.target.value })}>
+                                                    <option value="">Select Condition</option>
+                                                    <option value="NEW">Brand New / Box Packed</option>
+                                                    <option value="USED">Pre-owned / Used</option>
+                                                    <option value="REFURBISHED">Refurbished</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Weight (kg)</label>
+                                                <input type="number" step="0.01" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={quickProductForm.weight} onChange={e => setQuickProductForm({ ...quickProductForm, weight: e.target.value })} placeholder="0.00" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Description</label>
+                                            <textarea className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none min-h-[100px] resize-none" value={quickProductForm.description} onChange={e => setQuickProductForm({ ...quickProductForm, description: e.target.value })} placeholder="Technical specifications or notes..." />
+                                        </div>
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+
+                        <div className="p-6 border-t border-slate-100 bg-slate-50 shrink-0">
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setIsQuickProductModalOpen(false)}
+                                    className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all active:scale-95"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleQuickProductSave}
+                                    disabled={saving}
+                                    className="px-8 py-3 bg-blue-950 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-100 flex items-center justify-center gap-2 min-w-[200px]"
+                                >
+                                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={18} />}
+                                    <span>{saving ? 'Registering...' : 'Create & Select'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

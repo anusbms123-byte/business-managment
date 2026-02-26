@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { canEdit } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 
 const Settings = ({ currentUser }) => {
@@ -13,6 +14,8 @@ const Settings = ({ currentUser }) => {
     });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    const { showSuccess, showError } = useDialog();
 
     useEffect(() => {
         if (currentUser?.company_id) {
@@ -50,12 +53,12 @@ const Settings = ({ currentUser }) => {
                 ...formData
             });
             if (result.success) {
-                window.alert('Settings updated successfully!');
+                showSuccess('Settings updated successfully!');
             } else {
-                window.alert('Error: ' + result.message);
+                showError('Error: ' + result.message);
             }
         } catch (err) {
-            window.alert('Error saving settings: ' + err.message);
+            showError('Error saving settings: ' + err.message);
         }
         setSaving(false);
     };

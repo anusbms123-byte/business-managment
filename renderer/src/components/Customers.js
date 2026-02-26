@@ -5,6 +5,7 @@ import {
     DollarSign, X, Check, Loader2
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
+import { useDialog } from '../context/DialogContext';
 
 
 // Reusable Components matching the design system
@@ -35,6 +36,8 @@ const Customers = ({ currentUser }) => {
         creditLimit: '',
         openingBalance: ''
     });
+
+    const { showAlert, showConfirm, showError } = useDialog();
 
     const loadCustomers = async () => {
         setLoading(true);
@@ -73,29 +76,30 @@ const Customers = ({ currentUser }) => {
             }
 
             if (result?.success === false) {
-                window.alert(result.message);
+                showError(result.message, 'Save Failed');
             } else {
                 setShowModal(false);
                 loadCustomers();
             }
         } catch (err) {
-            window.alert('Error saving customer: ' + err.message);
+            showError('Error saving customer: ' + err.message);
         }
         setSaving(false);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this customer?')) return;
-        try {
-            const result = await window.electronAPI.deleteCustomer(id);
-            if (result?.success === false) {
-                window.alert(result.message);
-            } else {
-                loadCustomers();
+        showConfirm('Are you sure you want to delete this customer?', async () => {
+            try {
+                const result = await window.electronAPI.deleteCustomer(id);
+                if (result?.success === false) {
+                    showError(result.message, 'Cannot Delete');
+                } else {
+                    loadCustomers();
+                }
+            } catch (err) {
+                showError('Error deleting customer: ' + err.message);
             }
-        } catch (err) {
-            window.alert('Error deleting customer: ' + err.message);
-        }
+        });
     };
 
     const openModal = (customer = null) => {
