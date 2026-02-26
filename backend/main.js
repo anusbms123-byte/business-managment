@@ -320,7 +320,12 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
     }
 
     const { search, referralType, id } = filters;
-    let query = "SELECT *, is_active as isActive FROM companies";
+    let query = `SELECT *, 
+                       is_active as isActive, 
+                       tax_no as taxNumber, 
+                       office_phone as officePhone,
+                       referral_code as referralCode
+                FROM companies`;
     let conditions = ["(sync_status != 'deleted' OR sync_status IS NULL)"];
     let params = [];
 
@@ -356,7 +361,12 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
 
 ipcMain.handle("get-company", async (e, id) => {
     try {
-        return await db.asyncGet("SELECT * FROM companies WHERE id = ? OR global_id = ?", [id, id]);
+        return await db.asyncGet(`SELECT *, 
+                                      is_active as isActive,
+                                      tax_no as taxNumber,
+                                      office_phone as officePhone,
+                                      referral_code as referralCode
+                               FROM companies WHERE id = ? OR global_id = ?`, [id, id]);
     } catch (err) {
         console.error("get-company Error:", err.message);
         return null;
@@ -376,14 +386,17 @@ ipcMain.handle("reject-company-request", async (e, id, notes) => {
 });
 
 ipcMain.handle("create-company", async (e, data) => {
-    const { name, address, phone, email, tax_no, referral_code } = data;
+    const { name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referral_code, referralCode } = data;
     const tempId = randomUUID();
+    const officePh = officePhone || office_phone;
+    const taxNo = taxNumber || tax_no;
+    const refCode = referralCode || referral_code;
 
     try {
         const result = await db.asyncRun(
-            `INSERT INTO companies (global_id, name, address, phone, email, tax_no, referral_code, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, name, address, phone, email, tax_no, referral_code]
+            `INSERT INTO companies (global_id, name, address, city, phone, office_phone, email, tax_no, referral_code, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, address, city, phone, officePh, email, taxNo, refCode]
         );
 
         const companyId = result.lastID;
@@ -396,14 +409,17 @@ ipcMain.handle("create-company", async (e, data) => {
 });
 
 ipcMain.handle("update-company", async (e, data) => {
-    const { id, name, address, phone, email, tax_no, referral_code, is_active } = data;
+    const { id, name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referralCode, referral_code, is_active } = data;
     const active = (is_active === 1 || is_active === true) ? 1 : 0;
+    const officePh = officePhone || office_phone;
+    const taxNo = taxNumber || tax_no;
+    const refCode = referralCode || referral_code;
 
     try {
         await db.asyncRun(
-            `UPDATE companies SET name=?, address=?, phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+            `UPDATE companies SET name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
              WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)`,
-            [name, address, phone, email, tax_no, referral_code, active, id, id]
+            [name, address, city, phone, officePh, email, taxNo, refCode, active, id, id]
         );
         syncService.syncPendingRecords('companies', '/companies');
         return { success: true, message: "Company updated locally" };

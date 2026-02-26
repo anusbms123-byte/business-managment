@@ -230,9 +230,10 @@ class SyncService {
             else if (table === 'categories') { sql = `SELECT id, global_id, updated_at, sync_status FROM categories WHERE name = ? AND company_id = ?`; val = cloudData.name; }
             else if (table === 'brands') { sql = `SELECT id, global_id, updated_at, sync_status FROM brands WHERE name = ? AND company_id = ?`; val = cloudData.name; }
             else if (table === 'employees') { sql = `SELECT id, global_id, updated_at, sync_status FROM employees WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
+            else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE name = ?`; val = cloudData.name; }
 
             if (sql && val) {
-                const params = table === 'users' ? [val] : [val, companyId];
+                const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId];
                 existingRow = await db.asyncGet(sql, params);
                 // Security: Don't merge if they have different Cloud IDs
                 if (existingRow && existingRow.global_id && !existingRow.global_id.includes('-') && existingRow.global_id !== cloudData.id) {
@@ -303,6 +304,18 @@ class SyncService {
             } else {
                 query = `INSERT INTO customers (global_id, name, phone, email, address, city, cnic, gst_no, customer_type, credit_limit, opening_balance, current_balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
                 params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cloudData.cnic, gNo, cType, cloudData.creditLimit || cloudData.credit_limit || 0, opBal, curBal, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'companies') {
+            const taxNo = cloudData.taxNo || cloudData.tax_no || cloudData.taxNumber;
+            const officePh = cloudData.officePhone || cloudData.office_phone;
+            const refCode = cloudData.referralCode || cloudData.referral_code;
+
+            if (existingRow) {
+                query = `UPDATE companies SET global_id=?, company_id=?, name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO companies (global_id, company_id, name, address, city, phone, office_phone, email, tax_no, referral_code, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'vendors') {
             const opBal = cloudData.openingBalance || cloudData.opening_balance || 0;

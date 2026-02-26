@@ -181,7 +181,9 @@ db.initPromise = (async () => {
 
     // Companies
     await ensureColumn('companies', 'address', 'TEXT');
+    await ensureColumn('companies', 'city', 'TEXT');
     await ensureColumn('companies', 'phone', 'TEXT');
+    await ensureColumn('companies', 'office_phone', 'TEXT');
     await ensureColumn('companies', 'email', 'TEXT');
     await ensureColumn('companies', 'tax_no', 'TEXT');
     await ensureColumn('companies', 'currency_symbol', 'TEXT', "'PKR'");
