@@ -350,6 +350,69 @@ class SyncService {
                 query = `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`;
                 params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone, cloudData.designation, cloudData.salary, cloudData.hourlyRate || 0, cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
+        } else if (table === 'purchases') {
+            const localVendorId = await this.resolveLocalId('vendors', cloudData.vendorId || cloudData.vendor_id);
+            if (existingRow) {
+                query = `UPDATE purchases SET global_id=?, ref_number=?, vendor_id=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, payment_method=?, payment_status=?, purchase_date=?, notes=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, localVendorId, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost, cloudData.discount, cloudData.taxAmount || cloudData.tax_amount, cloudData.paymentMethod || cloudData.payment_method || 'CASH', cloudData.paymentStatus || cloudData.payment_status || 'RECEIVED', cloudData.purchaseDate || cloudData.purchase_date, cloudData.notes || '', companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO purchases (global_id, ref_number, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, payment_method, payment_status, purchase_date, notes, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.ref_number, localVendorId, cloudData.totalAmount || cloudData.total_amount, cloudData.paidAmount || cloudData.paid_amount, cloudData.shippingCost || cloudData.shipping_cost, cloudData.discount, cloudData.taxAmount || cloudData.tax_amount, cloudData.paymentMethod || cloudData.payment_method || 'CASH', cloudData.paymentStatus || cloudData.payment_status || 'RECEIVED', cloudData.purchaseDate || cloudData.purchase_date, cloudData.notes || '', companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'sale_returns') {
+            const localCustId = await this.resolveLocalId('customers', cloudData.customerId || cloudData.customer_id);
+            const localSaleId = await this.resolveLocalId('sales', cloudData.saleId || cloudData.sale_id);
+            if (existingRow) {
+                query = `UPDATE sale_returns SET global_id=?, inv_number=?, customer_id=?, sale_id=?, total_amount=?, tax_amount=?, notes=?, return_date=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.inv_number, localCustId, localSaleId, cloudData.totalAmount || cloudData.total_amount, cloudData.taxAmount || cloudData.tax_amount, cloudData.notes || '', cloudData.date || cloudData.return_date, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO sale_returns (global_id, inv_number, customer_id, sale_id, total_amount, tax_amount, notes, return_date, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.inv_number, localCustId, localSaleId, cloudData.totalAmount || cloudData.total_amount, cloudData.taxAmount || cloudData.tax_amount, cloudData.notes || '', cloudData.date || cloudData.return_date, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'purchase_returns') {
+            const localVendorId = await this.resolveLocalId('vendors', cloudData.vendorId || cloudData.vendor_id);
+            const localPurchaseId = await this.resolveLocalId('purchases', cloudData.purchaseId || cloudData.purchase_id);
+            if (existingRow) {
+                query = `UPDATE purchase_returns SET global_id=?, inv_number=?, vendor_id=?, purchase_id=?, total_amount=?, tax_amount=?, notes=?, return_date=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.inv_number, localVendorId, localPurchaseId, cloudData.totalAmount || cloudData.total_amount, cloudData.taxAmount || cloudData.tax_amount, cloudData.notes || '', cloudData.date || cloudData.return_date, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO purchase_returns (global_id, inv_number, vendor_id, purchase_id, total_amount, tax_amount, notes, return_date, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.invoiceNo || cloudData.inv_number, localVendorId, localPurchaseId, cloudData.totalAmount || cloudData.total_amount, cloudData.taxAmount || cloudData.tax_amount, cloudData.notes || '', cloudData.date || cloudData.return_date, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'accounts') {
+            if (existingRow) {
+                query = `UPDATE accounts SET global_id=?, name=?, type=?, balance=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.name, cloudData.type, cloudData.balance || 0, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.name, cloudData.type, cloudData.balance || 0, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'attendances') {
+            const localEmpId = await this.resolveLocalId('employees', cloudData.employeeId || cloudData.employee_id);
+            if (existingRow) {
+                query = `UPDATE attendances SET global_id=?, employee_id=?, status=?, date=?, check_in=?, check_out=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, localEmpId, cloudData.status, cloudData.date, cloudData.checkIn || cloudData.check_in, cloudData.checkOut || cloudData.check_out, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO attendances (global_id, employee_id, status, date, check_in, check_out, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, localEmpId, cloudData.status, cloudData.date, cloudData.checkIn || cloudData.check_in, cloudData.checkOut || cloudData.check_out, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'salary_records') {
+            const localEmpId = await this.resolveLocalId('employees', cloudData.employeeId || cloudData.employee_id);
+            if (existingRow) {
+                query = `UPDATE salary_records SET global_id=?, employee_id=?, month=?, base_salary=?, bonus=?, overtime_hours=?, overtime_pay=?, deductions=?, net_salary=?, notes=?, payment_date=?, status=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, localEmpId, cloudData.month, cloudData.baseSalary || cloudData.base_salary, cloudData.bonus, cloudData.overtimeHours || cloudData.overtime_hours, cloudData.overtimePay || cloudData.overtime_pay, cloudData.deductions, cloudData.netSalary || cloudData.net_salary, cloudData.notes, cloudData.paymentDate || cloudData.payment_date, cloudData.status, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, notes, payment_date, status, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, localEmpId, cloudData.month, cloudData.baseSalary || cloudData.base_salary, cloudData.bonus, cloudData.overtimeHours || cloudData.overtime_hours, cloudData.overtimePay || cloudData.overtime_pay, cloudData.deductions, cloudData.netSalary || cloudData.net_salary, cloudData.notes, cloudData.paymentDate || cloudData.payment_date, cloudData.status, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
+        } else if (table === 'audit_logs') {
+            if (existingRow) {
+                query = `UPDATE audit_logs SET global_id=?, action=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.action, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+            } else {
+                query = `INSERT INTO audit_logs (global_id, action, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.action, companyId, cloudData.updatedAt || cloudData.updated_at];
+            }
         }
 
         if (query) {
@@ -362,6 +425,33 @@ class SyncService {
                     for (const item of cloudData.items) {
                         const localProductId = await this.resolveLocalId('products', item.productId);
                         await db.asyncRun(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localSaleId, localProductId || item.productId, item.quantity, item.price, item.total]);
+                    }
+                }
+            } else if (table === 'purchases' && cloudData.items) {
+                const localPurchaseId = await this.resolveLocalId('purchases', cloudData.id);
+                if (localPurchaseId) {
+                    await db.asyncRun(`DELETE FROM purchase_items WHERE purchase_id = ?`, [localPurchaseId]);
+                    for (const item of cloudData.items) {
+                        const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
+                        await db.asyncRun(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localPurchaseId, localProductId || item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost]);
+                    }
+                }
+            } else if (table === 'sale_returns' && cloudData.items) {
+                const localReturnId = await this.resolveLocalId('sale_returns', cloudData.id);
+                if (localReturnId) {
+                    await db.asyncRun(`DELETE FROM sale_return_items WHERE return_id = ?`, [localReturnId]);
+                    for (const item of cloudData.items) {
+                        const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
+                        await db.asyncRun(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localReturnId, localProductId || item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.total || item.total_price]);
+                    }
+                }
+            } else if (table === 'purchase_returns' && cloudData.items) {
+                const localReturnId = await this.resolveLocalId('purchase_returns', cloudData.id);
+                if (localReturnId) {
+                    await db.asyncRun(`DELETE FROM purchase_return_items WHERE return_id = ?`, [localReturnId]);
+                    for (const item of cloudData.items) {
+                        const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
+                        await db.asyncRun(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localReturnId, localProductId || item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost]);
                     }
                 }
             } else if (table === 'roles' && cloudData.permissions) {

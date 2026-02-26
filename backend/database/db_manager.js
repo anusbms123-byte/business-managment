@@ -260,6 +260,39 @@ db.initPromise = (async () => {
     await ensureColumn('salary_records', 'notes', 'TEXT');
     await ensureColumn('salary_records', 'payment_date', 'DATETIME');
     await ensureColumn('salary_records', 'status', 'TEXT', "'PAID'");
+    await ensureColumn('attendances', 'employee_id', 'TEXT');
+    await ensureColumn('attendances', 'status', 'TEXT');
+    await ensureColumn('attendances', 'date', 'DATETIME');
+    await ensureColumn('attendances', 'check_in', 'DATETIME');
+    await ensureColumn('attendances', 'check_out', 'DATETIME');
+
+    await ensureColumn('sale_returns', 'customer_id', 'TEXT');
+    await ensureColumn('sale_returns', 'sale_id', 'TEXT');
+    await ensureColumn('sale_returns', 'inv_number', 'TEXT');
+    await ensureColumn('sale_returns', 'total_amount', 'REAL', '0');
+    await ensureColumn('sale_returns', 'tax_amount', 'REAL', '0');
+    await ensureColumn('sale_returns', 'notes', 'TEXT');
+    await ensureColumn('sale_returns', 'return_date', 'DATETIME');
+
+    await ensureColumn('sale_return_items', 'return_id', 'TEXT');
+    await ensureColumn('sale_return_items', 'product_id', 'TEXT');
+    await ensureColumn('sale_return_items', 'quantity', 'INTEGER', '1');
+    await ensureColumn('sale_return_items', 'unit_price', 'REAL', '0');
+    await ensureColumn('sale_return_items', 'total_price', 'REAL', '0');
+
+    await ensureColumn('purchase_returns', 'vendor_id', 'TEXT');
+    await ensureColumn('purchase_returns', 'purchase_id', 'TEXT');
+    await ensureColumn('purchase_returns', 'inv_number', 'TEXT');
+    await ensureColumn('purchase_returns', 'total_amount', 'REAL', '0');
+    await ensureColumn('purchase_returns', 'tax_amount', 'REAL', '0');
+    await ensureColumn('purchase_returns', 'notes', 'TEXT');
+    await ensureColumn('purchase_returns', 'return_date', 'DATETIME');
+
+    await ensureColumn('purchase_return_items', 'return_id', 'TEXT');
+    await ensureColumn('purchase_return_items', 'product_id', 'TEXT');
+    await ensureColumn('purchase_return_items', 'quantity', 'INTEGER', '1');
+    await ensureColumn('purchase_return_items', 'unit_cost', 'REAL', '0');
+    await ensureColumn('purchase_return_items', 'total_cost', 'REAL', '0');
 
     await ensureColumn('permissions', 'can_view', 'INTEGER', '0');
     await ensureColumn('permissions', 'can_create', 'INTEGER', '0');
