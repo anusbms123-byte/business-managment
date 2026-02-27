@@ -228,13 +228,19 @@ ipcMain.handle("login", async (e, credentials) => {
                 `;
 
                 const roleRow = await db.asyncGet(roleLookupQuery, [roleIdForPerms, roleIdForPerms, userRoleName, cid]);
-                const roleKey = roleRow ? roleRow.global_id : roleIdForPerms;
 
-                if (!roleKey) {
+                if (!roleRow) {
                     console.warn(`[LOGIN] Could not resolve roleKey for role: ${userRoleName}, ID: ${roleIdForPerms}`);
                     response.permissions = [];
                 } else {
-                    const rows = await db.asyncAll("SELECT * FROM permissions WHERE role_id = ?", [roleKey]);
+                    const localRoleId = String(roleRow.id);
+                    const globalRoleId = roleRow.global_id ? String(roleRow.global_id) : null;
+
+                    // Fetch permissions using ALL possible keys (local Id, global Id, or the input Id)
+                    const searchKeys = [...new Set([localRoleId, globalRoleId, String(roleIdForPerms)].filter(Boolean))];
+                    const placeholders = searchKeys.map(() => "?").join(", ");
+
+                    const rows = await db.asyncAll(`SELECT * FROM permissions WHERE role_id IN (${placeholders})`, searchKeys);
                     const formatted = (rows || []).map(p => ({
                         id: p.global_id || p.id,
                         roleId: p.role_id,
@@ -246,7 +252,7 @@ ipcMain.handle("login", async (e, credentials) => {
                         canView: p.can_view === 1 || p.can_view === true
                     }));
                     response.permissions = formatted;
-                    console.log(`✓ Resolved ${formatted.length} permissions locally.`);
+                    console.log(`✓ Resolved ${formatted.length} permissions locally using keys: ${searchKeys.join(', ')}`);
                 }
             }
             return response;
@@ -274,9 +280,16 @@ ipcMain.handle("login", async (e, credentials) => {
     syncService.pullAllData(user.company_id);
 
     const cid = user.company_id;
-    const roleRow = await db.asyncGet("SELECT global_id FROM roles WHERE id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1))", [user.role_id, user.role_id, user.role, cid]);
-    const roleKey = roleRow ? roleRow.global_id : user.role_id;
-    const permissions = await db.asyncAll("SELECT * FROM permissions WHERE role_id = ?", [roleKey]);
+    const roleRow = await db.asyncGet("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1))", [user.role_id, user.role_id, user.role, cid]);
+
+    let permissions = [];
+    if (roleRow) {
+        const localRoleId = String(roleRow.id);
+        const globalRoleId = roleRow.global_id ? String(roleRow.global_id) : null;
+        const searchKeys = [...new Set([localRoleId, globalRoleId, String(user.role_id)].filter(Boolean))];
+        const placeholders = searchKeys.map(() => "?").join(", ");
+        permissions = await db.asyncAll(`SELECT * FROM permissions WHERE role_id IN (${placeholders})`, searchKeys);
+    }
 
     const formattedPermissions = (permissions || []).map(p => ({
         id: p.global_id || p.id,
@@ -551,6 +564,8 @@ ipcMain.handle("create-permission", async (e, data) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
             [tempId, role_id, module, v, c, ex, d]
         );
+        // Mark the parent role as pending to trigger sync
+        await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?", [role_id, role_id]);
         syncService.syncPendingRecords('roles', '/roles');
         return { success: true, id: result.lastID, global_id: tempId };
     } catch (err) {
@@ -572,6 +587,11 @@ ipcMain.handle("update-permission", async (e, data) => {
              WHERE id=? OR global_id=?`,
             [v, c, ex, d, id, id]
         );
+        // Mark the parent role as pending to trigger sync
+        const permRow = await db.asyncGet("SELECT role_id FROM permissions WHERE id = ? OR global_id = ?", [id, id]);
+        if (permRow) {
+            await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?", [permRow.role_id, permRow.role_id]);
+        }
         syncService.syncPendingRecords('roles', '/roles');
         return { success: true };
     } catch (err) {
@@ -589,13 +609,32 @@ ipcMain.handle("create-user", async (e, data) => {
         let finalRoleName = role;
         const tempId = randomUUID();
 
-        // If Super Admin is assigning a role to a company user, resolve to the company-specific role
+        // If Super Admin is creating user, resolve the role properly
         const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
-        if (isSuperAdmin && cid && rid && (finalRoleName === 'Admin' || finalRoleName === 'Manager')) {
-            const companyRole = await db.asyncGet("SELECT id, global_id, name FROM roles WHERE company_id = ? AND name = ?", [cid, finalRoleName]);
-            if (companyRole) {
-                rid = companyRole.global_id || String(companyRole.id);
-                console.log(`[AUTO-LINK] Redirected User Role from System Template to Company Role: ${rid}`);
+        if (isSuperAdmin && cid) {
+            // First: Try to get role name from system template if rid points to a system role
+            if (rid) {
+                const systemRole = await db.asyncGet("SELECT name FROM roles WHERE (id = ? OR global_id = ?) AND is_system = 1", [rid, rid]);
+                if (systemRole) {
+                    finalRoleName = systemRole.name;
+                    console.log(`[CREATE-USER] Resolved system template role name: ${finalRoleName}`);
+                }
+            }
+
+            // Second: Try to find a company-specific role with the same name
+            if (finalRoleName) {
+                const companyRole = await db.asyncGet(
+                    "SELECT id, global_id, name FROM roles WHERE company_id = ? AND LOWER(name) = LOWER(?)",
+                    [cid, finalRoleName]
+                );
+                if (companyRole) {
+                    rid = companyRole.global_id || String(companyRole.id);
+                    console.log(`[AUTO-LINK] Found company-specific role: ${rid} (${companyRole.name})`);
+                } else {
+                    // No company-specific role exists. Still use the system template rid.
+                    // The cloud API will resolve by role name.
+                    console.log(`[CREATE-USER] No company-specific '${finalRoleName}' role found for company ${cid}. Using system template ID: ${rid}`);
+                }
             }
         }
 
@@ -624,9 +663,22 @@ ipcMain.handle("update-user", async (e, data) => {
         const cid = userRow?.company_id;
 
         const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
-        if (isSuperAdmin && cid && rid && (finalRoleName === 'Admin' || finalRoleName === 'Manager')) {
-            const companyRole = await db.asyncGet("SELECT id, global_id FROM roles WHERE company_id = ? AND name = ?", [cid, finalRoleName]);
-            if (companyRole) rid = companyRole.global_id || String(companyRole.id);
+        if (isSuperAdmin && cid) {
+            // Resolve system template role name
+            if (rid) {
+                const systemRole = await db.asyncGet("SELECT name FROM roles WHERE (id = ? OR global_id = ?) AND is_system = 1", [rid, rid]);
+                if (systemRole) {
+                    finalRoleName = systemRole.name;
+                }
+            }
+            // Try to find company-specific role
+            if (finalRoleName) {
+                const companyRole = await db.asyncGet(
+                    "SELECT id, global_id FROM roles WHERE company_id = ? AND LOWER(name) = LOWER(?)",
+                    [cid, finalRoleName]
+                );
+                if (companyRole) rid = companyRole.global_id || String(companyRole.id);
+            }
         }
 
         let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP";

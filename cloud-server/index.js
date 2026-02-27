@@ -316,9 +316,9 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { id, username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+        const { id, username, password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
 
-        // Validate roleId if provided - it must exist on cloud or be null
+        // Validate roleId
         let finalRoleId = roleId || null;
         if (finalRoleId && finalRoleId.startsWith('system-')) {
             // system-* IDs don't exist on cloud. Try to find the matching company role by name
@@ -328,6 +328,46 @@ app.post('/api/users', async (req, res) => {
             }) : null;
             finalRoleId = companyRole ? companyRole.id : null;
             console.log(`[USERS POST] Resolved system template '${roleId}' -> '${finalRoleId}' for company ${companyId}`);
+        }
+
+        // If roleId is still null, try resolving by role name
+        if (!finalRoleId && role) {
+            const roleMap = {
+                'super_admin': 'Super Admin',
+                'admin': 'Admin',
+                'manager': 'Manager',
+                'staff': 'Staff'
+            };
+            const searchRole = roleMap[role.toLowerCase()] || role;
+
+            // Priority: company-specific role
+            if (companyId) {
+                const companyRole = await prisma.role.findFirst({
+                    where: {
+                        companyId,
+                        OR: [
+                            { name: { equals: searchRole, mode: 'insensitive' } },
+                            { name: { equals: role, mode: 'insensitive' } }
+                        ]
+                    }
+                });
+                if (companyRole) finalRoleId = companyRole.id;
+            }
+
+            // Fallback: system role
+            if (!finalRoleId) {
+                const systemRole = await prisma.role.findFirst({
+                    where: {
+                        isSystem: true,
+                        OR: [
+                            { name: { equals: searchRole, mode: 'insensitive' } },
+                            { name: { equals: role, mode: 'insensitive' } }
+                        ]
+                    }
+                });
+                if (systemRole) finalRoleId = systemRole.id;
+            }
+            console.log(`[USERS POST] Resolved role by name '${role}' -> '${finalRoleId}'`);
         }
 
         // Hash password before saving to cloud
@@ -355,7 +395,7 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
     try {
-        const { username, password, email, fullName, roleId, companyId, isActive, is_active } = req.body;
+        const { username, password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
         const userId = req.params.id;
 
         // Validate roleId
@@ -366,6 +406,43 @@ app.put('/api/users/:id', async (req, res) => {
                 where: { companyId, name: { equals: roleName, mode: 'insensitive' } }
             }) : null;
             finalRoleId = companyRole ? companyRole.id : null;
+        }
+
+        // If roleId is still null, try resolving by role name
+        if (!finalRoleId && role) {
+            const roleMap = {
+                'super_admin': 'Super Admin',
+                'admin': 'Admin',
+                'manager': 'Manager',
+                'staff': 'Staff'
+            };
+            const searchRole = roleMap[role.toLowerCase()] || role;
+
+            if (companyId) {
+                const companyRole = await prisma.role.findFirst({
+                    where: {
+                        companyId,
+                        OR: [
+                            { name: { equals: searchRole, mode: 'insensitive' } },
+                            { name: { equals: role, mode: 'insensitive' } }
+                        ]
+                    }
+                });
+                if (companyRole) finalRoleId = companyRole.id;
+            }
+
+            if (!finalRoleId) {
+                const systemRole = await prisma.role.findFirst({
+                    where: {
+                        isSystem: true,
+                        OR: [
+                            { name: { equals: searchRole, mode: 'insensitive' } },
+                            { name: { equals: role, mode: 'insensitive' } }
+                        ]
+                    }
+                });
+                if (systemRole) finalRoleId = systemRole.id;
+            }
         }
 
         const data = {
@@ -1283,41 +1360,66 @@ app.delete('/api/returns/purchases/:id', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { company_id, companyId, username, password, role, fullname } = req.body;
+        const { company_id, companyId, username, password, role, fullname, roleId } = req.body;
         const cid = company_id || companyId;
 
-        const roleMap = {
-            'super_admin': 'Super Admin',
-            'admin': 'Admin',
-            'manager': 'Manager',
-            'staff': 'Staff'
-        };
-        const searchRole = roleMap[role.toLowerCase()] || role;
+        let roleRec = null;
 
-        let roleRec = await prisma.role.findFirst({
-            where: {
-                AND: [
-                    {
-                        OR: [
-                            { name: { equals: searchRole, mode: 'insensitive' } },
-                            { name: { equals: role, mode: 'insensitive' } }
+        // 1. Try direct roleId lookup first (if provided and not a system placeholder)
+        if (roleId && !String(roleId).startsWith('system-')) {
+            roleRec = await prisma.role.findUnique({ where: { id: roleId } });
+        }
+
+        // 2. Fallback: resolve by role name
+        if (!roleRec && role) {
+            const roleMap = {
+                'super_admin': 'Super Admin',
+                'admin': 'Admin',
+                'manager': 'Manager',
+                'staff': 'Staff'
+            };
+            const searchRole = roleMap[role.toLowerCase()] || role;
+
+            // Priority: company-specific role first
+            if (cid) {
+                roleRec = await prisma.role.findFirst({
+                    where: {
+                        AND: [
+                            {
+                                OR: [
+                                    { name: { equals: searchRole, mode: 'insensitive' } },
+                                    { name: { equals: role, mode: 'insensitive' } }
+                                ]
+                            },
+                            { companyId: cid }
                         ]
-                    },
-                    {
-                        OR: [
-                            { companyId: cid },
+                    }
+                });
+            }
+
+            // Fallback: system role
+            if (!roleRec) {
+                roleRec = await prisma.role.findFirst({
+                    where: {
+                        AND: [
+                            {
+                                OR: [
+                                    { name: { equals: searchRole, mode: 'insensitive' } },
+                                    { name: { equals: role, mode: 'insensitive' } }
+                                ]
+                            },
                             { isSystem: true }
                         ]
                     }
-                ]
+                });
             }
-        });
 
-        if (!roleRec) {
-
-            roleRec = await prisma.role.findFirst({
-                where: { name: { equals: searchRole, mode: 'insensitive' } }
-            });
+            // Last resort: any role with that name
+            if (!roleRec) {
+                roleRec = await prisma.role.findFirst({
+                    where: { name: { equals: searchRole, mode: 'insensitive' } }
+                });
+            }
         }
 
         if (!roleRec) {
