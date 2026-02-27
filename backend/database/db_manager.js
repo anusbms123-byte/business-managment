@@ -140,7 +140,8 @@ db.initPromise = (async () => {
       'companies', 'users', 'categories', 'vendors', 'employees',
       'products', 'customers', 'sales', 'purchases', 'expenses',
       'audit_logs', 'brands', 'accounts', 'sale_returns',
-      'purchase_returns', 'attendances', 'salary_records', 'roles', 'permissions'
+      'purchase_returns', 'attendances', 'salary_records', 'roles', 'permissions',
+      'sale_items', 'purchase_items', 'sale_return_items', 'purchase_return_items'
     ];
 
     for (const t of columnTargets) {

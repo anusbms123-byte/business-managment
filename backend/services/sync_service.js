@@ -129,7 +129,8 @@ class SyncService {
                                 await db.asyncRun("COMMIT");
                             } catch (batchErr) {
                                 await db.asyncRun("ROLLBACK").catch(() => { });
-                                console.error(`[SYNC BATCH ERROR] ${entity.table}:`, batchErr.message);
+                                console.error(`[SYNC BATCH ERROR] ${entity.table} (at record ${i}):`, batchErr.message);
+                                throw batchErr; // Rethrow to skip this table or handle at outer level
                             }
 
                             // Yield event loop between batches to keep system responsive
@@ -142,7 +143,7 @@ class SyncService {
                         console.log(`Done (0 records)`);
                     }
                 } catch (e) {
-                    // console.error(`Failed to pull ${entity.table} from ${entity.endpoint}:`, e.message);
+                    console.error(`[SYNC ERROR] Failed to pull ${entity.table} from ${entity.endpoint}:`, e.message);
                 }
             }
             console.log('Full data pull completed.');
