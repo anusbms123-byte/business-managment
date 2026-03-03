@@ -321,10 +321,9 @@ ipcMain.handle("login", async (e, credentials) => {
 // Companies
 ipcMain.handle("get-companies", async (e, filters = {}) => {
     // Only Super Admin can see all companies
-    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+    const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+    const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
     if (!isSuperAdmin && currentLoggedCompany !== undefined) {
-        // If not super admin, non-global users shouldn't even call this, but let's be safe
-        // Only return their own company
         if (currentLoggedCompany) {
             filters.id = currentLoggedCompany;
         } else {
@@ -333,36 +332,42 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
     }
 
     const { search, referralType, id } = filters;
-    let query = `SELECT *, 
-                       is_active as isActive, 
-                       tax_no as taxNumber, 
-                       office_phone as officePhone,
-                       referral_code as referralCode
-                FROM companies`;
-    let conditions = ["(sync_status != 'deleted' OR sync_status IS NULL)"];
+
+    // Improved query with Join to get Referral Company Name
+    let query = `
+        SELECT c.*, 
+               c.is_active as isActive, 
+               c.tax_no as taxNumber, 
+               c.office_phone as officePhone,
+               c.referral_code as referralCode,
+               (SELECT name FROM companies WHERE (global_id = c.referral_code OR referral_code = c.referral_code) AND global_id != c.global_id LIMIT 1) as referralCompanyName
+        FROM companies c
+    `;
+
+    let conditions = ["(c.sync_status != 'deleted' OR c.sync_status IS NULL)"];
     let params = [];
 
     if (id) {
-        conditions.push("(id = ? OR global_id = ?)");
+        conditions.push("(c.id = ? OR c.global_id = ?)");
         params.push(id, id);
     }
 
     if (search) {
-        conditions.push("(name LIKE ? OR email LIKE ?)");
-        params.push(`%${search}%`, `%${search}%`);
+        conditions.push("(c.name LIKE ? OR c.email LIKE ? OR c.city LIKE ? OR c.referral_code LIKE ?)");
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (referralType === 'with') {
-        conditions.push("referral_code IS NOT NULL AND referral_code != ''");
+        conditions.push("c.referral_code IS NOT NULL AND c.referral_code != '' AND LOWER(c.referral_code) != 'null'");
     } else if (referralType === 'without') {
-        conditions.push("(referral_code IS NULL OR referral_code = '')");
+        conditions.push("(c.referral_code IS NULL OR c.referral_code = '' OR LOWER(c.referral_code) = 'null')");
     }
 
     if (conditions.length > 0) {
         query += " WHERE " + conditions.join(" AND ");
     }
 
-    query += " ORDER BY name ASC";
+    query += " ORDER BY c.name ASC";
 
     try {
         return await db.asyncAll(query, params);
@@ -455,7 +460,8 @@ ipcMain.handle("delete-company", async (e, id) => {
 // Users - LOCAL FIRST
 ipcMain.handle("get-users", async (e, companyId) => {
     // If no companyId provided, only Super Admin can see all users
-    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+    const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+    const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
 
     let targetCid = companyId;
     if (!targetCid && !isSuperAdmin) {
@@ -478,7 +484,8 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
 // Roles & Permissions - LOCAL FIRST
 ipcMain.handle("get-roles", async (e, companyId) => {
-    const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+    const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+    const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
     const ids = await resolveCompanyIds(companyId);
 
     let query = `
@@ -493,7 +500,8 @@ ipcMain.handle("get-roles", async (e, companyId) => {
     let params = [];
 
     if (isSuperAdmin && !companyId) {
-        // Super Admin viewing globally: show everything
+        // Super Admin viewing globally: show ONLY system-wide templates
+        conditions.push("(r.is_system = 1 AND (r.company_id IS NULL OR r.company_id = ''))");
     } else {
         // Regular company or Super Admin filtering by company
         conditions.push("(r.company_id = ? OR r.company_id = ? OR r.company_id = ?)");
@@ -610,7 +618,8 @@ ipcMain.handle("create-user", async (e, data) => {
         const tempId = randomUUID();
 
         // If Super Admin is creating user, resolve the role properly
-        const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+        const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+        const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
         if (isSuperAdmin && cid) {
             // First: Try to get role name from system template if rid points to a system role
             if (rid) {
@@ -653,28 +662,25 @@ ipcMain.handle("create-user", async (e, data) => {
 
 ipcMain.handle("update-user", async (e, data) => {
     try {
-        const { id, username, password, role, fullname, role_id, roleId, is_active } = data;
+        const { id, username, password, role, fullname, fullName, role_id, roleId, is_active } = data;
         let rid = role_id || roleId;
+        const finalFullName = fullname || fullName;
         let finalRoleName = role;
-        const active = (is_active === 1 || is_active === true) ? 1 : 0;
 
-        // Resolve Company ID if not present
-        const userRow = await db.asyncGet("SELECT company_id FROM users WHERE id = ? OR global_id = ?", [id, id]);
-        const cid = userRow?.company_id;
+        // Resolve existing data
+        const userRow = await db.asyncGet("SELECT * FROM users WHERE id = ? OR global_id = ?", [id, id]);
+        if (!userRow) return { success: false, message: "User not found" };
 
-        const isSuperAdmin = currentLoggedRole === 'Super Admin' || currentLoggedRole === 'SuperAdmin' || currentLoggedCompany === null;
+        const active = (is_active !== undefined) ? ((is_active === 1 || is_active === true) ? 1 : 0) : userRow.is_active;
+        const cid = userRow.company_id;
+
+        const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+        const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
         if (isSuperAdmin && cid) {
-            // Resolve system template role name
-            if (rid) {
-                const systemRole = await db.asyncGet("SELECT name FROM roles WHERE (id = ? OR global_id = ?) AND is_system = 1", [rid, rid]);
-                if (systemRole) {
-                    finalRoleName = systemRole.name;
-                }
-            }
-            // Try to find company-specific role
-            if (finalRoleName) {
+            // Resolve role mapping for companies
+            if (!rid && finalRoleName) {
                 const companyRole = await db.asyncGet(
-                    "SELECT id, global_id FROM roles WHERE company_id = ? AND LOWER(name) = LOWER(?)",
+                    "SELECT id, global_id FROM roles WHERE (company_id = ? OR company_id IS NULL) AND LOWER(name) = LOWER(?)",
                     [cid, finalRoleName]
                 );
                 if (companyRole) rid = companyRole.global_id || String(companyRole.id);
@@ -682,7 +688,7 @@ ipcMain.handle("update-user", async (e, data) => {
         }
 
         let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP";
-        let params = [username, finalRoleName, rid, fullname, active];
+        let params = [username || userRow.username, finalRoleName || userRow.role, rid || userRow.role_id, finalFullName || userRow.fullname, active];
 
         if (password && password.trim() !== '') {
             query += ", password=?";
@@ -693,8 +699,11 @@ ipcMain.handle("update-user", async (e, data) => {
         params.push(id, id);
 
         await db.asyncRun(query, params);
+
+        // Push record to cloud
         syncService.syncPendingRecords('users', '/users');
-        return { success: true, message: "User updated locally" };
+
+        return { success: true, message: "User updated successfully" };
     } catch (err) {
         console.error("update-user Error:", err.message);
         return { success: false, message: err.message };

@@ -357,7 +357,7 @@ db.initPromise = (async () => {
     const allModules = ['dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory', 'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting', 'users', 'roles', 'settings', 'backup'];
 
     for (const role of systemRoles) {
-      const existing = await db.asyncGet("SELECT id FROM roles WHERE global_id = ? OR name = ?", [role.gid, role.name]);
+      const existing = await db.asyncGet("SELECT id, global_id FROM roles WHERE global_id = ? OR LOWER(name) = LOWER(?)", [role.gid, role.name]);
       if (!existing) {
         console.log(`[SEED] Creating Role: ${role.name}`);
         await db.asyncRun("INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system) VALUES (?, ?, ?, NULL, 'synced', 1)", [role.gid, role.name, role.desc]);
@@ -373,6 +373,31 @@ db.initPromise = (async () => {
         }
       }
     }
+
+    // 7. AUTO-CLEANUP: Merge duplicate system roles (e.g. Manager vs manager)
+    // Sort so that 'system-' global_ids come first
+    const allRoles = await db.asyncAll("SELECT id, global_id, name FROM roles WHERE company_id IS NULL OR company_id = '' ORDER BY CASE WHEN global_id LIKE 'system-%' THEN 0 ELSE 1 END ASC, id ASC");
+
+    const seen = new Map();
+    for (const r of allRoles) {
+      const key = r.name.toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.set(key, r);
+      } else {
+        const keep = seen.get(key);
+        console.log(`[CLEANUP] Merging duplicate role: ${r.name} (ID: ${r.id}) into ${keep.name} (ID: ${keep.id})`);
+
+        // Update users to point to the kept role
+        await db.asyncRun("UPDATE users SET role_id = ? WHERE role_id = ? OR role_id = ?", [keep.global_id || String(keep.id), r.id, r.global_id]);
+
+        // Delete child permissions of the duplicate
+        await db.asyncRun("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [r.id, r.global_id]);
+
+        // Delete the duplicate role
+        await db.asyncRun("DELETE FROM roles WHERE id = ?", [r.id]);
+      }
+    }
+
 
     console.log("[DB] Initialization completed successfully.");
   } catch (err) {

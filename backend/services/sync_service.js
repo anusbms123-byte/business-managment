@@ -56,7 +56,7 @@ class SyncService {
             targetCompanyId = this.currentCompanyId;
         }
 
-        
+
         if (targetCompanyId && !isNaN(targetCompanyId)) {
             const companyRow = await db.asyncGet("SELECT global_id FROM companies WHERE id = ?", [targetCompanyId]);
             if (companyRow?.global_id) {
@@ -228,10 +228,22 @@ class SyncService {
             else if (table === 'purchases') { sql = `SELECT id, global_id, updated_at, sync_status FROM purchases WHERE ref_number = ? AND company_id = ?`; val = cloudData.invoiceNo || cloudData.ref_number; }
             else if (table === 'vendors') { sql = `SELECT id, global_id, updated_at, sync_status FROM vendors WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
             else if (table === 'customers') { sql = `SELECT id, global_id, updated_at, sync_status FROM customers WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
-            else if (table === 'categories') { sql = `SELECT id, global_id, updated_at, sync_status FROM categories WHERE name = ? AND company_id = ?`; val = cloudData.name; }
-            else if (table === 'brands') { sql = `SELECT id, global_id, updated_at, sync_status FROM brands WHERE name = ? AND company_id = ?`; val = cloudData.name; }
+            else if (table === 'categories') { sql = `SELECT id, global_id, updated_at, sync_status FROM categories WHERE LOWER(name) = LOWER(?) AND company_id = ?`; val = cloudData.name; }
+            else if (table === 'brands') { sql = `SELECT id, global_id, updated_at, sync_status FROM brands WHERE LOWER(name) = LOWER(?) AND company_id = ?`; val = cloudData.name; }
             else if (table === 'employees') { sql = `SELECT id, global_id, updated_at, sync_status FROM employees WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
-            else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE name = ?`; val = cloudData.name; }
+            else if (table === 'roles') {
+                const cloudCid = cloudData.company_id || cloudData.companyId;
+                const isSystem = (!cloudCid || cloudCid === 'null' || cloudCid === 'undefined');
+                if (isSystem) {
+                    sql = `SELECT id, global_id, updated_at, sync_status FROM roles WHERE LOWER(name) = LOWER(?) AND (company_id IS NULL OR is_system = 1)`;
+                    existingRow = await db.asyncGet(sql, [cloudData.name]);
+                } else {
+                    sql = `SELECT id, global_id, updated_at, sync_status FROM roles WHERE LOWER(name) = LOWER(?) AND (company_id = ? OR company_id = ?)`;
+                    existingRow = await db.asyncGet(sql, [cloudData.name, cloudCid || companyId, String(cloudCid || companyId)]);
+                }
+                sql = ""; // skip generic lookup
+            }
+            else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE LOWER(name) = LOWER(?)`; val = cloudData.name; }
 
             if (sql && val) {
                 const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId];

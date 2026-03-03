@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin, Megaphone, Send } from 'lucide-react';
+import { Building2, Users, Shield, ClipboardList, Plus, Search, Edit2, Trash2, X, Eye, EyeOff, Check, ChevronDown, Info, Mail, Phone, MapPin, Megaphone, Send, Share2 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
 
@@ -144,10 +144,13 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
     const { showAlert, showConfirm, showSuccess, showError } = useDialog();
 
-    useEffect(() => { loadData(); }, [currentUser, isSuperAdmin, companySearch, companyReferralFilter]);
+    useEffect(() => {
+        const isSilentReload = companies.length > 0 && companySearch !== '';
+        loadData(isSilentReload);
+    }, [currentUser, isSuperAdmin, companySearch, companyReferralFilter]);
 
-    const loadData = async () => {
-        setLoading(true);
+    const loadData = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
         try {
             if (window.electronAPI) {
                 if (isSuperAdmin) {
@@ -279,7 +282,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
                             {[
                                 { id: 'all', label: 'All' },
-                                { id: 'with', label: 'Referral' }
+                                { id: 'with', label: 'Referral' },
+                                { id: 'without', label: 'Normal' }
                             ].map(f => (
                                 <button
                                     key={f.id}
@@ -348,6 +352,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">Active Tenant</span>
                                         </div>
                                     </div>
+                                    {c.referralCode && (
+                                        <div className="flex items-center text-[10px] font-bold text-blue-500 gap-2 uppercase tracking-widest mt-1">
+                                            <Share2 size={14} />
+                                            <span>Referral: {c.referralCompanyName || c.referralCode}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -954,18 +964,27 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     if (loading) return <LoadingSpinner />;
 
     // Filter roles: exclude Super Admin, and filter by selectedCompany for Super Admin
-    const filteredRoles = roles.filter(r => {
+    const rawFilteredRoles = roles.filter(r => {
         const roleName = (r.name || '').toLowerCase();
         if (roleName === 'super admin' || roleName === 'superadmin' || roleName === 'super_admin') return false;
 
         if (isSuperAdmin) {
             // Strictly show ONLY the global templates (Admin & Manager) for Super Admin
             const roleNameLower = (r.name || '').toLowerCase();
-            const isTemplate = (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId);
+            const isTemplate = (r.is_system === 1 || r.isSystem === true || r.is_system === '1') && !(r.company_id || r.companyId);
             return isTemplate && (roleNameLower === 'admin' || roleNameLower === 'manager');
         }
         return true;
     });
+
+    // De-duplicate by name for Super Admin to ensure only one Admin/Manager shows
+    const roleMap = new Map();
+    rawFilteredRoles.forEach(r => {
+        const key = (r.name || '').toLowerCase().trim();
+        if (!roleMap.has(key)) roleMap.set(key, r);
+    });
+    const filteredRoles = Array.from(roleMap.values());
+
 
     // Group roles: system roles first, then by company
     const systemRoles = filteredRoles.filter(r => (r.is_system === 1 || r.isSystem === true) && !(r.company_id || r.companyId));
