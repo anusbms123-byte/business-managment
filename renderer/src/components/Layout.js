@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
     Receipt, BarChart3, UserCog, Settings, LogOut, Search, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu, Calculator, HandCoins
+    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu
 } from 'lucide-react';
 
 // Define all menu items with their permission keys
@@ -16,7 +16,7 @@ const ALL_MENU_ITEMS = [
     { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
-    { key: 'accounting', icon: Calculator, label: 'Accounting', path: '/accounting' },
+
     { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
 ];

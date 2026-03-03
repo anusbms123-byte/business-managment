@@ -56,7 +56,7 @@ class SyncService {
             targetCompanyId = this.currentCompanyId;
         }
 
-        // Resolve Local ID to Global ID if necessary
+        
         if (targetCompanyId && !isNaN(targetCompanyId)) {
             const companyRow = await db.asyncGet("SELECT global_id FROM companies WHERE id = ?", [targetCompanyId]);
             if (companyRow?.global_id) {

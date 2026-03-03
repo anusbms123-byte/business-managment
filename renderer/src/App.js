@@ -13,7 +13,7 @@ import Reports from './components/Reports';
 import Users from './components/Users';
 import Settings from './components/Settings';
 import Company from './components/Company';
-import Accounting from './components/Accounting';
+
 import HRM from './components/HRM';
 import Backup from './components/Backup';
 import Signup from './components/Signup';
@@ -130,7 +130,7 @@ function App() {
                                     <Route path="/suppliers" element={<Suppliers currentUser={user} />} />
                                     <Route path="/expenses" element={<Expenses currentUser={user} />} />
                                     <Route path="/reports" element={<Reports currentUser={user} />} />
-                                    <Route path="/accounting" element={<Accounting currentUser={user} />} />
+
                                     <Route path="/hrm" element={<HRM currentUser={user} />} />
                                     <Route path="/backup" element={<Backup currentUser={user} />} />
                                     <Route path="/users" element={<Users currentUser={user} />} />

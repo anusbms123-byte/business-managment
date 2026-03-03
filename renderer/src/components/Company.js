@@ -25,7 +25,7 @@ const MODULES = [
     { key: 'expenses', label: 'Expenses' },
     { key: 'reports', label: 'Reports' },
     { key: 'hrm', label: 'HRM' },
-    { key: 'accounting', label: 'Accounting' },
+
     { key: 'users', label: 'Users' },
     { key: 'roles', label: 'Roles' },
     { key: 'settings', label: 'Settings' },
