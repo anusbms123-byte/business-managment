@@ -49,7 +49,7 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                         {changeType === 'up' ? '↑' : '↓'} {change}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">interval trend</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Recent Trend</span>
                 </div>
             </div>
             <div className="relative flex items-center justify-center ml-4">
@@ -251,7 +251,7 @@ const Dashboard = ({ currentUser }) => {
                     icon={FolderKanban}
                 />
                 <StatCard
-                    title="All Expenses"
+                    title="Total Expenses"
                     value={`PKR ${summary.totalExpenses?.toLocaleString() ?? '0'}`}
                     change="Auto"
                     changeType="up"
@@ -276,8 +276,8 @@ const Dashboard = ({ currentUser }) => {
                 <div className="lg:col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm transition-all">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-sm font-bold text-black uppercase tracking-tight">Sales & Profit Trends</h2>
-                            <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">Income vs profitability over time</p>
+                            <h2 className="text-sm font-bold text-black uppercase tracking-tight">Sales & Profit</h2>
+                            <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">Movement over time</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
@@ -291,7 +291,7 @@ const Dashboard = ({ currentUser }) => {
                         </div>
                     </div>
                     {loading ? (
-                        <div className="h-[300px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Generating Chart...</div>
+                        <div className="h-[300px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</div>
                     ) : (
                         <PerformanceChart data={summary.recentDays || []} />
                     )}
@@ -300,7 +300,7 @@ const Dashboard = ({ currentUser }) => {
                 {/* Top Moving Items */}
                 <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm relative overflow-hidden">
                     <div className="relative z-10">
-                        <h2 className="text-sm font-bold text-black uppercase tracking-tight mb-8">Top Moving Items</h2>
+                        <h2 className="text-sm font-bold text-black uppercase tracking-tight mb-8">Best Selling</h2>
                         <div className="space-y-7">
                             {(!summary.topProducts || summary.topProducts.length === 0) ? (
                                 <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
@@ -345,7 +345,7 @@ const Dashboard = ({ currentUser }) => {
                                         <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
                                         <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Low Stock Alert</span>
                                     </div>
-                                    <span className="text-[10px] font-black text-rose-700">{summary.lowStockCount} Items</span>
+                                    <span className="text-[10px] font-black text-rose-700">{summary.lowStockCount} Low</span>
                                 </div>
                             </div>
                         )}
@@ -356,8 +356,8 @@ const Dashboard = ({ currentUser }) => {
             {/* Sales Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-black uppercase tracking-tight">Latest Sales Activity</h2>
-                    <p className="text-[10px] font-bold text-black uppercase tracking-widest">Recent Invoices</p>
+                    <h2 className="text-sm font-bold text-black uppercase tracking-tight">Recent Sales</h2>
+                    <p className="text-[10px] font-bold text-black uppercase tracking-widest">Latest Invoices</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -365,16 +365,16 @@ const Dashboard = ({ currentUser }) => {
                             <tr>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Invoice ID</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Post Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Audit Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Debit Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading transactions...</td></tr>
+                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</td></tr>
                             ) : (recentSales?.length ?? 0) === 0 ? (
-                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No transactions found</td></tr>
+                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No records found</td></tr>
                             ) : recentSales?.map((sale, i) => (
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>

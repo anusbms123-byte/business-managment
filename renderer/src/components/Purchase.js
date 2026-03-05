@@ -475,7 +475,7 @@ const Purchase = ({ currentUser }) => {
                         <input
                             type="text"
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                            placeholder="Find procurement..."
+                            placeholder="Search here..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -486,7 +486,7 @@ const Purchase = ({ currentUser }) => {
                             className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
                         >
                             <Plus size={18} />
-                            <span>New Order</span>
+                            <span>Add Purchase</span>
                         </button>
                     )}
                 </div>
@@ -495,13 +495,13 @@ const Purchase = ({ currentUser }) => {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4">Procurement #</th>
-                                <th className="px-6 py-4">Supplier</th>
+                                <th className="px-6 py-4">ID</th>
+                                <th className="px-6 py-4">Vendor</th>
                                 <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Total Amount</th>
-                                <th className="px-6 py-4">Paid / Method</th>
+                                <th className="px-6 py-4">Total</th>
+                                <th className="px-6 py-4">Paid</th>
                                 <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-6 py-4 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -559,6 +559,16 @@ const Purchase = ({ currentUser }) => {
                                     </td>
                                 </tr>
                             ))}
+                            {filteredPurchases.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-20 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 text-slate-300">
+                                            <ShoppingCart size={24} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-black uppercase tracking-widest">No purchase recorded yet</p>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -573,15 +583,14 @@ const Purchase = ({ currentUser }) => {
                                 <ShoppingCart size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">Procurement Terminal</h2>
-                                <p className="text-[10px] text-black font-bold uppercase tracking-widest mt-0.5">Operator: {currentUser?.fullname || 'Admin'}</p>
+                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">{editingId ? 'Edit Purchase' : 'Add Purchase'}</h2>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Terminal</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -594,7 +603,7 @@ const Purchase = ({ currentUser }) => {
                             {/* Top Input Row (Vendor | Product | Qty) */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-6 flex-shrink-0">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Supplier</label>
+                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">Vendor</label>
                                     <div className="relative">
                                         <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <select
@@ -609,7 +618,7 @@ const Purchase = ({ currentUser }) => {
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
                                         >
-                                            <option value="">Select Supplier</option>
+                                            <option value="">Select Vendor</option>
                                             {vendors.map(v => (
                                                 <option key={v.id} value={v.id}>
                                                     {v.name} {v.balance > 0 ? `(Owe: ${v?.balance?.toLocaleString() || 0})` : ''}
@@ -989,7 +998,7 @@ const Purchase = ({ currentUser }) => {
                                     ) : (
                                         <>
                                             <Receipt size={18} />
-                                            <span>Save Order</span>
+                                            <span>Save now</span>
                                         </>
                                     )}
                                 </button>
@@ -1080,8 +1089,7 @@ const Purchase = ({ currentUser }) => {
                                     <Plus size={22} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-black">Quick Add Product</h3>
-                                    <p className="text-[10px] text-black font-bold uppercase tracking-widest">Register product to add in procurement</p>
+                                    <h3 className="text-lg font-bold text-black">Add New</h3>
                                 </div>
                             </div>
                             <button onClick={() => setIsQuickProductModalOpen(false)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
@@ -1099,15 +1107,15 @@ const Purchase = ({ currentUser }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2 md:col-span-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black" /> Product Name *
+                                                <Box size={12} className="text-black" /> Name *
                                             </label>
-                                            <input required type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="e.g. iPhone 15 Pro Max" />
+                                            <input required type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="Name" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Tag size={12} className="text-black" /> SKU / Code
+                                                <Tag size={12} className="text-black" /> SKU-Number
                                             </label>
-                                            <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="e.g. PHN-15-256" />
+                                            <input type="text" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="SKU-Number" />
                                         </div>
 
                                         <CreatableSelect
@@ -1150,31 +1158,31 @@ const Purchase = ({ currentUser }) => {
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black" /> Cost Price *
+                                                <DollarSign size={12} className="text-black" /> Cost *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.cost_price} onChange={e => setQuickProductForm({ ...quickProductForm, cost_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black" /> Sell Price *
+                                                <DollarSign size={12} className="text-black" /> Sale *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.sell_price} onChange={e => setQuickProductForm({ ...quickProductForm, sell_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <AlertTriangle size={12} className="text-black" /> Alert Qty
+                                                <AlertTriangle size={12} className="text-black" /> Alert
                                             </label>
                                             <input type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.alert_qty} onChange={e => setQuickProductForm({ ...quickProductForm, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black" /> Initial Stock *
+                                                <Box size={12} className="text-black" /> Stock *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.stock_qty} onChange={e => setQuickProductForm({ ...quickProductForm, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Clock size={12} className="text-black" /> Expiry Date
+                                                <Clock size={12} className="text-black" /> Expiry
                                             </label>
                                             <input type="date" className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-blue-500" value={quickProductForm.expiry_date} onChange={e => setQuickProductForm({ ...quickProductForm, expiry_date: e.target.value })} />
                                         </div>
@@ -1245,7 +1253,7 @@ const Purchase = ({ currentUser }) => {
                                     className="px-8 py-3 bg-blue-950 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-blue-100 flex items-center justify-center gap-2 min-w-[200px]"
                                 >
                                     {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={18} />}
-                                    <span>{saving ? 'Registering...' : 'Create & Select'}</span>
+                                    <span>{saving ? 'Saving...' : 'Save now'}</span>
                                 </button>
                             </div>
                         </div>

@@ -10,15 +10,14 @@ import {
 const ALL_MENU_ITEMS = [
     { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { key: 'inventory', icon: Package, label: 'Inventory', path: '/inventory' },
+        { key: 'sales', icon: ShoppingCart, label: 'Sales', path: '/sales' },
+           { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { key: 'purchase', icon: Truck, label: 'Purchase', path: '/purchase' },
-    { key: 'sales', icon: ShoppingCart, label: 'Sales', path: '/sales' },
-    { key: 'returns', icon: RefreshCcw, label: 'Returns', path: '/returns' },
-    { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
+     { key: 'returns', icon: RefreshCcw, label: 'Returns', path: '/returns' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
-
-    { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
+    { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
 ];
 
 const SETTINGS_MENU_ITEMS = [
@@ -46,6 +45,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
 const Layout = ({ children, user, permissions, onLogout }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isSuperAdmin = user?.role?.toLowerCase() === 'super admin' || user?.role?.toLowerCase() === 'super_admin';
     const [company, setCompany] = useState(null);
     // Removed internal permissions state to use prop
     const [visibleMenuItems, setVisibleMenuItems] = useState([]);
@@ -200,6 +200,24 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                     </div>
                 </div>
 
+                {/* Super Admin Special: Settings at Top */}
+                {isSuperAdmin && visibleSettingsItems.length > 0 && (
+                    <div className="relative px-4 mt-4 space-y-1.5 ">
+                        <div className="px-2 py-1">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Administration</span>
+                        </div>
+                        {visibleSettingsItems.map((item) => (
+                            <SidebarItem
+                                key={item.key}
+                                icon={item.icon}
+                                label={item.label}
+                                active={isActive(item.path)}
+                                onClick={() => handleNavigate(item.path)}
+                            />
+                        ))}
+                    </div>
+                )}
+
                 {/* Menu Label */}
                 {visibleMenuItems.length > 0 && (
                     <div className="relative px-6 py-4 mt-2">
@@ -220,45 +238,36 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                     ))}
                 </div>
 
-                {/* Settings Section - Dynamic based on permissions */}
-                {visibleSettingsItems.length > 0 && (
-                    <div className="relative  px-4">
-                        <div className="px-2 py-1">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Settings</span>
+                {/* Bottom Section: Regular Settings and Logout */}
+                <div className="relative px-4 pt-4 pb-8 border-t border-slate-800/50 mt-auto">
+                    {/* Settings Section (Only for Non-Super-Admin here) */}
+                    {!isSuperAdmin && visibleSettingsItems.length > 0 && (
+                        <div className="mb-4">
+                            <div className="px-2 py-1">
+                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Settings</span>
+                            </div>
+                            <div className="space-y-1.5">
+                                {visibleSettingsItems.map((item) => (
+                                    <SidebarItem
+                                        key={item.key}
+                                        icon={item.icon}
+                                        label={item.label}
+                                        active={isActive(item.path)}
+                                        onClick={() => handleNavigate(item.path)}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                        <div className=" text-sm">
-                            {visibleSettingsItems.map((item) => (
-                                <SidebarItem
-                                    key={item.key}
-                                    icon={item.icon}
-                                    label={item.label}
-                                    active={isActive(item.path)}
-                                    onClick={() => handleNavigate(item.path)}
-                                />
-                            ))}
-                        </div>
-                        <div
-                            onClick={onLogout}
-                            className="group flex items-center space-x-3 px-4 py-3.5 rounded-xl cursor-pointer text-red-400 hover:text-white hover:bg-red-500/20 transition-all duration-300 mt-3 border border-red-500/20 hover:border-red-500/40"
-                        >
-                            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-                            <span className="text-sm font-medium">Logout</span>
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Always show logout even if no settings items */}
-                {visibleSettingsItems.length === 0 && (
-                    <div className="relative px-4 pt-6 pb-8 border-t border-slate-800/50 mt-auto">
-                        <div
-                            onClick={onLogout}
-                            className="group flex items-center space-x-3 px-4 py-3.5 rounded-xl cursor-pointer text-red-400 hover:text-white hover:bg-red-500/20 transition-all duration-300 border border-red-500/20 hover:border-red-500/40"
-                        >
-                            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-                            <span className="text-sm font-medium">Logout</span>
-                        </div>
+                    <div
+                        onClick={onLogout}
+                        className="group flex items-center space-x-3 px-4 py-3.5 rounded-xl cursor-pointer text-red-400 hover:text-white hover:bg-red-500/20 transition-all duration-300 border border-red-500/20 hover:border-red-500/40"
+                    >
+                        <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+                        <span className="text-sm font-medium">Logout</span>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Main Content */}

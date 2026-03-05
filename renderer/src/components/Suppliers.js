@@ -137,7 +137,7 @@ const Suppliers = ({ currentUser }) => {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
-                            placeholder="Find suppliers..."
+                            placeholder="Search here..."
                         />
                     </div>
                     {canCreate('suppliers') && (
@@ -155,12 +155,12 @@ const Suppliers = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/80">
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Vendor / Company</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Name</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Contact Person</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Contact Info</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Location</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Outstandings</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Phone</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">City</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Balance</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -258,15 +258,19 @@ const Suppliers = ({ currentUser }) => {
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* Full-Page Header */}
                         <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
-                            <div className="min-w-0">
-                                <h3 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight truncate">{formData.id ? 'Edit Supplier Profile' : 'Register New Supplier'}</h3>
-                                <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">Maintain vendor relationships and accounts.</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                                    <Truck size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight truncate">{formData.id ? 'Edit Vendor' : 'Add Vendor'}</h3>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                             >
-                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Page</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -278,10 +282,10 @@ const Suppliers = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
-                                            Company Details
+                                            Primary Info
                                         </h4>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Supplier Name / Business Name *</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Name *</label>
                                             <div className="relative">
                                                 <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -296,7 +300,7 @@ const Suppliers = ({ currentUser }) => {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Phone Number</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Phone</label>
                                                 <div className="relative">
                                                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
@@ -309,7 +313,7 @@ const Suppliers = ({ currentUser }) => {
                                                 </div>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Contact Person</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Person</label>
                                                 <div className="relative">
                                                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
@@ -323,7 +327,7 @@ const Suppliers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Email Address</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Email</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -336,7 +340,7 @@ const Suppliers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">GST / Tax Number</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">GST</label>
                                             <input
                                                 type="text"
                                                 value={formData.gst_no}
@@ -350,7 +354,7 @@ const Suppliers = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-orange-500 rounded-full"></div>
-                                            Location & Accounts
+                                            Other Info
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
@@ -367,7 +371,7 @@ const Suppliers = ({ currentUser }) => {
                                                 </div>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Balance</label>
                                                 <input
                                                     type="number"
                                                     value={formData.openingBalance || ''}
@@ -378,7 +382,7 @@ const Suppliers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Business Address</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Address</label>
                                             <textarea
                                                 value={formData.address}
                                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -396,8 +400,7 @@ const Suppliers = ({ currentUser }) => {
                                         disabled={saving}
                                         className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
                                     >
-                                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Check size={22} />}
-                                        {formData.id ? 'Update Supplier Information' : 'Complete Registration Process'}
+                                        {saving ? 'Saving...' : 'Save now'}
                                     </button>
                                 </div>
                             </form>

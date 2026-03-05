@@ -348,7 +348,7 @@ const Sales = ({ currentUser }) => {
                         <input
                             type="text"
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                            placeholder="Find invoice..."
+                            placeholder="Search here..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -359,7 +359,7 @@ const Sales = ({ currentUser }) => {
                             className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200"
                         >
                             <Plus size={18} />
-                            <span>Create New Sale</span>
+                            <span>Add Sale</span>
                         </button>
                     )}
                 </div>
@@ -368,13 +368,13 @@ const Sales = ({ currentUser }) => {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4">Invoice Details</th>
-                                <th className="px-6 py-4">Customer info</th>
+                                <th className="px-6 py-4">ID</th>
+                                <th className="px-6 py-4">Customer</th>
                                 <th className="px-6 py-4">Items</th>
-                                <th className="px-6 py-4">Grand Total</th>
-                                <th className="px-6 py-4">Method / Paid</th>
+                                <th className="px-6 py-4">Total</th>
+                                <th className="px-6 py-4">Paid</th>
                                 <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-6 py-4 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -463,15 +463,14 @@ const Sales = ({ currentUser }) => {
                                 <ShoppingCart size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">Terminal POS</h2>
-                                <p className="text-[10px] text-black font-bold uppercase tracking-widest mt-0.5">Operator: {currentUser?.fullname || 'Counter 1'}</p>
+                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">{editingId ? 'Edit Sale' : 'Add Sale'}</h2>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Terminal</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -518,7 +517,7 @@ const Sales = ({ currentUser }) => {
                                             ref={productRef}
                                             type="text"
                                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-bold text-sm outline-none"
-                                            placeholder="Type to search product..."
+                                            placeholder="Search here..."
                                             value={productSearch}
                                             onChange={(e) => {
                                                 setProductSearch(e.target.value);
@@ -666,7 +665,7 @@ const Sales = ({ currentUser }) => {
                                         onClick={addToCart}
                                         className="w-full py-2 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95 text-sm disabled:opacity-50"
                                     >
-                                        ADD TO CART
+                                        Add now
                                     </button>
                                 </div>
                             </div>
@@ -676,8 +675,8 @@ const Sales = ({ currentUser }) => {
                                 <table className="w-full text-left min-w-[600px]">
                                     <thead className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-4">Product</th>
-                                            <th className="px-6 py-4 text-center">Unit Price</th>
+                                            <th className="px-6 py-4">Name</th>
+                                            <th className="px-6 py-4 text-center">Price</th>
                                             <th className="px-6 py-4 text-center">Qty</th>
                                             <th className="px-6 py-4 text-right">Total</th>
                                             <th className="px-6 py-4 text-right"></th>
@@ -819,7 +818,7 @@ const Sales = ({ currentUser }) => {
                                                 </select>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cash Received</label>
+                                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Received</label>
                                                 <input
                                                     type="number"
                                                     className="w-24 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-right font-bold text-sm text-slate-800 outline-none focus:border-blue-500"
@@ -859,12 +858,12 @@ const Sales = ({ currentUser }) => {
                                         </div>
 
                                         <div className="space-y-1.5">
-                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Order Notes</label>
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
                                             <textarea
                                                 value={notes}
                                                 onChange={(e) => setNotes(e.target.value)}
                                                 className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-16 lg:h-20"
-                                                placeholder="Delivery instructions..."
+                                                placeholder="Details..."
                                             />
                                         </div>
                                     </div>
@@ -880,12 +879,12 @@ const Sales = ({ currentUser }) => {
                                     {saving ? (
                                         <div className="flex items-center gap-2">
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Processing...</span>
+                                            <span>Saving...</span>
                                         </div>
                                     ) : (
                                         <>
                                             <ShoppingCart size={20} />
-                                            <span>CHECKOUT</span>
+                                            <span>Save now</span>
                                         </>
                                     )}
                                 </button>

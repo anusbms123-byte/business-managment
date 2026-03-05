@@ -64,7 +64,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
                     <div className="flex items-center gap-2">
                         <Calendar size={18} className="text-blue-600" />
-                        <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] italic">Attendance Archive</h3>
+                        <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] italic">Attendance History</h3>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3 bg-white px-4 py-2 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition-colors">
@@ -111,7 +111,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                 {/* Recent Activity */}
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
                     <Calendar size={16} className="text-blue-600" />
-                    Recent Activity Output
+                    Activity
                 </h3>
 
                 <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -158,7 +158,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 
             <div className="p-4 border-t border-slate-100 bg-slate-50 text-center">
                 <button onClick={onClose} className="text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
-                    Close Details
+                    Close
                 </button>
             </div>
         </div>

@@ -359,7 +359,7 @@ const Products = ({ currentUser }) => {
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
                         >
-                            <option value="">All Categories</option>
+                            <option value="">Categories</option>
                             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
 
@@ -369,7 +369,7 @@ const Products = ({ currentUser }) => {
                             value={filterBrand}
                             onChange={(e) => setFilterBrand(e.target.value)}
                         >
-                            <option value="">All Brands</option>
+                            <option value="">Brands</option>
                             {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
 
@@ -379,7 +379,7 @@ const Products = ({ currentUser }) => {
                             value={filterUnit}
                             onChange={(e) => setFilterUnit(e.target.value)}
                         >
-                            <option value="">All Units</option>
+                            <option value="">Units</option>
                             <option value="pcs">Pieces (pcs)</option>
                             <option value="kg">Kilogram (kg)</option>
                             <option value="gram">Gram (g)</option>
@@ -395,7 +395,7 @@ const Products = ({ currentUser }) => {
                             value={filterColor}
                             onChange={(e) => setFilterColor(e.target.value)}
                         >
-                            <option value="">All Colors</option>
+                            <option value="">Colors</option>
                             {stats.uniqueColors.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
 
@@ -405,7 +405,7 @@ const Products = ({ currentUser }) => {
                             value={filterSize}
                             onChange={(e) => setFilterSize(e.target.value)}
                         >
-                            <option value="">All Sizes</option>
+                            <option value="">Sizes</option>
                             {stats.uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
 
@@ -415,7 +415,7 @@ const Products = ({ currentUser }) => {
                             value={filterGrade}
                             onChange={(e) => setFilterGrade(e.target.value)}
                         >
-                            <option value="">All Grades</option>
+                            <option value="">Grades</option>
                             {stats.uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
 
@@ -425,7 +425,7 @@ const Products = ({ currentUser }) => {
                             value={filterStockStatus}
                             onChange={(e) => setFilterStockStatus(e.target.value)}
                         >
-                            <option value="">All Stock Status</option>
+                            <option value="">Status</option>
                             <option value="instock">In Stock</option>
                             <option value="lowstock">Low Stock</option>
                             <option value="outofstock">Out of Stock</option>
@@ -458,7 +458,7 @@ const Products = ({ currentUser }) => {
                             <input
                                 type="text"
                                 className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold"
-                                placeholder="Search products..."
+                                placeholder="Search here..."
                                 value={searchTerm}
                                 onChange={(e) => {
                                     setSearchTerm(e.target.value);
@@ -527,7 +527,7 @@ const Products = ({ currentUser }) => {
                                             )}
                                     </div>
                                     <div className="bg-slate-50 px-4 py-2 border-t border-slate-100">
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">Showing top results</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">Top Results</p>
                                     </div>
                                 </div>
                             )}
@@ -553,48 +553,48 @@ const Products = ({ currentUser }) => {
                     <table className="w-full text-left min-w-max border-separate border-spacing-0">
                         <thead className="bg-slate-50/80 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 z-10 border-b border-slate-100">SKU</th>
-                                <th className="px-6 py-4 border-b border-slate-100">Product</th>
+                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 z-10 border-b border-slate-100">Name</th>
+                                <th className="px-6 py-4 border-b border-slate-100">SKU</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Cost</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Sale</th>
                                 <th className="px-6 py-4 border-b border-slate-100 text-center">Stock</th>
-                                <th className="px-6 py-4 border-b border-slate-100 text-center">Sell (PKR)</th>
-                                <th className="px-6 py-4 border-b border-slate-100 text-center">Cost (PKR)</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Brand</th>
-                                <th className="px-6 py-4 border-b border-slate-100 text-center">Expiry</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Unit</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Weight</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Alert</th>
-                                <th className="px-6 py-4 border-b border-slate-100">Attributes</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Color</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Size</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Grade</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Condition</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-center">Expiry</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Status</th>
                                 <th className="px-6 py-4 border-b border-slate-100">Category</th>
-                                <th className="px-6 py-4 border-b border-slate-100 text-right">Actions</th>
+                                <th className="px-6 py-4 border-b border-slate-100 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="transition-all border-b border-slate-50 last:border-0 hover:bg-slate-50/30">
                                     <td className="px-6 py-4 sticky left-0 bg-white z-10 border-b border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                        <div className="text-xs font-bold text-black">{product.sku || '-'}</div>
-                                    </td>
-                                    <td className="px-6 py-4 border-b border-slate-50">
-                                        <div className="font-bold text-black text-sm uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
+                                        <div className="font-bold text-black text-xs uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
                                         <div className="text-[9px] text-black font-bold uppercase tracking-widest mt-0.5">ID: #{product.id}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-black border-b border-slate-50 text-center">{product.stockQty}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.sellPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.costPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight border-b border-slate-50">{product.brand?.name || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-[10px] text-black font-bold uppercase border-b border-slate-50">
-                                        {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
+                                    <td className="px-6 py-4 border-b border-slate-50">
+                                        <div className="text-xs font-bold text-black">{product.sku || '-'}</div>
                                     </td>
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.costPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-black border-b border-slate-50">{product.sellPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black border-b border-slate-50 text-center">{product.stockQty}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight border-b border-slate-50">{product.brand?.name || '-'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black uppercase border-b border-slate-50">{product.unit || 'pcs'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black border-b border-slate-50">{product.weight ? `${product.weight}kg` : '-'}</td>
-                                    <td className="px-6 py-4 text-[10px] text-black font-bold border-b border-slate-50">Min:{product.alertQty || 5}</td>
-                                    <td className="px-6 py-4 border-b border-slate-50">
-                                        <div className="flex flex-col gap-0.5">
-                                            <span className="text-[10px] text-black font-bold uppercase whitespace-nowrap">
-                                                {[product.color, product.size, product.grade, product.condition].filter(Boolean).join(' • ') || '-'}
-                                            </span>
-                                        </div>
+                                    <td className="px-6 py-4 text-xs text-black font-bold border-b border-slate-50">Min:{product.alertQty || 5}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black font-bold uppercase border-b border-slate-50">{product.color || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black font-bold uppercase border-b border-slate-50">{product.size || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black font-bold uppercase border-b border-slate-50">{product.grade || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black font-bold uppercase border-b border-slate-50">{product.condition || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black font-bold uppercase border-b border-slate-50">
+                                        {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-50">
                                         <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -634,7 +634,7 @@ const Products = ({ currentUser }) => {
                                 <tr>
                                     <td colSpan="7" className="px-6 py-20 text-center">
                                         <Package size={40} className="mx-auto text-slate-100 mb-3" />
-                                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No products found</p>
+                                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No records found</p>
                                     </td>
                                 </tr>
                             )}
@@ -649,15 +649,19 @@ const Products = ({ currentUser }) => {
                     <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all font-sans">
                         {/* Fixed Header */}
                         <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
-                            <div className="min-w-0">
-                                <h2 className="text-xl md:text-2xl font-bold text-slate-800 uppercase tracking-tight truncate">{formData.id ? 'Edit Product' : 'Add New Product'}</h2>
-                                <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">Manage inventory details and product specs.</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                    <Package size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 uppercase tracking-tight truncate">{formData.id ? 'Edit Product' : 'Add Product'}</h2>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                             >
-                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Page</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -670,15 +674,15 @@ const Products = ({ currentUser }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Tag size={12} className="text-black" /> Product Name *
+                                                <Tag size={12} className="text-black" /> Name *
                                             </label>
                                             <input required type="text" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. iPhone 15 Pro" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Layers size={12} className="text-black" /> SKU Number
+                                                <Layers size={12} className="text-black" /> SKU
                                             </label>
-                                            <input type="text" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="e.g. PHN-APL-15" />
+                                            <input type="text" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="SKU" />
                                         </div>
                                         <CreatableSelect
                                             label="Category"
@@ -686,7 +690,7 @@ const Products = ({ currentUser }) => {
                                             value={formData.category_name}
                                             options={categories}
                                             onChange={(val) => setFormData({ ...formData, category_name: val })}
-                                            placeholder="Select or type category"
+                                            placeholder="Category name"
                                         />
                                         <CreatableSelect
                                             label="Brand"
@@ -694,7 +698,7 @@ const Products = ({ currentUser }) => {
                                             value={formData.brand_name}
                                             options={brands}
                                             onChange={(val) => setFormData({ ...formData, brand_name: val })}
-                                            placeholder="Select or type brand"
+                                            placeholder="Brand name"
                                         />
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
@@ -722,25 +726,25 @@ const Products = ({ currentUser }) => {
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black" /> Cost Price
+                                                <DollarSign size={12} className="text-black" /> Cost
                                             </label>
                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black" /> Sell Price *
+                                                <DollarSign size={12} className="text-black" /> Sale *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black" /> Initial Stock *
+                                                <Box size={12} className="text-black" /> Stock *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.stock_qty || ''} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <AlertTriangle size={12} className="text-black" /> Low Stock Alert
+                                                <AlertTriangle size={12} className="text-black" /> Alert
                                             </label>
                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none" value={formData.alert_qty || ''} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
@@ -793,20 +797,17 @@ const Products = ({ currentUser }) => {
                                             </div>
                                         </div>
                                     )}
-
-
-
                                     <div className="pt-6 sticky bottom-0 bg-white pb-8">
                                         <button type="submit" disabled={saving} className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70">
                                             {saving ? (
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    <span>Saving Product Details...</span>
+                                                    <span>Saving...</span>
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <Check size={22} />
-                                                    <span>{formData.id ? 'Update Product Information' : 'Complete Product Registration'}</span>
+                                                    <Check size={20} />
+                                                    <span>{formData.id ? 'Update now' : 'Save now'}</span>
                                                 </>
                                             )}
                                         </button>
@@ -817,8 +818,7 @@ const Products = ({ currentUser }) => {
                     </div>
                 )
             }
-
-        </div >
+        </div>
     );
 };
 

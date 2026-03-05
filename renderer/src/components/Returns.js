@@ -210,7 +210,7 @@ const Returns = ({ currentUser }) => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                             type="text"
-                            placeholder={`Search by invoice or ${activeTab === 'sales' ? 'customer' : 'supplier'}...`}
+                            placeholder="Search here..."
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -223,13 +223,13 @@ const Returns = ({ currentUser }) => {
                                 onClick={() => setActiveTab('sales')}
                                 className={`px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all ${activeTab === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-black hover:text-slate-700'}`}
                             >
-                                Sale Returns
+                                Sales
                             </button>
                             <button
                                 onClick={() => setActiveTab('purchases')}
                                 className={`px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all ${activeTab === 'purchases' ? 'bg-white text-blue-600 shadow-sm' : 'text-black hover:text-slate-700'}`}
                             >
-                                Purchase Returns
+                                Purchase
                             </button>
                         </div>
                         {canCreate('returns') && (
@@ -238,7 +238,7 @@ const Returns = ({ currentUser }) => {
                                 className="flex items-center gap-2 bg-blue-950 text-white px-5 py-2 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-blue-900/10 active:scale-95"
                             >
                                 <Plus size={16} />
-                                <span>Add New Return</span>
+                                <span>Add Return</span>
                             </button>
                         )}
                     </div>
@@ -249,11 +249,11 @@ const Returns = ({ currentUser }) => {
                         <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">Invoice #</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">ID</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">{activeTab === 'sales' ? 'Customer' : 'Vendor'}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest">Items</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest text-right">Total Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest text-right">Action</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest text-right">Total</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -310,15 +310,14 @@ const Returns = ({ currentUser }) => {
                                 <RefreshCcw size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">Return Processing</h2>
-                                <p className="text-[10px] text-black font-bold uppercase tracking-widest mt-0.5">Operator: {currentUser?.fullname || 'Admin'}</p>
+                                <h2 className="text-sm md:text-xl font-bold text-black tracking-tight">{activeTab === 'sales' ? 'Add Sale Return' : 'Add Purchase Return'}</h2>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Terminal</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -329,13 +328,13 @@ const Returns = ({ currentUser }) => {
                         <div className="flex-1 p-6 overflow-y-auto border-r border-slate-200">
                             <div className="grid grid-cols-4 gap-4 mb-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
+                                    <label className="text-[10px] font-bold text-black uppercase tracking-widest ml-1">{activeTab === 'sales' ? 'Customer' : 'Vendor'}</label>
                                     <select
                                         className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-blue-500 transition-all text-black"
                                         value={selectedEntityId}
                                         onChange={(e) => setSelectedEntityId(e.target.value)}
                                     >
-                                        <option value="">Select {activeTab === 'sales' ? 'Customer' : 'Supplier'}...</option>
+                                        <option value="">Select {activeTab === 'sales' ? 'Customer' : 'Vendor'}...</option>
                                         {(activeTab === 'sales' ? customers : vendors).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                                     </select>
                                 </div>
@@ -346,7 +345,7 @@ const Returns = ({ currentUser }) => {
                                             ref={productRef}
                                             type="text"
                                             className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg font-bold text-sm outline-none focus:border-blue-500 transition-all text-black"
-                                            placeholder="Search product..."
+                                            placeholder="Search here..."
                                             value={productSearch}
                                             onChange={(e) => {
                                                 setProductSearch(e.target.value);
@@ -408,9 +407,10 @@ const Returns = ({ currentUser }) => {
                                     </div>
                                     <button
                                         onClick={addToCart}
-                                        className="p-2.5 bg-blue-950 text-white rounded-lg hover:bg-slate-900 transition-all shrink-0 shadow-md active:scale-95"
+                                        className="px-4 py-2.5 bg-blue-950 text-white rounded-lg hover:bg-slate-900 transition-all shrink-0 shadow-md active:scale-95 flex items-center justify-center whitespace-nowrap"
                                     >
                                         <Plus size={20} />
+                                        <span className="text-[10px] font-bold tracking-widest uppercase ml-1">Add now</span>
                                     </button>
                                 </div>
                             </div>
@@ -420,11 +420,11 @@ const Returns = ({ currentUser }) => {
                                 <table className="w-full">
                                     <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Product</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Price</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Name</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest text-center">Price</th>
                                             <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Qty</th>
                                             <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Total</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Done</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -491,7 +491,7 @@ const Returns = ({ currentUser }) => {
                                         />
                                     </div>
                                     <div className="pt-4 border-t border-slate-200 flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Credit Amount</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Amount</span>
                                         <span className="text-2xl font-medium text-blue-950 tracking-tighter">
                                             PKR {(totalAmount || 0).toLocaleString()}
                                         </span>
@@ -499,10 +499,10 @@ const Returns = ({ currentUser }) => {
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes / Reason</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
                                     <textarea
                                         className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-blue-500 transition-all resize-none h-24"
-                                        placeholder="Reason for return..."
+                                        placeholder="Details..."
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                     />
@@ -515,7 +515,7 @@ const Returns = ({ currentUser }) => {
                                     disabled={saving || cart.length === 0 || !selectedEntityId}
                                     className="w-full py-4 bg-blue-950 text-white rounded-2xl font-bold text-base hover:bg-slate-900 shadow-xl shadow-blue-900/10 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                 >
-                                    {saving ? <span>Processing...</span> : <span>Complete Return</span>}
+                                    {saving ? <span>Saving...</span> : <span>Save now</span>}
                                 </button>
                             </div>
                         </div>

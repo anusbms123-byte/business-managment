@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus, Search, Edit2, Trash2, User, Phone,
     MapPin, Mail, TrendingUp,
-    DollarSign, X, Check, Loader2
+    DollarSign, X, Check, Loader2, Users
 } from 'lucide-react';
 import { canCreate, canEdit, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
@@ -156,7 +156,7 @@ const Customers = ({ currentUser }) => {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
-                            placeholder="Search customers..."
+                            placeholder="Search here..."
                         />
                     </div>
                     <div className="flex items-center gap-4">
@@ -169,7 +169,7 @@ const Customers = ({ currentUser }) => {
                                 className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-sm shadow-blue-200 text-sm"
                             >
                                 <Plus size={18} />
-                                <span>Add New Customer</span>
+                                <span>Add Customer</span>
                             </button>
                         )}
                     </div>
@@ -179,11 +179,11 @@ const Customers = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/80">
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Contact Info</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Location</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Name</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Contact</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">City</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Balance</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -267,15 +267,19 @@ const Customers = ({ currentUser }) => {
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* Full-Page Header */}
                         <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
-                            <div className="min-w-0">
-                                <h3 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight truncate">{formData.id ? 'Update Customer Details' : 'Register New Customer'}</h3>
-                                <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">Manage customer profile and credit information.</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                    <Users size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight truncate">{formData.id ? 'Edit Customer' : 'Add Customer'}</h3>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                             >
-                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Page</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -287,10 +291,10 @@ const Customers = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-                                            Basic Information
+                                            Primary Info
                                         </h4>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Full Name *</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Name *</label>
                                             <div className="relative">
                                                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -304,7 +308,7 @@ const Customers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Phone Number</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Phone</label>
                                             <div className="relative">
                                                 <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -318,7 +322,7 @@ const Customers = ({ currentUser }) => {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Customer Type</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Type</label>
                                                 <select
                                                     value={formData.customerType}
                                                     onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
@@ -329,7 +333,7 @@ const Customers = ({ currentUser }) => {
                                                 </select>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">CNIC / ID Number</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">CNIC</label>
                                                 <input
                                                     type="text"
                                                     value={formData.cnic}
@@ -340,7 +344,7 @@ const Customers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Email Address</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Email</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -353,7 +357,7 @@ const Customers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">GST Number</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">GST</label>
                                             <div className="relative">
                                                 <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                 <input
@@ -370,11 +374,11 @@ const Customers = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-                                            Additional Details
+                                            Other Info
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Credit Limit (PKR)</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Limit</label>
                                                 <div className="relative">
                                                     <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
@@ -387,7 +391,7 @@ const Customers = ({ currentUser }) => {
                                                 </div>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">{formData.id ? 'Current Balance' : 'Opening Balance'}</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Balance</label>
                                                 <div className="relative">
                                                     <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
@@ -414,7 +418,7 @@ const Customers = ({ currentUser }) => {
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Shipping/Billing Address</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Address</label>
                                             <div className="relative">
                                                 <MapPin className="absolute left-3.5 top-3 text-slate-400" size={16} />
                                                 <textarea
@@ -435,8 +439,7 @@ const Customers = ({ currentUser }) => {
                                         disabled={saving}
                                         className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
                                     >
-                                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Check size={22} />}
-                                        {formData.id ? 'Save Customer Information' : 'Complete Registration Process'}
+                                        {saving ? 'Saving...' : 'Save now'}
                                     </button>
                                 </div>
                             </form>

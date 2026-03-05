@@ -135,7 +135,7 @@ const Expenses = ({ currentUser }) => {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
-                            placeholder="Search expense history..."
+                            placeholder="Search here..."
                         />
                     </div>
                     {canCreate('expenses') && (
@@ -158,9 +158,9 @@ const Expenses = ({ currentUser }) => {
                             <tr>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Date</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Category</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Expenditure Title</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Title</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Done</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -221,15 +221,19 @@ const Expenses = ({ currentUser }) => {
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* Full-Page Header */}
                         <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
-                            <div className="min-w-0">
-                                <h3 className="text-xl md:text-2xl font-bold text-black tracking-tight truncate">{formData.id ? 'Edit Expense Record' : 'Record New Expense'}</h3>
-                                <p className="text-[10px] md:text-xs text-black font-bold uppercase tracking-widest mt-1 truncate">Track and categorize business spending details.</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                                    <DollarSign size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-xl md:text-2xl font-bold text-black tracking-tight truncate">{formData.id ? 'Edit Expense' : 'Add Expense'}</h3>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                             >
-                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close Page</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -241,11 +245,11 @@ const Expenses = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
-                                            Expense Details
+                                            Primary Info
                                         </h4>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Expense Title *</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Title *</label>
                                             <input
                                                 type="text"
                                                 required
@@ -258,7 +262,7 @@ const Expenses = ({ currentUser }) => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Amount (PKR) *</label>
+                                                <label className="text-xs font-bold text-slate-600 ml-1">Amount *</label>
                                                 <div className="relative">
                                                     <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                                     <input
@@ -304,11 +308,11 @@ const Expenses = ({ currentUser }) => {
                                     <div className="space-y-4 md:space-y-6">
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
-                                            Additional Information
+                                            Other Info
                                         </h4>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Notes (Optional)</label>
+                                            <label className="text-xs font-bold text-slate-600 ml-1">Notes</label>
                                             <textarea
                                                 value={formData.description}
                                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -325,8 +329,7 @@ const Expenses = ({ currentUser }) => {
                                         disabled={saving}
                                         className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
                                     >
-                                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Check size={22} />}
-                                        {formData.id ? 'Update Expense Information' : 'Confirm and Save Expense'}
+                                        {saving ? 'Saving...' : 'Save now'}
                                     </button>
                                 </div>
                             </form>

@@ -76,8 +76,8 @@ const CompanySetup = () => {
                     <div className="p-10">
                         {/* Header */}
                         <div className="mb-8">
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Organization Setup</h1>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Welcome, {username}. Tell us about your company.</p>
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Setup Company</h1>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Welcome, {username}. Please enter your company details.</p>
                         </div>
 
                         {error && (
@@ -94,7 +94,7 @@ const CompanySetup = () => {
                                 value={formData.companyName}
                                 onChange={handleChange}
                                 icon={Building2}
-                                placeholder="Business Name"
+                                placeholder="Enter company name"
                                 required
                             />
 
@@ -121,12 +121,12 @@ const CompanySetup = () => {
                             </div>
 
                             <FormInput
-                                label="Office Number"
+                                label="Landline No"
                                 name="officePhone"
                                 value={formData.officePhone}
                                 onChange={handleChange}
                                 icon={Phone}
-                                placeholder="Landline"
+                                placeholder="Enter landline no"
                             />
 
                             <div className="space-y-4">
@@ -135,14 +135,14 @@ const CompanySetup = () => {
                                     Location Details
                                 </h4>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Physical Address</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Address</label>
                                     <textarea
                                         name="companyAddress"
                                         rows={3}
                                         value={formData.companyAddress}
                                         onChange={handleChange}
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
-                                        placeholder="Street, Area, Building..."
+                                        placeholder="Enter company address"
                                         required
                                     />
                                 </div>
@@ -160,7 +160,7 @@ const CompanySetup = () => {
                                     value={formData.referralCode}
                                     onChange={handleChange}
                                     icon={Users}
-                                    placeholder="Enter refral code if any"
+                                    placeholder="Enter referral code (Optional)"
                                 />
                             </div>
 
@@ -170,9 +170,9 @@ const CompanySetup = () => {
                                 disabled={loading}
                                 className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2 mt-4"
                             >
-                                {loading ? 'Submitting Request...' : (
+                                {loading ? 'Creating...' : (
                                     <>
-                                        <span>Submit for Approval</span>
+                                        <span>Create Company</span>
                                         <ArrowRight size={16} />
                                     </>
                                 )}

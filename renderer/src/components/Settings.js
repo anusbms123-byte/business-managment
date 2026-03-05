@@ -84,25 +84,25 @@ const Settings = ({ currentUser }) => {
         setSaving(false);
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Initializing Environment...</div>;
+    if (loading) return <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Loading...</div>;
 
     if (isSuperAdmin) {
         return (
             <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight text-center md:text-left">Personal Profile Settings</h1>
-                    <p className="text-slate-500 text-sm mt-1 text-center md:text-left">Manage your administrative credentials and personal identification.</p>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight text-center md:text-left">Profile Settings</h1>
+                    <p className="text-slate-500 text-sm mt-1 text-center md:text-left">Manage your account details and password.</p>
                 </div>
 
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 space-y-8">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Access Credentials</h2>
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Account Details</h2>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Display Name</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all font-sans"
@@ -112,7 +112,7 @@ const Settings = ({ currentUser }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System Username</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Username</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all font-sans"
@@ -122,15 +122,15 @@ const Settings = ({ currentUser }) => {
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Security Key (Password)</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Password</label>
                             <input
                                 type="password"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all font-sans"
                                 value={profileData.password}
                                 onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
-                                placeholder="Leave blank to keep current password"
+                                placeholder="Leave blank to keep current"
                             />
-                            <p className="mt-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest">Update your password to ensure system security.</p>
+                            <p className="mt-2 text-[9px] text-slate-400 font-bold uppercase tracking-widest">Keep blank if you don't want to change it.</p>
                         </div>
                     </div>
 
@@ -140,7 +140,7 @@ const Settings = ({ currentUser }) => {
                             disabled={saving}
                             className="bg-blue-600 text-white px-10 py-3 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-95 disabled:opacity-50"
                         >
-                            {saving ? 'Synchronizing...' : 'Update Individual Profile'}
+                            {saving ? 'Loading...' : 'Save now'}
                         </button>
                     </div>
                 </div>
@@ -151,8 +151,8 @@ const Settings = ({ currentUser }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Organization Configuration</h1>
-                <p className="text-slate-500 text-sm mt-1">Configure your organization's core identities and transaction preferences.</p>
+                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business Settings</h1>
+                <p className="text-slate-500 text-sm mt-1">Manage your business details and preferences.</p>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 space-y-10">
@@ -160,55 +160,55 @@ const Settings = ({ currentUser }) => {
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Business Identity</h2>
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Business Info</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Official Business Name</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Business Name</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
-                                placeholder="Your Company Name"
+                                placeholder="ex. ABC Shop"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Primary Contact Phone</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone Number</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
-                                placeholder="+92 300 1234567"
+                                placeholder="03XXXXXXXXX"
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-1">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Business Email</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</label>
                             <input
                                 type="email"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
-                                placeholder="office@company.com"
+                                placeholder="ex. shop@email.com"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-1">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tax / NTN Number</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tax Number</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
-                                placeholder="Tax registration"
+                                placeholder="ex. 1234567-8"
                                 value={formData.tax_no}
                                 onChange={(e) => setFormData({ ...formData, tax_no: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Registered Office Address</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Address</label>
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
-                                placeholder="Full physical or digital address"
+                                placeholder="Business location"
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                             />
@@ -222,10 +222,10 @@ const Settings = ({ currentUser }) => {
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Localizations & Currency</h2>
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Currency Settings</h2>
                     </div>
                     <div className="w-full md:w-80">
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Base Transaction Currency</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select Currency</label>
                         <select
                             className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 transition-all"
                             value={formData.currency_symbol}
@@ -246,7 +246,7 @@ const Settings = ({ currentUser }) => {
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-blue-950 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Hardware Integrations</h2>
+                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Printer Settings</h2>
                     </div>
                     <div className="w-full md:w-80">
                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Default Thermal/POS Printer</label>
@@ -264,7 +264,7 @@ const Settings = ({ currentUser }) => {
                             onClick={handleSaveCompany}
                             className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest"
                         >
-                            {saving ? 'Processing...' : 'Commit Global Changes'}
+                            {saving ? 'Loading...' : 'Save now'}
                         </button>
                     )}
                 </div>

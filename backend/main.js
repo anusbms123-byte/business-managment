@@ -166,7 +166,19 @@ ipcMain.handle("login", async (e, credentials) => {
 
             console.log(`Login successful for user ${response.user.username} (Company: ${companyId})`);
 
-            // Update/Insert local user record
+            // Check Company Status (Block if inactive)
+            if (!isSuperAdmin && companyId) {
+                const comp = await db.asyncGet("SELECT is_active FROM companies WHERE id = ? OR global_id = ?", [companyId, companyId]);
+                if (comp && comp.is_active === 0) {
+                    console.log(`Blocked login for ${response.user.username}: Company ${companyId} is inactive.`);
+                    return { success: false, message: "Access Denied: Your company account is currently inactive." };
+                }
+            }
+
+            // Check User Status (Block if inactive)
+            if (response.user.is_active === 0 || response.user.isActive === false) {
+                return { success: false, message: "Access Denied: Your user account is deactivated." };
+            }
             if (existing) {
                 const updateQuery = `
                     UPDATE users SET 
@@ -271,6 +283,19 @@ ipcMain.handle("login", async (e, credentials) => {
 
     if (!user) {
         return { success: false, message: cloudError || "Invalid credentials" };
+    }
+
+    // Check Company Status (Offline)
+    if (user.role?.toLowerCase() !== 'super_admin' && user.company_id) {
+        const comp = await db.asyncGet("SELECT is_active FROM companies WHERE id = ? OR global_id = ?", [user.company_id, user.company_id]);
+        if (comp && comp.is_active === 0) {
+            return { success: false, message: "Access Denied: Your company account is currently inactive." };
+        }
+    }
+
+    // Check User Status (Offline)
+    if (user.is_active === 0) {
+        return { success: false, message: "Access Denied: Your user account is deactivated." };
     }
 
     currentCompanyId = user.company_id;
@@ -472,10 +497,27 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
     try {
         if (!targetCid) {
-            // Super Admin global view
-            return await db.asyncAll("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE sync_status != 'deleted' OR sync_status IS NULL");
+            // Super Admin global view - Add Join for Company Name
+            const query = `
+                SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
+                       c.name as company_name
+                FROM users u
+                LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
+                WHERE u.sync_status != 'deleted' OR u.sync_status IS NULL
+            `;
+            return await db.asyncAll(query);
         }
-        return await db.asyncAll("SELECT *, is_active as isActive, fullname as fullName, role_id as roleId, company_id as companyId FROM users WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL)", [ids.localId, ids.globalId, String(ids.localId)]);
+
+        // Targeted company view - Add Join for Company Name
+        const query = `
+            SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
+                   c.name as company_name
+            FROM users u
+            LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
+            WHERE (u.company_id = ? OR u.company_id = ? OR u.company_id = ?) 
+            AND (u.sync_status != 'deleted' OR u.sync_status IS NULL)
+        `;
+        return await db.asyncAll(query, [ids.localId, ids.globalId, String(ids.localId)]);
     } catch (err) {
         console.error("get-users Error:", err.message);
         return [];

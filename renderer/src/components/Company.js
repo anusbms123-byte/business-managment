@@ -5,12 +5,12 @@ import { useDialog } from '../context/DialogContext';
 
 
 const tabs = [
-    { id: 'profile', label: 'Business Profile', icon: Building2, color: 'blue' },
-    { id: 'users', label: 'Manage Team', icon: Users, color: 'indigo' },
-    { id: 'roles', label: 'Staff Access', icon: Shield, color: 'emerald' },
-    { id: 'requests', label: 'Organization Requests', icon: ClipboardList, color: 'amber' },
-    { id: 'helpline', label: 'Customer Support', icon: Phone, color: 'rose' },
-    { id: 'broadcast', label: 'System Broadcast', icon: Megaphone, color: 'purple' },
+    { id: 'profile', label: 'Company Profile', icon: Building2, color: 'blue' },
+    { id: 'users', label: 'Users', icon: Users, color: 'indigo' },
+    { id: 'roles', label: 'Roles & Permissions', icon: Shield, color: 'emerald' },
+    { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'amber' },
+    { id: 'helpline', label: 'Support', icon: Phone, color: 'rose' },
+    { id: 'broadcast', label: 'Broadcast', icon: Megaphone, color: 'purple' },
 ];
 
 const MODULES = [
@@ -81,9 +81,9 @@ const Company = () => {
 
                         let label = tab.label;
                         if (isSuperAdmin) {
-                            if (tab.id === 'profile') label = 'Companies';
-                            if (tab.id === 'helpline') label = 'Helpline';
-                            if (tab.id === 'broadcast') label = 'Message Admins';
+                            if (tab.id === 'profile') label = 'All Companies';
+                            if (tab.id === 'helpline') label = 'Support';
+                            if (tab.id === 'broadcast') label = 'Broadcast';
                         }
 
                         return (
@@ -140,12 +140,21 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     });
 
     const [companySearch, setCompanySearch] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
     const [companyReferralFilter, setCompanyReferralFilter] = useState('all');
 
     const { showAlert, showConfirm, showSuccess, showError } = useDialog();
 
+    // Debounce search input
     useEffect(() => {
-        const isSilentReload = companies.length > 0 && companySearch !== '';
+        const timer = setTimeout(() => {
+            setCompanySearch(searchTerm);
+        }, 300); // 300ms debounce
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        const isSilentReload = companies.length > 0;
         loadData(isSilentReload);
     }, [currentUser, isSuperAdmin, companySearch, companyReferralFilter]);
 
@@ -262,19 +271,16 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h2 className="text-xl font-bold text-black tracking-tight">Registered Companies</h2>
-                        <p className="text-sm text-black font-bold">Managing {companies.length} business entities</p>
-                    </div>
+                    <div></div>
 
                     <div className="flex flex-1 flex-col md:flex-row items-center gap-4 max-w-2xl justify-end">
                         <div className="relative group w-full md:w-64">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={16} />
                             <input
                                 type="text"
-                                value={companySearch}
-                                onChange={e => setCompanySearch(e.target.value)}
-                                placeholder="Search companies..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                placeholder="Search company..."
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
                             />
                         </div>
@@ -299,7 +305,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         </div>
 
                         {canCreate('settings') && (
-                            <Button onClick={() => openModal()} icon={Plus}>Register</Button>
+                            <Button onClick={() => openModal()} icon={Plus}>Add Company</Button>
                         )}
                     </div>
                 </div>
@@ -316,7 +322,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                 <div className="hidden">
                                     {c.name?.charAt(0).toUpperCase()}
                                 </div>
-                                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden transition-opacity">
                                     {canDelete('settings') && (
                                         <button
                                             onClick={(e) => handleDeleteCompany(e, c.id)}
@@ -347,10 +353,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         <div className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-widest ${c.isActive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
                                             {c.isActive ? 'Active' : 'Inactive'}
                                         </div>
-                                        <div className="flex items-center text-[10px] font-bold text-slate-400 gap-2 uppercase tracking-widest">
-                                            <Users size={14} />
-                                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">Active Tenant</span>
-                                        </div>
+
                                     </div>
                                     {c.referralCode && (
                                         <div className="flex items-center text-[10px] font-bold text-blue-500 gap-2 uppercase tracking-widest mt-1">
@@ -379,10 +382,10 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
                                             Core Information
                                         </h4>
-                                        <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Acme Corporation" icon={Building2} />
+                                        <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="Enter company name" icon={Building2} />
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="office@company.com" icon={Mail} />
-                                            <FormInput label="Referral Code" value={formData.referral_code} onChange={v => setFormData({ ...formData, referral_code: v })} placeholder="Refral (Optional)" icon={Users} />
+                                            <FormInput label="Email Address" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="info@company.com" icon={Mail} />
+                                            <FormInput label="Referral Code" value={formData.referral_code} onChange={v => setFormData({ ...formData, referral_code: v })} placeholder="Referral Code (Optional)" icon={Users} />
                                         </div>
                                     </div>
                                     <div className="space-y-6">
@@ -391,8 +394,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             Communications
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormInput label="Mmbile Phone" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Mobile No" icon={Phone} />
-                                            <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline" icon={Phone} />
+                                            <FormInput label="Mobile No" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} placeholder="Enter mobile no" icon={Phone} />
+                                            <FormInput label="Landline No" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} placeholder="Landline No (Optional)" icon={Phone} />
                                         </div>
                                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200 mt-4">
                                             <input type="checkbox" checked={formData.is_active === true || formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
@@ -408,12 +411,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             Address Details
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormTextarea label="Physical Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Main street, Area..." />
-                                            <FormInput label="City" required value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="City Name" icon={MapPin} />
+                                            <FormTextarea label="Company Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Enter company address" />
+                                            <FormInput label="City" required value={formData.city} onChange={v => setFormData({ ...formData, city: v })} placeholder="Enter city name" icon={MapPin} />
                                         </div>
                                     </div>
                                 </div>
-                                <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Configuration' : 'Onboard Organization'} />
+                                <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Changes' : 'Add Company'} />
                             </form>
                         </Modal>
                     )
@@ -421,7 +424,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                 {
                     showDetailModal && selectedCompany && (
-                        <Modal title="Tenant Overview" onClose={() => setShowDetailModal(false)} size="lg">
+                        <Modal title="Company Details" onClose={() => setShowDetailModal(false)} size="lg">
                             <div className="space-y-8">
                                 <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
                                     <div className="flex items-start gap-6">
@@ -509,12 +512,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                     <div className="flex-1 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} icon={Building2} />
-                            <FormInput label="Official Email" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} icon={Mail} />
+                            <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} icon={Building2} placeholder="Enter company name" />
+                            <FormInput label="Email Address" type="email" required value={formData.email} onChange={v => setFormData({ ...formData, email: v })} icon={Mail} placeholder="Enter email" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput label="Mobile Phone" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} icon={Phone} />
-                            <FormInput label="Office Number" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} icon={Phone} />
+                            <FormInput label="Mobile No" required value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} icon={Phone} placeholder="Enter mobile no" />
+                            <FormInput label="Landline No" value={formData.office_phone} onChange={v => setFormData({ ...formData, office_phone: v })} icon={Phone} placeholder="Enter landline" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormTextarea label="Physical Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} />
@@ -526,7 +529,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                 <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                     {canEdit('settings') && (
                         <Button type="submit">
-                            {saving ? 'Synchronizing...' : 'Update Corporate Profile'}
+                            {saving ? 'Updating...' : 'Update Company'}
                         </Button>
                     )}
                 </div>
@@ -561,7 +564,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     window.electronAPI.getUsers(companyId),
                     window.electronAPI.getRoles(companyId)
                 ]);
-                const filteredUsers = (usersData || []).filter(u => {
+                const filteredUsers = (Array.isArray(usersData) ? usersData : []).filter(u => {
                     const isSuper = u.role?.toLowerCase() === 'super admin' || u.role?.toLowerCase() === 'super_admin';
                     if (isSuper) return false;
 
@@ -576,10 +579,10 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     return true;
                 });
                 setUsers(filteredUsers);
-                setRoles(rolesData || []);
+                setRoles(Array.isArray(rolesData) ? rolesData : []);
                 // Always fetch companies for dropdown
                 const comps = await window.electronAPI.getCompanies() || [];
-                setCompanies(comps);
+                setCompanies(Array.isArray(comps) ? comps : []);
             }
         } catch (err) {
             showError('Error: ' + err.message);
@@ -626,11 +629,52 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
         });
     };
 
-    const openModal = (user = null) => {
+    const openModal = async (user = null) => {
         if (user) {
+            let currentRoles = roles;
+            const companyId = user.company_id || user.companyId;
+
+            // IF SUPER ADMIN: Fetch roles for this user's company so they exist in dropdown list
+            if (isSuperAdmin && companyId) {
+                try {
+                    const companySpecificRoles = await window.electronAPI.getRoles(companyId);
+                    if (Array.isArray(companySpecificRoles)) {
+                        // Merge current system roles with company specific roles
+                        const merged = [...roles];
+                        companySpecificRoles.forEach(sr => {
+                            if (!merged.find(r => (r.id == sr.id || r.global_id == sr.global_id))) {
+                                merged.push(sr);
+                            }
+                        });
+                        setRoles(merged);
+                        currentRoles = merged;
+                    }
+                } catch (e) { console.error("Error fetching roles for company:", e); }
+            }
+
+            const roleId = user.role_id || user.roleId;
+
+            // Normalize to match (global_id || id) logic used in dropdown
+            let matchedRole = currentRoles.find(r =>
+                (r.id && roleId && r.id == roleId) ||
+                (r.global_id && roleId && r.global_id == roleId)
+            );
+
+            // FALLBACK: If ID doesn't match, try matching by name
+            if (!matchedRole && user.role) {
+                const targetName = user.role.toLowerCase().trim();
+                matchedRole = currentRoles.find(r => (r.name || '').toLowerCase().trim() === targetName);
+            }
+
+            const finalRoleId = matchedRole ? (matchedRole.global_id || matchedRole.id) : roleId;
+
+            const matchedComp = companies.find(c => c.id == companyId || c.global_id == companyId);
+            const finalCompId = matchedComp ? (matchedComp.global_id || matchedComp.id) : companyId;
+
             setFormData({
                 ...user,
-                role_id: user.role_id || user.roleId,
+                company_id: finalCompId,
+                role_id: finalRoleId,
                 password: ''
             });
         } else {
@@ -639,7 +683,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 username: '',
                 password: '',
                 role: 'admin',
-                role_id: null,
+                role_id: '',
                 fullname: '',
                 is_active: 1
             });
@@ -659,14 +703,24 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
         admins: users.filter(u => u.role?.toLowerCase().includes('admin')).length
     };
 
+    const handleCompanyChange = async (cid) => {
+        setFormData(prev => ({ ...prev, company_id: cid, role_id: '' }));
+        if (isSuperAdmin && cid) {
+            try {
+                const companySpecificRoles = await window.electronAPI.getRoles(cid);
+                if (Array.isArray(companySpecificRoles)) setRoles(companySpecificRoles);
+            } catch (e) { console.error("Error updating roles on company change:", e); }
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard title="Total Members" value={stats.total} icon={Users} color="blue" />
-                <StatCard title="Active Accounts" value={stats.active} icon={Check} color="emerald" />
-                <StatCard title="System Admins" value={stats.admins} icon={Shield} color="purple" />
+                <StatCard title="Total Users" value={stats.total} icon={Users} color="blue" />
+                <StatCard title="Active Users" value={stats.active} icon={Check} color="emerald" />
+                <StatCard title="Admins" value={stats.admins} icon={Shield} color="purple" />
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -676,12 +730,12 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search personnel directory..."
+                        placeholder="Search users..."
                         className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
                     />
                 </div>
                 {canCreate('users') && (
-                    <Button onClick={() => openModal()} icon={Plus}>Onboard New Member</Button>
+                    <Button onClick={() => openModal()} icon={Plus}>Add User</Button>
                 )}
             </div>
 
@@ -690,10 +744,10 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">User Identity</th>
-                                {isSuperAdmin && <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Assign Tenant</th>}
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Access Matrix</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Security Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">User Name</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Company</th>}
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Role</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Status</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -722,7 +776,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                         <StatusBadge active={user.is_active} />
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end space-x-1 transition-opacity">
                                             {canEdit('users') && (
                                                 <button onClick={() => openModal(user)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                                                     <Edit2 size={16} />
@@ -743,26 +797,26 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
             </div>
 
             {showModal && (
-                <Modal title={formData.id ? 'Modify System Access' : 'Onboard New Principal'} onClose={() => setShowModal(false)} size="md">
+                <Modal title={formData.id ? 'Update User' : 'Add New User'} onClose={() => setShowModal(false)} size="md">
                     <form onSubmit={handleSave} className="space-y-6">
                         {isSuperAdmin && (
                             <FormSelect
-                                label="Assign to Organization"
+                                label="Select Company"
                                 required
                                 value={formData.company_id}
-                                onChange={v => setFormData({ ...formData, company_id: v })}
-                                options={companies.map(c => ({ value: c.id, label: c.name }))}
-                                placeholder="Select organization"
+                                onChange={handleCompanyChange}
+                                options={companies.map(c => ({ value: c.global_id || c.id, label: c.name }))}
+                                placeholder="Select company"
                                 icon={Building2}
                             />
                         )}
                         <div className="grid grid-cols-2 gap-4">
-                            <FormInput label="Personnel Legal Name" required value={formData.fullname} onChange={v => setFormData({ ...formData, fullname: v })} placeholder="John Doe" icon={Users} />
-                            <FormInput label="System Username" required value={formData.username} onChange={v => setFormData({ ...formData, username: v })} placeholder="j_doe" />
+                            <FormInput label="Full Name" required value={formData.fullname} onChange={v => setFormData({ ...formData, fullname: v })} placeholder="Enter full name" icon={Users} />
+                            <FormInput label="User Name" required value={formData.username} onChange={v => setFormData({ ...formData, username: v })} placeholder="Enter user name" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <FormInput
-                                label={formData.id ? "Security Key (Optional Reset)" : "Initial Access Key"}
+                                label={formData.id ? "New Password (Optional)" : "Password"}
                                 type={showPassword ? 'text' : 'password'}
                                 required={!formData.id}
                                 value={formData.password}
@@ -774,7 +828,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                 }
                             />
                             <FormSelect
-                                label="Assigned Privileges"
+                                label="User Role"
                                 required
                                 value={formData.role_id || formData.roleId || ''}
                                 onChange={v => {
@@ -807,8 +861,8 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                         <label className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl cursor-pointer group hover:bg-blue-50 transition-colors border border-slate-200">
                             <input type="checkbox" checked={formData.is_active === 1} onChange={e => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                             <div>
-                                <p className="text-sm font-bold text-slate-800 uppercase tracking-tight">Access Enabled</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Allow this individual to authenticate</p>
+                                <p className="text-sm font-bold text-slate-800 uppercase tracking-tight">Status</p>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enable or disable this user account</p>
                             </div>
                         </label>
                         <ModalFooter onCancel={() => setShowModal(false)} saving={saving} />
@@ -840,15 +894,15 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                 // Super Admin: load all companies first
                 if (isSuperAdmin) {
                     const comps = await window.electronAPI.getCompanies() || [];
-                    setCompanies(comps);
+                    setCompanies(Array.isArray(comps) ? comps : []);
                 }
 
                 const companyId = isSuperAdmin ? null : (currentUser?.company_id || currentUser?.companyId);
                 const data = await window.electronAPI.getRoles(companyId);
                 // Ensure roles have unique IDs for React keys
-                const rolesWithPerms = await Promise.all((data || []).map(async (role) => {
+                const rolesWithPerms = await Promise.all((Array.isArray(data) ? data : []).map(async (role) => {
                     const perms = await window.electronAPI.getPermissions(role.global_id || role.id) || [];
-                    return { ...role, permissions: perms };
+                    return { ...role, permissions: Array.isArray(perms) ? perms : [] };
                 }));
                 console.log("Renders Roles with Perms:", rolesWithPerms.length);
                 setRoles(rolesWithPerms);
@@ -1003,13 +1057,13 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                 <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                     <Shield size={24} />
                 </div>
-                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1 shadow-sm border border-slate-100 rounded-lg bg-white overflow-hidden transition-opacity">
                     {canEdit('roles') && (
                         <button onClick={() => openModal(role)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
                             <Edit2 size={16} />
                         </button>
                     )}
-                    {(canDelete('roles') || isSuperAdmin) && (
+                    {!isSuperAdmin && canDelete('roles') && (
                         <button onClick={() => handleDelete(role.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors border-l border-slate-100">
                             <Trash2 size={16} />
                         </button>
@@ -1039,23 +1093,16 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">Access Control Roles</h2>
-                    <p className="text-sm text-slate-500">Define custom permission sets for your team members</p>
+                    <h2 className="text-xl font-bold text-slate-800 tracking-tight">Roles & Permissions</h2>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Filter removed to strictly show only system templates for Super Admin */}
                     {canCreate('settings') && (
-                        <Button onClick={() => openModal()} icon={Plus}>Create New Role</Button>
+                        <Button onClick={() => openModal()} icon={Plus}>Add Role</Button>
                     )}
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard title="Total Roles" value={filteredRoles.length} icon={Shield} color="blue" />
-                <StatCard title="System Roles" value={filteredRoles.filter(r => r.is_system || r.isSystem).length} icon={Shield} color="purple" />
-                <StatCard title="Custom Roles" value={filteredRoles.filter(r => !r.is_system && !r.isSystem).length} icon={Shield} color="emerald" />
-            </div>
 
             {/* Unified Grid for Roles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1067,11 +1114,11 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
             )}
 
             {showModal && (
-                <Modal title={formData.id ? 'Modify Access Matrix' : 'Define New Permission Tier'} onClose={() => setShowModal(false)} size="lg">
+                <Modal title={formData.id ? 'Update Role' : 'Add New Role'} onClose={() => setShowModal(false)} size="lg">
                     <form onSubmit={handleSave} className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FormInput label="Administrative Title" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Sales Manager" />
-                            <FormInput label="Functional Description" value={formData.description} onChange={v => setFormData({ ...formData, description: v })} placeholder="What can this role do?" />
+                            <FormInput label="Role Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="e.g. Manager" />
+                            <FormInput label="Description" value={formData.description} onChange={v => setFormData({ ...formData, description: v })} placeholder="Enter role description" />
                         </div>
 
                         {/* Remove manual company assignment for Roles to keep it simple */}
@@ -1087,7 +1134,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                         <div>
                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
                                 <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
-                                Granular Operations Matrix
+                                Permissions
                             </h4>
                             <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">
@@ -1095,10 +1142,10 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                         <thead className="bg-slate-50/80">
                                             <tr>
                                                 <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Module</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">R</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">W</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">U</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">D</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">View</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Create</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Edit</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Delete</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
@@ -1124,7 +1171,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             </div>
                         </div>
 
-                        <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label="Save Role Config" />
+                        <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label="Save Role" />
                     </form>
                 </Modal>
             )}
@@ -1159,7 +1206,6 @@ const AuditLog = ({ currentUser }) => {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 tracking-tight">System Audit Trail</h2>
-                    <p className="text-sm text-slate-500">Chronological history of security events and transactions</p>
                 </div>
             </div>
 
@@ -1234,9 +1280,10 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                 status: 'PENDING',
                 referralType: referralFilter
             });
-            setRequests(data);
+            setRequests(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Failed to load requests:', err);
+            setRequests([]); // Ensure it remains an array to prevent crash
         }
         setLoading(false);
     };
@@ -1281,16 +1328,16 @@ const CompanyRequests = ({ currentUser, onAction }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Rejection Modal */}
             {rejecting && (
-                <Modal title="Reject Registration" onClose={() => setRejecting(null)}>
+                <Modal title="Reject Request" onClose={() => setRejecting(null)}>
                     <div className="space-y-6">
                         <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg">
                             <p className="text-xs text-rose-600 font-bold leading-relaxed italic">
-                                "Blocking this request will deactivate the associated user account permanently unless reconsidered."
+                                "Rejecting this request will disable the user account for this company."
                             </p>
                         </div>
                         <FormTextarea
-                            label="Reason for Rejection"
-                            placeholder="Specify why this request is being denied..."
+                            label="Reason"
+                            placeholder="Enter rejection reason..."
                             value={rejecting.notes}
                             onChange={(val) => setRejecting({ ...rejecting, notes: val })}
                         />
@@ -1306,7 +1353,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                                 disabled={isRejecting}
                                 className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-sm shadow-rose-100 disabled:opacity-50"
                             >
-                                {isRejecting ? 'Rejecting...' : 'Confirm Rejection'}
+                                {isRejecting ? 'Rejecting...' : 'Reject Request'}
                             </button>
                         </div>
                     </div>
@@ -1314,8 +1361,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
             )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-xl font-bold text-black tracking-tight">Access Requests</h2>
-                    <p className="text-sm text-black font-bold">Review pending organization registration requests</p>
+                    <h2 className="text-xl font-bold text-black tracking-tight">Requests & Referral</h2>
                 </div>
 
                 <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
@@ -1430,7 +1476,7 @@ const Button = ({ children, label, onClick, icon: Icon, type = 'button', disable
         className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 ${className}`}
     >
         {Icon && <Icon size={16} />}
-        <span>{children || label}</span>
+        <span className="whitespace-nowrap">{children || label}</span>
     </button>
 );
 
@@ -1591,7 +1637,6 @@ const SupportRequests = ({ onAction }) => {
             <div className="flex items-center justify-between mb-2">
                 <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">Support Tickets</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Manage user issues and inquiries</p>
                 </div>
                 <button onClick={loadData} className="px-4 py-2 bg-slate-50 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-colors border border-slate-100">Refresh Feed</button>
             </div>

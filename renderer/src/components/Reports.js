@@ -232,7 +232,7 @@ const Reports = ({ currentUser }) => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
                 <RefreshCw size={32} className="text-blue-600 animate-spin" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generating Analytics...</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading...</p>
             </div>
         );
     }
@@ -254,23 +254,23 @@ const Reports = ({ currentUser }) => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Invoices Generated`} icon={DollarSign} colorClass="border-l-blue-500" onClick={() => setActiveModule('sales')} />
-                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Bills Logged`} icon={ShoppingCart} colorClass="border-l-amber-500" onClick={() => setActiveModule('purchases')} />
-                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Stock Warnings`} icon={Package} colorClass="border-l-indigo-500" onClick={() => setActiveModule('inventory')} />
-                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Transactions`} icon={TrendingUp} colorClass="border-l-rose-500" onClick={() => setActiveModule('expenses')} />
-                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Items Reversed`} icon={RotateCcw} colorClass="border-l-orange-500" onClick={() => setActiveModule('returns')} />
-                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Account Payables" icon={Factory} colorClass="border-l-slate-600" onClick={() => setActiveModule('suppliers')} />
-                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue={`${summary?.customerCount ?? 0} Registered Clients`} icon={Users} colorClass="border-l-teal-500" onClick={() => setActiveModule('customers')} />
-                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue={`${summary?.employeeCount ?? 0} Active Staff`} icon={Users2} colorClass="border-l-emerald-500" onClick={() => setActiveModule('hrm')} />
-                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Gross - Deductions" icon={CreditCard} colorClass="border-l-slate-900" onClick={() => setActiveModule('netprofit')} />
+                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500" onClick={() => setActiveModule('sales')} />
+                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-amber-500" onClick={() => setActiveModule('purchases')} />
+                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-indigo-500" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-rose-500" onClick={() => setActiveModule('expenses')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-orange-500" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-600" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-teal-500" onClick={() => setActiveModule('customers')} />
+                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-500" onClick={() => setActiveModule('hrm')} />
+                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-slate-900" onClick={() => setActiveModule('netprofit')} />
             </div>
 
             <div className="bg-slate-50/50 p-10 rounded-3xl border border-slate-100 text-center">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 text-slate-300">
                     <BarChart2 size={24} />
                 </div>
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Analytical Engine Standby</h3>
-                <p className="text-[10px] text-slate-300 mt-2 uppercase tracking-tight italic">Click on any category above to view detailed logs and growth charts</p>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Report Center</h3>
+                <p className="text-[10px] text-slate-300 mt-2 uppercase tracking-tight italic">Click on any category above to view detailed reports</p>
             </div>
         </div>
     );
@@ -279,7 +279,7 @@ const Reports = ({ currentUser }) => {
         const chartData = (summary?.recentDays || []).slice().reverse();
         const moduleMap = {
             sales: {
-                title: 'Sales Analysis', icon: DollarSign, color: '#3b82f6', dataKey: 'sales',
+                title: 'Sales Report', icon: DollarSign, color: '#3b82f6', dataKey: 'sales',
                 miniStats: [
                     { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-orange-500' },
@@ -292,7 +292,7 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             purchases: {
-                title: 'Purchase Log', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases',
+                title: 'Purchase Report', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases',
                 miniStats: [
                     { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-amber-600' },
                     { label: 'Pending Bills', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-rose-500' },
@@ -306,7 +306,7 @@ const Reports = ({ currentUser }) => {
                 cols: 3
             },
             inventory: {
-                title: 'Stock Valuation', icon: Package, color: '#6366f1', dataKey: 'inventory',
+                title: 'Inventory Report', icon: Package, color: '#6366f1', dataKey: 'inventory',
                 miniStats: [
                     { label: 'Stock Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Sale Potential (Sell)', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
@@ -321,7 +321,7 @@ const Reports = ({ currentUser }) => {
                 cols: 7
             },
             expenses: {
-                title: 'Expense Audit', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
+                title: 'Expense Report', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
                 miniStats: [
                     { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-indigo-500' },
                     { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
@@ -337,7 +337,7 @@ const Reports = ({ currentUser }) => {
                 cols: 3
             },
             returns: {
-                title: 'Return History', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
+                title: 'Return Report', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
                 miniStats: [
                     { label: 'Total Refunds', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-600' },
                     { label: 'Sale Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
@@ -349,7 +349,7 @@ const Reports = ({ currentUser }) => {
                 cols: 4
             },
             suppliers: {
-                title: 'Supplier Accounts', icon: Factory, color: '#475569', dataKey: 'payables',
+                title: 'Supplier Report', icon: Factory, color: '#475569', dataKey: 'payables',
                 miniStats: [
                     { label: 'Total Payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-rose-600' },
                     { label: 'Supplier Count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-blue-500' },
@@ -362,7 +362,7 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             customers: {
-                title: 'Customer Accounts', icon: Users, color: '#14b8a6', dataKey: 'receivables',
+                title: 'Customer Report', icon: Users, color: '#14b8a6', dataKey: 'receivables',
                 miniStats: [
                     { label: 'Total Receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-teal-600' },
                     { label: 'Customer Count', value: `${summary?.customerCount || 0} Clients`, icon: Users, color: 'text-blue-500' },
@@ -375,7 +375,7 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             hrm: {
-                title: 'Staff Payroll Logs', icon: Users, color: '#6366f1', dataKey: 'salaries',
+                title: 'HRM Report', icon: Users, color: '#6366f1', dataKey: 'salaries',
                 miniStats: [
                     { label: 'Total Salaries', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CreditCard, color: 'text-indigo-600' },
                     { label: 'Active Staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-500' },
@@ -387,7 +387,7 @@ const Reports = ({ currentUser }) => {
                 cols: 4
             },
             netprofit: {
-                title: 'Profitability Audit', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
+                title: 'Profit Report', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
                 miniStats: [
                     { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
@@ -415,60 +415,66 @@ const Reports = ({ currentUser }) => {
                             <ArrowLeft size={18} />
                         </button>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <config.icon size={18} className="text-blue-600" />
-                                <h1 className="text-xl font-black text-black tracking-tight uppercase italic">{config.title}</h1>
-                                {activeModule === 'sales' && selectedCustomer !== 'all' && (
-                                    <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
-                                    </span>
-                                )}
-                                {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
-                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
-                                        ? 'bg-emerald-100 text-emerald-600'
-                                        : 'bg-orange-100 text-orange-600'
-                                        }`}>
-                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
-                                    </span>
-                                )}
-                                {activeModule === 'suppliers' && selectedVendor !== 'all' && (
-                                    <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
-                                    </span>
-                                )}
-                                {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
-                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
-                                        ? 'bg-emerald-100 text-emerald-600'
-                                        : 'bg-orange-100 text-orange-600'
-                                        }`}>
-                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
-                                    </span>
-                                )}
-                                {activeModule === 'customers' && selectedCustomer !== 'all' && (
-                                    <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
-                                    </span>
-                                )}
-                                {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
-                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
-                                        ? 'bg-emerald-100 text-emerald-600'
-                                        : 'bg-orange-100 text-orange-600'
-                                        }`}>
-                                        {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
-                                    </span>
-                                )}
-                                {activeModule === 'hrm' && selectedEmployee !== 'all' && (
-                                    <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
-                                        {employees.find(e => e.id == selectedEmployee)?.first_name || 'Staff Member'}
-                                    </span>
-                                )}
-                                {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (
-                                    <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                                        {selectedEmployeeStatus === 'active' ? 'Active Staff' : 'Inactive Staff'}
-                                    </span>
-                                )}
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                    <config.icon size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <h1 className="text-xl font-bold text-black tracking-tight">{config.title}</h1>
+                                        {activeModule === 'sales' && selectedCustomer !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                                {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'suppliers' && selectedVendor !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                                {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'customers' && selectedCustomer !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                                {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'hrm' && selectedEmployee !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                                {employees.find(e => e.id == selectedEmployee)?.first_name || 'Staff Member'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                {selectedEmployeeStatus === 'active' ? 'Active Staff' : 'Inactive Staff'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Detailed Report</p>
+                                </div>
                             </div>
-                            <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Deep Dive Report Analysis</p>
                         </div>
                     </div>
 
@@ -498,7 +504,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Payments</option>
+                                        <option value="all">All Status</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit</option>
                                     </select>
@@ -530,7 +536,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Payments</option>
+                                        <option value="all">All Status</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit / Due</option>
                                     </select>
@@ -562,7 +568,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedStockStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">Any Status</option>
+                                        <option value="all">All Status</option>
                                         <option value="low">Low Stock</option>
                                         <option value="out">Out of Stock</option>
                                         <option value="expired">Expired</option>
@@ -626,7 +632,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Payments</option>
+                                        <option value="all">All Status</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit / Due</option>
                                     </select>
@@ -658,7 +664,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Payments</option>
+                                        <option value="all">All Status</option>
                                         <option value="paid">Paid</option>
                                         <option value="credit">Credit / Due</option>
                                     </select>
@@ -690,7 +696,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedEmployeeStatus(e.target.value)}
                                         className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">Any Status</option>
+                                        <option value="all">All Status</option>
                                         <option value="active">Active Only</option>
                                         <option value="inactive">Inactive Only</option>
                                     </select>
@@ -741,8 +747,8 @@ const Reports = ({ currentUser }) => {
                         <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-1 italic">Trend Visualization</h2>
-                                    <p className="text-xs text-black font-bold uppercase tracking-tight">Timeline Performance Analysis</p>
+                                    <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-1 italic">Line Chart</h2>
+                                    <p className="text-xs text-black font-bold uppercase tracking-tight">Report History</p>
                                 </div>
                                 <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download size={18} /></button>
                             </div>
@@ -786,7 +792,7 @@ const Reports = ({ currentUser }) => {
                             <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900"><config.icon size={120} /></div>
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
-                                    {activeModule === 'returns' ? 'Consolidated Refunds' : 'Consolidated Total'}
+                                    {activeModule === 'returns' ? 'Total Refunds' : 'Total Amount'}
                                 </p>
                                 <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black">
                                     PKR {(
@@ -1069,10 +1075,10 @@ const Reports = ({ currentUser }) => {
                     {/* Data Table */}
                     <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                         <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic underline underline-offset-8">
-                                {config.tableTitle || 'Insight Journal'}
+                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic">
+                                {config.tableTitle || 'Report Journal'}
                             </h3>
-                            <span className="text-[9px] font-bold text-black">{config.tableTitle ? `Detailed ${config.tableTitle}` : 'Detailed periodic activity logs'}</span>
+                            <span className="text-[9px] font-bold text-black">{config.tableTitle ? `View ${config.tableTitle}` : 'Report logs'}</span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -1342,7 +1348,7 @@ const Reports = ({ currentUser }) => {
                                         (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && activeModule !== 'returns' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
-                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No valid records found for this period</p>
+                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No records found</p>
                                                 </td>
                                             </tr>
                                         )}

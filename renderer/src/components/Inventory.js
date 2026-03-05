@@ -37,9 +37,9 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
 };
 
 const tabs = [
-    { id: 'products', label: 'Item List', icon: Package, color: 'orange' },
-    { id: 'stock', label: 'Stock Levels', icon: BarChart2, color: 'emerald' },
-    { id: 'barcode', label: 'Print Barcodes', icon: Printer, color: 'blue' },
+    { id: 'products', label: 'Products', icon: Package, color: 'orange' },
+    { id: 'stock', label: 'Stock', icon: BarChart2, color: 'emerald' },
+    { id: 'barcode', label: 'Barcodes', icon: Printer, color: 'blue' },
 ];
 
 const Inventory = ({ currentUser }) => {
@@ -167,7 +167,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('in_stock')}
                 />
                 <StatCard
-                    title="Restock Alerts"
+                    title="Alerts"
                     value={stats.alerts}
                     icon={AlertTriangle}
                     color="red"
@@ -175,7 +175,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('alerts')}
                 />
                 <StatCard
-                    title="Empty Stock"
+                    title="Out of Stock"
                     value={stats.outOfStock}
                     icon={X}
                     color="gray"
@@ -205,10 +205,10 @@ const StockTracking = ({ currentUser }) => {
                 <table className="w-full text-left">
                     <thead className="bg-slate-50/80 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">
                         <tr>
-                            <th className="px-6 py-4">Product Name</th>
-                            <th className="px-6 py-4 text-center">Current Stock</th>
-                            <th className="px-6 py-4 text-center">Alert Level</th>
-                            <th className="px-6 py-4 text-center">Expiry Date</th>
+                            <th className="px-6 py-4">Name</th>
+                            <th className="px-6 py-4 text-center">Stock</th>
+                            <th className="px-6 py-4 text-center">Alert</th>
+                            <th className="px-6 py-4 text-center">Expiry</th>
                             <th className="px-6 py-4">Status</th>
                         </tr>
                     </thead>
@@ -256,7 +256,7 @@ const StockTracking = ({ currentUser }) => {
                         }) : (
                             <tr>
                                 <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-                                    No products found for this filter
+                                    No records found
                                 </td>
                             </tr>
                         )}
@@ -313,7 +313,7 @@ const BarcodePrinting = ({ currentUser }) => {
                                 onChange={(e) => setSelectedProduct(products.find(p => p.id == e.target.value))}
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700"
                             >
-                                {loading ? <option>Loading products...</option> :
+                                {loading ? <option>Loading...</option> :
                                     products.length === 0 ? <option>No products found</option> :
                                         products.map(p => (
                                             <option key={p.id} value={p.id}>{p.name} {p.sku ? `(${p.sku})` : ''}</option>
@@ -324,7 +324,7 @@ const BarcodePrinting = ({ currentUser }) => {
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Number of Labels</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Labels</label>
                         <div className="relative">
                             <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                             <input
@@ -338,14 +338,7 @@ const BarcodePrinting = ({ currentUser }) => {
                         </div>
                     </div>
 
-                    <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100/50 flex items-start gap-3">
-                        <div className="p-1.5 bg-blue-100 text-blue-600 rounded">
-                            <Printer size={14} />
-                        </div>
-                        <p className="text-[10px] text-blue-800 font-medium leading-relaxed">
-                            A preview of the label is shown on the right. Clicking print will generate {numLabels} labels adjusted for standard barcode printer rolls.
-                        </p>
-                    </div>
+
 
                     <button
                         onClick={handlePrint}
@@ -353,14 +346,14 @@ const BarcodePrinting = ({ currentUser }) => {
                         className="w-full py-3.5 bg-blue-950 text-white font-bold rounded-xl shadow-lg shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
                     >
                         <Printer size={18} />
-                        <span>Print Barcodes</span>
+                        <span>Print now</span>
                     </button>
                 </div>
 
                 {/* Preview Section */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
                     <div className="absolute top-4 left-4">
-                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.3em]">Visual Preview</span>
+                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.3em]">Preview</span>
                     </div>
 
                     <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-xl mb-6 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
@@ -372,7 +365,7 @@ const BarcodePrinting = ({ currentUser }) => {
 
                     <div className="flex items-center gap-2 text-slate-400">
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-200 animate-pulse"></div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest italic">Live Content Preview</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest italic">Live Preview</p>
                     </div>
                 </div>
             </div>
