@@ -126,15 +126,15 @@ const Expenses = ({ currentUser }) => {
 
 
             {/* Expenses Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="relative group w-full md:w-80">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[400px] transition-colors duration-300">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-800/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="relative group w-full md:w-80 text-left">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 transition-colors" size={18} />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all shadow-sm"
                             placeholder="Search here..."
                         />
                     </div>
@@ -144,7 +144,7 @@ const Expenses = ({ currentUser }) => {
                                 setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
                                 setShowModal(true);
                             }}
-                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-xs uppercase tracking-widest"
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-xs uppercase tracking-widest"
                         >
                             <Plus size={16} />
                             <span>Add Expense</span>
@@ -154,56 +154,56 @@ const Expenses = ({ currentUser }) => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50/80">
+                        <thead className="bg-slate-50/80 dark:bg-slate-800/80 transition-colors">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Category</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Title</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Done</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Category</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Title</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Done</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {loading ? (
                                 <tr>
                                     <td colSpan="5" className="px-6 py-20 text-center">
                                         <div className="flex flex-col items-center gap-3">
-                                            <div className="w-8 h-8 border-3 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
-                                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest text-xs">Fetching records...</p>
+                                            <div className="w-8 h-8 border-3 border-slate-100 dark:border-slate-700 border-t-blue-600 rounded-full animate-spin"></div>
+                                            <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest">Fetching records...</p>
                                         </div>
                                     </td>
                                 </tr>
                             ) : (filteredExpenses?.length ?? 0) === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold text-sm uppercase tracking-widest">
+                                    <td colSpan="5" className="px-6 py-20 text-center text-slate-400 dark:text-slate-500 font-bold text-sm uppercase tracking-widest transition-colors duration-300">
                                         No expenses found
                                     </td>
                                 </tr>
                             ) : filteredExpenses?.map((expense) => (
-                                <tr key={expense.id} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">
+                                <tr key={expense.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight transition-colors">
                                         {expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100">
+                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-800/50">
                                             {expense.category}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">{expense.title}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight transition-colors">{expense.title}</td>
                                     <td className="px-6 py-4">
-                                        <span className="text-xs font-bold text-rose-600 tracking-tight">
+                                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 tracking-tight transition-colors">
                                             PKR {expense.amount?.toLocaleString() ?? '0'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-2">
                                             {canEdit('expenses') && (
-                                                <button onClick={() => openEditModal(expense)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                <button onClick={() => openEditModal(expense)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
                                                     <Edit2 size={16} />
                                                 </button>
                                             )}
                                             {canDelete('expenses') && (
-                                                <button onClick={() => handleDelete(expense.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                                                <button onClick={() => handleDelete(expense.id)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors">
                                                     <Trash2 size={16} />
                                                 </button>
                                             )}
@@ -217,21 +217,21 @@ const Expenses = ({ currentUser }) => {
             </div>
 
             {showModal && (
-                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* Full-Page Header */}
-                        <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+                        <div className="px-4 md:px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors duration-300">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
+                                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400 transition-colors">
                                     <DollarSign size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-xl md:text-2xl font-bold text-black tracking-tight truncate">{formData.id ? 'Edit Expense' : 'Add Expense'}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-black dark:text-white tracking-tight truncate transition-colors">{formData.id ? 'Edit Expense' : 'Add Expense'}</h3>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
+                                className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
                             >
                                 <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
                                 <X size={20} />
@@ -242,45 +242,45 @@ const Expenses = ({ currentUser }) => {
                             <form onSubmit={handleSave} className="space-y-8 md:space-y-12">
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                    <div className="space-y-4 md:space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <div className="space-y-4 md:space-y-6 text-left">
+                                        <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
                                             Primary Info
                                         </h4>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Title *</label>
+                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Title *</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={formData.title}
                                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                 placeholder="e.g. Office Electricity Bill"
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Amount *</label>
+                                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Amount *</label>
                                                 <div className="relative">
-                                                    <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                    <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                                                     <input
                                                         type="number"
                                                         required
                                                         value={formData.amount || ''}
                                                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                         placeholder="0"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-600 ml-1">Category *</label>
+                                                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Category *</label>
                                                 <select
                                                     value={formData.category}
                                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none"
+                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none text-slate-800 dark:text-slate-100"
                                                 >
                                                     <option value="General">General</option>
                                                     <option value="Utilities">Utilities</option>
@@ -293,41 +293,41 @@ const Expenses = ({ currentUser }) => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Date *</label>
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Date *</label>
                                             <input
                                                 type="date"
                                                 required
                                                 value={formData.date}
                                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4 md:space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <div className="space-y-4 md:space-y-6 text-left">
+                                        <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 transition-colors">
                                             <div className="w-1 h-4 bg-rose-500 rounded-full"></div>
                                             Other Info
                                         </h4>
 
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-600 ml-1">Notes</label>
+                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Notes</label>
                                             <textarea
                                                 value={formData.description}
                                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                 placeholder="Write any additional details about this expense..."
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-8 sticky bottom-0 bg-white pb-8">
+                                <div className="pt-8 sticky bottom-0 bg-white dark:bg-slate-900 pb-8 transition-colors duration-300">
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="w-full py-4 bg-blue-950 text-white font-bold rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-950/20 active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
+                                        className="w-full py-4 bg-blue-950 dark:bg-blue-600 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-xl shadow-blue-950/20 dark:shadow-none active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70"
                                     >
                                         {saving ? 'Saving...' : 'Save now'}
                                     </button>

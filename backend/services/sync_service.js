@@ -927,21 +927,17 @@ class SyncService {
                 }
 
                 // Determine Method:
-                // - For users: ALWAYS POST (cloud does upsert by username/id). This avoids
-                //   'record not found' errors when a user has a CUID locally but never reached cloud.
-                // - For other tables: POST if local temp UUID, PUT if cloud CUID.
+                // POST if local temp UUID, PUT if cloud CUID.
                 const isLocalTempUuid = !globalId || globalId === 'null' || globalId === 'undefined'
                     || (globalId.includes('-') && globalId.length < 50); // UUID v4 has dashes
-                let httpMethod, finalUrl;
-                if (table === 'users') {
-                    // Always POST for users - cloud will upsert by username or id
-                    httpMethod = 'POST';
-                    finalUrl = endpoint;
-                    // Include the global_id as id so cloud can preserve/use it
-                    if (globalId && !isLocalTempUuid) payload.id = globalId;
-                } else {
-                    httpMethod = isLocalTempUuid ? 'POST' : 'PUT';
-                    finalUrl = (httpMethod === 'PUT') ? `${endpoint}/${globalId}` : endpoint;
+
+                let httpMethod = isLocalTempUuid ? 'POST' : 'PUT';
+                let finalUrl = (httpMethod === 'PUT') ? `${endpoint}/${globalId}` : endpoint;
+
+                // For users, if we are doing a POST (new record), ensure we send the globalId as id
+                // This preserves continuity if a record was assigned a CUID locally during pull
+                if (table === 'users' && httpMethod === 'POST' && globalId && !isLocalTempUuid) {
+                    payload.id = globalId;
                 }
 
                 const response = await this.apiCall(httpMethod, finalUrl, payload);

@@ -74,14 +74,14 @@ export const DialogProvider = ({ children }) => {
         <DialogContext.Provider value={{ showAlert, showConfirm, showError, showSuccess, closeDialog }}>
             {children}
             {dialog.show && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800">
                         <div className="p-6">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dialog.type === 'confirm' ? 'bg-amber-50 text-amber-600' :
-                                        dialog.type === 'error' ? 'bg-rose-50 text-rose-600' :
-                                            dialog.type === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                                                'bg-blue-50 text-blue-600'
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dialog.type === 'confirm' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
+                                        dialog.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' :
+                                            dialog.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
+                                                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                                     }`}>
                                     {dialog.type === 'confirm' && <HelpCircle size={24} />}
                                     {dialog.type === 'error' && <X size={24} />}
@@ -89,24 +89,24 @@ export const DialogProvider = ({ children }) => {
                                     {dialog.type === 'alert' && <Info size={24} />}
                                     {dialog.type === 'warning' && <AlertTriangle size={24} />}
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900">{dialog.title}</h3>
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{dialog.title}</h3>
                             </div>
-                            <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
                                 {dialog.message}
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 p-4 bg-slate-50 border-t border-slate-100">
+                        <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
                             {dialog.type === 'confirm' ? (
                                 <>
                                     <button
                                         onClick={closeDialog}
-                                        className="flex-1 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                        className="flex-1 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
                                     >
                                         {dialog.cancelText}
                                     </button>
                                     <button
                                         onClick={dialog.onConfirm}
-                                        className="flex-1 py-2.5 bg-blue-950 text-white rounded-lg text-sm font-bold hover:bg-slate-900 shadow-sm shadow-blue-100 transition-all active:scale-95"
+                                        className="flex-1 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-slate-900 dark:hover:bg-blue-500 shadow-sm transition-all active:scale-95"
                                     >
                                         {dialog.confirmText}
                                     </button>
@@ -116,7 +116,7 @@ export const DialogProvider = ({ children }) => {
                                     onClick={closeDialog}
                                     className={`w-full py-2.5 text-white rounded-lg text-sm font-bold transition-all active:scale-95 ${dialog.type === 'error' ? 'bg-rose-600 hover:bg-rose-700' :
                                             dialog.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                                                'bg-blue-950 hover:bg-slate-900'
+                                                'bg-blue-950 dark:bg-blue-600 hover:bg-slate-900 dark:hover:bg-blue-500'
                                         }`}
                                 >
                                     {dialog.confirmText}

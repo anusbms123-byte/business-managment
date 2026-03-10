@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Lock, LayoutDashboard, HelpCircle, Phone, Mail, FileText, X, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, LayoutDashboard, HelpCircle, Phone, Mail, FileText, X, Eye, EyeOff, Check, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 import { useDialog } from '../context/DialogContext';
 
@@ -29,11 +30,6 @@ const Login = ({ onLoginSuccess }) => {
             const data = await response.json();
             if (data.success) {
                 setSupportSuccess(true);
-                setTimeout(() => {
-                    setShowSupport(false);
-                    setSupportSuccess(false);
-                    setSupportData({ fullName: '', email: '', whatsapp: '', description: '' });
-                }, 2000);
             }
         } catch (err) {
             console.error(err);
@@ -41,6 +37,15 @@ const Login = ({ onLoginSuccess }) => {
         } finally {
             setSupportLoading(false);
         }
+    };
+
+    const closeSupport = () => {
+        setShowSupport(false);
+        // Reset states after a short delay for smooth transition
+        setTimeout(() => {
+            setSupportSuccess(false);
+            setSupportData({ fullName: '', email: '', whatsapp: '', description: '' });
+        }, 300);
     };
 
     const handleSubmit = async (e) => {
@@ -83,42 +88,59 @@ const Login = ({ onLoginSuccess }) => {
         }
     };
 
+    const { isDarkMode, toggleTheme } = useTheme();
+
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
+            {/* Theme Toggle at Top Right */}
+            <div className="absolute top-10 right-10 z-20">
+                <button
+                    onClick={toggleTheme}
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none hover:scale-110 active:scale-95 transition-all duration-300 group"
+                    title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                    {isDarkMode ? (
+                        <Sun size={24} className="text-amber-400 group-hover:rotate-45 transition-transform" />
+                    ) : (
+                        <Moon size={24} className="text-slate-600 group-hover:-rotate-12 transition-transform" />
+                    )}
+                </button>
+            </div>
+
             {/* Minimal Decorative Elements */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-100/50 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 dark:bg-blue-900/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-100/50 dark:bg-slate-900/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
             <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
-                <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="p-12">
                         {/* Header */}
                         <div className="text-center mb-10">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-600 rounded-xl mb-6 border border-blue-100">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl mb-6 border border-blue-100 dark:border-blue-900/50">
                                 <LayoutDashboard size={32} />
                             </div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">BizNex</h1>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Business Management System</p>
+                            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">BizNex</h1>
+                            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Business Management System</p>
                         </div>
 
                         {/* Error Message */}
                         {error && (
-                            <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 text-xs font-bold flex items-center gap-3 animate-shake">
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-600"></div>
+                            <div className="mb-8 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-3 animate-shake">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-500"></div>
                                 {error}
                             </div>
                         )}
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400  tracking-widest ml-1">Username</label>
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest ml-1">Username</label>
                                 <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                     <input
                                         type="text"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300"
+                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                         placeholder="Enter username"
                                         required
                                     />
@@ -126,21 +148,21 @@ const Login = ({ onLoginSuccess }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Password</label>
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest ml-1">Password</label>
                                 <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300"
+                                        className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                         placeholder="Enter password"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
@@ -150,7 +172,7 @@ const Login = ({ onLoginSuccess }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
+                                className="w-full py-3.5 bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
                             >
                                 {loading ? (
                                     <div className="flex items-center justify-center gap-2">
@@ -162,9 +184,9 @@ const Login = ({ onLoginSuccess }) => {
                                 )}
                             </button>
                             <div className="text-center mt-4">
-                                <p className="text-xs text-slate-400 font-bold">
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
                                     Don't have an account?{' '}
-                                    <Link to="/signup" className="text-blue-600 hover:text-blue-800 transition-colors">Register New company</Link>
+                                    <Link to="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">Register New company</Link>
                                 </p>
                             </div>
                         </form>
@@ -175,48 +197,48 @@ const Login = ({ onLoginSuccess }) => {
             {/* Support Trigger */}
             <button
                 onClick={() => setShowSupport(true)}
-                className="absolute bottom-10 right-10 w-14 h-14 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:scale-110 transition-all group"
+                className="absolute bottom-10 right-10 w-14 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 hover:scale-110 transition-all group"
             >
                 <HelpCircle size={24} />
-                <span className="absolute right-full mr-4 bg-slate-800 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">
+                <span className="absolute right-full mr-4 bg-slate-800 dark:bg-slate-700 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">
                     Need Help?
                 </span>
             </button>
 
             {/* Support Modal */}
             {showSupport && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-300">
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Support Helpline</h2>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Submit your issue below</p>
+                                    <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Support Helpline</h2>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1">Submit your issue below</p>
                                 </div>
-                                <button onClick={() => setShowSupport(false)} className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 transition-colors">
+                                <button onClick={closeSupport} className="w-10 h-10 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             {supportSuccess ? (
                                 <div className="py-12 text-center animate-in fade-in slide-in-from-bottom-4">
-                                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100">
-                                        <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin duration-1000" />
+                                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100 dark:border-emerald-900/50">
+                                        <Check size={32} />
                                     </div>
-                                    <h3 className="text-lg font-bold text-slate-800">Request Received</h3>
-                                    <p className="text-sm text-slate-500 mt-2">We will contact you shortly.</p>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Request Received</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">We will contact you shortly.</p>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSupportSubmit} className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
                                         <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                             <input
                                                 required
                                                 value={supportData.fullName}
                                                 onChange={e => setSupportData({ ...supportData, fullName: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                 placeholder="Your name"
                                             />
                                         </div>
@@ -224,28 +246,28 @@ const Login = ({ onLoginSuccess }) => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Official Email</label>
+                                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Official Email</label>
                                             <div className="relative group">
-                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                                 <input
                                                     type="email"
                                                     required
                                                     value={supportData.email}
                                                     onChange={e => setSupportData({ ...supportData, email: e.target.value })}
-                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                     placeholder="mail@host.com"
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">WhatsApp No</label>
+                                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Contact No</label>
                                             <div className="relative group">
-                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                                 <input
                                                     required
                                                     value={supportData.whatsapp}
                                                     onChange={e => setSupportData({ ...supportData, whatsapp: e.target.value })}
-                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-600 transition-all"
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                     placeholder="+92 300..."
                                                 />
                                             </div>
@@ -253,15 +275,15 @@ const Login = ({ onLoginSuccess }) => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Description</label>
+                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Issue Description</label>
                                         <div className="relative group">
-                                            <FileText className="absolute left-4 top-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+                                            <FileText className="absolute left-4 top-4 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
                                             <textarea
                                                 required
                                                 rows={4}
                                                 value={supportData.description}
                                                 onChange={e => setSupportData({ ...supportData, description: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-600 transition-all resize-none"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                 placeholder="Explain your problem..."
                                             />
                                         </div>

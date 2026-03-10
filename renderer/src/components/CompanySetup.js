@@ -67,38 +67,37 @@ const CompanySetup = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
             {/* Simple Background */}
-            <div className="absolute inset-0 bg-grid-slate-200/50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
+            <div className="absolute inset-0 bg-grid-slate-200/20 dark:bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]"></div>
 
-            <div className="relative w-full max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
+            <div className="relative w-full max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="p-10">
                         {/* Header */}
                         <div className="mb-8">
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Setup Company</h1>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Welcome, {username}. Please enter your company details.</p>
+                            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Setup Company</h1>
+                            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Welcome, {username}. Please enter your company details.</p>
                         </div>
 
                         {error && (
-                            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 text-xs font-bold flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-600"></div>
+                            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-500"></div>
                                 {error}
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <FormInput
-                                label="Company Name"
-                                name="companyName"
-                                value={formData.companyName}
-                                onChange={handleChange}
-                                icon={Building2}
-                                placeholder="Enter company name"
-                                required
-                            />
-
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <FormInput
+                                    label="Company Name"
+                                    name="companyName"
+                                    value={formData.companyName}
+                                    onChange={handleChange}
+                                    icon={Building2}
+                                    placeholder="Enter company name"
+                                    required
+                                />
                                 <FormInput
                                     label="Email"
                                     name="companyEmail"
@@ -109,8 +108,11 @@ const CompanySetup = () => {
                                     placeholder="contact@company.com"
                                     required
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 <FormInput
-                                    label="Phone"
+                                    label="Contact No"
                                     name="companyPhone"
                                     value={formData.companyPhone}
                                     onChange={handleChange}
@@ -118,65 +120,57 @@ const CompanySetup = () => {
                                     placeholder="+92 300..."
                                     required
                                 />
-                            </div>
-
-                            <FormInput
-                                label="Landline No"
-                                name="officePhone"
-                                value={formData.officePhone}
-                                onChange={handleChange}
-                                icon={Phone}
-                                placeholder="Enter landline no"
-                            />
-
-                            <div className="space-y-4">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <MapPin size={14} />
-                                    Location Details
-                                </h4>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Company Address</label>
-                                    <textarea
-                                        name="companyAddress"
-                                        rows={3}
-                                        value={formData.companyAddress}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
-                                        placeholder="Enter company address"
-                                        required
-                                    />
-                                </div>
-                                <FormInput label="City" name="city" value={formData.city} onChange={handleChange} icon={MapPin} placeholder="City name" required />
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-100">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <Users size={14} />
-                                    Additional Info (Optional)
-                                </h4>
                                 <FormInput
-                                    label="Referral Code"
-                                    name="referralCode"
-                                    value={formData.referralCode}
+                                    label="Landline No"
+                                    name="officePhone"
+                                    value={formData.officePhone}
                                     onChange={handleChange}
-                                    icon={Users}
-                                    placeholder="Enter referral code (Optional)"
+                                    icon={Phone}
+                                    placeholder="Enter landline no"
+                                />
+                                <FormInput label="City" name="city" value={formData.city} onChange={handleChange} placeholder="Enter your city" required />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Company Address</label>
+                                <textarea
+                                    name="companyAddress"
+                                    rows={2}
+                                    value={formData.companyAddress}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 resize-none"
+                                    placeholder="Enter company address"
+                                    required
                                 />
                             </div>
 
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3.5 bg-blue-950 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2 mt-4"
-                            >
-                                {loading ? 'Creating...' : (
-                                    <>
-                                        <span>Create Company</span>
-                                        <ArrowRight size={16} />
-                                    </>
-                                )}
-                            </button>
+                            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-end gap-6">
+                                <div className="flex-1">
+                                    <FormInput
+                                        label="Promo Code (Optional)"
+                                        name="referralCode"
+                                        value={formData.referralCode}
+                                        onChange={handleChange}
+                                        icon={Users}
+                                        placeholder="Enter promo code"
+                                    />
+                                </div>
+                                <div className="flex flex-col space-y-1.5">
+                                    <label className="text-[10px] font-bold text-transparent select-none uppercase tracking-widest ml-1">Action</label>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="px-10 h-[46px] bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-[#0B1033] dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2"
+                                    >
+                                        {loading ? 'Creating...' : (
+                                            <>
+                                                <span>Create Company</span>
+                                                <ArrowRight size={16} />
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -187,12 +181,12 @@ const CompanySetup = () => {
 
 const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
     <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{label}</label>
         <div className="relative group">
-            <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />}
             <input
                 {...props}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-600 transition-all placeholder:text-slate-300"
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
             />
         </div>
     </div>

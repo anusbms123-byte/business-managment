@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MoreVertical, TrendingUp, FolderKanban, Wallet, UserPlus } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import {
     AreaChart,
     Area,
@@ -15,13 +16,14 @@ import {
 
 // Circular Progress Component
 const CircularProgress = ({ percentage, color }) => {
+    const { isDarkMode } = useTheme();
     const radius = 18;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
         <svg className="w-10 h-10 transform -rotate-90">
-            <circle cx="20" cy="20" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="3" />
+            <circle cx="20" cy="20" r={radius} fill="none" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeWidth="3" />
             <circle
                 cx="20" cy="20" r={radius}
                 fill="none"
@@ -37,24 +39,24 @@ const CircularProgress = ({ percentage, color }) => {
 
 // Stat Card Component
 const StatCard = ({ title, value, change, changeType, percentage, color, icon: Icon }) => (
-    <div className="bg-white rounded-xl p-5 border-l-4 border-slate-200 border border-slate-200 shadow-sm transition-all hover:shadow-md group" style={{ borderLeftColor: color }}>
+    <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border-l-4 border-slate-200 dark:border-slate-800 border-y border-r border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md group transition-colors duration-300" style={{ borderLeftColor: color }}>
         <div className="flex items-start justify-between">
             <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                    {Icon && <Icon size={14} className="text-black group-hover:text-blue-600 transition-colors" />}
-                    <p className="text-[10px] text-black font-bold uppercase tracking-widest">{title}</p>
+                    {Icon && <Icon size={14} className="text-black dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />}
+                    <p className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-widest">{title}</p>
                 </div>
-                <p className="text-xl font-medium text-black">{value}</p>
+                <p className="text-xl font-medium text-black dark:text-slate-200">{value}</p>
                 <div className="mt-3 flex items-center space-x-1.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
                         {changeType === 'up' ? '↑' : '↓'} {change}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Recent Trend</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight">Recent Trend</span>
                 </div>
             </div>
             <div className="relative flex items-center justify-center ml-4">
                 <CircularProgress percentage={percentage} color={color} />
-                <span className="absolute text-[10px] font-black text-black">{percentage}%</span>
+                <span className="absolute text-[10px] font-black text-black dark:text-slate-200">{percentage}%</span>
             </div>
         </div>
     </div>
@@ -64,16 +66,16 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white shadow-2xl rounded-xl p-4 border border-slate-100 min-w-[160px] animate-in fade-in zoom-in duration-200">
-                <p className="text-[10px] text-slate-400 mb-2.5 font-bold uppercase tracking-widest">{label}</p>
+            <div className="bg-white dark:bg-slate-900 shadow-2xl rounded-xl p-4 border border-slate-100 dark:border-slate-800 min-w-[160px] animate-in fade-in zoom-in duration-200">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2.5 font-bold uppercase tracking-widest">{label}</p>
                 <div className="space-y-2.5">
                     {payload.map((entry, index) => (
                         <div key={index} className="flex items-center justify-between gap-6">
                             <div className="flex items-center space-x-2">
                                 <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: entry.color }}></div>
-                                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{entry.name}</span>
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">{entry.name}</span>
                             </div>
-                            <span className="text-[11px] font-black text-slate-900 leading-none">PKR {entry.value?.toLocaleString()}</span>
+                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-200 leading-none">PKR {entry.value?.toLocaleString()}</span>
                         </div>
                     ))}
                 </div>
@@ -99,6 +101,11 @@ const CHART_COLORS = [
 // Modern Bar Chart Component
 // Modern Analytics Chart Component
 const PerformanceChart = ({ data }) => {
+    const { isDarkMode } = useTheme();
+    const gridColor = isDarkMode ? "#1e293b" : "#f1f5f9";
+    const tickColor = isDarkMode ? "#94a3b8" : "#64748b";
+    const referenceColor = isDarkMode ? "#334155" : "#cbd5e1";
+
     return (
         <div style={{ width: '100%', height: 350 }} className="mt-4">
             <ResponsiveContainer>
@@ -113,12 +120,12 @@ const PerformanceChart = ({ data }) => {
                             <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                     <XAxis
                         dataKey="date"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                        tick={{ fill: tickColor, fontSize: 10, fontWeight: 700 }}
                         tickFormatter={(str) => {
                             try {
                                 const d = new Date(str);
@@ -130,7 +137,7 @@ const PerformanceChart = ({ data }) => {
                     <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                        tick={{ fill: tickColor, fontSize: 10, fontWeight: 700 }}
                         tickFormatter={(value) => {
                             if (value === 0) return '0';
                             const abs = Math.abs(value);
@@ -141,7 +148,7 @@ const PerformanceChart = ({ data }) => {
                         }}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} strokeDasharray="3 3" />
+                    <ReferenceLine y={0} stroke={referenceColor} strokeWidth={2} strokeDasharray="3 3" />
 
                     <Area
                         type="monotone"
@@ -217,12 +224,12 @@ const Dashboard = ({ currentUser }) => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                 </div>
-                <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200 w-fit">
+                <div className="flex bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200 dark:border-slate-800 w-fit">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setFilter(p)}
-                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-950 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-950 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
@@ -273,20 +280,20 @@ const Dashboard = ({ currentUser }) => {
             {/* Main Content Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Overview Chart */}
-                <div className="lg:col-span-2 bg-white rounded-xl p-8 border border-slate-200 shadow-sm transition-all">
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-sm font-bold text-black uppercase tracking-tight">Sales & Profit</h2>
-                            <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">Movement over time</p>
+                            <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight">Sales & Profit</h2>
+                            <p className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mt-1">Movement over time</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">Total Sales</span>
+                                <span className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest">Total Sales</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-[10px] font-bold text-black uppercase tracking-widest">Net Profit</span>
+                                <span className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest">Net Profit</span>
                             </div>
                         </div>
                     </div>
@@ -298,9 +305,9 @@ const Dashboard = ({ currentUser }) => {
                 </div>
 
                 {/* Top Moving Items */}
-                <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-colors duration-300">
                     <div className="relative z-10">
-                        <h2 className="text-sm font-bold text-black uppercase tracking-tight mb-8">Best Selling</h2>
+                        <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight mb-8">Best Selling</h2>
                         <div className="space-y-7">
                             {(!summary.topProducts || summary.topProducts.length === 0) ? (
                                 <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
@@ -315,20 +322,20 @@ const Dashboard = ({ currentUser }) => {
                                     <div key={i} className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center space-x-2">
-                                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 w-5 h-5 flex items-center justify-center rounded-sm">
+                                                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 w-5 h-5 flex items-center justify-center rounded-sm">
                                                     {i + 1}
                                                 </span>
-                                                <p className="text-[10px] font-bold text-black uppercase tracking-tight truncate max-w-[120px]">
+                                                <p className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-tight truncate max-w-[120px]">
                                                     {item.name}
                                                 </p>
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                                 {item.qtySold} Units
                                             </span>
                                         </div>
-                                        <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                        <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-full transition-all duration-1000 ease-out"
                                                 style={{ width: `${percentage}%` }}
                                             ></div>
                                         </div>
@@ -339,13 +346,13 @@ const Dashboard = ({ currentUser }) => {
 
                         {/* Low Stock Quick Alert */}
                         {summary.lowStockCount > 0 && (
-                            <div className="mt-8 pt-6 border-t border-slate-100">
-                                <div className="flex items-center justify-between p-3 bg-rose-50 rounded-lg border border-rose-100">
+                            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg border border-rose-100 dark:border-rose-800">
                                     <div className="flex items-center space-x-2">
                                         <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Low Stock Alert</span>
+                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Low Stock Alert</span>
                                     </div>
-                                    <span className="text-[10px] font-black text-rose-700">{summary.lowStockCount} Low</span>
+                                    <span className="text-[10px] font-black text-rose-700 dark:text-rose-300">{summary.lowStockCount} Low</span>
                                 </div>
                             </div>
                         )}
@@ -354,38 +361,38 @@ const Dashboard = ({ currentUser }) => {
             </div>
 
             {/* Sales Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-black uppercase tracking-tight">Recent Sales</h2>
-                    <p className="text-[10px] font-bold text-black uppercase tracking-widest">Latest Invoices</p>
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight">Recent Sales</h2>
+                    <p className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Latest Invoices</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50/80">
+                        <thead className="bg-slate-50/80 dark:bg-slate-800/80">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Invoice ID</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100 text-right">Amount</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Invoice ID</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Customer</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {loading ? (
                                 <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</td></tr>
                             ) : (recentSales?.length ?? 0) === 0 ? (
                                 <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No records found</td></tr>
                             ) : recentSales?.map((sale, i) => (
-                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black tracking-tight">{sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}</td>
+                                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 tracking-tight">{sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                        <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
                                             {sale.paymentStatus || 'Completed'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-xs font-medium text-black tracking-tight">PKR {(sale.grandTotal || sale.totalAmount)?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-6 py-4 text-right text-xs font-medium text-black dark:text-slate-300 tracking-tight">PKR {(sale.grandTotal || sale.totalAmount)?.toLocaleString() ?? '0'}</td>
                                 </tr>
                             ))}
                         </tbody>

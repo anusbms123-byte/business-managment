@@ -16,21 +16,21 @@ import {
 const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass }) => (
     <div
         onClick={onClick}
-        className={`bg-white border border-slate-200 border-l-4 ${colorClass} rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group animate-in zoom-in-95 duration-300`}
+        className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 ${colorClass} rounded-2xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer group animate-in zoom-in-95 duration-300`}
     >
         <div className="flex items-start justify-between mb-4">
-            <div className="p-2.5 bg-slate-50 text-slate-400 rounded-lg group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
+            <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg group-hover:bg-slate-100 dark:group-hover:bg-slate-700 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                 <Icon size={20} />
             </div>
-            <div className="text-slate-300 group-hover:text-slate-400 transition-colors">
+            <div className="text-slate-300 dark:text-slate-700 group-hover:text-slate-400 dark:group-hover:text-slate-500 transition-colors">
                 <ChevronRight size={18} />
             </div>
         </div>
         <div>
-            <p className="text-black text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-            <h3 className="text-xl font-medium text-black tracking-tight">{value}</h3>
+            <p className="text-black dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+            <h3 className="text-xl font-medium text-black dark:text-slate-100 tracking-tight">{value}</h3>
             {subValue && (
-                <p className="text-[10px] text-black font-bold mt-2 flex items-center gap-1.5 uppercase tracking-tight">
+                <p className="text-[10px] text-black dark:text-slate-400 font-bold mt-2 flex items-center gap-1.5 uppercase tracking-tight">
                     {subValue}
                 </p>
             )}
@@ -39,13 +39,13 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
 );
 
 const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
-    <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
-        <div className={`p-2.5 rounded-xl ${color} bg-opacity-10 text-opacity-100`}>
+    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+        <div className={`p-2.5 rounded-xl ${color} bg-opacity-10 dark:bg-opacity-20 text-opacity-100`}>
             <Icon size={18} />
         </div>
         <div>
-            <p className="text-[9px] font-black text-black uppercase tracking-widest">{label}</p>
-            <p className="text-sm font-medium text-black tracking-tight">{value}</p>
+            <p className="text-[9px] font-black text-black dark:text-slate-400 uppercase tracking-widest">{label}</p>
+            <p className="text-sm font-medium text-black dark:text-slate-100 tracking-tight">{value}</p>
         </div>
     </div>
 );
@@ -239,13 +239,13 @@ const Reports = ({ currentUser }) => {
 
     const renderDashboard = () => (
         <div className="animate-in fade-in duration-500">
-            <header className="flex flex-col md:flex-row md:items-center justify-end gap-6 pb-6 border-b border-slate-100">
-                <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-200">
+            <header className="flex flex-col md:flex-row md:items-center justify-end gap-6 pb-8">
+                <div className="flex bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly', 'All'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setOverviewFilter(p)}
-                            className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white text-slate-900 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-md border border-slate-100 dark:border-blue-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
@@ -254,24 +254,17 @@ const Reports = ({ currentUser }) => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500" onClick={() => setActiveModule('sales')} />
-                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-amber-500" onClick={() => setActiveModule('purchases')} />
-                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-indigo-500" onClick={() => setActiveModule('inventory')} />
-                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-rose-500" onClick={() => setActiveModule('expenses')} />
-                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-orange-500" onClick={() => setActiveModule('returns')} />
-                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-600" onClick={() => setActiveModule('suppliers')} />
-                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-teal-500" onClick={() => setActiveModule('customers')} />
-                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-500" onClick={() => setActiveModule('hrm')} />
-                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-slate-900" onClick={() => setActiveModule('netprofit')} />
+                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500 dark:border-l-blue-400" onClick={() => setActiveModule('sales')} />
+                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-amber-500 dark:border-l-amber-400" onClick={() => setActiveModule('purchases')} />
+                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-indigo-500 dark:border-l-indigo-400" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-rose-500 dark:border-l-rose-400" onClick={() => setActiveModule('expenses')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-orange-500 dark:border-l-orange-400" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-600 dark:border-l-slate-400" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-teal-500 dark:border-l-teal-400" onClick={() => setActiveModule('customers')} />
+                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-500 dark:border-l-emerald-400" onClick={() => setActiveModule('hrm')} />
+                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-slate-900 dark:border-l-blue-400" onClick={() => setActiveModule('netprofit')} />
             </div>
 
-            <div className="bg-slate-50/50 p-10 rounded-3xl border border-slate-100 text-center">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 text-slate-300">
-                    <BarChart2 size={24} />
-                </div>
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic">Report Center</h3>
-                <p className="text-[10px] text-slate-300 mt-2 uppercase tracking-tight italic">Click on any category above to view detailed reports</p>
-            </div>
         </div>
     );
 
@@ -404,24 +397,24 @@ const Reports = ({ currentUser }) => {
         const config = moduleMap[activeModule];
 
         return (
-            <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-[#F8FAFC] animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+            <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-[#F8FAFC] dark:bg-slate-950 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
                 {/* Detail Header */}
-                <div className="px-4 md:px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between bg-white shrink-0 gap-4">
+                <div className="px-4 md:px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between bg-white dark:bg-slate-900 shrink-0 gap-4">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={handleBack}
-                            className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all border border-slate-200 shadow-sm"
+                            className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-900 dark:hover:bg-slate-700 hover:text-white dark:hover:text-slate-100 transition-all border border-slate-200 dark:border-slate-700 shadow-sm"
                         >
                             <ArrowLeft size={18} />
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                     <config.icon size={22} />
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h1 className="text-xl font-bold text-black tracking-tight">{config.title}</h1>
+                                        <h1 className="text-xl font-bold text-black dark:text-slate-100 tracking-tight">{config.title}</h1>
                                         {activeModule === 'sales' && selectedCustomer !== 'all' && (
                                             <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
@@ -472,7 +465,7 @@ const Reports = ({ currentUser }) => {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-black text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Detailed Report</p>
+                                    <p className="text-black dark:text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Detailed Report</p>
                                 </div>
                             </div>
                         </div>
@@ -481,126 +474,126 @@ const Reports = ({ currentUser }) => {
                     <div className="flex items-center gap-3">
                         {(activeModule === 'sales' || activeModule === 'netprofit') && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Users size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Customers</option>
+                                        <option value="all" className="dark:bg-slate-900">All Customers</option>
                                         {customers.map(customer => (
-                                            <option key={customer.id} value={customer.id}>
+                                            <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
                                                 {customer.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="credit">Credit</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit</option>
                                     </select>
                                 </div>
                             </>
                         )}
                         {activeModule === 'purchases' && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Factory size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Factory size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Vendors</option>
+                                        <option value="all" className="dark:bg-slate-900">All Vendors</option>
                                         {vendors.map(v => (
-                                            <option key={v.id} value={v.id}>
+                                            <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="credit">Credit / Due</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
                                     </select>
                                 </div>
                             </>
                         )}
                         {activeModule === 'inventory' && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Layers size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Layers size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedCategoryId}
                                         onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Categories</option>
+                                        <option value="all" className="dark:bg-slate-900">All Categories</option>
                                         {categories.map(c => (
-                                            <option key={c.id} value={c.id}>
+                                            <option key={c.id} value={c.id} className="dark:bg-slate-900">
                                                 {c.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <AlertTriangle size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <AlertTriangle size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedStockStatus}
                                         onChange={(e) => setSelectedStockStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="low">Low Stock</option>
-                                        <option value="out">Out of Stock</option>
-                                        <option value="expired">Expired</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="low" className="dark:bg-slate-900">Low Stock</option>
+                                        <option value="out" className="dark:bg-slate-900">Out of Stock</option>
+                                        <option value="expired" className="dark:bg-slate-900">Expired</option>
                                     </select>
                                 </div>
                             </>
                         )}
                         {activeModule === 'returns' && (
-                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                <RotateCcw size={14} className="text-slate-400 ml-3" />
+                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                <RotateCcw size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                 <select
                                     value={selectedReturnType}
                                     onChange={(e) => setSelectedReturnType(e.target.value)}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                 >
-                                    <option value="all">All Returns</option>
-                                    <option value="sales">Sales Returns</option>
-                                    <option value="purchases">Purchase Returns</option>
+                                    <option value="all" className="dark:bg-slate-900">All Returns</option>
+                                    <option value="sales" className="dark:bg-slate-900">Sales Returns</option>
+                                    <option value="purchases" className="dark:bg-slate-900">Purchase Returns</option>
                                 </select>
                             </div>
                         )}
                         {(activeModule === 'expenses' || activeModule === 'netprofit') && (
-                            <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                <FileText size={14} className="text-slate-400 ml-3" />
+                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                <FileText size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                 <select
                                     value={selectedExpenseCategory}
                                     onChange={(e) => setSelectedExpenseCategory(e.target.value)}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                 >
-                                    <option value="all">All Expenses</option>
+                                    <option value="all" className="dark:bg-slate-900">All Expenses</option>
                                     {expenseCategories.map(cat => (
-                                        <option key={cat} value={cat}>
+                                        <option key={cat} value={cat} className="dark:bg-slate-900">
                                             {cat}
                                         </option>
                                     ))}
@@ -609,109 +602,109 @@ const Reports = ({ currentUser }) => {
                         )}
                         {activeModule === 'suppliers' && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Factory size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Factory size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Suppliers</option>
+                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
                                         {vendors.map(v => (
-                                            <option key={v.id} value={v.id}>
+                                            <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="credit">Credit / Due</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
                                     </select>
                                 </div>
                             </>
                         )}
                         {activeModule === 'customers' && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Users size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Customers</option>
+                                        <option value="all" className="dark:bg-slate-900">All Customers</option>
                                         {customers.map(c => (
-                                            <option key={c.id} value={c.id}>
+                                            <option key={c.id} value={c.id} className="dark:bg-slate-900">
                                                 {c.name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <CreditCard size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="credit">Credit / Due</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
                                     </select>
                                 </div>
                             </>
                         )}
                         {activeModule === 'hrm' && (
                             <>
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Users size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedEmployee}
                                         onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Staff Members</option>
+                                        <option value="all" className="dark:bg-slate-900">All Staff Members</option>
                                         {employees.map(e => (
-                                            <option key={e.id} value={e.id}>
+                                            <option key={e.id} value={e.id} className="dark:bg-slate-900">
                                                 {e.first_name} {e.last_name}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm mr-2">
-                                    <Activity size={14} className="text-slate-400 ml-3" />
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Activity size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedEmployeeStatus}
                                         onChange={(e) => setSelectedEmployeeStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all">All Status</option>
-                                        <option value="active">Active Only</option>
-                                        <option value="inactive">Inactive Only</option>
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="active" className="dark:bg-slate-900">Active Only</option>
+                                        <option value="inactive" className="dark:bg-slate-900">Inactive Only</option>
                                     </select>
                                 </div>
                             </>
                         )}
 
-                        <div className="flex items-center gap-3 bg-white p-1.5 border border-slate-200 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-2 px-3 border-r border-slate-100">
-                                <Calendar size={14} className="text-slate-400" />
+                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+                            <div className="flex items-center gap-2 px-3 border-r border-slate-100 dark:border-slate-700">
+                                <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                                 <input
                                     type="date"
                                     value={dateRange.start}
                                     onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
                                 />
                             </div>
                             <div className="flex items-center gap-2 px-3">
@@ -719,12 +712,12 @@ const Reports = ({ currentUser }) => {
                                     type="date"
                                     value={dateRange.end}
                                     onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                    className="text-[10px] font-bold text-black outline-none uppercase bg-transparent w-28"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
                                 />
                             </div>
                             <button
                                 onClick={loadDetailedReport}
-                                className="bg-slate-900 text-white p-2 rounded-xl hover:bg-black transition-all shadow-lg shadow-slate-200"
+                                className="bg-slate-900 dark:bg-blue-600 text-white p-2 rounded-xl hover:bg-black dark:hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             </button>
@@ -744,13 +737,13 @@ const Reports = ({ currentUser }) => {
 
                     {/* Primary Metric & Chart Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 overflow-hidden relative">
+                        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8 overflow-hidden relative">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-1 italic">Line Chart</h2>
-                                    <p className="text-xs text-black font-bold uppercase tracking-tight">Report History</p>
+                                    <h2 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest mb-1 italic">Line Chart</h2>
+                                    <p className="text-xs text-black dark:text-slate-100 font-bold uppercase tracking-tight">Report History</p>
                                 </div>
-                                <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Download size={18} /></button>
+                                <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Download size={18} /></button>
                             </div>
                             <div className="h-64 mt-4 -ml-6">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -788,13 +781,13 @@ const Reports = ({ currentUser }) => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-3xl p-8 text-black flex flex-col justify-between relative overflow-hidden shadow-sm border border-slate-100">
-                            <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900"><config.icon size={120} /></div>
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-black dark:text-slate-100 flex flex-col justify-between relative overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+                            <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900 dark:text-white"><config.icon size={120} /></div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 italic">
                                     {activeModule === 'returns' ? 'Total Refunds' : 'Total Amount'}
                                 </p>
-                                <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black">
+                                <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black dark:text-slate-100">
                                     PKR {(
                                         activeModule === 'returns'
                                             ? (selectedReturnType === 'sales' ? (summary?.totalSalesReturns || 0) : selectedReturnType === 'purchases' ? (summary?.totalPurchaseReturns || 0) : (summary?.totalReturns || 0))
@@ -805,265 +798,266 @@ const Reports = ({ currentUser }) => {
                             <div className="space-y-4 relative z-10 pt-10">
                                 {activeModule === 'sales' && selectedCustomer === 'all' ? (
                                     /* Top Customers View */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Customers</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Customers</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{c.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{c.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.totalSpent?.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No customer data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No customer data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'sales' && selectedCustomer !== 'all' ? (
                                     /* Top Products View for Specific Customer */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Products</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Qty</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Products</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{p.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600">{p.qtySold} Units</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtySold} Units</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topProducts || summary.topProducts.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No product data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'purchases' ? (
                                     selectedVendor === 'all' ? (
                                         /* Top Vendors View */
-                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Vendors</span>
-                                                <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Vendors</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                             </div>
                                             <div className="space-y-2">
                                                 {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
                                                             <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                                 {i + 1}
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{v.name}</span>
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{v.name}</span>
                                                         </div>
-                                                        <span className="text-[9px] font-bold text-slate-600">PKR {v.totalSpent?.toLocaleString()}</span>
+                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {v.totalSpent?.toLocaleString()}</span>
                                                     </div>
                                                 ))}
                                                 {(!summary?.topVendors || summary.topVendors.length === 0) && (
-                                                    <p className="text-[9px] italic text-slate-400 text-center py-2">No vendor data available</p>
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No vendor data available</p>
                                                 )}
                                             </div>
                                         </div>
                                     ) : (
                                         /* Top Purchased Products View */
-                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Items</span>
-                                                <span className="text-[9px] font-bold text-slate-400">Qty</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Items</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
                                             </div>
                                             <div className="space-y-2">
                                                 {(summary?.topPurchasedProducts || []).slice(0, 3).map((p, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
                                                             <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
                                                                 {i + 1}
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{p.name}</span>
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
                                                         </div>
-                                                        <span className="text-[9px] font-bold text-slate-600">{p.qtyBought} Units</span>
+                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtyBought} Units</span>
                                                     </div>
                                                 ))}
                                                 {(!summary?.topPurchasedProducts || summary.topPurchasedProducts.length === 0) && (
-                                                    <p className="text-[9px] italic text-slate-400 text-center py-2">No product data available</p>
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
                                                 )}
                                             </div>
                                         </div>
                                     )
                                 ) : activeModule === 'inventory' ? (
                                     /* Top Valued Stock View */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Valued Stock</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Asset Value</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Valued Stock</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Asset Value</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topValuedItems || []).slice(0, 3).map((p, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-blue-500' : 'bg-slate-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{p.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-emerald-600">PKR {((p.stockQty * p.costPrice) || 0).toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">PKR {((p.stockQty * p.costPrice) || 0).toLocaleString()}</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topValuedItems || summary.topValuedItems.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No inventory data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No inventory data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'returns' ? (
                                     /* Returns Breakdown View */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-4">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Refund Breakdown</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Logic</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Refund Breakdown</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Logic</span>
                                         </div>
                                         <div className="space-y-3">
-                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                            <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-rose-500" />
-                                                    <span className="text-[10px] font-black text-black">SALES RETURNS</span>
+                                                    <span className="text-[10px] font-black text-black dark:text-slate-200">SALES RETURNS</span>
                                                 </div>
-                                                <span className="text-xs font-bold text-rose-600">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
+                                                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
                                             </div>
-                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                            <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                                    <span className="text-[10px] font-black text-black">PURCHASE RETURNS</span>
+                                                    <span className="text-[10px] font-black text-black dark:text-slate-200">PURCHASE RETURNS</span>
                                                 </div>
-                                                <span className="text-xs font-bold text-blue-600">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
+                                                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
                                             </div>
-                                            <div className="pt-2 border-t border-dashed border-slate-200 flex justify-between items-center px-1">
-                                                <span className="text-[9px] font-bold text-slate-400 italic font-mono uppercase">Activity Frequency</span>
-                                                <span className="text-[10px] font-black text-slate-700">{summary?.returnCount || 0} Transactions</span>
+                                            <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700 flex justify-between items-center px-1">
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono uppercase">Activity Frequency</span>
+                                                <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{summary?.returnCount || 0} Transactions</span>
                                             </div>
                                         </div>
                                     </div>
                                 ) : activeModule === 'suppliers' ? (
                                     /* Top Vendors by Purchase Volume */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Vendors</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Purchases</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Vendors</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Purchases</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{v.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{v.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600">PKR {v.totalSpent?.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {v.totalSpent?.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topVendors || summary.topVendors.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No vendor data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No vendor data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'customers' ? (
                                     /* Top Customers by Sales Volume */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Customers</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Spent</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Customers</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-400' : i === 1 ? 'bg-cyan-400' : 'bg-blue-400'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">{c.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{c.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600">PKR {c.totalSpent?.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No customer data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No customer data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'hrm' ? (
                                     /* Top Staff View */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Top Staff</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Total Paid</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Staff</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Paid</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topStaff || []).slice(0, 3).map((s, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-600' : i === 1 ? 'bg-purple-500' : 'bg-blue-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black uppercase truncate max-w-[100px]">{s.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{s.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-indigo-600">PKR {s.totalEarned?.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">PKR {s.totalEarned?.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topStaff || summary.topStaff.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No staff data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No staff data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'netprofit' ? (
                                     /* Profitability History View (3 Months) */
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-4">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Quarterly Net Logs</span>
-                                            <span className="text-[9px] font-bold text-slate-400">Past 3 Months</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Quarterly Net Logs</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Past 3 Months</span>
                                         </div>
                                         <div className="space-y-3">
+                                        
                                             {(summary?.monthlyHistory || []).map((m, i) => (
-                                                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                                <div key={i} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${m.profit >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${m.profit >= 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400'}`}>
                                                             {m.month[0]}
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] font-black text-black uppercase leading-tight">{m.month} {m.year}</span>
-                                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Verified Profit</span>
+                                                            <span className="text-[10px] font-black text-black dark:text-slate-200 uppercase leading-tight">{m.month} {m.year}</span>
+                                                            <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Verified Profit</span>
                                                         </div>
                                                     </div>
-                                                    <span className={`text-[11px] font-black font-mono ${m.profit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                    <span className={`text-[11px] font-black font-mono ${m.profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                                                         {m.profit >= 0 ? '+' : ''}{m.profit?.toLocaleString()}
                                                     </span>
                                                 </div>
                                             ))}
                                             {(!summary?.monthlyHistory || summary.monthlyHistory.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 text-center py-2">No historical data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No historical data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : (
                                     /* Default View */
                                     <>
-                                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Volume</span>
-                                            <span className="text-lg font-medium text-black">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
+                                        <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Volume</span>
+                                            <span className="text-lg font-medium text-black dark:text-slate-200">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600">Periodic Status</p>
-                                            <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900">Verified & Processed</p>
+                                        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Periodic Status</p>
+                                            <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900 dark:text-blue-200">Verified & Processed</p>
                                         </div>
                                     </>
                                 )}
@@ -1073,75 +1067,76 @@ const Reports = ({ currentUser }) => {
 
 
                     {/* Data Table */}
-                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                            <h3 className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                            <h3 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-[0.2em] italic">
                                 {config.tableTitle || 'Report Journal'}
                             </h3>
-                            <span className="text-[9px] font-bold text-black">{config.tableTitle ? `View ${config.tableTitle}` : 'Report logs'}</span>
+                            <span className="text-[9px] font-bold text-black dark:text-slate-100">{config.tableTitle ? `View ${config.tableTitle}` : 'Report logs'}</span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50/50">
+                                <thead className="bg-slate-50/50 dark:bg-slate-800/50">
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
-                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black uppercase tracking-widest 
+                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest 
                                                 ${(col === 'Total' || col === 'Total Sales' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                     {((activeModule === 'sales' && summary?.detailedSales) || (activeModule === 'purchases' && summary?.detailedPurchases)) ? (
                                         (activeModule === 'sales' ? summary.detailedSales : summary.detailedPurchases).map((tx, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
                                                     {new Date(tx.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
                                                     {tx.invoiceNo || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
                                                     {tx.customer?.name || tx.vendor?.name || (activeModule === 'sales' ? 'Walk-in' : 'Unknown')}
                                                 </td>
                                                 <td className="px-8 py-5 align-top">
-                                                    <span className="text-[10px] font-bold text-slate-600 uppercase max-w-[200px] truncate block" title={tx.items?.map(item => item.product?.name || item.name).join(', ')}>
+                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase max-w-[200px] truncate block" title={tx.items?.map(item => item.product?.name || item.name).join(', ')}>
                                                         {tx.items?.map(item => item.product?.name || item.name).join(', ') || '-'}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-center align-top">
-                                                    <span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-black uppercase">
+                                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-100 uppercase">
                                                         {tx.items?.length || 0}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${tx.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                                                         }`}>
-                                                        {tx.paymentStatus}
+                                                        <div className={`w-1 h-1 rounded-full ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                                                        {tx.paymentStatus || 'DUE'}
                                                     </span>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : activeModule === 'inventory' && summary?.detailedInventory ? (
                                         summary.detailedInventory.map((item, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
                                                     {item.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
                                                     {item.category?.name || '-'}
                                                 </td>
                                                 <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-black'}`}>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100'}`}>
                                                         {item.stockQty}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-medium text-slate-500 text-xs align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
-                                                <td className="px-8 py-5 text-right font-black text-black text-xs align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-medium text-slate-500 dark:text-slate-400 text-xs align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-black text-black dark:text-slate-100 text-xs align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 text-red-600' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {item.stockQty <= 0 ? 'Out of Stock' : item.stockQty <= (item.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                                     </span>
                                                 </td>
@@ -1149,43 +1144,43 @@ const Reports = ({ currentUser }) => {
                                         ))
                                     ) : activeModule === 'expenses' && summary?.detailedExpenses ? (
                                         summary.detailedExpenses.map((expense, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
                                                     {new Date(expense.date).toLocaleDateString('en-CA')}
                                                 </td>
                                                 {selectedExpenseCategory === 'Staff Payroll' ? (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                        <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-[10px] font-bold text-blue-600 uppercase align-top">
+                                                        <td className="px-8 py-5 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase align-top">
                                                             {expense.designation || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-slate-800 text-xs align-top">
+                                                        <td className="px-8 py-5 text-right font-bold text-slate-800 dark:text-slate-200 text-xs align-top">
                                                             PKR {expense.baseSalary?.toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-emerald-600 text-[10px] align-top">
+                                                        <td className="px-8 py-5 text-right font-bold text-emerald-600 dark:text-emerald-400 text-[10px] align-top">
                                                             +PKR {(expense.bonus + (expense.overtimePay || 0)).toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-rose-600 text-[10px] align-top">
+                                                        <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-[10px] align-top">
                                                             -PKR {expense.deductions?.toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-black text-blue-800 text-xs align-top">
+                                                        <td className="px-8 py-5 text-right font-black text-blue-800 dark:text-blue-200 text-xs align-top">
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
-                                                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
+                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
                                                         </td>
-                                                        <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[300px] truncate">
+                                                        <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[300px] truncate">
                                                             {expense.description || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-left font-black text-rose-600 text-xs align-top">
+                                                        <td className="px-8 py-5 text-left font-black text-rose-600 dark:text-rose-400 text-xs align-top">
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
@@ -1194,52 +1189,52 @@ const Reports = ({ currentUser }) => {
                                         ))
                                     ) : activeModule === 'returns' && summary?.detailedReturns ? (
                                         summary.detailedReturns.map((ret, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
                                                     {new Date(ret.date).toLocaleDateString('en-CA')}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold uppercase align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
                                                         {ret.type}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
                                                     {ret.invoiceNo}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
                                                     {ret.party}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 align-top max-w-[250px]">
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[250px]">
                                                     <div className="flex flex-wrap gap-1">
                                                         {ret.returnDetail?.split(', ').map((item, idx) => (
-                                                            <span key={idx} className="bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600">
+                                                            <span key={idx} className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400">
                                                                 {item}
                                                             </span>
-                                                        )) || <span className="italic text-slate-400">No details</span>}
+                                                        )) || <span className="italic text-slate-400 dark:text-slate-600">No details</span>}
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-black text-rose-600 dark:text-rose-400 text-xs align-top">
                                                     PKR {ret.amount?.toLocaleString()}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : activeModule === 'suppliers' && summary?.detailedVendors ? (
                                         summary.detailedVendors.map((vendor, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
                                                     {vendor.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {vendor.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[200px] truncate">
                                                     {vendor.address || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-rose-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-black text-rose-600 dark:text-rose-400 text-xs align-top">
                                                     PKR {(vendor.current_balance || vendor.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
                                                     </span>
                                                 </td>
@@ -1247,21 +1242,21 @@ const Reports = ({ currentUser }) => {
                                         ))
                                     ) : activeModule === 'customers' && summary?.detailedCustomers ? (
                                         summary.detailedCustomers.map((customer, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
                                                     {customer.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {customer.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 uppercase align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[200px] truncate">
                                                     {customer.address || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-teal-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-black text-teal-600 dark:text-teal-400 text-xs align-top">
                                                     PKR {(customer.current_balance || customer.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {(customer.current_balance || customer.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
                                                     </span>
                                                 </td>
@@ -1269,56 +1264,56 @@ const Reports = ({ currentUser }) => {
                                         ))
                                     ) : activeModule === 'hrm' && summary?.detailedHRM ? (
                                         summary.detailedHRM.map((rec, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black uppercase align-top font-mono tracking-tighter">
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top font-mono tracking-tighter">
                                                     {rec.staffName}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase align-top">
                                                     {rec.designation || 'Staff'}
                                                 </td>
                                                 <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${rec.is_active ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${rec.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
                                                         {rec.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-black align-top">
+                                                <td className="px-8 py-5 text-xs font-medium text-black dark:text-slate-100 align-top">
                                                     {new Date(rec.payment_date).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-slate-700 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-bold text-slate-700 dark:text-slate-300 text-xs align-top">
                                                     PKR {(rec.basic_salary || 0).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-emerald-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-bold text-emerald-600 dark:text-emerald-400 text-xs align-top">
                                                     PKR {((rec.bonus || 0) + (rec.overtime_pay || 0)).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-rose-600 text-xs align-top">
+                                                <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-xs align-top">
                                                     PKR {(rec.deductions || 0).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-indigo-700 text-xs align-top bg-indigo-50/30">
+                                                <td className="px-8 py-5 text-right font-black text-indigo-700 dark:text-indigo-400 text-xs align-top bg-indigo-50/30 dark:bg-indigo-900/20">
                                                     PKR {(rec.net_salary || 0).toLocaleString()}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || activeModule === 'netprofit' || d[config.dataKey] > 0).map((row, i) => (
-                                            <tr key={i} className="hover:bg-slate-50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black font-mono italic uppercase align-top">{row.date}</td>
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">{row.date}</td>
                                                 {activeModule === 'netprofit' ? (
                                                     <>
                                                         <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-blue-600 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
-                                                            <div className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{row.invoices || 0} Invoices</div>
+                                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
+                                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">{row.invoices || 0} Invoices</div>
                                                         </td>
                                                         <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-orange-500 font-mono tracking-tighter">PKR {row.cogs?.toLocaleString()}</span>
+                                                            <span className="text-xs font-bold text-orange-500 dark:text-orange-400 font-mono tracking-tighter">PKR {row.cogs?.toLocaleString()}</span>
                                                         </td>
                                                         <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-rose-500 font-mono tracking-tighter">PKR {row.expenses?.toLocaleString()}</span>
+                                                            <span className="text-xs font-bold text-rose-500 dark:text-rose-400 font-mono tracking-tighter">PKR {row.expenses?.toLocaleString()}</span>
                                                         </td>
-                                                        <td className="px-8 py-5 text-right align-top bg-slate-50/50">
-                                                            <span className={`text-xs font-black font-mono tracking-tighter ${row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        <td className="px-8 py-5 text-right align-top bg-slate-50/50 dark:bg-slate-800/50">
+                                                            <span className={`text-xs font-black font-mono tracking-tighter ${row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                 PKR {row.profit?.toLocaleString()}
                                                             </span>
-                                                            <div className={`text-[9px] font-black uppercase mt-0.5 ${row.profit >= 0 ? 'text-emerald-400' : 'text-rose-300'}`}>
+                                                            <div className={`text-[9px] font-black uppercase mt-0.5 ${row.profit >= 0 ? 'text-emerald-400 dark:text-emerald-500' : 'text-rose-300 dark:text-rose-500'}`}>
                                                                 {row.profit >= 0 ? 'Surplus' : 'Deficit'}
                                                             </div>
                                                         </td>
@@ -1326,15 +1321,15 @@ const Reports = ({ currentUser }) => {
                                                 ) : (
                                                     <>
                                                         <td className="px-8 py-5 align-top">
-                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                                            <span className="text-xs font-black text-black uppercase italic">
+                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 dark:border-slate-700 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
+                                                            <span className="text-xs font-black text-black dark:text-slate-100 uppercase italic">
                                                                 {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
                                                                     activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
                                                                         activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
                                                                             `Activity_ID_${i + 1} Log`}
                                                             </span>
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-medium text-black text-xs align-top">PKR {row[config.dataKey]?.toLocaleString()}</td>
+                                                        <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {row[config.dataKey]?.toLocaleString()}</td>
                                                     </>
                                                 )}
                                             </tr>
@@ -1348,7 +1343,7 @@ const Reports = ({ currentUser }) => {
                                         (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && activeModule !== 'returns' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
-                                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">No records found</p>
+                                                    <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em]">No records found</p>
                                                 </td>
                                             </tr>
                                         )}
@@ -1362,7 +1357,7 @@ const Reports = ({ currentUser }) => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto pb-10">
+        <div className="max-w-7xl mx-auto pb-10 min-h-screen">
             {activeModule ? renderDetailView() : renderDashboard()}
         </div>
     );

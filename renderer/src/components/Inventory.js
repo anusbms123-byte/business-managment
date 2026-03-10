@@ -10,25 +10,25 @@ import Products from './Products';
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
     const colors = {
-        orange: 'bg-white border-l-4 border-l-blue-500',
-        emerald: 'bg-white border-l-4 border-l-emerald-500',
-        red: 'bg-white border-l-4 border-l-rose-500',
-        gray: 'bg-white border-l-4 border-l-slate-400',
-        purple: 'bg-white border-l-4 border-l-indigo-500',
-        blue: 'bg-white border-l-4 border-l-blue-500'
+        orange: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500 dark:border-l-blue-600',
+        emerald: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500 dark:border-l-emerald-600',
+        red: 'bg-white dark:bg-slate-900 border-l-4 border-l-rose-500 dark:border-l-rose-600',
+        gray: 'bg-white dark:bg-slate-900 border-l-4 border-l-slate-400 dark:border-l-slate-500',
+        purple: 'bg-white dark:bg-slate-900 border-l-4 border-l-indigo-500 dark:border-l-indigo-600',
+        blue: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500 dark:border-l-blue-600'
     };
 
     return (
         <div
             onClick={onClick}
-            className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border transition-all duration-200 hover:shadow-md group cursor-pointer ${isActive ? 'ring-2 ring-blue-500 shadow-md transform scale-[1.02]' : 'border-slate-200 shadow-sm'}`}
+            className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border transition-all duration-200 hover:shadow-md group cursor-pointer ${isActive ? 'ring-2 ring-blue-500 dark:ring-blue-600 shadow-md transform scale-[1.02]' : 'border-slate-200 dark:border-slate-800 shadow-sm'}`}
         >
             <div className="relative flex items-center justify-between">
                 <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800">{value}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
                 </div>
-                <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
                     <Icon size={20} />
                 </div>
             </div>
@@ -50,27 +50,27 @@ const Inventory = ({ currentUser }) => {
 
 
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[600px] flex flex-col transition-colors duration-300">
                 {/* Modern Tab Bar */}
-                <div className="flex items-center px-6 bg-slate-50/20 border-b border-slate-100 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center px-6 bg-slate-50/20 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800 overflow-x-auto scrollbar-hide">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`relative flex items-center space-x-2.5 px-6 py-4 text-xs font-bold transition-all whitespace-nowrap group ${activeTab === tab.id
-                                ? 'text-blue-600'
-                                : 'text-slate-400 hover:text-slate-600'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
                             <div className={`p-1.5 rounded-lg transition-all duration-300 ${activeTab === tab.id
-                                ? `bg-blue-950 text-white shadow-sm shadow-blue-100`
-                                : 'bg-white text-slate-400 group-hover:bg-slate-50 border border-slate-100'
+                                ? `bg-blue-950 dark:bg-blue-600 text-white shadow-sm shadow-blue-100 dark:shadow-none`
+                                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-slate-50 dark:group-hover:bg-slate-700 border border-slate-100 dark:border-slate-700'
                                 }`}>
                                 <tab.icon size={16} />
                             </div>
                             <span className="uppercase tracking-widest">{tab.label}</span>
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-950 rounded-t-full"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-950 dark:bg-blue-400 rounded-t-full"></div>
                             )}
                         </button>
                     ))}
@@ -201,9 +201,9 @@ const StockTracking = ({ currentUser }) => {
             </div>
 
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50/80 text-[10px] font-bold text-black uppercase tracking-widest border-b border-slate-100">
+                    <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                         <tr>
                             <th className="px-6 py-4">Name</th>
                             <th className="px-6 py-4 text-center">Stock</th>
@@ -224,28 +224,28 @@ const StockTracking = ({ currentUser }) => {
                             })();
 
                             return (
-                                <tr key={p.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-50 last:border-0">
-                                    <td className="px-6 py-4 font-bold text-sm text-black">{p.name}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30' : 'text-black'}`}>{p.stockQty}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-black text-xs">{p.alertQty || 5}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600' : isExpiringSoon ? 'text-amber-600' : 'text-black'}`}>
+                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                    <td className="px-6 py-4 font-bold text-sm text-black dark:text-slate-100">{p.name}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-black dark:text-slate-100 text-xs">{p.alertQty || 5}</td>
+                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>
                                         {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex gap-2">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                                    'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50' :
+                                                p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/50' :
+                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50'
                                                 }`}>
                                                 {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                             </span>
                                             {isExpired && (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-rose-100 text-rose-700 border-rose-200">
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800">
                                                     Expired
                                                 </span>
                                             )}
                                             {isExpiringSoon && (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-100 text-amber-700 border-amber-200">
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
                                                     Expiring
                                                 </span>
                                             )}
@@ -255,7 +255,7 @@ const StockTracking = ({ currentUser }) => {
                             );
                         }) : (
                             <tr>
-                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px]">
                                     No records found
                                 </td>
                             </tr>
@@ -303,15 +303,15 @@ const BarcodePrinting = ({ currentUser }) => {
         <div className="animate-in fade-in duration-500 max-w-5xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Print Configuration */}
-                <div className="space-y-6 bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <div className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-300">
                     <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Product</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Select Product</label>
                         <div className="relative">
-                            <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                             <select
                                 value={selectedProduct?.id || ''}
                                 onChange={(e) => setSelectedProduct(products.find(p => p.id == e.target.value))}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700 dark:text-slate-200"
                             >
                                 {loading ? <option>Loading...</option> :
                                     products.length === 0 ? <option>No products found</option> :
@@ -324,14 +324,14 @@ const BarcodePrinting = ({ currentUser }) => {
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Labels</label>
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Labels</label>
                         <div className="relative">
-                            <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                             <input
                                 type="number"
                                 value={numLabels || ''}
                                 onChange={(e) => setNumLabels(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 transition-all font-bold text-sm outline-none text-slate-700"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 transition-all font-bold text-sm outline-none text-slate-700 dark:text-slate-200"
                                 placeholder="0"
                                 min="1"
                             />
@@ -343,7 +343,7 @@ const BarcodePrinting = ({ currentUser }) => {
                     <button
                         onClick={handlePrint}
                         disabled={!selectedProduct || products.length === 0}
-                        className="w-full py-3.5 bg-blue-950 text-white font-bold rounded-xl shadow-lg shadow-blue-100 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                        className="w-full py-3.5 bg-blue-950 dark:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-100 dark:shadow-none hover:bg-slate-900 dark:hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
                     >
                         <Printer size={18} />
                         <span>Print now</span>
@@ -351,20 +351,20 @@ const BarcodePrinting = ({ currentUser }) => {
                 </div>
 
                 {/* Preview Section */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group transition-colors duration-300">
                     <div className="absolute top-4 left-4">
-                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.3em]">Preview</span>
+                        <span className="text-[8px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em]">Preview</span>
                     </div>
 
-                    <div className="bg-white p-8 rounded-lg border border-slate-200 shadow-xl mb-6 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl">
-                        <div className="text-[10px] font-bold text-slate-400 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'SKU-NONE'}</div>
-                        <div className="h-14 w-48 bg-gradient-to-r from-slate-900 via-white to-slate-900 bg-[length:4px_100%] rounded-sm"></div>
-                        <div className="text-sm font-bold text-slate-800 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item Name'}</div>
-                        <div className="text-[10px] font-bold text-black mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xl mb-6 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl dark:shadow-none">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'SKU-NONE'}</div>
+                        <div className="h-14 w-48 bg-gradient-to-r from-slate-900 via-white to-slate-900 dark:from-slate-100 dark:via-slate-800 dark:to-slate-100 bg-[length:4px_100%] rounded-sm"></div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item Name'}</div>
+                        <div className="text-[10px] font-bold text-black dark:text-white mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 animate-pulse"></div>
+                    <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
                         <p className="text-[10px] font-bold uppercase tracking-widest italic">Live Preview</p>
                     </div>
                 </div>

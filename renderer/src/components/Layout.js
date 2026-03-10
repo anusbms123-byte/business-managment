@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
-    Receipt, BarChart3, UserCog, Settings, LogOut, Search, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, History, LifeBuoy, Menu
+    Receipt, BarChart3, UserCog, Settings, LogOut, Bell, Mail, ChevronRight,
+    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, LifeBuoy, Menu, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 // Define all menu items with their permission keys
 const ALL_MENU_ITEMS = [
     { key: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { key: 'inventory', icon: Package, label: 'Inventory', path: '/inventory' },
-        { key: 'sales', icon: ShoppingCart, label: 'Sales', path: '/sales' },
-           { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
+    { key: 'sales', icon: ShoppingCart, label: 'Sales', path: '/sales' },
+    { key: 'customers', icon: Users, label: 'Customers', path: '/customers' },
     { key: 'purchase', icon: Truck, label: 'Purchase', path: '/purchase' },
     { key: 'suppliers', icon: Building2, label: 'Suppliers', path: '/suppliers' },
-     { key: 'returns', icon: RefreshCcw, label: 'Returns', path: '/returns' },
+    { key: 'returns', icon: RefreshCcw, label: 'Returns', path: '/returns' },
     { key: 'expenses', icon: Receipt, label: 'Expenses', path: '/expenses' },
     { key: 'hrm', icon: UserSquare, label: 'HRM', path: '/hrm' },
     { key: 'reports', icon: BarChart3, label: 'Reports', path: '/reports' },
@@ -43,10 +44,10 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
 );
 
 const Layout = ({ children, user, permissions, onLogout }) => {
+    const { isDarkMode, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
     const isSuperAdmin = user?.role?.toLowerCase() === 'super admin' || user?.role?.toLowerCase() === 'super_admin';
-    const [company, setCompany] = useState(null);
     // Removed internal permissions state to use prop
     const [visibleMenuItems, setVisibleMenuItems] = useState([]);
     const [visibleSettingsItems, setVisibleSettingsItems] = useState([]);
@@ -85,7 +86,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
     useEffect(() => {
         if (user?.id) fetchSupportRequests();
-    }, [user]);
+    }, [user, fetchSupportRequests]);
 
     const handleSupportSubmit = async (e) => {
         e.preventDefault();
@@ -109,19 +110,6 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         setSubmittingSupport(false);
     };
 
-    useEffect(() => {
-        const fetchCompany = async () => {
-            if (window.electronAPI && user?.company_id) {
-                try {
-                    const data = await window.electronAPI.getCompany(user.company_id);
-                    if (data) setCompany(data);
-                } catch (err) {
-                    console.error("Error fetching company details:", err);
-                }
-            }
-        };
-        fetchCompany();
-    }, [user]);
 
     useEffect(() => {
         console.log("Layout Permissions Prop:", permissions);
@@ -137,8 +125,8 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         if (permissions && permissions.length > 0) {
             // Filter based on can_view permission
             const allowedKeys = (permissions || [])
-                .filter(p => p.can_view == 1 || p.canView == 1 || p.can_view === true || p.canView === true || p.canView === 'true' || p.can_view === '1')
-                .map(p => p.module ? p.module.toLowerCase().trim() : '');
+                .filter(p => Number(p.can_view) === 1 || Number(p.canView) === 1 || p.can_view === true || p.canView === true || p.canView === 'true' || p.can_view === '1')
+                .map(p => (p.module ? p.module.toLowerCase().trim() : ''));
 
             // Special mappings
             if (allowedKeys.includes('products')) allowedKeys.push('inventory');
@@ -174,7 +162,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden relative">
+        <div className="flex h-screen bg-gray-50 dark:bg-slate-950 overflow-hidden relative">
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
@@ -185,7 +173,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
             {/* Sidebar */}
             <div className={`
-                fixed lg:static inset-y-0 left-0 z-[70] w-72 bg-[#0B1033] flex flex-col transition-transform duration-300 ease-in-out
+                fixed lg:static inset-y-0 left-0 z-[70] w-72 bg-[#0B1033] dark:bg-slate-900 border-r border-transparent dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
@@ -273,11 +261,11 @@ const Layout = ({ children, user, permissions, onLogout }) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Header */}
-                <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 shadow-sm shrink-0">
+                <header className="h-20 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shadow-sm shrink-0 transition-colors duration-300">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 lg:hidden bg-slate-50 text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="p-2 lg:hidden bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
                             <Menu size={22} />
                         </button>
@@ -287,6 +275,29 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
                     {/* Right Side */}
                     <div className="flex items-center space-x-2 md:space-x-6">
+                        <button
+                            onClick={toggleTheme}
+                            className="relative flex items-center h-9 w-16 p-1 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 transition-all duration-300 hover:border-blue-400 dark:hover:border-blue-500 group shadow-inner"
+                            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        >
+                            {/* Sliding bubble */}
+                            <div className={`
+                                flex items-center justify-center w-7 h-7 rounded-full bg-white dark:bg-blue-600 shadow-md transform transition-transform duration-500 ease-in-out
+                                ${isDarkMode ? 'translate-x-7 rotate-[360deg]' : 'translate-x-0'}
+                            `}>
+                                {isDarkMode ? (
+                                    <Moon size={14} className="text-white" fill="currentColor" />
+                                ) : (
+                                    <Sun size={14} className="text-amber-500" fill="currentColor" />
+                                )}
+                            </div>
+
+                            {/* Background icons (fixed) */}
+                            <div className="absolute inset-0 flex justify-between items-center px-2 pointer-events-none opacity-20 dark:opacity-40">
+                                <Sun size={12} className={isDarkMode ? 'invisible' : 'visible'} />
+                                <Moon size={12} className={isDarkMode ? 'visible' : 'invisible'} />
+                            </div>
+                        </button>
 
 
 
@@ -298,7 +309,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                     setShowMessages(false);
                                     setSupportView('list');
                                 }}
-                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showSupport ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showSupport ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                             >
                                 <Mail size={18} />
                                 {supportRequests.some(r => r.status === 'RESOLVED') && (
@@ -310,11 +321,11 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                             {showSupport && (
                                 <>
                                     <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
-                                    <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                    <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
                                         {supportView === 'list' ? (
                                             <>
-                                                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                                    <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                                    <h3 className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
                                                         <LifeBuoy size={14} className="text-blue-500" />
                                                         Help & Support
                                                     </h3>
@@ -342,7 +353,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                                     ) : (
                                                         <div className="divide-y divide-slate-50">
                                                             {supportRequests.map((req) => (
-                                                                <div key={req.id} className="p-4 hover:bg-slate-50 transition-colors">
+                                                                <div key={req.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                                     <div className="flex items-center justify-between mb-1">
                                                                         <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' :
                                                                             req.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
@@ -354,7 +365,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                                                             {new Date(req.createdAt).toLocaleDateString()}
                                                                         </span>
                                                                     </div>
-                                                                    <p className="text-xs text-slate-700 font-bold line-clamp-2 leading-snug">{req.description}</p>
+                                                                    <p className="text-xs text-slate-700 dark:text-slate-300 font-bold line-clamp-2 leading-snug">{req.description}</p>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -364,10 +375,10 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                         ) : (
                                             <div className="p-5 animate-in slide-in-from-right-4 duration-300">
                                                 <div className="flex items-center gap-2 mb-4">
-                                                    <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 rounded">
-                                                        <ChevronLeft size={16} className="text-slate-500" />
+                                                    <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500">
+                                                        <ChevronLeft size={16} />
                                                     </button>
-                                                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">New Support Ticket</h3>
+                                                    <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">New Support Ticket</h3>
                                                 </div>
                                                 <form onSubmit={handleSupportSubmit} className="space-y-4">
                                                     <div>
@@ -376,7 +387,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                                             type="text"
                                                             value={supportForm.whatsapp}
                                                             onChange={(e) => setSupportForm({ ...supportForm, whatsapp: e.target.value })}
-                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-blue-500 transition-all"
+                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-all"
                                                             placeholder="Format: +92..."
                                                         />
                                                     </div>
@@ -386,7 +397,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                                             required
                                                             value={supportForm.description}
                                                             onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
-                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:border-blue-500 transition-all min-h-[100px]"
+                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-all min-h-[100px]"
                                                             placeholder="Describe your problem or request..."
                                                         />
                                                     </div>
@@ -401,8 +412,8 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                                 </form>
                                             </div>
                                         )}
-                                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center">
-                                            <button onClick={() => setShowSupport(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">Close</button>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 text-center">
+                                            <button onClick={() => setShowSupport(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Close</button>
                                         </div>
                                     </div>
                                 </>
@@ -414,7 +425,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                                     setShowMessages(!showMessages);
                                     setShowSupport(false);
                                 }}
-                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showMessages ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showMessages ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                             >
                                 <Bell size={20} />
                                 {adminMessages.length > 0 && (
@@ -426,50 +437,50 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                             {showMessages && (
                                 <>
                                     <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
-                                    <div className="absolute top-12 right-0 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
-                                            <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">System Notifications</h3>
-                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{adminMessages.length} Messages</span>
+                                    <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 rounded-t-xl">
+                                            <h3 className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">System Notifications</h3>
+                                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">{adminMessages.length} Messages</span>
                                         </div>
                                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                             {adminMessages.length === 0 ? (
-                                                <div className="p-8 text-center">
-                                                    <Bell size={32} className="mx-auto text-slate-200 mb-2" />
+                                                <div className="p-8 text-center bg-white dark:bg-slate-900">
+                                                    <Bell size={32} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" />
                                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No notifications</p>
                                                 </div>
                                             ) : adminMessages.map((msg) => (
-                                                <div key={msg.id} className="p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer">
+                                                <div key={msg.id} className="p-4 border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <div className={`w-1.5 h-1.5 rounded-full ${msg.type === 'alert' ? 'bg-rose-500' :
                                                             msg.type === 'update' ? 'bg-emerald-500' : 'bg-blue-500'
                                                             }`}></div>
                                                         <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
                                                     </div>
-                                                    <p className="text-xs text-slate-800 font-bold leading-snug">{msg.content}</p>
+                                                    <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-snug">{msg.content}</p>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center rounded-b-xl">
-                                            <button onClick={() => setShowMessages(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">Close</button>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 text-center rounded-b-xl">
+                                            <button onClick={() => setShowMessages(false)} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Close</button>
                                         </div>
                                     </div>
                                 </>
                             )}
                         </div>
-                        <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-4 border-l border-slate-200 ml-1 md:ml-2">
-                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#0B1033] flex items-center justify-center text-white font-bold shadow-md shadow-blue-100 shrink-0">
+                        <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-4 border-l border-slate-200 dark:border-slate-800 ml-1 md:ml-2">
+                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#0B1033] dark:bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-100 dark:shadow-blue-900/20 shrink-0">
                                 {user?.fullname?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div className="hidden sm:block">
-                                <p className="text-xs md:text-sm font-bold text-slate-800 leading-tight">{user?.fullname || 'User'}</p>
-                                <p className="text-[9px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest">{user?.role?.replace('_', ' ') || 'User'}</p>
+                                <p className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{user?.fullname || 'User'}</p>
+                                <p className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">{user?.role?.replace('_', ' ') || 'User'}</p>
                             </div>
                         </div>
                     </div>
                 </header>
 
                 {/* Content */}
-                <main className="flex-1 overflow-auto p-3 md:p-8 bg-gray-50/50">
+                <main className="flex-1 overflow-auto p-3 md:p-8 bg-gray-50/50 dark:bg-slate-950/50 transition-colors duration-300">
                     {children}
                 </main>
             </div>

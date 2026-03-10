@@ -454,9 +454,10 @@ ipcMain.handle("create-company", async (e, data) => {
 ipcMain.handle("update-company", async (e, data) => {
     const { id, name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referralCode, referral_code, is_active } = data;
     const active = (is_active === 1 || is_active === true) ? 1 : 0;
-    const officePh = officePhone || office_phone;
-    const taxNo = taxNumber || tax_no;
-    const refCode = referralCode || referral_code;
+    // CRITICAL: Prioritize snake_case fields (from Form) over aliases to prevent stale data updates
+    const officePh = (office_phone !== undefined) ? office_phone : officePhone;
+    const taxNo = (tax_no !== undefined) ? tax_no : taxNumber;
+    const refCode = (referral_code !== undefined) ? referral_code : referralCode;
 
     try {
         await db.asyncRun(
@@ -544,8 +545,12 @@ ipcMain.handle("get-roles", async (e, companyId) => {
     if (isSuperAdmin && !companyId) {
         // Super Admin viewing globally: show ONLY system-wide templates
         conditions.push("(r.is_system = 1 AND (r.company_id IS NULL OR r.company_id = ''))");
+    } else if (isSuperAdmin && companyId) {
+        // Super Admin filtering by company: Show BOTH company roles and global templates
+        conditions.push("((r.company_id = ? OR r.company_id = ? OR r.company_id = ?) OR (r.is_system = 1 AND (r.company_id IS NULL OR r.company_id = '')))");
+        params.push(ids.localId, ids.globalId, String(ids.localId));
     } else {
-        // Regular company or Super Admin filtering by company
+        // Regular company admin: show only their roles
         conditions.push("(r.company_id = ? OR r.company_id = ? OR r.company_id = ?)");
         params.push(ids.localId, ids.globalId, String(ids.localId));
     }
@@ -903,8 +908,9 @@ ipcMain.handle("delete-role", async (e, id) => {
         const row = await db.asyncGet("SELECT id, global_id, is_system FROM roles WHERE id = ? OR global_id = ?", [id, id]);
         if (!row) return { success: false, message: "Role not found" };
 
-        if (row.is_system) {
-            return { success: false, message: "System roles cannot be deleted." };
+        // Protect core system roles only
+        if (row.is_system && ['admin', 'manager'].includes((row.name || '').toLowerCase())) {
+            return { success: false, message: "Core system roles cannot be deleted." };
         }
 
         const gid = row.global_id;
