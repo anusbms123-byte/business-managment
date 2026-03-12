@@ -239,7 +239,6 @@ const Reports = ({ currentUser }) => {
     const renderDashboard = () => (
         <div className="animate-in fade-in duration-500">
             <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-8">
-            <div className="flex flex-col md:flex-row items-center gap-4">
                 <div className="flex bg-slate-100 dark:bg-slate-800 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-700 shadow-sm">
                     {['Daily', 'Weekly', 'Monthly'].map((p) => (
                         <button
@@ -277,11 +276,7 @@ const Reports = ({ currentUser }) => {
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </div>
-            </div>
-            <div className="hidden xl:block">
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] italic">Report Summary Overview</p>
-            </div>
-        </header>
+            </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500 dark:border-l-blue-400" onClick={() => setActiveModule('sales')} />
@@ -727,20 +722,7 @@ const Reports = ({ currentUser }) => {
                             </>
                         )}
 
-                    <div className="flex flex-col md:flex-row items-center gap-4">
-                        <div className="flex bg-slate-100 dark:bg-slate-800 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-700 shadow-sm">
-                            {['Daily', 'Weekly', 'Monthly'].map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => applyPeriod(p)}
-                                    className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-md' : 'text-slate-400 dark:text-slate-500'}`}
-                                >
-                                    {p}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm ml-auto">
                             <div className="flex items-center gap-2 px-3 border-r border-slate-100 dark:border-slate-700">
                                 <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                                 <input
@@ -765,7 +747,6 @@ const Reports = ({ currentUser }) => {
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             </button>
                         </div>
-                    </div>
                     </div>
                 </div>
 
