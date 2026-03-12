@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,347 +7,282 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =========================================================
-// 1. CORE & AUTHENTICATION (Multi-tenancy)
-// =========================================================
-
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  address     String?
-  phone       String?
-  email       String?
-  website     String?
-  taxNumber   String?  @map("tax_number")
-  logoUrl     String?  @map("logo_url")
-  currency    String   @default("PKR")
-  officePhone String?  @map("office_phone")
-  privatePhone String?  @map("private_phone")
-  secondaryAddress String? @map("secondary_address")
-  city        String?
-  state       String?
-  zipCode     String?  @map("zip_code")
-  country     String?  @default("Pakistan")
-  referralCode String? @map("referral_code")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  users       User[]
-  roles       Role[]
-  customers   Customer[]
-  vendors     Vendor[]
-  products    Product[]
-  categories  Category[]
-  brands      Brand[]
-  sales       Sale[]
-  purchases   Purchase[]
-  expenses    Expense[]
-  employees   Employee[]
-  accounts    Account[]
-  saleReturns SaleReturn[]
-  purchaseReturns PurchaseReturn[]
-  salaryRecords SalaryRecord[]
+  id               String           @id @default(cuid())
+  name             String
+  address          String?
+  phone            String?
+  email            String?
+  website          String?
+  taxNumber        String?          @map("tax_number")
+  logoUrl          String?          @map("logo_url")
+  currency         String           @default("PKR")
+  officePhone      String?          @map("office_phone")
+  privatePhone     String?          @map("private_phone")
+  secondaryAddress String?          @map("secondary_address")
+  city             String?
+  state            String?
+  zipCode          String?          @map("zip_code")
+  country          String?          @default("Pakistan")
+  referralCode     String?          @map("referral_code")
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  accounts         Account[]
+  brands           Brand[]
+  categories       Category[]
+  customers        Customer[]
+  employees        Employee[]
+  expenses         Expense[]
+  products         Product[]
+  purchaseReturns  PurchaseReturn[]
+  purchases        Purchase[]
+  roles            Role[]
+  salaryRecords    SalaryRecord[]
+  saleReturns      SaleReturn[]
+  sales            Sale[]
+  users            User[]
+  vendors          Vendor[]
 
   @@map("companies")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String 
-  email     String?
-  fullName  String?  @map("full_name")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  companyId String?  @map("company_id")
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  roleId    String? @map("role_id")
-  role      Role?   @relation(fields: [roleId], references: [id])
-
-  // Auditing / Relationships
-  sales     Sale[]
+  id             String          @id @default(cuid())
+  username       String          @unique
+  password       String
+  email          String?
+  fullName       String?         @map("full_name")
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  companyId      String?         @map("company_id")
+  roleId         String?         @map("role_id")
   companyRequest CompanyRequest?
+  sales          Sale[]
+  company        Company?        @relation(fields: [companyId], references: [id])
+  role           Role?           @relation(fields: [roleId], references: [id])
 
   @@map("users")
 }
 
 model Role {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
   description String?
-  isSystem    Boolean  @default(false) @map("is_system")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  companyId   String?  @map("company_id")
-  company     Company? @relation(fields: [companyId], references: [id])
-
-  users       User[]
+  isSystem    Boolean      @default(false) @map("is_system")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  companyId   String?      @map("company_id")
   permissions Permission[]
+  company     Company?     @relation(fields: [companyId], references: [id])
+  users       User[]
 
   @@map("roles")
 }
 
 model Permission {
-  id        String   @id @default(cuid())
-  roleId    String   @map("role_id")
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
+  id        String  @id @default(cuid())
+  roleId    String  @map("role_id")
   module    String
-  canView   Boolean  @default(false) @map("can_view")
-  canCreate Boolean  @default(false) @map("can_create")
-  canEdit   Boolean  @default(false) @map("can_edit")
-  canDelete Boolean  @default(false) @map("can_delete")
+  canView   Boolean @default(false) @map("can_view")
+  canCreate Boolean @default(false) @map("can_create")
+  canEdit   Boolean @default(false) @map("can_edit")
+  canDelete Boolean @default(false) @map("can_delete")
+  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@map("permissions")
 }
 
-// =========================================================
-// 2. INVENTORY MANAGEMENT
-// =========================================================
-
 model Category {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id])
-
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  companyId String    @map("company_id")
+  company   Company   @relation(fields: [companyId], references: [id])
   products  Product[]
 
   @@map("categories")
 }
 
 model Brand {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id])
-
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  companyId String    @map("company_id")
+  company   Company   @relation(fields: [companyId], references: [id])
   products  Product[]
 
   @@map("brands")
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  sku         String?  // Stock Keeping Unit / Barcode
-  description String?
-  unit        String   @default("pcs")
-  
-  costPrice   Float    @default(0) @map("cost_price")
-  sellPrice   Float    @default(0) @map("sell_price")
-  stockQty    Int      @default(0) @map("stock_qty")
-  alertQty    Int      @default(5) @map("alert_qty")
-  
-  imageUrl    String?  @map("image_url")
-  barcode     String?
-  weight      Float?
-  
-  // New Attributes
-  color       String?
-  size        String?
-  grade       String?
-  condition   String?
-
-  expiryDate  DateTime? @map("expiry_date")
-  isActive    Boolean  @default(true) @map("is_active")
-
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
-  categoryId  String? @map("category_id")
-  category    Category? @relation(fields: [categoryId], references: [id])
-
-  brandId     String? @map("brand_id")
-  brand       Brand?  @relation(fields: [brandId], references: [id])
-
-  saleItems     SaleItem[]
-  purchaseItems PurchaseItem[]
-  saleReturnItems SaleReturnItem[]
+  id                  String               @id @default(cuid())
+  name                String
+  sku                 String?
+  description         String?
+  unit                String               @default("pcs")
+  costPrice           Float                @default(0) @map("cost_price")
+  sellPrice           Float                @default(0) @map("sell_price")
+  stockQty            Int                  @default(0) @map("stock_qty")
+  alertQty            Int                  @default(5) @map("alert_qty")
+  imageUrl            String?              @map("image_url")
+  barcode             String?
+  weight              Float?
+  color               String?
+  size                String?
+  grade               String?
+  condition           String?
+  expiryDate          DateTime?            @map("expiry_date")
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  companyId           String               @map("company_id")
+  categoryId          String?              @map("category_id")
+  brandId             String?              @map("brand_id")
+  brand               Brand?               @relation(fields: [brandId], references: [id])
+  category            Category?            @relation(fields: [categoryId], references: [id])
+  company             Company              @relation(fields: [companyId], references: [id])
+  purchaseItems       PurchaseItem[]
   purchaseReturnItems PurchaseReturnItem[]
+  saleItems           SaleItem[]
+  saleReturnItems     SaleReturnItem[]
 
   @@map("products")
 }
 
-// =========================================================
-// 3. SALES & CRM
-// =========================================================
-
 model Customer {
-  id              String   @id @default(cuid())
-  name            String
-  customerType    String?  @default("retail") @map("customer_type")
-  phone           String?
-  email           String?
-  address         String?
-  city            String?
-  cnic            String?
-  gstNo           String?  @map("gst_no")
-  creditLimit     Float    @default(0) @map("credit_limit")
-  openingBalance  Float    @default(0) @map("opening_balance")
-  balance         Float    @default(0) // Positive = Receivable
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
-  sales       Sale[]
-  saleReturns SaleReturn[]
+  id             String       @id @default(cuid())
+  name           String
+  customerType   String?      @default("retail") @map("customer_type")
+  phone          String?
+  email          String?
+  address        String?
+  city           String?
+  cnic           String?
+  gstNo          String?      @map("gst_no")
+  creditLimit    Float        @default(0) @map("credit_limit")
+  openingBalance Float        @default(0) @map("opening_balance")
+  balance        Float        @default(0)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  companyId      String       @map("company_id")
+  company        Company      @relation(fields: [companyId], references: [id])
+  saleReturns    SaleReturn[]
+  sales          Sale[]
 
   @@map("customers")
 }
 
 model Sale {
-  id            String   @id @default(cuid())
-  invoiceNo     String   @map("invoice_no")
-  date          DateTime @default(now())
-  
-  subTotal      Float    @map("sub_total")
-  discount      Float    @default(0)
-  tax           Float    @default(0)
-  shippingCost  Float    @default(0) @map("shipping_cost")
-  grandTotal    Float    @map("grand_total")
-  
-  paymentType   String   @default("CASH") @map("payment_type") // CASH, CARD, CREDIT
-  paymentStatus String   @default("PAID") @map("payment_status") // PAID, PARTIAL, DUE
-  amountPaid    Float    @default(0) @map("amount_paid")
-  change        Float    @default(0)
+  id            String       @id @default(cuid())
+  invoiceNo     String       @map("invoice_no")
+  date          DateTime     @default(now())
+  subTotal      Float        @map("sub_total")
+  discount      Float        @default(0)
+  tax           Float        @default(0)
+  shippingCost  Float        @default(0) @map("shipping_cost")
+  grandTotal    Float        @map("grand_total")
+  paymentType   String       @default("CASH") @map("payment_type")
+  paymentStatus String       @default("PAID") @map("payment_status")
+  amountPaid    Float        @default(0) @map("amount_paid")
+  change        Float        @default(0)
   notes         String?
-
-  status        String   @default("COMPLETED") // COMPLETED, RETURNED
-
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
-  customerId  String? @map("customer_id")
-  customer    Customer? @relation(fields: [customerId], references: [id])
-
-  userId      String? @map("user_id") // Salesman
-  user        User?   @relation(fields: [userId], references: [id])
-
-  items       SaleItem[]
-  returns     SaleReturn[]
+  status        String       @default("COMPLETED")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  companyId     String       @map("company_id")
+  customerId    String?      @map("customer_id")
+  userId        String?      @map("user_id")
+  items         SaleItem[]
+  returns       SaleReturn[]
+  company       Company      @relation(fields: [companyId], references: [id])
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  user          User?        @relation(fields: [userId], references: [id])
 
   @@map("sales")
 }
 
 model SaleItem {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   quantity  Int
   price     Float
   total     Float
-  
-  saleId    String   @map("sale_id")
-  sale      Sale     @relation(fields: [saleId], references: [id])
-
-  productId String   @map("product_id")
-  product   Product  @relation(fields: [productId], references: [id])
+  saleId    String  @map("sale_id")
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id])
 
   @@map("sale_items")
 }
 
-// =========================================================
-// 4. PURCHASES & VENDORS
-// =========================================================
-
 model Vendor {
-  id              String   @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String
-  companyName     String?  @map("company_name")
+  companyName     String?          @map("company_name")
   phone           String?
   email           String?
   address         String?
   city            String?
-  gstNo           String?  @map("gst_no")
-  openingBalance  Float    @default(0) @map("opening_balance")
-  balance         Float    @default(0) // Positive = Payable
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
-  purchases   Purchase[]
+  gstNo           String?          @map("gst_no")
+  openingBalance  Float            @default(0) @map("opening_balance")
+  balance         Float            @default(0)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  companyId       String           @map("company_id")
   purchaseReturns PurchaseReturn[]
+  purchases       Purchase[]
+  company         Company          @relation(fields: [companyId], references: [id])
 
   @@map("vendors")
 }
 
 model Purchase {
-  id            String   @id @default(cuid())
-  invoiceNo     String?  @map("invoice_no") // Vendor Invoice No
-  date          DateTime @default(now())
-  
-  totalAmount   Float    @map("total_amount")
-  discount      Float    @default(0)
-  tax           Float    @default(0)
-  shippingCost  Float    @default(0) @map("shipping_cost")
-  paidAmount    Float    @default(0) @map("paid_amount")
-  status        String   @default("RECEIVED") // ORDERED, RECEIVED
-
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  companyId     String  @map("company_id")
-  company       Company @relation(fields: [companyId], references: [id])
-
-  vendorId      String? @map("vendor_id")
-  vendor        Vendor? @relation(fields: [vendorId], references: [id])
-
-  items         PurchaseItem[]
-  returns       PurchaseReturn[]
+  id           String           @id @default(cuid())
+  invoiceNo    String?          @map("invoice_no")
+  date         DateTime         @default(now())
+  totalAmount  Float            @map("total_amount")
+  discount     Float            @default(0)
+  tax          Float            @default(0)
+  shippingCost Float            @default(0) @map("shipping_cost")
+  paidAmount   Float            @default(0) @map("paid_amount")
+  status       String           @default("RECEIVED")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  companyId    String           @map("company_id")
+  vendorId     String?          @map("vendor_id")
+  items        PurchaseItem[]
+  returns      PurchaseReturn[]
+  company      Company          @relation(fields: [companyId], references: [id])
+  vendor       Vendor?          @relation(fields: [vendorId], references: [id])
 
   @@map("purchases")
 }
 
 model PurchaseItem {
-  id          String   @id @default(cuid())
-  quantity    Int
-  unitCost    Float    @map("unit_cost")
-  total       Float
-  
-  purchaseId  String   @map("purchase_id")
-  purchase    Purchase @relation(fields: [purchaseId], references: [id])
-
-  productId   String   @map("product_id")
-  product     Product  @relation(fields: [productId], references: [id])
+  id         String   @id @default(cuid())
+  quantity   Int
+  unitCost   Float    @map("unit_cost")
+  total      Float
+  purchaseId String   @map("purchase_id")
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id])
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
 
   @@map("purchase_items")
 }
 
-// =========================================================
-// 5. ACCOUNTING & EXPENSES
-// =========================================================
-
 model Account {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
-  balance     Float    @default(0)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
+  id           String        @id @default(cuid())
+  name         String
+  type         String
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  companyId    String        @map("company_id")
+  company      Company       @relation(fields: [companyId], references: [id])
   transactions Transaction[]
 
   @@map("accounts")
@@ -361,10 +294,9 @@ model Transaction {
   description String?
   debit       Float    @default(0)
   credit      Float    @default(0)
-  
   accountId   String   @map("account_id")
   account     Account  @relation(fields: [accountId], references: [id])
-  
+
   @@map("transactions")
 }
 
@@ -374,60 +306,50 @@ model Expense {
   amount      Float
   date        DateTime @default(now())
   description String?
-  category    String?  // E.g., Utility, Rent, Tea
-  
+  category    String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
+  companyId   String   @map("company_id")
+  company     Company  @relation(fields: [companyId], references: [id])
 
   @@map("expenses")
 }
 
-// =========================================================
-// 6. HRM & PAYROLL
-// =========================================================
-
 model Employee {
-  id          String   @id @default(cuid())
-  firstName   String   @map("first_name")
-  lastName    String?  @map("last_name")
-  phone       String?
-  designation String?
-  salary      Float    @default(0) // Basic Monthly Salary
-  hourlyRate  Float    @default(0) @map("hourly_rate") // For Overtime calculation
-  joiningDate DateTime @default(now()) @map("joining_date")
-  isActive    Boolean  @default(true) @map("is_active")
-  
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-
-  attendances Attendance[]
+  id            String         @id @default(cuid())
+  firstName     String         @map("first_name")
+  lastName      String?        @map("last_name")
+  phone         String?
+  designation   String?
+  salary        Float          @default(0)
+  hourlyRate    Float          @default(0) @map("hourly_rate")
+  joiningDate   DateTime       @default(now()) @map("joining_date")
+  isActive      Boolean        @default(true) @map("is_active")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  companyId     String         @map("company_id")
+  attendances   Attendance[]
+  company       Company        @relation(fields: [companyId], references: [id])
   salaryRecords SalaryRecord[]
 
   @@map("employees")
 }
 
 model Attendance {
-  id          String   @id @default(cuid())
-  date        DateTime @default(now())
-  status      String   // PRESENT, ABSENT, LATE, LEAVE
-  checkIn     DateTime? @map("check_in")
-  checkOut    DateTime? @map("check_out")
-
-  employeeId  String   @map("employee_id")
-  employee    Employee @relation(fields: [employeeId], references: [id])
+  id         String    @id @default(cuid())
+  date       DateTime  @default(now())
+  status     String
+  checkIn    DateTime? @map("check_in")
+  checkOut   DateTime? @map("check_out")
+  employeeId String    @map("employee_id")
+  employee   Employee  @relation(fields: [employeeId], references: [id])
 
   @@map("attendances")
 }
 
 model SalaryRecord {
   id            String   @id @default(cuid())
-  month         String   // E.g., "2026-01"
+  month         String
   baseSalary    Float    @map("base_salary")
   bonus         Float    @default(0)
   overtimeHours Float    @default(0) @map("overtime_hours")
@@ -435,56 +357,42 @@ model SalaryRecord {
   deductions    Float    @default(0)
   netSalary     Float    @map("net_salary")
   paymentDate   DateTime @default(now()) @map("payment_date")
-  status        String   @default("PAID") // PAID, PENDING
+  status        String   @default("PAID")
   notes         String?
-
   employeeId    String   @map("employee_id")
-  employee      Employee @relation(fields: [employeeId], references: [id])
-
   companyId     String   @map("company_id")
-  company       Company  @relation(fields: [companyId], references: [id])
-
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  company       Company  @relation(fields: [companyId], references: [id])
+  employee      Employee @relation(fields: [employeeId], references: [id])
 
   @@map("salary_records")
 }
 
-// =========================================================
-// 7. REGISTRATION & APPROVALS
-// =========================================================
-
 model CompanyRequest {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id") // One request per user
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  companyName     String   @map("company_name")
-  companyEmail    String?  @map("company_email")
-  companyPhone    String?  @map("company_phone")
-  companyAddress  String?  @map("company_address")
-  officePhone     String?  @map("office_phone")
-  privatePhone    String?  @map("private_phone")
-  website         String?
-  secondaryAddress String? @map("secondary_address")
-  city            String?
-  state           String?
-  zipCode         String?  @map("zip_code")
-  country         String?  @default("Pakistan")
-  referralCode    String?  @map("referral_code")
-  
-  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  adminNotes      String?  @map("admin_notes")
-
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  userId           String   @unique @map("user_id")
+  companyName      String   @map("company_name")
+  companyEmail     String?  @map("company_email")
+  companyPhone     String?  @map("company_phone")
+  companyAddress   String?  @map("company_address")
+  officePhone      String?  @map("office_phone")
+  privatePhone     String?  @map("private_phone")
+  website          String?
+  secondaryAddress String?  @map("secondary_address")
+  city             String?
+  state            String?
+  zipCode          String?  @map("zip_code")
+  country          String?  @default("Pakistan")
+  referralCode     String?  @map("referral_code")
+  status           String   @default("PENDING")
+  adminNotes       String?  @map("admin_notes")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("company_requests")
 }
-
-// =========================================================
-// 8. SUPPORT & HELPLINE
-// =========================================================
 
 model SupportRequest {
   id          String   @id @default(cuid())
@@ -494,97 +402,77 @@ model SupportRequest {
   email       String
   whatsapp    String
   description String
-  status      String   @default("PENDING") // PENDING, RESOLVED, CLOSED
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("support_requests")
 }
 
-// =========================================================
-// 8. RETURNS MANAGEMENT
-// =========================================================
-
 model SaleReturn {
-  id            String   @id @default(cuid())
-  invoiceNo     String   @map("invoice_no")
-  date          DateTime @default(now())
-  
-  saleId        String?  @map("sale_id")
-  sale          Sale?    @relation(fields: [saleId], references: [id])
-  
-  customerId    String   @map("customer_id")
-  customer      Customer @relation(fields: [customerId], references: [id])
-  
-  subTotal      Float    @map("sub_total")
-  tax           Float    @default(0)
-  totalAmount   Float    @map("total_amount")
-  
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  companyId     String   @map("company_id")
-  company       Company  @relation(fields: [companyId], references: [id])
-
-  items         SaleReturnItem[]
+  id          String           @id @default(cuid())
+  invoiceNo   String           @map("invoice_no")
+  date        DateTime         @default(now())
+  saleId      String?          @map("sale_id")
+  customerId  String           @map("customer_id")
+  subTotal    Float            @map("sub_total")
+  tax         Float            @default(0)
+  totalAmount Float            @map("total_amount")
+  notes       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  companyId   String           @map("company_id")
+  items       SaleReturnItem[]
+  company     Company          @relation(fields: [companyId], references: [id])
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  sale        Sale?            @relation(fields: [saleId], references: [id])
 
   @@map("sale_returns")
 }
 
 model SaleReturnItem {
-  id            String   @id @default(cuid())
-  quantity      Int
-  price         Float
-  total         Float
-  
-  returnId      String   @map("return_id")
-  saleReturn    SaleReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
-
-  productId     String   @map("product_id")
-  product       Product  @relation(fields: [productId], references: [id])
+  id         String     @id @default(cuid())
+  quantity   Int
+  price      Float
+  total      Float
+  returnId   String     @map("return_id")
+  productId  String     @map("product_id")
+  product    Product    @relation(fields: [productId], references: [id])
+  saleReturn SaleReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
 
   @@map("sale_return_items")
 }
 
 model PurchaseReturn {
-  id            String   @id @default(cuid())
-  invoiceNo     String?  @map("invoice_no")
-  date          DateTime @default(now())
-  
-  purchaseId    String?  @map("purchase_id")
-  purchase      Purchase? @relation(fields: [purchaseId], references: [id])
-  
-  vendorId      String   @map("vendor_id")
-  vendor        Vendor   @relation(fields: [vendorId], references: [id])
-  
-  subTotal      Float    @map("sub_total")
-  tax           Float    @default(0)
-  totalAmount   Float    @map("total_amount")
-  
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  companyId     String   @map("company_id")
-  company       Company  @relation(fields: [companyId], references: [id])
-
-  items         PurchaseReturnItem[]
+  id          String               @id @default(cuid())
+  invoiceNo   String?              @map("invoice_no")
+  date        DateTime             @default(now())
+  purchaseId  String?              @map("purchase_id")
+  vendorId    String               @map("vendor_id")
+  subTotal    Float                @map("sub_total")
+  tax         Float                @default(0)
+  totalAmount Float                @map("total_amount")
+  notes       String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  companyId   String               @map("company_id")
+  items       PurchaseReturnItem[]
+  company     Company              @relation(fields: [companyId], references: [id])
+  purchase    Purchase?            @relation(fields: [purchaseId], references: [id])
+  vendor      Vendor               @relation(fields: [vendorId], references: [id])
 
   @@map("purchase_returns")
 }
 
 model PurchaseReturnItem {
-  id            String   @id @default(cuid())
-  quantity      Int
-  unitCost      Float    @map("unit_cost")
-  total         Float
-  
-  returnId      String   @map("return_id")
+  id             String         @id @default(cuid())
+  quantity       Int
+  unitCost       Float          @map("unit_cost")
+  total          Float
+  returnId       String         @map("return_id")
+  productId      String         @map("product_id")
+  product        Product        @relation(fields: [productId], references: [id])
   purchaseReturn PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
-
-  productId     String   @map("product_id")
-  product       Product  @relation(fields: [productId], references: [id])
 
   @@map("purchase_return_items")
 }
@@ -592,8 +480,8 @@ model PurchaseReturnItem {
 model AdminMessage {
   id        String   @id @default(cuid())
   content   String
-  type      String   @default("general") // general, alert, update
+  type      String   @default("general")
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   @@map("admin_messages")
 }

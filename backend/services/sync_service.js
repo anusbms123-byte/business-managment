@@ -114,8 +114,10 @@ class SyncService {
                     // Throttle pulls to prevent overloading
                     await new Promise(resolve => setTimeout(resolve, 100));
 
-                    if (Array.isArray(records) && records.length > 0) {
+                    if (Array.isArray(records)) {
                         console.log(`Working (${records.length} records)...`);
+                        const cloudIds = records.map(r => r.id);
+
                         // Batch processing: 100 records per transaction to avoid long locks
                         const BATCH_SIZE = 100;
                         for (let i = 0; i < records.length; i += BATCH_SIZE) {
@@ -130,12 +132,16 @@ class SyncService {
                             } catch (batchErr) {
                                 await db.asyncRun("ROLLBACK").catch(() => { });
                                 console.error(`[SYNC BATCH ERROR] ${entity.table} (at record ${i}):`, batchErr.message);
-                                throw batchErr; // Rethrow to skip this table or handle at outer level
+                                throw batchErr;
                             }
 
                             // Yield event loop between batches to keep system responsive
                             await new Promise(r => setTimeout(r, 20));
                         }
+
+                        // NEW: Clean up local records that were deleted on Cloud
+                        await this.cleanupLocalMissing(entity.table, cloudIds, targetCompanyId);
+
                     } else if (records && typeof records === 'object' && !Array.isArray(records)) {
                         console.log(`Done (1 record)`);
                         await this.upsertLocalRecord(entity.table, records, targetCompanyId);
@@ -213,7 +219,18 @@ class SyncService {
         if (delRow) return;
 
         // 2. Resolve company ID
-        const companyId = cloudData.companyId || cloudData.company_id || passedCompanyId;
+        // 2. Resolve company ID (Fixed: Prevent system roles/super-admins from inheriting session companyId)
+        let companyId = cloudData.companyId || cloudData.company_id;
+
+        const isSystemRole = table === 'roles' && (cloudData.isSystem || cloudData.is_system);
+        const roleName = (table === 'users') ? (cloudData.role?.name || cloudData.role || '').toString() : '';
+        const isSuperAdminUser = table === 'users' && roleName.toLowerCase().replace(/[\s_]/g, '') === 'superadmin';
+
+        if (isSystemRole || isSuperAdminUser) {
+            companyId = null;
+        } else if (!companyId || companyId === 'null' || companyId === 'undefined') {
+            companyId = passedCompanyId;
+        }
 
         // 3. Lookup existing record
         let existingRow = await db.asyncGet(`SELECT id, global_id, updated_at, sync_status FROM ${table} WHERE global_id = ?`, [cloudData.id]);
@@ -245,7 +262,7 @@ class SyncService {
             }
             else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE LOWER(name) = LOWER(?)`; val = cloudData.name; }
 
-            if (sql && val) {
+            if (sql && val && val !== "" && val !== "null" && val !== "undefined" && val !== null) {
                 const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId];
                 existingRow = await db.asyncGet(sql, params);
                 // Security: Don't merge if they have different Cloud IDs
@@ -371,10 +388,10 @@ class SyncService {
         } else if (table === 'employees') {
             if (existingRow) {
                 query = `UPDATE employees SET global_id=?, first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?, company_id=?, sync_status='synced', is_active=?, updated_at=? WHERE id=?`;
-                params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone, cloudData.designation, cloudData.salary, cloudData.hourlyRate || 0, cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone || '', cloudData.designation, cloudData.salary, (cloudData.hourlyRate || cloudData.hourly_rate || 0), cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
                 query = `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`;
-                params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone, cloudData.designation, cloudData.salary, cloudData.hourlyRate || 0, cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                params = [cloudData.id, cloudData.firstName, cloudData.lastName, cloudData.phone || '', cloudData.designation, cloudData.salary, (cloudData.hourlyRate || cloudData.hourly_rate || 0), cloudData.joiningDate, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'purchases') {
             const localVendorId = await this.resolveLocalId('vendors', cloudData.vendorId || cloudData.vendor_id);
@@ -502,6 +519,70 @@ class SyncService {
                     await db.asyncRun(`INSERT OR REPLACE INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', ?)`, [perm.id, cloudData.id, perm.module, v, c, e, d, perm.updatedAt || perm.updated_at]);
                 }
             }
+        }
+    }
+
+    /**
+     * Deletes local records that are no longer present on the cloud.
+     * Prevents data pollution when records are deleted by other users.
+     */
+    async cleanupLocalMissing(table, cloudIds, companyGlobalId) {
+        if (!cloudIds || !table) return;
+
+        // Skip child tables as they are usually handled by parent deletion or fresh pull
+        const isChildTable = ['sale_items', 'purchase_items', 'sale_return_items', 'purchase_return_items', 'permissions'].includes(table);
+        if (isChildTable) return;
+
+        try {
+            // 1. Get all LOCAL synced records for this company
+            let sql = `SELECT id, global_id FROM ${table} WHERE (sync_status = 'synced' OR sync_status = 'synced_offline')`;
+            let params = [];
+
+            // Filter by company if applicable
+            const hasCompanyId = [
+                'roles', 'users', 'products', 'categories', 'brands',
+                'vendors', 'customers', 'employees', 'expenses', 'sales',
+                'purchases', 'accounts', 'sale_returns', 'purchase_returns',
+                'attendances', 'salary_records', 'audit_logs'
+            ].includes(table);
+
+            if (hasCompanyId && companyGlobalId) {
+                // Roles and Users might belong to a company OR be system-wide (NULL)
+                if (table === 'roles' || table === 'users') {
+                    sql += ` AND (company_id = ? OR company_id IS NULL OR company_id = 'null')`;
+                } else {
+                    sql += ` AND company_id = ?`;
+                }
+                params.push(String(companyGlobalId));
+            }
+
+            const localRecords = await db.asyncAll(sql, params);
+            if (!localRecords || localRecords.length === 0) return;
+
+            // 2. Diff: Find records that exist locally but NOT in the cloud response
+            const cloudIdSet = new Set(cloudIds.map(id => String(id)));
+            const toDelete = localRecords.filter(loc => loc.global_id && !cloudIdSet.has(String(loc.global_id)));
+
+            if (toDelete.length > 0) {
+                console.log(`[SYNC-CLEANUP] Found ${toDelete.length} records in ${table} no longer on cloud. Deleting...`);
+
+                for (const row of toDelete) {
+                    // Critical: Protect System Roles/SuperAdmins from accidental deletion if they weren't in the pull
+                    if (table === 'roles' && String(row.global_id).startsWith('system-')) continue;
+                    if (table === 'users' && String(row.global_id).startsWith('admin-')) continue;
+
+                    await db.asyncRun(`DELETE FROM ${table} WHERE id = ?`, [row.id]);
+
+                    // Manual cleanup of nested items (since SQLite might not have CASCADE enabled)
+                    if (table === 'sales') await db.asyncRun(`DELETE FROM sale_items WHERE sale_id = ? OR sale_id = ?`, [row.id, row.global_id]);
+                    if (table === 'purchases') await db.asyncRun(`DELETE FROM purchase_items WHERE purchase_id = ? OR purchase_id = ?`, [row.id, row.global_id]);
+                    if (table === 'sale_returns') await db.asyncRun(`DELETE FROM sale_return_items WHERE return_id = ? OR return_id = ?`, [row.id, row.global_id]);
+                    if (table === 'purchase_returns') await db.asyncRun(`DELETE FROM purchase_return_items WHERE return_id = ? OR return_id = ?`, [row.id, row.global_id]);
+                    if (table === 'roles') await db.asyncRun(`DELETE FROM permissions WHERE role_id = ? OR role_id = ?`, [row.id, row.global_id]);
+                }
+            }
+        } catch (err) {
+            console.error(`[SYNC-CLEANUP ERROR] ${table}:`, err.message);
         }
     }
 

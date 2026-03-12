@@ -122,38 +122,37 @@ const Reports = ({ currentUser }) => {
         }
     };
 
+    const applyPeriod = (p) => {
+        const now = new Date();
+        let start, end;
+        end = now.toLocaleDateString('en-CA');
+
+        if (p === 'Daily') {
+            start = end;
+        } else if (p === 'Weekly') {
+            const d = new Date();
+            d.setDate(d.getDate() - 7);
+            start = d.toLocaleDateString('en-CA');
+        } else if (p === 'Monthly') {
+            const d = new Date();
+            d.setMonth(d.getMonth() - 1);
+            start = d.toLocaleDateString('en-CA');
+        } else {
+            return;
+        }
+
+        setOverviewFilter(p);
+        setDateRange({ start, end });
+    };
+
     const loadDashboardReport = async () => {
         if (!currentUser?.company_id) return;
         setLoading(true);
         try {
-            let start, end;
-            const now = new Date();
-            if (overviewFilter === 'Daily') {
-                start = new Date();
-                start.setHours(0, 0, 0, 0);
-                start = start.toISOString();
-                end = new Date().toISOString();
-            } else if (overviewFilter === 'Weekly') {
-                start = new Date(now.setDate(now.getDate() - 7)).toISOString();
-                end = new Date().toISOString();
-            } else if (overviewFilter === 'Monthly') {
-                start = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
-                end = new Date().toISOString();
-            } else if (overviewFilter === 'Yearly') {
-                start = new Date(now.setFullYear(now.getFullYear() - 1)).toISOString();
-                end = new Date().toISOString();
-            } else {
-                // All Time
-                start = new Date(0).toISOString(); // 1970-01-01
-                end = new Date().toISOString();
-            }
-
             const data = await window.electronAPI.getReportSummary({
                 companyId: currentUser.company_id,
-                startDate: start,
-                endDate: end,
-                customerId: activeModule === 'sales' ? selectedCustomer : undefined,
-                paymentStatus: activeModule === 'sales' ? selectedPaymentStatus : undefined
+                startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
+                endDate: new Date(dateRange.end + 'T23:59:59').toISOString()
             });
             setSummary(data);
         } catch (err) {
@@ -219,7 +218,7 @@ const Reports = ({ currentUser }) => {
 
     const handleBack = () => {
         setActiveModule(null);
-        setOverviewFilter('All');
+        applyPeriod('Monthly');
         setSelectedCustomer('all');
         setSelectedVendor('all');
         setSelectedPaymentStatus('all');
@@ -239,19 +238,50 @@ const Reports = ({ currentUser }) => {
 
     const renderDashboard = () => (
         <div className="animate-in fade-in duration-500">
-            <header className="flex flex-col md:flex-row md:items-center justify-end gap-6 pb-8">
-                <div className="flex bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
-                    {['Daily', 'Weekly', 'Monthly', 'Yearly', 'All'].map((p) => (
+            <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pb-8">
+            <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="flex bg-slate-100 dark:bg-slate-800 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    {['Daily', 'Weekly', 'Monthly'].map((p) => (
                         <button
                             key={p}
-                            onClick={() => setOverviewFilter(p)}
-                            className={`px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-md border border-slate-100 dark:border-blue-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            onClick={() => applyPeriod(p)}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-md border border-slate-100 dark:border-blue-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
                     ))}
                 </div>
-            </header>
+
+                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-2 px-3 border-r border-slate-100 dark:border-slate-700">
+                        <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
+                        <input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
+                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 px-3">
+                        <input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setOverviewFilter('Custom'); }}
+                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
+                        />
+                    </div>
+                    <button
+                        onClick={loadDashboardReport}
+                        className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
+            <div className="hidden xl:block">
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] italic">Report Summary Overview</p>
+            </div>
+        </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                 <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500 dark:border-l-blue-400" onClick={() => setActiveModule('sales')} />
@@ -697,13 +727,26 @@ const Reports = ({ currentUser }) => {
                             </>
                         )}
 
+                    <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex bg-slate-100 dark:bg-slate-800 rounded-2xl p-1.5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                            {['Daily', 'Weekly', 'Monthly'].map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => applyPeriod(p)}
+                                    className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-md' : 'text-slate-400 dark:text-slate-500'}`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
                             <div className="flex items-center gap-2 px-3 border-r border-slate-100 dark:border-slate-700">
                                 <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                                 <input
                                     type="date"
                                     value={dateRange.start}
-                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                    onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
                                     className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
                                 />
                             </div>
@@ -711,17 +754,18 @@ const Reports = ({ currentUser }) => {
                                 <input
                                     type="date"
                                     value={dateRange.end}
-                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                    onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setOverviewFilter('Custom'); }}
                                     className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
                                 />
                             </div>
                             <button
                                 onClick={loadDetailedReport}
-                                className="bg-slate-900 dark:bg-blue-600 text-white p-2 rounded-xl hover:bg-black dark:hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 dark:shadow-none"
+                                className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none"
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
 

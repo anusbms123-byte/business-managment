@@ -38,7 +38,7 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
 
 const tabs = [
     { id: 'products', label: 'Products', icon: Package, color: 'orange' },
-    { id: 'stock', label: 'Stock', icon: BarChart2, color: 'emerald' },
+    { id: 'stock', label: 'Stock Tracking', icon: BarChart2, color: 'emerald' },
     { id: 'barcode', label: 'Barcodes', icon: Printer, color: 'blue' },
 ];
 
@@ -151,7 +151,7 @@ const StockTracking = ({ currentUser }) => {
         <div className="animate-in fade-in duration-500">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <StatCard
-                    title="Total Items"
+                    title="Total Item"
                     value={stats.total}
                     icon={Package}
                     color="gray"
@@ -167,12 +167,20 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('in_stock')}
                 />
                 <StatCard
-                    title="Alerts"
+                    title="Stock Alert"
                     value={stats.alerts}
                     icon={AlertTriangle}
                     color="red"
                     isActive={filterType === 'alerts'}
                     onClick={() => setFilterType('alerts')}
+                />
+                <StatCard
+                    title="Expiry Alert"
+                    value={stats.expiringSoon}
+                    icon={Clock}
+                    color="orange"
+                    isActive={filterType === 'expiring_soon'}
+                    onClick={() => setFilterType('expiring_soon')}
                 />
                 <StatCard
                     title="Out of Stock"
@@ -181,14 +189,6 @@ const StockTracking = ({ currentUser }) => {
                     color="gray"
                     isActive={filterType === 'out_of_stock'}
                     onClick={() => setFilterType('out_of_stock')}
-                />
-                <StatCard
-                    title="Expiring Soon"
-                    value={stats.expiringSoon}
-                    icon={Clock}
-                    color="orange"
-                    isActive={filterType === 'expiring_soon'}
-                    onClick={() => setFilterType('expiring_soon')}
                 />
                 <StatCard
                     title="Expired"
@@ -205,7 +205,11 @@ const StockTracking = ({ currentUser }) => {
                 <table className="w-full text-left">
                     <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                         <tr>
+                            <th className="px-6 py-4">ID</th>
                             <th className="px-6 py-4">Name</th>
+                            <th className="px-6 py-4">Brand</th>
+                            <th className="px-6 py-4 text-center">Color</th>
+                            <th className="px-6 py-4 text-center">Size</th>
                             <th className="px-6 py-4 text-center">Stock</th>
                             <th className="px-6 py-4 text-center">Alert</th>
                             <th className="px-6 py-4 text-center">Expiry</th>
@@ -225,7 +229,11 @@ const StockTracking = ({ currentUser }) => {
 
                             return (
                                 <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
-                                    <td className="px-6 py-4 font-bold text-sm text-black dark:text-slate-100">{p.name}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200">{p.sku || '-'}</td>
+                                    <td className="px-6 py-4 font-bold text-sm text-black dark:text-slate-100 uppercase truncate max-w-[200px]">{p.name}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase">{p.brand?.name || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs font-bold text-black dark:text-slate-200 uppercase">{p.color || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs font-bold text-black dark:text-slate-200 uppercase">{p.size || '-'}</td>
                                     <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
                                     <td className="px-6 py-4 text-center font-bold text-black dark:text-slate-100 text-xs">{p.alertQty || 5}</td>
                                     <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>

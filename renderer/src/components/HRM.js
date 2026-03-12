@@ -88,6 +88,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
         e.preventDefault();
         setSaving(true);
         try {
+            console.log("[HRM] Saving Employee Data:", formData);
             const data = { ...formData, companyId: currentUser.company_id };
             let result;
             if (formData.id) {
@@ -172,7 +173,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                         {loading ? (
                             <tr>
-                                <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">
+                                <td colSpan="8" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">
                                     <div className="flex flex-col items-center gap-3">
                                         <div className="w-8 h-8 border-3 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
                                         <span>Loading...</span>
@@ -181,7 +182,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                             </tr>
                         ) : (filtered?.length ?? 0) === 0 ? (
                             <tr>
-                                <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees found</td>
+                                <td colSpan="8" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees found</td>
                             </tr>
                         ) : filtered?.map((emp) => (
                             <tr
@@ -270,7 +271,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Phone Number</label>
-                                        <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="03XXXXXXXXX" />
+                                        <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0321123456" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -355,8 +356,7 @@ const Attendance = ({ employees, currentUser }) => {
                     employeeId: emp.id,
                     name: `${emp.firstName} ${emp.lastName || ''}`,
                     status: att ? att.status : 'Absent',
-                    checkIn: att?.checkIn ? new Date(att.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
-                    checkOut: att?.checkOut ? new Date(att.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+                    checkIn: att?.checkIn ? new Date(att.checkIn).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
                 };
             });
             setAttendanceRows(rows);
@@ -443,7 +443,6 @@ const Attendance = ({ employees, currentUser }) => {
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">ID</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Employee</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Check In</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Check Out</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Status</th>
                             <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                         </tr>
@@ -455,7 +454,7 @@ const Attendance = ({ employees, currentUser }) => {
                             </tr>
                         ) : (attendanceRows?.length ?? 0) === 0 ? (
                             <tr>
-                                <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees available</td>
+                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No employees available</td>
                             </tr>
                         ) : attendanceRows?.filter(att =>
                             att.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -467,7 +466,6 @@ const Attendance = ({ employees, currentUser }) => {
                                 </td>
                                 <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-300 text-xs uppercase tracking-tight">{att.name}</td>
                                 <td className="px-6 py-4 font-bold text-slate-600 dark:text-slate-400 text-xs">{att.checkIn}</td>
-                                <td className="px-6 py-4 font-bold text-slate-400 dark:text-slate-500 text-xs">{att.checkOut}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2.5 py-1 rounded text-[10px] font-bold border uppercase tracking-tight ${att.status === 'Present' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' :
                                         att.status === 'Late' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800' :
@@ -514,8 +512,9 @@ const Payroll = ({ employees, currentUser }) => {
     const [viewingSlip, setViewingSlip] = useState(null);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
-    const { showError } = useDialog();
+    const { showError, showConfirm, showAlert } = useDialog();
 
     useEffect(() => {
         loadSalaries();
@@ -554,10 +553,20 @@ const Payroll = ({ employees, currentUser }) => {
                 notes: paymentData.notes
             };
 
-            const result = await window.electronAPI.createSalary(payload);
+            let result;
+            if (isEditing && paymentData.id) {
+                payload.id = paymentData.id;
+                payload.global_id = paymentData.global_id;
+                result = await window.electronAPI.updateSalary(payload);
+            } else {
+                result = await window.electronAPI.createSalary(payload);
+            }
+
             if (result.success !== false) {
                 setShowModal(false);
+                setIsEditing(false);
                 loadSalaries();
+                showAlert(isEditing ? "Salary record updated!" : "Salary payment processed!");
             } else {
                 showError(result.message || "Error saving salary");
             }
@@ -565,6 +574,22 @@ const Payroll = ({ employees, currentUser }) => {
             showError("Error: " + err.message);
         }
         setSaving(false);
+    };
+
+    const handleDeleteSalary = async (id) => {
+        showConfirm("Are you sure you want to delete this salary record?", async () => {
+            try {
+                const result = await window.electronAPI.deleteSalary(id);
+                if (result.success !== false) {
+                    loadSalaries();
+                    showAlert("Salary record deleted.");
+                } else {
+                    showError(result.message || "Error deleting salary record");
+                }
+            } catch (err) {
+                showError("Error deleting: " + err.message);
+            }
+        });
     };
 
     return (
@@ -630,21 +655,57 @@ const Payroll = ({ employees, currentUser }) => {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        {record ? (
-                                            <button
-                                                onClick={() => setViewingSlip(record)}
-                                                className="text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
-                                            >
-                                                View Slip
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => { setSelectedEmp(emp); setPaymentData({ bonus: 0, otHours: 0, deductions: 0, notes: '' }); setShowModal(true); }}
-                                                className="text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4"
-                                            >
-                                                Pay Now
-                                            </button>
-                                        )}
+                                        <div className="flex items-center justify-end space-x-2">
+                                            {record ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => setViewingSlip(record)}
+                                                        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                        title="View Slip"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedEmp(emp);
+                                                            setPaymentData({
+                                                                id: record.id,
+                                                                global_id: record.global_id,
+                                                                bonus: record.bonus,
+                                                                otHours: record.overtimeHours,
+                                                                deductions: record.deductions,
+                                                                notes: record.notes || ''
+                                                            });
+                                                            setIsEditing(true);
+                                                            setShowModal(true);
+                                                        }}
+                                                        className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                                        title="Edit Payment"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteSalary(record.id)}
+                                                        className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                                                        title="Delete Record"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedEmp(emp);
+                                                        setPaymentData({ bonus: 0, otHours: 0, deductions: 0, notes: '' });
+                                                        setIsEditing(false);
+                                                        setShowModal(true);
+                                                    }}
+                                                    className="px-3 py-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
+                                                >
+                                                    Pay Now
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -662,9 +723,9 @@ const Payroll = ({ employees, currentUser }) => {
                                 <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                     <DollarSign size={22} />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tight">Add Payroll</h3>
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tight">{isEditing ? 'Edit Payroll' : 'Add Payroll'}</h3>
                             </div>
-                            <button onClick={() => setShowModal(false)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"><X size={18} /></button>
+                            <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"><X size={18} /></button>
                         </div>
                         <form onSubmit={handlePaySalary} className="p-8 space-y-6">
                             <div className="grid grid-cols-2 gap-4">
@@ -771,6 +832,10 @@ const Payroll = ({ employees, currentUser }) => {
                                             <p className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">{new Date(viewingSlip.month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                                         </div>
                                         <div>
+                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Disbursement Date</p>
+                                            <p className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase">{viewingSlip.paymentDate ? new Date(viewingSlip.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                                        </div>
+                                        <div>
                                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Transaction ID</p>
                                             <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">SLP-{viewingSlip.id.toString().slice(-8).toUpperCase()}</p>
                                         </div>
@@ -807,7 +872,7 @@ const Payroll = ({ employees, currentUser }) => {
                                                 <td className="px-6 py-4 text-right text-xs font-bold text-slate-800 dark:text-slate-200">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
                                             </tr>
                                             <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                                                <td className="px-6 py-6 text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Net Dispatched Salary</td>
+                                                <td className="px-6 py-6 text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Net Salary</td>
                                                 <td className="px-6 py-6 text-right text-lg font-black text-slate-900 dark:text-slate-100">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
                                             </tr>
                                         </tbody>
@@ -833,7 +898,7 @@ const Payroll = ({ employees, currentUser }) => {
                                     className="px-8 py-3 bg-[#0B1033] dark:bg-blue-600 text-white rounded-xl font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 dark:shadow-none flex items-center gap-2 group active:scale-95"
                                 >
                                     <Calendar size={16} />
-                                    Print Disbursement Slip
+                                    Print slip
                                 </button>
                             </div>
                         </div>

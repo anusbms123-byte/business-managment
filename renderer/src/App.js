@@ -35,7 +35,15 @@ function App() {
         const savedPerms = sessionStorage.getItem('permissions');
 
         if (savedUser) {
-            setUser(JSON.parse(savedUser));
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            // Inform backend about existing session to resume background sync
+            if (window.electronAPI && window.electronAPI.setActiveSession) {
+                window.electronAPI.setActiveSession({
+                    companyId: parsedUser.company_id || parsedUser.companyId,
+                    role: parsedUser.role
+                });
+            }
         }
         if (savedPerms) {
             try {
@@ -84,6 +92,14 @@ function App() {
             companyId: userData.company_id || userData.companyId,
             permissions: perms.length
         });
+
+        // Inform backend about active session
+        if (window.electronAPI && window.electronAPI.setActiveSession) {
+            window.electronAPI.setActiveSession({
+                companyId: userData.company_id || userData.companyId,
+                role: userData.role
+            });
+        }
     };
 
     const handleLogout = () => {

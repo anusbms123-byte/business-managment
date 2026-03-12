@@ -160,7 +160,7 @@ const Expenses = ({ currentUser }) => {
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Category</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Title</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Amount</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Done</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">

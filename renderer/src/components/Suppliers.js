@@ -155,12 +155,12 @@ const Suppliers = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/80 dark:bg-slate-800/80 transition-colors">
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Name</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Contact Person</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Supplier Name</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Person Name</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Phone</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">City</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Address</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Balance</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Done</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -189,29 +189,21 @@ const Suppliers = ({ currentUser }) => {
                                     <td className="px-6 py-4">
                                         <div className="text-left">
                                             <p className="font-bold text-black dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-sm uppercase tracking-tight">{supplier.name}</p>
-                                            <p className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mt-0.5">{supplier.companyName || 'Individual'}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-xs font-bold text-black dark:text-slate-300 text-left">{supplier.contactPerson || 'N/A'}</p>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="space-y-1 text-left">
-                                            <div className="flex items-center gap-2 text-xs text-black dark:text-slate-300 font-bold">
-                                                <Phone size={12} className="text-black dark:text-slate-400" />
-                                                {supplier.phone || 'N/A'}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-tight">
-                                                GST: {supplier.gstNo || 'N/A'}
-                                            </div>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 text-left">
+                                        <div className="flex items-center gap-2">
+                                            <Phone size={12} className="text-black dark:text-slate-400" />
+                                            {supplier.phone || 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex flex-col max-w-[180px] text-left">
-                                            <div className="flex items-center gap-1.5 font-bold text-black dark:text-slate-300 text-xs">
-                                                <MapPin size={12} className="text-blue-500" /> {supplier.city || 'No City'}
-                                            </div>
-                                            <p className="text-[10px] text-black dark:text-slate-400 font-bold truncate mt-1">{supplier.address || 'No address'}</p>
+                                        <div className="flex items-center gap-1.5 font-bold text-black dark:text-slate-300 text-xs text-left">
+                                            <MapPin size={12} className="text-blue-500 shrink-0" />
+                                            <span className="truncate max-w-[250px]">{supplier.address || 'No address'}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -222,7 +214,6 @@ const Suppliers = ({ currentUser }) => {
                                                 }`}>
                                                 PKR {(Number(supplier.balance || 0)).toLocaleString()}
                                             </div>
-                                            <p className="text-[9px] text-black dark:text-slate-400 font-bold uppercase tracking-tight mt-1">Open: {supplier.openingBalance || 0}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -263,7 +254,7 @@ const Suppliers = ({ currentUser }) => {
                                     <Truck size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate transition-colors font-bold">{formData.id ? 'Edit Vendor' : 'Add Vendor'}</h3>
+                                    <h3 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight truncate transition-colors font-bold">{formData.id ? 'Edit Supplier' : 'Add Supplier'}</h3>
                                 </div>
                             </div>
                             <button
@@ -285,7 +276,7 @@ const Suppliers = ({ currentUser }) => {
                                             Primary Info
                                         </h4>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Name *</label>
+                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Supplier Name *</label>
                                             <div className="relative">
                                                 <Home className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                                                 <input
@@ -308,7 +299,7 @@ const Suppliers = ({ currentUser }) => {
                                                         value={formData.phone}
                                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                                         className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                        placeholder="03xx-xxxxxxx"
+                                                        placeholder="0312345678"
                                                     />
                                                 </div>
                                             </div>
@@ -335,7 +326,7 @@ const Suppliers = ({ currentUser }) => {
                                                     value={formData.email}
                                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="vendor@company.com"
+                                                    placeholder="supplier@company.com"
                                                 />
                                             </div>
                                         </div>

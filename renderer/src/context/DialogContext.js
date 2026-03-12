@@ -79,9 +79,9 @@ export const DialogProvider = ({ children }) => {
                         <div className="p-6">
                             <div className="flex items-center gap-4 mb-4">
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dialog.type === 'confirm' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
-                                        dialog.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' :
-                                            dialog.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
-                                                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                                    dialog.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' :
+                                        dialog.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' :
+                                            'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                                     }`}>
                                     {dialog.type === 'confirm' && <HelpCircle size={24} />}
                                     {dialog.type === 'error' && <X size={24} />}
@@ -115,8 +115,8 @@ export const DialogProvider = ({ children }) => {
                                 <button
                                     onClick={closeDialog}
                                     className={`w-full py-2.5 text-white rounded-lg text-sm font-bold transition-all active:scale-95 ${dialog.type === 'error' ? 'bg-rose-600 hover:bg-rose-700' :
-                                            dialog.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                                                'bg-blue-950 dark:bg-blue-600 hover:bg-slate-900 dark:hover:bg-blue-500'
+                                        dialog.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                                            'bg-blue-950 dark:bg-blue-600 hover:bg-slate-900 dark:hover:bg-blue-500'
                                         }`}
                                 >
                                     {dialog.confirmText}

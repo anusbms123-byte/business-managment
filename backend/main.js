@@ -107,29 +107,28 @@ async function recordDeletion(tableName, globalId) {
 let currentLoggedCompany = undefined;
 let currentLoggedRole = null;
 
-// Setup Background Sync Timer (Every 4 minutes)
-// - Pushes pending local changes to cloud
-// - Pulls fresh data from cloud (if user is logged in)
+// Background Sync Timers
+// 1. HIGH-FREQUENCY PUSH (Every 30 seconds)
+// This ensures local changes go to cloud as soon as connection is available
 setInterval(async () => {
-    console.log(`\n[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Starting cycle...`);
-
-    // Always push pending changes FIRST
-    // We MUST await this so it doesn't block pullAllData with its sync lock
+    if (syncService.isPushing) return;
+    console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pushing pending local changes...`);
     await syncService.syncPendingRecords();
+}, 30000);
 
-    // If a user is logged in (including Super Admin with null company), also pull fresh data
+// 2. LOW-FREQUENCY PULL (Every 5 minutes)
+// This keeps local data fresh from cloud
+setInterval(async () => {
+    if (syncService.isPulling) return;
     if (currentLoggedCompany !== undefined) {
-        console.log(`[AUTO-SYNC] Pulling fresh data for session: ${currentLoggedCompany === null ? 'Global (Super Admin)' : currentLoggedCompany}`);
+        console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pulling fresh data for: ${currentLoggedCompany === null ? 'Global' : currentLoggedCompany}`);
         try {
             await syncService.pullAllData(currentLoggedCompany);
-            console.log("[AUTO-SYNC] Cycle completed successfully.");
         } catch (err) {
-            console.error("[AUTO-SYNC] Data pull failed:", err.message);
+            console.error("[AUTO-SYNC] Pull failed:", err.message);
         }
-    } else {
-        console.log("[AUTO-SYNC] No active session, skipped data pull.");
     }
-}, 300000); // 300,000ms = 5 minutes
+}, 300000);
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -1034,20 +1033,6 @@ ipcMain.handle("delete-product", async (e, id) => {
         const row = await db.asyncGet("SELECT global_id FROM products WHERE id=? OR global_id=?", [id, id]);
         if (!row) return { success: false, message: "Product not found" };
         const gid = row.global_id;
-
-        const checkQuery = `
-            SELECT 
-                (SELECT COUNT(*) FROM sale_items WHERE (product_id = ? OR product_id = ?) AND sync_status != 'deleted') +
-                (SELECT COUNT(*) FROM purchase_items WHERE (product_id = ? OR product_id = ?) AND sync_status != 'deleted') as linkedCount
-        `;
-        const countRow = await db.asyncGet(checkQuery, [id, gid, id, gid]);
-
-        if (countRow && countRow.linkedCount > 0) {
-            return {
-                success: false,
-                message: "Ye product delete nahi hosakta kyunki iska Sales ya Purchase record maujood hai. Aap isay Deactivate kar saktay hain."
-            };
-        }
 
         await db.asyncRun(`UPDATE products SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
 
@@ -2492,7 +2477,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 COUNT(CASE WHEN stock_quantity > 0 THEN 1 END) as in_stock,
                 COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now', '+30 days') THEN 1 END) as expiring,
                 COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now') THEN 1 END) as expired
-                FROM products WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+                FROM products WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
         stats.inventoryValuationCost = invRow?.cost_val || 0;
         stats.inventoryValuationSell = invRow?.sell_val || 0;
         stats.lowStockCount = invRow?.low || 0;
@@ -2514,11 +2499,11 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         stats.totalCOGS = cRow?.total_cogs || 0;
 
         // 4. HRM & Vendors
-        const vRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        const vRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
         stats.totalPayables = vRow?.total || 0;
         stats.vendorCount = vRow?.count || 0;
 
-        const custRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM customers WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
+        const custRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM customers WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
         stats.totalReceivables = custRow?.total || 0;
         stats.customerCount = custRow?.count || 0;
 
@@ -2962,6 +2947,7 @@ ipcMain.handle("get-employees", async (e, companyId) => {
                    is_active as isActive,
                    first_name as firstName,
                    last_name as lastName,
+                   phone,
                    joining_date as joiningDate,
                    hourly_rate as hourlyRate
             FROM employees 
@@ -3087,13 +3073,15 @@ ipcMain.handle("save-attendance", async (e, data) => {
 
         if (existing) {
             // Update existing record for THIS employee only
+            const now = new Date().toISOString();
             await db.asyncRun(
                 `UPDATE attendances SET 
                     status=?, 
                     sync_status='pending', 
-                    updated_at=CURRENT_TIMESTAMP 
+                    updated_at=CURRENT_TIMESTAMP,
+                    check_in = CASE WHEN status != 'Present' AND ? = 'Present' THEN ? ELSE check_in END
                  WHERE id=? OR global_id=?`,
-                [status, existing.id, existing.global_id]
+                [status, status, now, existing.id, existing.global_id]
             );
             syncService.syncPendingRecords('attendances', '/attendance');
             return { success: true, message: "Attendance updated" };
@@ -3103,11 +3091,13 @@ ipcMain.handle("save-attendance", async (e, data) => {
             // Get companyId from employee
             const emp = await db.asyncGet("SELECT company_id FROM employees WHERE id=? OR global_id=?", [employeeId, employeeId]);
             const companyId = emp?.company_id;
+            const now = new Date().toISOString();
+            const checkIn = status === 'Present' ? now : null;
 
             await db.asyncRun(
-                `INSERT INTO attendances (global_id, employee_id, date, status, company_id, sync_status, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-                [tempId, employeeId, date, status, companyId]
+                `INSERT INTO attendances (global_id, employee_id, date, status, company_id, sync_status, updated_at, check_in) 
+                 VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+                [tempId, employeeId, date, status, companyId, checkIn]
             );
             syncService.syncPendingRecords('attendances', '/attendance');
             return { success: true, global_id: tempId, message: "Attendance created" };
@@ -3219,17 +3209,18 @@ ipcMain.handle("get-salaries", async (e, params) => {
 
         const query = `
             SELECT s.*,
-                   COALESCE(e.id, s.employee_id) as employeeId,
+                   s.employee_id as employeeId,
                    s.base_salary as baseSalary,
-                   s.net_salary as netSalary,
                    s.overtime_hours as overtimeHours,
                    s.overtime_pay as overtimePay,
+                   s.net_salary as netSalary,
+                   s.payment_date as paymentDate,
                    e.first_name as firstName,
                    e.last_name as lastName,
                    e.designation,
                    e.hourly_rate
             FROM salary_records s
-            LEFT JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id
+            JOIN employees e ON s.employee_id = e.global_id OR s.employee_id = CAST(e.id AS TEXT)
             WHERE (s.company_id = ? OR s.company_id = ? OR s.company_id = ?)
               AND s.month = ?
               AND (s.sync_status != 'deleted' OR s.sync_status IS NULL)
@@ -3270,6 +3261,39 @@ ipcMain.handle("create-salary", async (e, data) => {
         return { success: true, id: result.lastID, global_id: tempId, message: "Salary created locally" };
     } catch (err) {
         console.error("Error creating salary:", err);
+        return { success: false, message: err.message };
+    }
+});
+
+ipcMain.handle("update-salary", async (e, data) => {
+    try {
+        const { id, global_id, bonus, overtimeHours, overtimePay, deductions, netSalary, notes } = data;
+
+        await db.asyncRun(
+            `UPDATE salary_records SET 
+                bonus=?, overtime_hours=?, overtime_pay=?, deductions=?, net_salary=?, notes=?, 
+                sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+             WHERE id=? OR global_id=?`,
+            [bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', id, global_id]
+        );
+        syncService.syncPendingRecords('salary_records', '/salary-records');
+        return { success: true, message: "Salary updated locally" };
+    } catch (err) {
+        console.error("Error updating salary:", err);
+        return { success: false, message: err.message };
+    }
+});
+
+ipcMain.handle("delete-salary", async (e, id) => {
+    try {
+        const record = await db.asyncGet("SELECT id, global_id FROM salary_records WHERE id=?", [id]);
+        if (!record) return { success: false, message: "Record not found" };
+
+        await db.asyncRun("UPDATE salary_records SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE id=?", [id]);
+        syncService.syncPendingRecords('salary_records', '/salary-records');
+        return { success: true, message: "Salary marked for deletion" };
+    } catch (err) {
+        console.error("Error deleting salary:", err);
         return { success: false, message: err.message };
     }
 });
@@ -3381,6 +3405,19 @@ function createWindow() {
         }
     });
 }
+
+ipcMain.handle("set-active-session", async (e, { companyId, role }) => {
+    console.log(`[SESSION] Renderer informing active session: Company=${companyId}, Role=${role}`);
+    currentLoggedCompany = companyId;
+    currentLoggedRole = role;
+    syncService.setCompanyId(companyId);
+    // Trigger immediate push/pull if back online
+    syncService.syncPendingRecords();
+    if (companyId !== undefined) {
+        syncService.pullAllData(companyId);
+    }
+    return { success: true };
+});
 
 app.whenReady().then(async () => {
     console.log("[STARTUP] Waiting for database initialization...");

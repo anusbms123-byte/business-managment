@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     Plus, Search, X, ShoppingCart,
-    Trash2, RefreshCcw
+    Trash2, RefreshCcw, Eye, Calendar, User, Package
 } from 'lucide-react';
 import { canCreate, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
@@ -17,6 +17,8 @@ const Returns = ({ currentUser }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedReturnDetail, setSelectedReturnDetail] = useState(null);
 
     // Form State
     const [selectedEntityId, setSelectedEntityId] = useState(''); // customerId or vendorId
@@ -158,6 +160,11 @@ const Returns = ({ currentUser }) => {
         }
     };
 
+    const handleShowDetail = (item) => {
+        setSelectedReturnDetail(item);
+        setIsDetailModalOpen(true);
+    };
+
     const resetForm = () => {
         setSelectedEntityId('');
         setCart([]);
@@ -248,12 +255,11 @@ const Returns = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Date</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">ID</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">{activeTab === 'sales' ? 'Customer' : 'Vendor'}</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Items</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest text-right">Total</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest text-right text-transparent">Action</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -267,23 +273,30 @@ const Returns = ({ currentUser }) => {
                                 </tr>
                             ) : filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0">
-                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">
-                                        {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
-                                    </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.invoiceNo}</span>
+                                        <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{item.invoiceNo}</div>
+                                        <div className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">{item.date ? new Date(item.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                        {item.items?.length || 0} product(s)
+                                    <td className="px-6 py-4">
+                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-400 uppercase">
+                                            {item.items?.length || 0} Items
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <span className="text-sm font-medium text-slate-900 dark:text-slate-100">PKR {(item.totalAmount || 0).toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2 text-transparent group-hover:text-current">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => handleShowDetail(item)}
+                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                                                title="View Detail"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
                                             {canDelete('returns') && (
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
@@ -424,7 +437,7 @@ const Returns = ({ currentUser }) => {
                                             <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest text-center">Price</th>
                                             <th className="px-6 py-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Qty</th>
                                             <th className="px-6 py-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Total</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Done</th>
+                                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -523,6 +536,166 @@ const Returns = ({ currentUser }) => {
                 </div>
             )}
 
+            {isDetailModalOpen && selectedReturnDetail && (
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+                    {/* Header */}
+                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                <Eye size={22} />
+                            </div>
+                            <div>
+                                <h2 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight uppercase">Return Detail: {selectedReturnDetail.invoiceNo}</h2>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setIsDetailModalOpen(false)}
+                            className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
+                        >
+                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block text-slate-400 dark:text-slate-500">Close</span>
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-800/20 p-4 md:p-8">
+                        <div className="max-w-7xl mx-auto space-y-8">
+                            {/* Return Overview Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                        <Calendar size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Date & Time</p>
+                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">{new Date(selectedReturnDetail.date).toLocaleString()}</h3>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                        <User size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</p>
+                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">{(activeTab === 'sales' ? selectedReturnDetail.customer?.name : selectedReturnDetail.vendor?.name) || 'N/A'}</h3>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                        <RefreshCcw size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Return Type</p>
+                                        <h3 className="text-sm font-bold text-black dark:text-slate-100 uppercase tracking-tight">{activeTab} RETURN</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Totals Section */}
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                    <h3 className="text-xs font-bold text-black dark:text-slate-400 uppercase tracking-[0.2em]">Financial Summary</h3>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Subtotal</p>
+                                        <p className="text-lg font-bold text-black dark:text-slate-100">PKR {selectedReturnDetail.subTotal?.toLocaleString()}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tax / Handling</p>
+                                        <p className="text-lg font-bold text-black dark:text-slate-100">PKR {selectedReturnDetail.tax?.toLocaleString() || '0'}</p>
+                                    </div>
+                                    <div className="space-y-1 text-center md:text-left">
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Total Return Amount</p>
+                                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tight">PKR {selectedReturnDetail.totalAmount?.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {selectedReturnDetail.notes && (
+                                    <div className="px-8 pb-8 pt-2">
+                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Internal Notes</p>
+                                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 italic">"{selectedReturnDetail.notes}"</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Item Details Heading */}
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                                <h3 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Items Details ({selectedReturnDetail.items?.length})</h3>
+                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                            </div>
+
+                            {/* Items Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
+                                {selectedReturnDetail.items?.map((item, idx) => {
+                                    // Find full product info from state to show all details
+                                    const fullProduct = products.find(p => p.id === (item.productId || item.product_id || item.product?.id));
+                                    const displayProduct = fullProduct || item.product || item;
+
+                                    return (
+                                        <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">
+                                            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
+                                                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                    <Package size={24} />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <div className="font-bold text-base text-black dark:text-slate-100 uppercase tracking-tight truncate">{displayProduct.name || item.name}</div>
+                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">SKU: {displayProduct.sku || item.sku || 'N/A'}</div>
+                                                </div>
+                                                <div className="ml-auto text-right">
+                                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase">Qty</span>
+                                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{item.quantity}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                {/* Attributes Grid */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Color</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.color || '-'}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Size</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.size || '-'}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Grade</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.grade || '-'}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Category</p>
+                                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase truncate">{displayProduct.category?.name || 'Local'}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Pricing & Total */}
+                                                <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                                    <div className="flex justify-between items-center py-1">
+                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Unit Price</span>
+                                                        <span className="text-xs font-bold text-black dark:text-slate-200">PKR {Number(item.price || item.unitCost || item.unit_price || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50"></div>
+                                                    <div className="flex justify-between items-center py-2">
+                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Item Total</span>
+                                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Brand Footer */}
+                                                <div className="flex justify-center pt-2">
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">BRAND: <span className="text-black dark:text-slate-200">{displayProduct.brand?.name || 'GENERAL'}</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

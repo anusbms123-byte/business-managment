@@ -181,9 +181,9 @@ const Customers = ({ currentUser }) => {
                             <tr className="bg-slate-50/80 dark:bg-slate-800/80 transition-colors">
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Name</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Contact</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">City</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Address</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Balance</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Done</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
@@ -303,7 +303,7 @@ const Customers = ({ currentUser }) => {
                                                     value={formData.name}
                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="Ali Khan"
+                                                    placeholder="Enter Customer Name"
                                                 />
                                             </div>
                                         </div>
@@ -316,7 +316,7 @@ const Customers = ({ currentUser }) => {
                                                     value={formData.phone}
                                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="03xx-xxxxxxx"
+                                                    placeholder="0312345678"
                                                 />
                                             </div>
                                         </div>
@@ -330,6 +330,7 @@ const Customers = ({ currentUser }) => {
                                                 >
                                                     <option value="retail">Retail</option>
                                                     <option value="wholesale">Wholesale</option>
+                                                    <option value="others">Others</option>
                                                 </select>
                                             </div>
                                             <div className="space-y-2 text-left">
@@ -339,7 +340,7 @@ const Customers = ({ currentUser }) => {
                                                     value={formData.cnic}
                                                     onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="42101-xxxxxxx-x"
+                                                    placeholder="42101-1234567-8"
                                                 />
                                             </div>
                                         </div>

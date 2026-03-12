@@ -99,6 +99,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getEmployeeDetails: (id) => ipcRenderer.invoke('get-employee-details', id),
     getSalaries: (params) => ipcRenderer.invoke('get-salaries', params),
     createSalary: (data) => ipcRenderer.invoke('create-salary', data),
+    updateSalary: (data) => ipcRenderer.invoke('update-salary', data),
+    deleteSalary: (id) => ipcRenderer.invoke('delete-salary', id),
 
     // Reports
     getReportSummary: (params) => ipcRenderer.invoke('get-report-summary', params),
@@ -119,4 +121,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Sync & Network
     sendNetworkStatus: (status) => ipcRenderer.send('network-status-changed', status),
     resetSync: (companyId) => ipcRenderer.invoke('reset-sync', companyId),
+    setActiveSession: (data) => ipcRenderer.invoke('set-active-session', data),
 });

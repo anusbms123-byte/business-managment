@@ -1811,10 +1811,22 @@ app.put('/api/products/:id', async (req, res) => {
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        await prisma.product.delete({ where: { id: req.params.id } });
-        res.json({ success: true, changes: 1 });
+        const id = req.params.id;
+        
+        // Force delete related records first to satisfy foreign key constraints
+        await prisma.$transaction([
+            prisma.saleItem.deleteMany({ where: { productId: id } }),
+            prisma.purchaseItem.deleteMany({ where: { productId: id } }),
+            prisma.saleReturnItem.deleteMany({ where: { productId: id } }),
+            prisma.purchaseReturnItem.deleteMany({ where: { productId: id } }),
+            prisma.product.delete({ where: { id } })
+        ]);
+
+        res.json({ success: true, changes: 1, message: "Product and all its history deleted permanently" });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Product has transaction history and cannot be deleted" });
+        if (e.code === 'P2025') {
+            return res.json({ success: true, message: "Product already deleted" });
+        }
         handleError(res, e);
     }
 });

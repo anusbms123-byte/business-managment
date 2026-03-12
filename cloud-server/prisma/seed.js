@@ -8,15 +8,34 @@ async function main() {
 
     // 1. Create System Roles & Permissions
     const systemRoles = [
-        { name: 'Super Admin', description: 'Full system management access', isSystem: true, modules: ['users', 'roles', 'settings', 'backup'] },
-        { name: 'Admin', description: 'Full company access', isSystem: true, allModules: true },
-        { name: 'Manager', description: 'Management level access', isSystem: true, allModules: true },
+        {
+            name: 'Super Admin',
+            description: 'Full system management access',
+            isSystem: true,
+            modules: ['users', 'company', 'settings']
+        },
+        {
+            name: 'Admin',
+            description: 'Full company access',
+            isSystem: true,
+            allModules: true
+        },
+        {
+            name: 'Manager',
+            description: 'Management level access',
+            isSystem: true,
+            allModules: true
+        },
     ];
 
-    const allModules = ['dashboard', 'sales', 'purchase', 'products', 'inventory',
-        'customers', 'suppliers', 'expenses', 'reports', 'users', 'roles', 'settings', 'hrm', 'returns', 'backup'];
+    const allModules = [
+        'dashboard', 'sales', 'purchase', 'products', 'inventory',
+        'customers', 'suppliers', 'expenses', 'reports', 'users',
+        'roles', 'settings', 'hrm', 'returns', 'backup', 'company'
+    ];
 
     console.log('Cleaning up old system roles...');
+    // Cascade delete permissions via schema relation onDelete: Cascade
     await prisma.role.deleteMany({
         where: {
             isSystem: true,

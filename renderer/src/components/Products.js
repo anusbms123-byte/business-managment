@@ -342,8 +342,8 @@ const Products = ({ currentUser }) => {
         if (filterStockStatus === 'outofstock') matchesStock = p.stockQty <= 0;
         if (filterStockStatus === 'expired') matchesStock = p.expiryDate && new Date(p.expiryDate) < new Date();
 
-        return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock && matchesColor && matchesSize && matchesGrade;
-    });
+        return (matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesStock && matchesColor && matchesSize && matchesGrade);
+    }).sort((a, b) => (b.id || 0) - (a.id || 0));
 
     return (
         <div className="relative animate-in fade-in duration-500">
@@ -500,7 +500,7 @@ const Products = ({ currentUser }) => {
                                                         </div>
                                                         <div className="text-left">
                                                             <p className="text-xs font-bold text-black dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase truncate max-w-[150px]">{product.name}</p>
-                                                            <p className="text-[9px] text-black dark:text-slate-400 font-bold uppercase tracking-widest mt-0.5">{product.sku || 'No SKU'}</p>
+                                                            <p className="text-[9px] text-black dark:text-slate-400 font-bold uppercase tracking-widest mt-0.5">{product.sku || 'No ID'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
@@ -553,48 +553,52 @@ const Products = ({ currentUser }) => {
                     <table className="w-full text-left min-w-max border-separate border-spacing-0">
                         <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                             <tr>
-                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 dark:bg-slate-800 z-10 border-b border-slate-100 dark:border-slate-800">Name</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">SKU</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Cost</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Sale</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Stock</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Brand</th>
+                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 dark:bg-slate-800 z-10 border-b border-slate-100 dark:border-slate-800">ID</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Name</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Cost Price</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Sell Price</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Unit</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Stock</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Weight</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Alert</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Brand</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Color</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Size</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Grade</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Condition</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Expiry</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Status</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Alert</th>
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Category</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-right">Done</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Status</th>
+                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="transition-all border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/30 dark:hover:bg-slate-800/30">
                                     <td className="px-6 py-4 sticky left-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-50 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                        <div className="font-bold text-black dark:text-slate-100 text-xs uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
-                                        <div className="text-[9px] text-black dark:text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: #{product.id}</div>
+                                        <div className="text-xs font-bold text-black dark:text-slate-200">{product.sku || '-'}</div>
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
-                                        <div className="text-xs font-bold text-black dark:text-slate-200">{product.sku || '-'}</div>
+                                        <div className="font-bold text-black dark:text-slate-100 text-xs uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
                                     </td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.costPrice?.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.sellPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800 text-center">{product.stockQty}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight border-b border-slate-50 dark:border-slate-800">{product.brand?.name || '-'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase border-b border-slate-50 dark:border-slate-800">{product.unit || 'pcs'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800 text-center">{product.stockQty}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.weight ? `${product.weight}kg` : '-'}</td>
-                                    <td className="px-6 py-4 text-xs text-black dark:text-slate-200 font-bold border-b border-slate-50 dark:border-slate-800">Min:{product.alertQty || 5}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight border-b border-slate-50 dark:border-slate-800">{product.brand?.name || '-'}</td>
                                     <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.color || '-'}</td>
                                     <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.size || '-'}</td>
                                     <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.grade || '-'}</td>
                                     <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.condition || '-'}</td>
                                     <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">
                                         {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-black dark:text-slate-200 font-bold border-b border-slate-50 dark:border-slate-800">Min:{product.alertQty || 5}</td>
+                                    <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-900">
+                                            {product.category?.name || 'Uncategorized'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
                                         <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
@@ -607,11 +611,6 @@ const Products = ({ currentUser }) => {
                                                 {product.stockQty > product.alertQty ? 'In Stock' :
                                                     product.stockQty > 0 ? 'Low Stock' : 'Out of Stock'}
                                             </span>
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
-                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-900">
-                                            {product.category?.name || 'Uncategorized'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right border-b border-slate-50 dark:border-slate-800">
@@ -676,13 +675,13 @@ const Products = ({ currentUser }) => {
                                             <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
                                                 <Tag size={12} className="text-black dark:text-slate-400" /> Name *
                                             </label>
-                                            <input required type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. iPhone 15 Pro" />
+                                            <input required type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Enter Product Name" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Layers size={12} className="text-black dark:text-slate-400" /> SKU
+                                                <Layers size={12} className="text-black dark:text-slate-400" /> ID
                                             </label>
-                                            <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="SKU" />
+                                            <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="ID" />
                                         </div>
                                         <CreatableSelect
                                             label="Category"
@@ -726,15 +725,15 @@ const Products = ({ currentUser }) => {
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Cost
+                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Cost Price
                                             </label>
-                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="0" />
+                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="Cost Price" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Sale *
+                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Sell Price *
                                             </label>
-                                            <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell Price" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
