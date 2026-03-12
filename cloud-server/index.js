@@ -810,10 +810,26 @@ app.put('/api/customers/:id', async (req, res) => {
 
 app.delete('/api/customers/:id', async (req, res) => {
     try {
-        await prisma.customer.delete({ where: { id: req.params.id } });
-        res.json({ success: true, changes: 1 });
+        const id = req.params.id;
+        
+        await prisma.$transaction([
+            // Delete Sale Return Items and Returns
+            prisma.saleReturnItem.deleteMany({ where: { saleReturn: { customerId: id } } }),
+            prisma.saleReturn.deleteMany({ where: { customerId: id } }),
+            
+            // Delete Sale Items and Sales
+            prisma.saleItem.deleteMany({ where: { sale: { customerId: id } } }),
+            prisma.sale.deleteMany({ where: { customerId: id } }),
+            
+            // Delete the customer
+            prisma.customer.delete({ where: { id } })
+        ]);
+
+        res.json({ success: true, changes: 1, message: "Customer and all their history deleted permanently" });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Customer has transaction history and cannot be deleted" });
+        if (e.code === 'P2025') {
+            return res.json({ success: true, message: "Customer already deleted" });
+        }
         handleError(res, e);
     }
 });
@@ -851,10 +867,13 @@ app.post('/api/accounts', async (req, res) => {
 
 app.delete('/api/accounts/:id', async (req, res) => {
     try {
-        await prisma.account.delete({ where: { id: req.params.id } });
-        res.json({ success: true, changes: 1 });
+        const id = req.params.id;
+        await prisma.$transaction([
+            prisma.transaction.deleteMany({ where: { accountId: id } }),
+            prisma.account.delete({ where: { id } })
+        ]);
+        res.json({ success: true, changes: 1, message: "Account and its transactions deleted" });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Account has transactions and cannot be deleted" });
         if (e.code === 'P2025') return res.json({ success: true, message: "Account already deleted" });
         handleError(res, e);
     }
@@ -919,10 +938,32 @@ app.put('/api/vendors/:id', async (req, res) => {
 
 app.delete('/api/vendors/:id', async (req, res) => {
     try {
-        await prisma.vendor.delete({ where: { id: req.params.id } });
-        res.json({ success: true, changes: 1 });
+        const id = req.params.id;
+        
+        await prisma.$transaction([
+            // 1. Nullify products link to this vendor so they don't block deletion
+            prisma.product.updateMany({
+                where: { vendorId: id },
+                data: { vendorId: null }
+            }),
+
+            // 2. Delete Purchase Return Items and Returns
+            prisma.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { vendorId: id } } }),
+            prisma.purchaseReturn.deleteMany({ where: { vendorId: id } }),
+            
+            // 3. Delete Purchase Items and Purchases
+            prisma.purchaseItem.deleteMany({ where: { purchase: { vendorId: id } } }),
+            prisma.purchase.deleteMany({ where: { vendorId: id } }),
+            
+            // 4. Delete the vendor
+            prisma.vendor.delete({ where: { id } })
+        ]);
+
+        res.json({ success: true, changes: 1, message: "Vendor and all their history deleted permanently" });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Supplier has transaction history and cannot be deleted" });
+        if (e.code === 'P2025') {
+            return res.json({ success: true, message: "Vendor already deleted" });
+        }
         handleError(res, e);
     }
 });
@@ -1033,10 +1074,14 @@ app.delete('/api/purchases/:id', async (req, res) => {
                 });
             }
 
-            // 3. Delete Purchase Items
+            // 3. Delete related Purchase Returns
+            await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { purchaseId } } });
+            await tx.purchaseReturn.deleteMany({ where: { purchaseId } });
+
+            // 4. Delete Purchase Items
             await tx.purchaseItem.deleteMany({ where: { purchaseId } });
 
-            // 4. Delete Purchase
+            // 5. Delete Purchase
             await tx.purchase.delete({ where: { id: purchaseId } });
         });
 
@@ -1615,15 +1660,24 @@ app.put('/api/roles/:id', async (req, res) => {
 
 app.delete('/api/roles/:id', async (req, res) => {
     try {
-        // First check if it's a system role
-        const role = await prisma.role.findUnique({ where: { id: req.params.id } });
-        if (!role || role.isSystem) {
-            return res.status(403).json({ success: false, message: "Cannot delete system roles" });
+        const id = req.params.id;
+        
+        // Protect system roles
+        const role = await prisma.role.findUnique({ where: { id } });
+        if (role && role.isSystem && ['admin', 'manager'].includes(role.name.toLowerCase())) {
+            return res.status(400).json({ success: false, message: "Core system roles cannot be deleted." });
         }
 
-        await prisma.role.delete({ where: { id: req.params.id } });
+        await prisma.$transaction([
+            prisma.user.updateMany({ where: { roleId: id }, data: { roleId: null } }),
+            prisma.permission.deleteMany({ where: { roleId: id } }),
+            prisma.role.delete({ where: { id } })
+        ]);
         res.json({ success: true, changes: 1 });
-    } catch (e) { handleError(res, e); }
+    } catch (e) {
+        if (e.code === 'P2025') return res.json({ success: true, message: "Role already deleted" });
+        handleError(res, e);
+    }
 });
 
 app.get('/api/permissions', async (req, res) => {
@@ -1690,10 +1744,14 @@ app.put('/api/categories/:id', async (req, res) => {
 
 app.delete('/api/categories/:id', async (req, res) => {
     try {
-        await prisma.category.delete({ where: { id: req.params.id } });
+        const id = req.params.id;
+        await prisma.$transaction([
+            prisma.product.updateMany({ where: { categoryId: id }, data: { categoryId: null } }),
+            prisma.category.delete({ where: { id } })
+        ]);
         res.json({ success: true, changes: 1 });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Category is in use and cannot be deleted" });
+        if (e.code === 'P2025') return res.json({ success: true, message: "Category already deleted" });
         handleError(res, e);
     }
 });
@@ -1734,10 +1792,14 @@ app.put('/api/brands/:id', async (req, res) => {
 
 app.delete('/api/brands/:id', async (req, res) => {
     try {
-        await prisma.brand.delete({ where: { id: req.params.id } });
+        const id = req.params.id;
+        await prisma.$transaction([
+            prisma.product.updateMany({ where: { brandId: id }, data: { brandId: null } }),
+            prisma.brand.delete({ where: { id } })
+        ]);
         res.json({ success: true, changes: 1 });
     } catch (e) {
-        if (e.code === 'P2003') return res.status(400).json({ success: false, message: "Brand is in use and cannot be deleted" });
+        if (e.code === 'P2025') return res.json({ success: true, message: "Brand already deleted" });
         handleError(res, e);
     }
 });
@@ -1967,10 +2029,14 @@ app.delete('/api/sales/:id', async (req, res) => {
                 });
             }
 
-            // 3. Delete Sale Items (Cascade might handle this, but let's be explicit)
+            // 3. Delete related Sale Returns
+            await tx.saleReturnItem.deleteMany({ where: { saleReturn: { saleId } } });
+            await tx.saleReturn.deleteMany({ where: { saleId } });
+
+            // 4. Delete Sale Items
             await tx.saleItem.deleteMany({ where: { saleId } });
 
-            // 4. Delete Sale
+            // 5. Delete Sale
             await tx.sale.delete({ where: { id: saleId } });
         });
 
@@ -2195,9 +2261,17 @@ app.put('/api/employees/:id', async (req, res) => {
 
 app.delete('/api/employees/:id', async (req, res) => {
     try {
-        await prisma.employee.delete({ where: { id: req.params.id } });
+        const id = req.params.id;
+        await prisma.$transaction([
+            prisma.attendance.deleteMany({ where: { employeeId: id } }),
+            prisma.salaryRecord.deleteMany({ where: { employeeId: id } }),
+            prisma.employee.delete({ where: { id } })
+        ]);
         res.json({ success: true, changes: 1 });
-    } catch (e) { handleError(res, e); }
+    } catch (e) {
+        if (e.code === 'P2025') return res.json({ success: true, message: "Employee already deleted" });
+        handleError(res, e);
+    }
 });
 
 // Attendance handles

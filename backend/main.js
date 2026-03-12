@@ -915,12 +915,6 @@ ipcMain.handle("delete-role", async (e, id) => {
         const gid = row.global_id;
         const localId = row.id;
 
-        // Check for users assigned to this role
-        const usersCount = await db.asyncGet("SELECT COUNT(*) as count FROM users WHERE role_id = ? OR role_id = ?", [gid, localId]);
-        if (usersCount && usersCount.count > 0) {
-            return { success: false, message: "Is role ko delete nahi kiya ja sakta kyunke users ko ye role assign kiya gaya hai." };
-        }
-
         await db.asyncRun("BEGIN TRANSACTION");
         try {
             // Mark role as deleted
@@ -1383,13 +1377,6 @@ ipcMain.handle("delete-customer", async (e, id) => {
         if (!row) return { success: false, message: "Customer not found" };
         const gid = row.global_id;
 
-        // Check if any sale is using this customer
-        const countRow = await db.asyncGet("SELECT COUNT(*) as count FROM sales WHERE (customer_id = ? OR customer_id = ?) AND sync_status != 'deleted'", [id, gid]);
-
-        if (countRow && countRow.count > 0) {
-            return { success: false, message: "Is Customer ko delete nahi kiya ja sakta kyunke iske sales records maujood hain. Aap isay Deactivate kar saktay hain." };
-        }
-
         await db.asyncRun(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('customers', '/customers');
@@ -1514,19 +1501,6 @@ ipcMain.handle("delete-vendor", async (e, id) => {
         if (!row) return { success: false, message: "Vendor not found" };
         const gid = row.global_id;
 
-        const checkQuery = `
-            SELECT 
-                (SELECT COUNT(*) FROM purchases WHERE (vendor_id = ? OR vendor_id = ?) AND sync_status != 'deleted') +
-                (SELECT COUNT(*) FROM products WHERE (vendor_id = ? OR vendor_id = ?) AND sync_status != 'deleted') as linkedCount
-        `;
-        const countRow = await db.asyncGet(checkQuery, [id, gid, id, gid]);
-
-        if (countRow && countRow.linkedCount > 0) {
-            console.warn(`[DELETE-VENDOR] Blocked: Vendor ${id}/${gid} has ${countRow.linkedCount} linked records.`);
-            return { success: false, message: "Is Vendor ko delete nahi kiya ja sakta kyunke iske purchases ya items records maujood hain. Aap isay Deactivate kar saktay hain." };
-        }
-
-        console.log(`[DELETE-VENDOR] Proceeding to mark ${gid} as deleted.`);
         await db.asyncRun(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('vendors', '/vendors');
@@ -1664,12 +1638,6 @@ ipcMain.handle("delete-category", async (e, id) => {
         if (!row) return { success: false, message: "Category not found" };
         const gid = row.global_id;
 
-        // Check if any product is using this category
-        const countRow = await db.asyncGet("SELECT COUNT(*) as count FROM products WHERE (category_id = ? OR category_id = ?) AND sync_status != 'deleted'", [id, gid]);
-        if (countRow && countRow.count > 0) {
-            return { success: false, message: "Is Category ko delete nahi kiya ja sakta kyunke is mein products maujood hain." };
-        }
-
         await db.asyncRun(`UPDATE categories SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('categories', '/categories');
         return { success: true, message: "Category marked for deletion locally." };
@@ -1684,12 +1652,6 @@ ipcMain.handle("delete-brand", async (e, id) => {
         const row = await db.asyncGet("SELECT global_id FROM brands WHERE id=? OR global_id=?", [id, id]);
         if (!row) return { success: false, message: "Brand not found" };
         const gid = row.global_id;
-
-        // Check if any product is using this brand
-        const countRow = await db.asyncGet("SELECT COUNT(*) as count FROM products WHERE (brand_id = ? OR brand_id = ?) AND sync_status != 'deleted'", [id, gid]);
-        if (countRow && countRow.count > 0) {
-            return { success: false, message: "Is Brand ko delete nahi kiya ja sakta kyunke ye products mein use horahi hai." };
-        }
 
         await db.asyncRun(`UPDATE brands SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
 
@@ -3006,17 +2968,6 @@ ipcMain.handle("delete-employee", async (e, id) => {
         const row = await db.asyncGet("SELECT global_id FROM employees WHERE id=? OR global_id=?", [id, id]);
         if (!row) return { success: false, message: "Employee not found" };
         const gid = row.global_id;
-
-        // Check for linked records (Attendance or Salaries)
-        const check = await db.asyncGet(`
-            SELECT 
-                (SELECT COUNT(*) FROM attendances WHERE (employee_id = ? OR employee_id = ?) AND sync_status != 'deleted') +
-                (SELECT COUNT(*) FROM salary_records WHERE (employee_id = ? OR employee_id = ?) AND sync_status != 'deleted') as linked
-        `, [id, gid, id, gid]);
-
-        if (check && check.linked > 0) {
-            return { success: false, message: "Is employee ko delete nahi kiya ja sakta kyunke iske attendance ya salary records maujood hain. Aap isay de-activate kar saktay hain." };
-        }
 
         await db.asyncRun(`UPDATE employees SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('employees', '/employees');
