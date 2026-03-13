@@ -2693,6 +2693,9 @@ app.get('/api/reports/summary', async (req, res) => {
         let totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
         let totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
         let totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+        
+        const totalSalesReturnsRaw = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0);
+        const totalPurchaseReturnsRaw = purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
 
         // Inventory Valuation
         const inventoryValuationCost = products.reduce((acc, p) => acc + (p.stockQty * (p.costPrice || 0)), 0);
@@ -2756,14 +2759,24 @@ app.get('/api/reports/summary', async (req, res) => {
             .slice(0, 5);
 
         // Calculate COGS - Sum of (item.quantity * product.costPrice) for all sold items
-        const totalCOGS = sales.reduce((acc, s) => {
+        const rawSalesCOGS = sales.reduce((acc, s) => {
             const saleCOGS = s.items.reduce((itemAcc, item) => {
                 return itemAcc + (item.quantity * (item.product?.costPrice || 0));
             }, 0);
             return acc + saleCOGS;
         }, 0);
 
-        // Net Profit = Revenue - COGS - Expenses - Salaries
+        const saleReturnCOGS = saleReturns.reduce((acc, r) => {
+            const retCOGS = r.items.reduce((itemAcc, item) => {
+                return itemAcc + (item.quantity * (item.product?.costPrice || 0));
+            }, 0);
+            return acc + retCOGS;
+        }, 0);
+
+        const totalCOGS = rawSalesCOGS - saleReturnCOGS;
+
+        // Net Profit = (Sales - SalesReturns) - COGS - Expenses - Salaries
+        // Note: Purchase Returns usually reduce COGS, but here we add them back to profit for simplicity or handle as negative expense.
         let totalSalaries = salaries.reduce((acc, s) => acc + s.netSalary, 0);
 
         // If a specific category filter is active, adjust the totals for the filtered report view
@@ -2775,7 +2788,9 @@ app.get('/api/reports/summary', async (req, res) => {
             }
         }
 
-        const netProfit = totalSales - (totalCOGS + totalExpenses + totalSalaries);
+        const netSales = totalSales - totalSalesReturnsRaw;
+        const grossProfit = netSales - totalCOGS;
+        const netProfit = grossProfit - totalExpenses - totalSalaries + totalPurchaseReturnsRaw;
 
         const returnType = req.query.returnType || 'all';
         let filteredSaleReturns = [...saleReturns];
@@ -2918,16 +2933,24 @@ app.get('/api/reports/summary', async (req, res) => {
         saleReturns.forEach(r => {
             let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
-                dailyMap[d].returns += r.totalAmount;
-                dailyMap[d].profit -= r.totalAmount;
+                const totalItemAmount = r.totalAmount || 0;
+                // Only add to summary if returnType matches
+                if (returnType === 'all' || returnType === 'sales') {
+                    dailyMap[d].returns += totalItemAmount;
+                }
+                dailyMap[d].profit -= totalItemAmount;
             }
         });
 
         purchaseReturns.forEach(r => {
             let d = useMonthlyGrouping ? `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, '0')}` : r.date.toISOString().split('T')[0];
             if (dailyMap[d]) {
-                dailyMap[d].returns += r.totalAmount;
-                dailyMap[d].profit += r.totalAmount;
+                const totalItemAmount = r.totalAmount || 0;
+                // Only add to summary if returnType matches
+                if (returnType === 'all' || returnType === 'purchases') {
+                    dailyMap[d].returns += totalItemAmount;
+                }
+                dailyMap[d].profit += totalItemAmount;
             }
         });
 

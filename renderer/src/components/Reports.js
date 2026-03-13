@@ -283,7 +283,7 @@ const Reports = ({ currentUser }) => {
                 <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-amber-500 dark:border-l-amber-400" onClick={() => setActiveModule('purchases')} />
                 <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-indigo-500 dark:border-l-indigo-400" onClick={() => setActiveModule('inventory')} />
                 <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-rose-500 dark:border-l-rose-400" onClick={() => setActiveModule('expenses')} />
-                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-orange-500 dark:border-l-orange-400" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-500 dark:border-l-emerald-400" onClick={() => setActiveModule('returns')} />
                 <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-600 dark:border-l-slate-400" onClick={() => setActiveModule('suppliers')} />
                 <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-teal-500 dark:border-l-teal-400" onClick={() => setActiveModule('customers')} />
                 <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-500 dark:border-l-emerald-400" onClick={() => setActiveModule('hrm')} />
@@ -353,12 +353,12 @@ const Reports = ({ currentUser }) => {
                 cols: 3
             },
             returns: {
-                title: 'Return Report', icon: RotateCcw, color: '#f97316', dataKey: 'returns',
+                title: 'Return Report', icon: RotateCcw, color: '#10b981', dataKey: 'returns',
                 miniStats: [
-                    { label: 'Total Refunds', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-orange-600' },
-                    { label: 'Sale Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
+                    { label: 'Total Returns', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Sales Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
                     { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-blue-500' },
-                    { label: 'Return Count', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-indigo-500' }
+                    { label: 'Volume', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-indigo-500' }
                 ],
                 tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Returned Products', 'Refund Magnitude'],
                 tableTitle: 'Returns Ledger',
@@ -764,10 +764,10 @@ const Reports = ({ currentUser }) => {
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h2 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest mb-1 italic">
-                                        {activeModule === 'inventory' ? 'Stock Added (Cost)' : activeModule === 'expenses' ? 'Spending Analysis' : 'Line Chart'}
+                                        {activeModule === 'inventory' ? 'Stock Added (Cost)' : activeModule === 'expenses' ? 'Spending Analysis' : activeModule === 'returns' ? 'Refund Velocity' : 'Line Chart'}
                                     </h2>
                                     <p className="text-xs text-black dark:text-slate-100 font-bold uppercase tracking-tight">
-                                        {activeModule === 'inventory' ? 'Stock Addition Trend' : activeModule === 'expenses' ? 'Expense Velocity' : 'Report History'}
+                                        {activeModule === 'inventory' ? 'Stock Addition Trend' : activeModule === 'expenses' ? 'Expense Velocity' : activeModule === 'returns' ? 'Sales & Purchase Returns' : 'Report History'}
                                     </p>
                                 </div>
                                 <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Download size={18} /></button>
