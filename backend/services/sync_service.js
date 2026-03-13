@@ -1049,11 +1049,44 @@ class SyncService {
 
                 // Determine Method:
                 // POST if local temp UUID, PUT if cloud CUID.
-                const isLocalTempUuid = !globalId || globalId === 'null' || globalId === 'undefined'
+                let isLocalTempUuid = !globalId || globalId === 'null' || globalId === 'undefined'
                     || (globalId.includes('-') && globalId.length < 50); // UUID v4 has dashes
 
+                // PRE-PUSH CHECK: For sales/purchases with temp UUIDs, check if a matching record 
+                // already exists on cloud (by invoiceNo) to avoid duplicate POST
+                if (isLocalTempUuid && (table === 'sales' || table === 'purchases')) {
+                    const invNo = payload.invoiceNo;
+                    const cid = payload.companyId;
+                    if (invNo && cid) {
+                        try {
+                            const cloudRecords = await this.apiCall('get', endpoint, null, { companyId: cid });
+                            if (Array.isArray(cloudRecords)) {
+                                const match = cloudRecords.find(r => r.invoiceNo === invNo);
+                                if (match && match.id) {
+                                    console.log(`[SYNC PRE-CHECK] Found existing cloud ${table} for ${invNo}: ${match.id}. Switching POST -> PUT.`);
+                                    // Update local record with cloud ID before push
+                                    const oldGid = globalId;
+                                    await db.asyncRun(`UPDATE ${table} SET global_id = ? WHERE id = ?`, [match.id, localId]);
+                                    
+                                    // Update children references
+                                    if (table === 'sales') {
+                                        await db.asyncRun("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [match.id, oldGid]);
+                                    } else if (table === 'purchases') {
+                                        await db.asyncRun("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [match.id, oldGid]);
+                                    }
+                                    
+                                    payload.id = match.id;
+                                    isLocalTempUuid = false;
+                                }
+                            }
+                        } catch (lookupErr) {
+                            console.warn(`[SYNC PRE-CHECK] Cloud lookup failed for ${table}: ${lookupErr.message}`);
+                        }
+                    }
+                }
+
                 let httpMethod = isLocalTempUuid ? 'POST' : 'PUT';
-                let finalUrl = (httpMethod === 'PUT') ? `${endpoint}/${globalId}` : endpoint;
+                let finalUrl = (httpMethod === 'PUT') ? `${endpoint}/${payload.id || globalId}` : endpoint;
 
                 // For users, if we are doing a POST (new record), ensure we send the globalId as id
                 // This preserves continuity if a record was assigned a CUID locally during pull

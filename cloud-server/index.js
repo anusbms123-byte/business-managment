@@ -982,18 +982,105 @@ app.post('/api/purchases', async (req, res) => {
     try {
         const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, discount, tax, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
 
+        const finalTotal = parseFloat(totalAmount);
+        const finalPaid = parseFloat(paidAmount) || 0;
+
+        // DEDUPLICATION: Check if purchase with same invoiceNo + companyId already exists
+        const existingPurchase = invoiceNo ? await prisma.purchase.findFirst({
+            where: { invoiceNo, companyId },
+            include: { items: true }
+        }) : null;
+
+        if (existingPurchase) {
+            console.log(`[DEDUP] Purchase ${invoiceNo} already exists on cloud (${existingPurchase.id}). Updating instead of duplicating.`);
+
+            await prisma.$transaction(async (tx) => {
+                // 1. Revert old stock
+                for (const item of existingPurchase.items) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stockQty: { decrement: item.quantity } }
+                    });
+                }
+
+                // 2. Revert old vendor balance
+                if (existingPurchase.vendorId) {
+                    const prevBal = existingPurchase.totalAmount - existingPurchase.paidAmount;
+                    if (prevBal !== 0) {
+                        await tx.vendor.update({
+                            where: { id: existingPurchase.vendorId },
+                            data: { balance: { decrement: prevBal } }
+                        });
+                    }
+                }
+
+                // 3. Update purchase record
+                await tx.purchase.update({
+                    where: { id: existingPurchase.id },
+                    data: {
+                        vendorId,
+                        totalAmount: finalTotal,
+                        discount: parseFloat(discount) || 0,
+                        tax: parseFloat(tax) || 0,
+                        shippingCost: parseFloat(shippingCost) || 0,
+                        paidAmount: finalPaid,
+                        status: paymentStatus || 'RECEIVED'
+                    }
+                });
+
+                // 4. Replace items
+                await tx.purchaseItem.deleteMany({ where: { purchaseId: existingPurchase.id } });
+                for (const item of items) {
+                    await tx.purchaseItem.create({
+                        data: {
+                            purchaseId: existingPurchase.id,
+                            productId: item.productId,
+                            quantity: parseInt(item.quantity),
+                            unitCost: parseFloat(item.unitCost),
+                            total: parseFloat(item.total)
+                        }
+                    });
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stockQty: { increment: parseInt(item.quantity) },
+                            costPrice: parseFloat(item.unitCost)
+                        }
+                    });
+                }
+
+                // 5. Apply new vendor balance
+                if (vendorId) {
+                    const newBal = finalTotal - finalPaid;
+                    if (newBal !== 0) {
+                        const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+                        const currentBalance = vendor?.balance || 0;
+                        const actualIncrement = newBal < 0 ? Math.max(newBal, -currentBalance) : newBal;
+                        if (actualIncrement !== 0) {
+                            await tx.vendor.update({
+                                where: { id: vendorId },
+                                data: { balance: { increment: actualIncrement } }
+                            });
+                        }
+                    }
+                }
+            });
+
+            return res.json({ success: true, id: existingPurchase.id });
+        }
+
+        // Normal CREATE flow
         const purchase = await prisma.$transaction(async (tx) => {
-            // 1. Create Purchase
             const p = await tx.purchase.create({
                 data: {
                     companyId,
                     vendorId,
                     invoiceNo,
-                    totalAmount: parseFloat(totalAmount),
+                    totalAmount: finalTotal,
                     discount: parseFloat(discount) || 0,
                     tax: parseFloat(tax) || 0,
                     shippingCost: parseFloat(shippingCost) || 0,
-                    paidAmount: parseFloat(paidAmount) || 0,
+                    paidAmount: finalPaid,
                     status: paymentStatus || 'RECEIVED',
                     items: {
                         create: items.map(item => ({
@@ -1006,24 +1093,21 @@ app.post('/api/purchases', async (req, res) => {
                 }
             });
 
-            // 2. Update Product Stock and Cost Price
             for (const item of items) {
                 await tx.product.update({
                     where: { id: item.productId },
                     data: {
                         stockQty: { increment: parseInt(item.quantity) },
-                        costPrice: parseFloat(item.unitCost) // Update last cost price
+                        costPrice: parseFloat(item.unitCost)
                     }
                 });
             }
 
-            // 3. Update Vendor Balance (Payable)
-            const balanceToIncr = parseFloat(totalAmount) - (parseFloat(paidAmount) || 0);
+            const balanceToIncr = finalTotal - finalPaid;
             if (balanceToIncr !== 0) {
                 const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
                 const currentBalance = vendor?.balance || 0;
                 const actualIncrement = balanceToIncr < 0 ? Math.max(balanceToIncr, -currentBalance) : balanceToIncr;
-
                 if (actualIncrement !== 0) {
                     await tx.vendor.update({
                         where: { id: vendorId },
@@ -1035,7 +1119,7 @@ app.post('/api/purchases', async (req, res) => {
             return p;
         });
 
-        res.json({ success: true, id: purchase.id, ...purchase });
+        res.json({ success: true, id: purchase.id });
     } catch (e) { handleError(res, e); }
 });
 
@@ -1918,10 +2002,95 @@ app.post('/api/sales', async (req, res) => {
         const finalGrandTotal = parseFloat(grandTotal || 0);
         const finalPaidAmount = parseFloat(amountPaid || paidAmount || 0);
         const finalPaymentType = paymentType || paymentMethod || 'CASH';
+        const finalPaymentStatus = paymentStatus || (finalPaidAmount >= finalGrandTotal ? 'PAID' : (finalPaidAmount > 0 ? 'PARTIAL' : 'DUE'));
 
-        await prisma.$transaction(async (tx) => {
-            // 1. Create Sale Record
-            const sale = await tx.sale.create({
+        // DEDUPLICATION: Check if a sale with same invoiceNo + companyId already exists
+        const existingSale = invoiceNo ? await prisma.sale.findFirst({
+            where: { invoiceNo, companyId },
+            include: { items: true }
+        }) : null;
+
+        if (existingSale) {
+            console.log(`[DEDUP] Sale ${invoiceNo} already exists on cloud (${existingSale.id}). Updating instead of duplicating.`);
+
+            await prisma.$transaction(async (tx) => {
+                // 1. Revert old stock
+                for (const item of existingSale.items) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stockQty: { increment: item.quantity } }
+                    });
+                }
+
+                // 2. Revert old customer balance
+                if (existingSale.customerId) {
+                    const prevBalanceChange = existingSale.grandTotal - existingSale.amountPaid;
+                    if (prevBalanceChange !== 0) {
+                        await tx.customer.update({
+                            where: { id: existingSale.customerId },
+                            data: { balance: { decrement: prevBalanceChange } }
+                        });
+                    }
+                }
+
+                // 3. Update sale record
+                await tx.sale.update({
+                    where: { id: existingSale.id },
+                    data: {
+                        customerId,
+                        subTotal: parseFloat(subTotal),
+                        discount: parseFloat(discount) || 0,
+                        tax: parseFloat(tax) || 0,
+                        shippingCost: parseFloat(shippingCost) || 0,
+                        grandTotal: finalGrandTotal,
+                        paymentType: finalPaymentType,
+                        paymentStatus: finalPaymentStatus,
+                        amountPaid: finalPaidAmount,
+                        notes
+                    }
+                });
+
+                // 4. Replace items
+                await tx.saleItem.deleteMany({ where: { saleId: existingSale.id } });
+                for (const item of items) {
+                    await tx.saleItem.create({
+                        data: {
+                            saleId: existingSale.id,
+                            productId: item.productId,
+                            quantity: parseInt(item.quantity),
+                            price: parseFloat(item.price),
+                            total: parseFloat(item.total)
+                        }
+                    });
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { stockQty: { decrement: parseInt(item.quantity) } }
+                    });
+                }
+
+                // 5. Apply new customer balance
+                if (customerId) {
+                    const newBalanceChange = finalGrandTotal - finalPaidAmount;
+                    if (newBalanceChange !== 0) {
+                        const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                        const currentBalance = customer?.balance || 0;
+                        const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
+                        if (actualIncrement !== 0) {
+                            await tx.customer.update({
+                                where: { id: customerId },
+                                data: { balance: { increment: actualIncrement } }
+                            });
+                        }
+                    }
+                }
+            });
+
+            return res.json({ success: true, id: existingSale.id });
+        }
+
+        // Normal CREATE flow (no duplicate found)
+        const sale = await prisma.$transaction(async (tx) => {
+            const s = await tx.sale.create({
                 data: {
                     companyId,
                     customerId,
@@ -1933,7 +2102,7 @@ app.post('/api/sales', async (req, res) => {
                     shippingCost: parseFloat(shippingCost) || 0,
                     grandTotal: finalGrandTotal,
                     paymentType: finalPaymentType,
-                    paymentStatus: paymentStatus || (finalPaidAmount >= finalGrandTotal ? 'PAID' : (finalPaidAmount > 0 ? 'PARTIAL' : 'DUE')),
+                    paymentStatus: finalPaymentStatus,
                     amountPaid: finalPaidAmount,
                     notes,
                     items: {
@@ -1947,36 +2116,23 @@ app.post('/api/sales', async (req, res) => {
                 }
             });
 
-            // 2. Deduct Stock for each item
+            // Deduct Stock
             for (const item of items) {
                 await tx.product.update({
                     where: { id: item.productId },
-                    data: {
-                        stockQty: { decrement: parseInt(item.quantity) }
-                    }
+                    data: { stockQty: { decrement: parseInt(item.quantity) } }
                 });
             }
 
-            // 3. Update Customer Balance if applicable
+            // Update Customer Balance
             if (customerId) {
                 const balanceChange = finalGrandTotal - finalPaidAmount;
                 if (balanceChange !== 0) {
-                    // Get current balance to prevent it from going negative
                     const customer = await tx.customer.findUnique({ where: { id: customerId } });
                     const currentBalance = customer?.balance || 0;
-
-                    // Calculate the actual increment (can't make final balance negative)
                     const actualIncrement = balanceChange < 0
-                        ? Math.max(balanceChange, -currentBalance) // Prevent negative final balance
-                        : balanceChange; // Positive increment is fine
-
-                    console.log('[DEBUG] Sale Balance Update:', {
-                        grandTotal: finalGrandTotal,
-                        paid: finalPaidAmount,
-                        balanceChange,
-                        currentBalance,
-                        actualIncrement
-                    });
+                        ? Math.max(balanceChange, -currentBalance)
+                        : balanceChange;
 
                     if (actualIncrement !== 0) {
                         await tx.customer.update({
@@ -1987,10 +2143,10 @@ app.post('/api/sales', async (req, res) => {
                 }
             }
 
-            return sale;
+            return s;
         });
 
-        res.json({ success: true, id: sale.id, ...sale });
+        res.json({ success: true, id: sale.id });
     } catch (e) { handleError(res, e); }
 });
 
