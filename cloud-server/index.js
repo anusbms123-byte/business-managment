@@ -941,21 +941,15 @@ app.delete('/api/vendors/:id', async (req, res) => {
         const id = req.params.id;
         
         await prisma.$transaction([
-            // 1. Nullify products link to this vendor so they don't block deletion
-            prisma.product.updateMany({
-                where: { vendorId: id },
-                data: { vendorId: null }
-            }),
-
-            // 2. Delete Purchase Return Items and Returns
+            // 1. Delete Purchase Return Items and Returns
             prisma.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { vendorId: id } } }),
             prisma.purchaseReturn.deleteMany({ where: { vendorId: id } }),
             
-            // 3. Delete Purchase Items and Purchases
+            // 2. Delete Purchase Items and Purchases
             prisma.purchaseItem.deleteMany({ where: { purchase: { vendorId: id } } }),
             prisma.purchase.deleteMany({ where: { vendorId: id } }),
             
-            // 4. Delete the vendor
+            // 3. Delete the vendor
             prisma.vendor.delete({ where: { id } })
         ]);
 
