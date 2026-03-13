@@ -1990,7 +1990,7 @@ app.post('/api/sales', async (req, res) => {
             return sale;
         });
 
-        res.json({ success: true, message: "Sale recorded and stock updated" });
+        res.json({ success: true, id: sale.id, ...sale });
     } catch (e) { handleError(res, e); }
 });
 

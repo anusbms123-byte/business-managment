@@ -294,10 +294,10 @@ const Reports = ({ currentUser }) => {
     );
 
     const renderDetailView = () => {
-        const chartData = (summary?.recentDays || []).slice().reverse();
+        const chartData = (summary?.recentDays || []).slice();
         const moduleMap = {
             sales: {
-                title: 'Sales Report', icon: DollarSign, color: '#3b82f6', dataKey: 'sales',
+                title: 'Sales Report', icon: DollarSign, color: '#10b981', dataKey: 'sales',
                 miniStats: [
                     { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-orange-500' },
@@ -310,21 +310,19 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             purchases: {
-                title: 'Purchase Report', icon: ShoppingCart, color: '#f59e0b', dataKey: 'purchases',
+                title: 'Purchase Report', icon: ShoppingCart, color: '#10b981', dataKey: 'purchases',
                 miniStats: [
                     { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-amber-600' },
-                    { label: 'Pending Bills', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Avg Bill Size', value: `PKR ${(Math.round(summary?.totalPurchases / (summary?.purchaseCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-blue-500' },
-                    { label: 'Total Bills', value: `${summary?.purchaseCount || 0} Logged`, icon: Layers, color: 'text-orange-500' },
-                    { label: 'Active Vendors', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-indigo-500' },
+                    { label: 'Pending Bills', value: `PKR ${(summary?.totalPayablesFromPeriod ?? summary?.totalPayables ?? 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-rose-500' },
+                    { label: 'Total Suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-indigo-500' },
                     { label: 'Stock Value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-500' }
                 ],
-                tableCols: ['Date', 'Invoice', 'Vendor', 'Products', 'Items', 'Total', 'Status'],
+                tableCols: ['Date', 'Invoice', 'Supplier', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Purchase Log',
-                cols: 3
+                cols: 4
             },
             inventory: {
-                title: 'Inventory Report', icon: Package, color: '#6366f1', dataKey: 'inventory',
+                title: 'Inventory Report', icon: Package, color: '#10b981', dataKey: 'inventory',
                 miniStats: [
                     { label: 'Stock Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
                     { label: 'Sale Potential (Sell)', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
@@ -339,7 +337,7 @@ const Reports = ({ currentUser }) => {
                 cols: 7
             },
             expenses: {
-                title: 'Expense Report', icon: TrendingUp, color: '#f43f5e', dataKey: 'expenses',
+                title: 'Expense Report', icon: TrendingUp, color: '#10b981', dataKey: 'expenses',
                 miniStats: [
                     { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-indigo-500' },
                     { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
@@ -538,7 +536,7 @@ const Reports = ({ currentUser }) => {
                                         onChange={(e) => setSelectedVendor(e.target.value)}
                                         className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Vendors</option>
+                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
                                         {vendors.map(v => (
                                             <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
@@ -765,8 +763,12 @@ const Reports = ({ currentUser }) => {
                         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8 overflow-hidden relative">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest mb-1 italic">Line Chart</h2>
-                                    <p className="text-xs text-black dark:text-slate-100 font-bold uppercase tracking-tight">Report History</p>
+                                    <h2 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest mb-1 italic">
+                                        {activeModule === 'inventory' ? 'Stock Added (Cost)' : activeModule === 'expenses' ? 'Spending Analysis' : 'Line Chart'}
+                                    </h2>
+                                    <p className="text-xs text-black dark:text-slate-100 font-bold uppercase tracking-tight">
+                                        {activeModule === 'inventory' ? 'Stock Addition Trend' : activeModule === 'expenses' ? 'Expense Velocity' : 'Report History'}
+                                    </p>
                                 </div>
                                 <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Download size={18} /></button>
                             </div>
@@ -816,7 +818,7 @@ const Reports = ({ currentUser }) => {
                                     PKR {(
                                         activeModule === 'returns'
                                             ? (selectedReturnType === 'sales' ? (summary?.totalSalesReturns || 0) : selectedReturnType === 'purchases' ? (summary?.totalPurchaseReturns || 0) : (summary?.totalReturns || 0))
-                                            : (summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : 'totalSales'] || 0)
+                                            : (summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : activeModule === 'expenses' ? 'totalExpenses' : 'totalSales'] || 0)
                                     ).toLocaleString()}
                                 </h2>
                             </div>
@@ -871,10 +873,10 @@ const Reports = ({ currentUser }) => {
                                     </div>
                                 ) : activeModule === 'purchases' ? (
                                     selectedVendor === 'all' ? (
-                                        /* Top Vendors View */
+                                        /* Top Suppliers View */
                                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Vendors</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Suppliers</span>
                                                 <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                             </div>
                                             <div className="space-y-2">
@@ -890,7 +892,7 @@ const Reports = ({ currentUser }) => {
                                                     </div>
                                                 ))}
                                                 {(!summary?.topVendors || summary.topVendors.length === 0) && (
-                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No vendor data available</p>
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No supplier data available</p>
                                                 )}
                                             </div>
                                         </div>
@@ -972,10 +974,10 @@ const Reports = ({ currentUser }) => {
                                         </div>
                                     </div>
                                 ) : activeModule === 'suppliers' ? (
-                                    /* Top Vendors by Purchase Volume */
+                                    /* Top Suppliers by Purchase Volume */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Vendors</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Suppliers</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Purchases</span>
                                         </div>
                                         <div className="space-y-2">
@@ -991,7 +993,7 @@ const Reports = ({ currentUser }) => {
                                                 </div>
                                             ))}
                                             {(!summary?.topVendors || summary.topVendors.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No vendor data available</p>
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No supplier data available</p>
                                             )}
                                         </div>
                                     </div>
@@ -1040,6 +1042,30 @@ const Reports = ({ currentUser }) => {
                                             ))}
                                             {(!summary?.topStaff || summary.topStaff.length === 0) && (
                                                 <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No staff data available</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : activeModule === 'expenses' ? (
+                                    /* Top Expenses View */
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Categories</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(summary?.topExpenses || []).slice(0, 3).map((e, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-orange-500' : 'bg-slate-500'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{e.name}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400">PKR {e.total?.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topExpenses || summary.topExpenses.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No expense data available</p>
                                             )}
                                         </div>
                                     </div>

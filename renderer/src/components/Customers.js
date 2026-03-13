@@ -186,12 +186,12 @@ const Customers = ({ currentUser }) => {
                                 <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
                                 <tr><td colSpan="5" className="px-8 py-20 text-center text-gray-400 dark:text-slate-500 font-medium">Loading customers...</td></tr>
                             ) : filtered.length > 0 ? (
                                 filtered.map((customer) => (
-                                    <tr key={customer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                    <tr key={customer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group border-b border-slate-100 dark:border-slate-800 last:border-0">
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="text-sm font-bold text-black dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-none">{customer.name}</p>

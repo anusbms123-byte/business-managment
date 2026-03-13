@@ -1071,7 +1071,8 @@ ipcMain.handle("get-sales", async (e, companyId) => {
                        p.name, p.code as sku, p.sell_price as sellPrice 
                 FROM sale_items si
                 LEFT JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
-                WHERE si.sale_id = ? OR si.sale_id = ?
+                WHERE (si.sale_id = ? OR si.sale_id = ?)
+                GROUP BY si.id
             `, [row.global_id, String(row.id)]);
 
             salesWithItems.push({
@@ -1697,7 +1698,8 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
                        p.name, p.code as sku, p.cost_price as costPrice 
                 FROM purchase_items pi
                 LEFT JOIN products p ON pi.product_id = p.id OR pi.product_id = p.global_id
-                WHERE pi.purchase_id = ? OR pi.purchase_id = ?
+                WHERE (pi.purchase_id = ? OR pi.purchase_id = ?)
+                GROUP BY pi.id
             `, [row.global_id, String(row.id)]);
 
             purchasesWithItems.push({
@@ -1738,10 +1740,12 @@ ipcMain.handle("add-purchase", async (e, data) => {
 
         await db.asyncRun("BEGIN TRANSACTION");
 
+        const purchase_date = data.date || data.purchaseDate || data.purchase_date || new Date().toISOString().split('T')[0];
+
         const result = await db.asyncRun(
-            `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, companyId]
+            `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId]
         );
 
         if (items && Array.isArray(items)) {
@@ -1808,14 +1812,16 @@ ipcMain.handle("update-purchase", async (e, data) => {
             await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [oldDiff, oldPurchase.vendor_id, oldPurchase.vendor_id]);
         }
 
+        const purchase_date = data.date || data.purchaseDate || data.purchase_date || oldPurchase.purchase_date || new Date().toISOString().split('T')[0];
+
         // 3. Update Purchase Record
         await db.asyncRun(
-            `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-            [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, companyId, id, id]
+            `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, purchase_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, id, id]
         );
 
         // 4. Delete and Re-insert items, Update New Stock
-        await db.asyncRun("DELETE FROM purchase_items WHERE purchase_id = ?", [oldGid]);
+        await db.asyncRun("DELETE FROM purchase_items WHERE purchase_id = ? OR purchase_id = ?", [oldGid, String(id)]);
 
         if (items && Array.isArray(items)) {
             for (const item of items) {
@@ -1896,8 +1902,8 @@ ipcMain.handle("get-sale-returns", async (e, companyId) => {
                        'total', sri.total,
                        'name', p.name
                    )) FROM sale_return_items sri 
-                   LEFT JOIN products p ON sri.product_id = p.id OR sri.product_id = p.global_id
-                   WHERE sri.return_id = sr.global_id OR sri.return_id = sr.id) as items
+                   LEFT JOIN (SELECT id, global_id, name FROM products GROUP BY global_id) p ON sri.product_id = p.id OR (sri.product_id = p.global_id AND sri.product_id IS NOT NULL)
+                   WHERE (sri.return_id = sr.global_id OR sri.return_id = sr.id)) as items
             FROM sale_returns sr
             LEFT JOIN customers c ON sr.customer_id = c.id OR sr.customer_id = c.global_id
             WHERE (sr.company_id = ? OR sr.company_id = ? OR sr.company_id = ?) 
@@ -2029,8 +2035,8 @@ ipcMain.handle("get-purchase-returns", async (e, companyId) => {
                        'total', pri.total,
                        'name', p.name
                    )) FROM purchase_return_items pri 
-                   LEFT JOIN products p ON pri.product_id = p.id OR pri.product_id = p.global_id
-                   WHERE pri.return_id = pr.global_id OR pri.return_id = pr.id) as items
+                   LEFT JOIN (SELECT id, global_id, name FROM products GROUP BY global_id) p ON pri.product_id = p.id OR (pri.product_id = p.global_id AND pri.product_id IS NOT NULL)
+                   WHERE (pri.return_id = pr.global_id OR pri.return_id = pr.id)) as items
             FROM purchase_returns pr
             LEFT JOIN vendors v ON pr.vendor_id = v.id OR pr.vendor_id = v.global_id
             WHERE (pr.company_id = ? OR pr.company_id = ? OR pr.company_id = ?) 
@@ -2303,23 +2309,23 @@ ipcMain.handle("get-report-summary", async (e, params) => {
     };
 
     if (startDate && endDate) {
-        const startStr = normalizeDate(startDate).includes(' ') ? normalizeDate(startDate) : `${normalizeDate(startDate)} 00:00:00`;
-        const endStr = normalizeDate(endDate).includes(' ') ? normalizeDate(endDate) : `${normalizeDate(endDate)} 23:59:59`;
-        dateFilter = ` AND date(sale_date) BETWEEN date('${startStr}') AND date('${endStr}')`;
+        const startStr = normalizeDate(startDate);
+        const endStr = normalizeDate(endDate);
+        dateFilter = ` AND date({DATE_COL}) BETWEEN date('${startStr}') AND date('${endStr}')`;
     } else {
+        const localNow = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         if (period === 'Daily') {
-            dateFilter = ` AND date(sale_date) >= date('${now.toISOString().split('T')[0]}')`;
+            dateFilter = ` AND date({DATE_COL}) >= date('${localNow}')`;
         } else if (period === 'Weekly') {
-            const lastWeek = new Date(new Date().setDate(now.getDate() - 7)).toISOString().split('T')[0];
-            dateFilter = ` AND date(sale_date) >= date('${lastWeek}')`;
+            const lastWeek = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0];
+            dateFilter = ` AND date({DATE_COL}) >= date('${lastWeek}')`;
         } else if (period === 'Monthly') {
-            const lastMonth = new Date(new Date().setMonth(now.getMonth() - 1)).toISOString().split('T')[0];
-            dateFilter = ` AND date(sale_date) >= date('${lastMonth}')`;
+            const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0];
+            dateFilter = ` AND date({DATE_COL}) >= date('${lastMonth}')`;
         } else if (period === 'Yearly') {
-            const lastYear = new Date(new Date().setFullYear(now.getFullYear() - 1)).toISOString().split('T')[0];
-            dateFilter = ` AND date(sale_date) >= date('${lastYear}')`;
+            const lastYear = new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0];
+            dateFilter = ` AND date({DATE_COL}) >= date('${lastYear}')`;
         } else {
-            // All Time
             dateFilter = "";
         }
     }
@@ -2362,7 +2368,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         detailedVendors: [],
         detailedCustomers: [],
         detailedHRM: [],
-        topStaff: []
+        topStaff: [],
+        topExpenses: []
     };
 
     const dbGet = (sql, p) => db.asyncGet(sql, p).catch(() => null);
@@ -2384,35 +2391,74 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         stats.totalSales = sRow?.total || 0;
         stats.salesCount = sRow?.count || 0;
 
-        let purSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchases WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'purchase_date')}`;
+        let purSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchases WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, "COALESCE(purchase_date, updated_at)")}`;
         let purP = [...qParams];
         if (vendorId && vendorId !== 'all') {
             purSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
             purP.push(vendorId, vendorId);
         }
         if (paymentStatus && paymentStatus !== 'all') {
-            purSql += ` AND LOWER(payment_status) = ?`;
-            purP.push(paymentStatus.toLowerCase());
+            if (paymentStatus === 'paid') {
+                purSql += ` AND (LOWER(payment_status) = 'paid' OR LOWER(payment_status) = 'received' OR LOWER(payment_status) = 'success')`;
+            } else if (paymentStatus === 'credit') {
+                 purSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
+            } else {
+                purSql += ` AND LOWER(payment_status) = ?`;
+                purP.push(paymentStatus.toLowerCase());
+            }
         }
         const pRow = await dbGet(purSql, purP);
         stats.totalPurchases = pRow?.total || 0;
         stats.purchaseCount = pRow?.count || 0;
 
-        let expSql = `SELECT SUM(amount) as total, COUNT(*) as count FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let expSql = `SELECT SUM(amount) as total, COUNT(*) as count FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'date')}`;
         let expP = [...qParams];
-        if (expenseCategory && expenseCategory !== 'all') {
+        if (expenseCategory && expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
             expSql += ` AND category = ?`;
             expP.push(expenseCategory);
         }
+        
         const eRow = await dbGet(expSql, expP);
         stats.totalExpenses = eRow?.total || 0;
         stats.expenseCount = eRow?.count || 0;
 
-        const expBreakdown = await dbAll(`SELECT category, SUM(amount) as total FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')} GROUP BY category`, qParams);
+        // Add Salaries to Total Expenses if applicable
+        const salRowExp = await dbGet(`SELECT SUM(net_salary) as total, COUNT(*) as count FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'payment_date')}`, qParams);
+        stats.totalSalaries = salRowExp?.total || 0;
+
+        if (expenseCategory === 'all') {
+            stats.totalExpenses += stats.totalSalaries;
+            stats.expenseCount += (salRowExp?.count || 0);
+        } else if (expenseCategory === 'Staff Payroll') {
+            stats.totalExpenses = stats.totalSalaries;
+            stats.expenseCount = (salRowExp?.count || 0);
+        }
+
+        let brkSql = `SELECT category, SUM(amount) as total FROM expenses WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'date')}`;
+        let brkP = [...qParams];
+        if (expenseCategory && expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
+            brkSql += ` AND category = ?`;
+            brkP.push(expenseCategory);
+        }
+        const expBreakdown = await dbAll(brkSql + ` GROUP BY category`, brkP);
+        
         expBreakdown.forEach(r => stats.expenseCategoryBreakdown[r.category || 'General'] = r.total);
+        if (stats.totalSalaries > 0 && (expenseCategory === 'all' || expenseCategory === 'Staff Payroll')) {
+            stats.expenseCategoryBreakdown['Staff Payroll'] = stats.totalSalaries;
+        } else if (expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
+           // If a specific category is selected, the breakdown should only contain that, so salaries should be excluded
+           stats.totalSalaries = 0; 
+        }
+
+        // Top Expenses Breakdown
+        const topExp = Object.entries(stats.expenseCategoryBreakdown)
+            .map(([name, total]) => ({ name, total }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+        stats.topExpenses = topExp;
 
         // 2. Returns
-        let srSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let srSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM sale_returns WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'date')}`;
         let srP = [...qParams];
         if (customerId && customerId !== 'all') {
             srSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?) OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
@@ -2422,7 +2468,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         stats.totalSalesReturns = srRow?.total || 0;
         stats.returnCount += (srRow?.count || 0);
 
-        let prSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'date')}`;
+        let prSql = `SELECT SUM(total_amount) as total, COUNT(*) as count FROM purchase_returns WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'date')}`;
         let prP = [...qParams];
         if (vendorId && vendorId !== 'all') {
             prSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?) OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
@@ -2434,12 +2480,27 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         stats.totalReturns = stats.totalSalesReturns + stats.totalPurchaseReturns;
 
         // 3. Inventory
+        let invSqlMatch = `FROM products WHERE ${companyMatch} AND sync_status != 'deleted'`;
+        let invP = [...qParams];
+        if (categoryId && categoryId !== 'all') {
+            invSqlMatch += ` AND (category_id = ? OR category_id = (SELECT id FROM categories WHERE global_id = ?))`;
+            invP.push(categoryId, categoryId);
+        }
+        if (stockStatus === 'low') invSqlMatch += ` AND stock_quantity <= alert_threshold`;
+        else if (stockStatus === 'out') invSqlMatch += ` AND stock_quantity <= 0`;
+        else if (stockStatus === 'expired') invSqlMatch += ` AND expiry_date <= date('now')`;
+
+        // Apply date filter to inventory (based on updated_at) if requested
+        if (dateFilter) {
+            invSqlMatch += ` ${dateFilter.replace(/{DATE_COL}/g, 'updated_at')}`;
+        }
+
         const invRow = await dbGet(`SELECT SUM(stock_quantity * cost_price) as cost_val, SUM(stock_quantity * sell_price) as sell_val, 
                 COUNT(CASE WHEN stock_quantity <= alert_threshold THEN 1 END) as low,
                 COUNT(CASE WHEN stock_quantity > 0 THEN 1 END) as in_stock,
                 COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now', '+30 days') THEN 1 END) as expiring,
                 COUNT(CASE WHEN expiry_date IS NOT NULL AND expiry_date <= date('now') THEN 1 END) as expired
-                FROM products WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
+                ${invSqlMatch}`, invP);
         stats.inventoryValuationCost = invRow?.cost_val || 0;
         stats.inventoryValuationSell = invRow?.sell_val || 0;
         stats.lowStockCount = invRow?.low || 0;
@@ -2451,25 +2512,53 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             FROM sale_items si
             JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id
             JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
-            WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+            WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/{DATE_COL}/g, 's.sale_date')}`;
         let cogsP = [...qParams];
         if (customerId && customerId !== 'all') {
             cogsSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
             cogsP.push(customerId, customerId);
         }
+        if (paymentStatus && paymentStatus !== 'all') {
+            cogsSql += ` AND LOWER(s.payment_status) = ?`;
+            cogsP.push(paymentStatus.toLowerCase());
+        }
         const cRow = await dbGet(cogsSql, cogsP);
         stats.totalCOGS = cRow?.total_cogs || 0;
 
-        // 4. HRM & Vendors
-        const vRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
+        // 4. Supplier / Customer Balances (Filtered)
+        let vSql = `SELECT SUM(current_balance) as total, COUNT(*) as count FROM vendors WHERE ${companyMatch} AND sync_status != 'deleted'`;
+        let vP = [...qParams];
+        if (vendorId && vendorId !== 'all') {
+            vSql += ` AND (id = ? OR global_id = ?)`;
+            vP.push(vendorId, vendorId);
+        }
+        const vRow = await dbGet(vSql, vP);
         stats.totalPayables = vRow?.total || 0;
         stats.vendorCount = vRow?.count || 0;
 
-        const custRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM customers WHERE ${companyMatch} AND sync_status != 'deleted' ${dateFilter.replace(/sale_date/g, 'updated_at')}`, qParams);
+        // If we are specifically in a "Purchase" context or if a date range is applied, 
+        // we might want "Pending Bills" from the period. 
+        // Let's refine totalPayables if period filters are active to represent 'Due' from transactions.
+        if (startDate || endDate || (vendorId && vendorId !== 'all')) {
+            let dueSql = `SELECT SUM(total_amount) as total_due FROM purchases WHERE ${companyMatch} AND LOWER(payment_status) != 'paid' ${dateFilter.replace(/{DATE_COL}/g, 'purchase_date')}`;
+            let dueP = [...qParams];
+            if (vendorId && vendorId !== 'all') {
+                dueSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
+                dueP.push(vendorId, vendorId);
+            }
+            const dueRow = await dbGet(dueSql, dueP);
+            // We use this for "Pending Bills" in Purchase Report
+            stats.totalPayablesFromPeriod = dueRow?.total_due || 0;
+            
+            // If activeModule is purchases, UI might prefer this value. 
+            // In main stats card, we'll keep totalPayables as current balance unless it's a specific report.
+        }
+
+        const custRow = await dbGet(`SELECT SUM(current_balance) as total, COUNT(*) as count FROM customers WHERE ${companyMatch} AND sync_status != 'deleted'`, qParams);
         stats.totalReceivables = custRow?.total || 0;
         stats.customerCount = custRow?.count || 0;
 
-        const salRow = await dbGet(`SELECT SUM(net_salary) as total FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/sale_date/g, 'payment_date')}`, qParams);
+        const salRow = await dbGet(`SELECT SUM(net_salary) as total FROM salary_records WHERE ${companyMatch} ${dateFilter.replace(/{DATE_COL}/g, 'payment_date')}`, qParams);
         stats.totalSalaries = salRow?.total || 0;
 
         const empStats = await dbGet(`SELECT 
@@ -2485,7 +2574,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         let hrmSql = `SELECT s.*, e.first_name || ' ' || e.last_name as staff_name, e.designation, e.is_active 
                       FROM salary_records s 
                       JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
-                      WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 'date(s.payment_date)')}`;
+                      WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/{DATE_COL}/g, 'date(s.payment_date)')}`;
         let hrmP = [...qParams];
         if (employeeId && employeeId !== 'all') {
             hrmSql += ` AND (s.employee_id = ? OR s.employee_id = (SELECT id FROM employees WHERE global_id = ?))`;
@@ -2507,7 +2596,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         // 5. Detailed Lists (MAPPED)
 
         // 5. Detailed Lists (MAPPED)
-        let detSalesSql = `SELECT s.*, c.name as customer_name FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+        let detSalesSql = `SELECT s.*, c.name as customer_name, u.username FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id LEFT JOIN users u ON s.user_id = u.id OR s.user_id = u.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/{DATE_COL}/g, 's.sale_date')}`;
         let detSalesP = [...qParams];
         if (customerId && customerId !== 'all') {
             detSalesSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
@@ -2532,15 +2621,21 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             });
         }
 
-        let detPurSql = `SELECT p.*, v.name as vendor_name FROM purchases p LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
+        let detPurSql = `SELECT p.*, v.name as vendor_name FROM purchases p LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/{DATE_COL}/g, "COALESCE(p.purchase_date, p.updated_at)")}`;
         let detPurP = [...qParams];
         if (vendorId && vendorId !== 'all') {
             detPurSql += ` AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
             detPurP.push(vendorId, vendorId);
         }
         if (paymentStatus && paymentStatus !== 'all') {
-            detPurSql += ` AND LOWER(p.payment_status) = ?`;
-            detPurP.push(paymentStatus.toLowerCase());
+            if (paymentStatus === 'paid') {
+                detPurSql += ` AND (LOWER(p.payment_status) = 'paid' OR LOWER(p.payment_status) = 'received' OR LOWER(p.payment_status) = 'success')`;
+            } else if (paymentStatus === 'credit') {
+                 detPurSql += ` AND (LOWER(p.payment_status) = 'due' OR LOWER(p.payment_status) = 'partial')`;
+            } else {
+                detPurSql += ` AND LOWER(p.payment_status) = ?`;
+                detPurP.push(paymentStatus.toLowerCase());
+            }
         }
         const detPurchases = await dbAll(detPurSql + " ORDER BY p.purchase_date DESC LIMIT 100", detPurP);
         for (const r of detPurchases) {
@@ -2648,11 +2743,14 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             balance: c.current_balance || c.balance || 0
         }));
 
-        // 6. Trend
-        const trendPoints = 7;
-        const startT = startDate ? new Date(startDate).getTime() : new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).getTime();
+        // 6. Trend - Refined for daily accuracy
+        const startT = startDate ? new Date(startDate).getTime() : new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).getTime();
         const endT = endDate ? new Date(endDate).getTime() : now.getTime();
-        const step = (endT - startT) / trendPoints;
+        
+        // Calculate dynamic points (Daily if range <= 60 days, else weekly)
+        const diffDays = Math.ceil((endT - startT) / (1000 * 60 * 60 * 24));
+        const trendPoints = diffDays <= 65 ? diffDays : 30; 
+        const step = (endT - startT) / (trendPoints || 1);
 
         for (let i = 0; i <= trendPoints; i++) {
             const d = new Date(startT + i * step);
@@ -2670,25 +2768,37 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             }
             const dS = await dbGet(dSSql, dSP);
 
-            let dPSql = `SELECT SUM(total_amount) as t FROM purchases WHERE ${companyMatch} AND date(purchase_date) = ?`;
+            let dPSql = `SELECT SUM(total_amount) as t FROM purchases WHERE ${companyMatch} AND date(COALESCE(purchase_date, updated_at)) = ?`;
             let dPP = [...qParams, dStr];
             if (vendorId && vendorId !== 'all') {
                 dPSql += ` AND (vendor_id = ? OR vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
                 dPP.push(vendorId, vendorId);
             }
             if (paymentStatus && paymentStatus !== 'all') {
-                dPSql += ` AND LOWER(payment_status) = ?`;
-                dPP.push(paymentStatus.toLowerCase());
+                if (paymentStatus === 'paid') {
+                    dPSql += ` AND (LOWER(payment_status) = 'paid' OR LOWER(payment_status) = 'received' OR LOWER(payment_status) = 'success')`;
+                } else if (paymentStatus === 'credit') {
+                     dPSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
+                } else {
+                    dPSql += ` AND LOWER(payment_status) = ?`;
+                    dPP.push(paymentStatus.toLowerCase());
+                }
             }
             const dP = await dbGet(dPSql, dPP);
 
-            const dE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND date(date) = ?`, [...qParams, dStr]);
+            let dExSql = `SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND date(date) = ?`;
+            let dExP = [...qParams, dStr];
+            if (expenseCategory && expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
+                dExSql += ` AND category = ?`;
+                dExP.push(expenseCategory);
+            }
+            const dE = await dbGet(dExSql, dExP);
 
             let dSRSql = `SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND date(date) = ?`;
             let dSRP = [...qParams, dStr];
             if (customerId && customerId !== 'all') {
-                dSRSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
-                dSRP.push(customerId, customerId);
+                dSRSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?) OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                dSRP.push(customerId, customerId, customerId);
             }
             const dSR = await dbGet(dSRSql, dSRP);
 
@@ -2728,10 +2838,29 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 dCogsSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
                 dCogsP.push(customerId, customerId);
             }
+            if (paymentStatus && paymentStatus !== 'all') {
+                dCogsSql += ` AND LOWER(s.payment_status) = ?`;
+                dCogsP.push(paymentStatus.toLowerCase());
+            }
             const dCogs = await dbGet(dCogsSql, dCogsP);
 
+            // Inventory Addition Trend: Combine Purchases and Manual Stock updates on that day
+            let dInvSql = `SELECT SUM(stock_quantity * cost_price) as t FROM products WHERE ${companyMatch} AND date(updated_at) = ? AND sync_status != 'deleted'`;
+            let dInvP = [...qParams, dStr];
+            if (categoryId && categoryId !== 'all') {
+                dInvSql += ` AND (category_id = ? OR category_id = (SELECT id FROM categories WHERE global_id = ?))`;
+                dInvP.push(categoryId, categoryId);
+            }
+            const dInvVal = await dbGet(dInvSql, dInvP);
+
             const isF = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
-            const dailyOps = isF ? 0 : (dE?.t || 0) + (dSal?.t || 0);
+            
+            let dailyExp = (dE?.t || 0);
+            if (expenseCategory === 'all' || expenseCategory === 'Staff Payroll') {
+                dailyExp += (dSal?.t || 0);
+            }
+            
+            const dailyOps = isF ? 0 : dailyExp;
 
             stats.recentDays.push({
                 date: dStr,
@@ -2743,7 +2872,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 returns: dSR?.t || 0,
                 profit: ((dS?.t || 0) - (dSR?.t || 0)) - (dailyOps + (dCogs?.t || 0)),
                 payables: dPay?.t || 0,
-                receivables: dRec?.t || 0
+                receivables: dRec?.t || 0,
+                inventory: (dP?.t || 0) > (dInvVal?.t || 0) ? (dP?.t || 0) : (dInvVal?.t || 0) // Max of purchases or updated stock value for that day
             });
         }
 
@@ -2760,7 +2890,17 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         }
         stats.topProducts = await dbAll(topProdSql + ` GROUP BY p.name ORDER BY qtySold DESC LIMIT 5`, topProdP);
 
-        stats.topCustomers = await dbAll(`SELECT IFNULL(c.name, 'Walk-in') as name, SUM(s.grand_total) as totalSpent FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')} GROUP BY IFNULL(c.name, 'Walk-in') ORDER BY totalSpent DESC LIMIT 5`, qParams);
+        let topCustSql = `SELECT IFNULL(c.name, 'Walk-in') as name, SUM(s.grand_total) as totalSpent FROM sales s LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.sale_date')}`;
+        let topCustP = [...qParams];
+        if (customerId && customerId !== 'all') {
+            topCustSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+            topCustP.push(customerId, customerId);
+        }
+        if (paymentStatus && paymentStatus !== 'all') {
+            topCustSql += ` AND LOWER(s.payment_status) = ?`;
+            topCustP.push(paymentStatus.toLowerCase());
+        }
+        stats.topCustomers = await dbAll(topCustSql + ` GROUP BY IFNULL(c.name, 'Walk-in') ORDER BY totalSpent DESC LIMIT 5`, topCustP);
 
         let topVendSql = `SELECT v.name, SUM(p.total_amount) as totalSpent FROM purchases p JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id WHERE ${companyMatch.replace(/company_id/g, 'p.company_id')} ${dateFilter.replace(/sale_date/g, 'p.purchase_date')}`;
         let topVendP = [...qParams];
@@ -2790,7 +2930,21 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         }
         stats.topPurchasedProducts = await dbAll(topPurProdSql + ` GROUP BY pr.name ORDER BY qtyBought DESC LIMIT 5`, topPurProdP);
 
-        const topVal = await dbAll(`SELECT p.name, (stock_quantity * cost_price) as val FROM products p WHERE ${companyMatch} AND sync_status != 'deleted' ORDER BY val DESC LIMIT 5`, qParams);
+        let tValSql = `SELECT p.name, (stock_quantity * cost_price) as val FROM products p WHERE ${companyMatch} AND sync_status != 'deleted'`;
+        let tValP = [...qParams];
+        if (categoryId && categoryId !== 'all') {
+            tValSql += ` AND (p.category_id = ? OR p.category_id = (SELECT id FROM categories WHERE global_id = ?))`;
+            tValP.push(categoryId, categoryId);
+        }
+        if (stockStatus === 'low') tValSql += ` AND p.stock_quantity <= p.alert_threshold`;
+        else if (stockStatus === 'out') tValSql += ` AND p.stock_quantity <= 0`;
+        else if (stockStatus === 'expired') tValSql += ` AND p.expiry_date <= date('now')`;
+
+        if (dateFilter) {
+            tValSql += ` ${dateFilter.replace(/sale_date/g, 'p.updated_at')}`;
+        }
+
+        const topVal = await dbAll(tValSql + ` ORDER BY val DESC LIMIT 5`, tValP);
         stats.topValuedItems = topVal.map(r => ({ name: r.name, costPrice: r.val, stockQty: 1 }));
 
         stats.topStaff = await dbAll(`SELECT e.first_name || ' ' || e.last_name as name, SUM(s.net_salary) as totalEarned 
@@ -2798,6 +2952,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                                       JOIN employees e ON s.employee_id = e.id OR s.employee_id = e.global_id 
                                       WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} ${dateFilter.replace(/sale_date/g, 's.payment_date')} 
                                       GROUP BY name ORDER BY totalEarned DESC LIMIT 5`, qParams);
+
+        stats.totalInventory = stats.inventoryValuationCost;
 
         // Calculate Gross Profit: (Total Sales - Returns) - COGS
         stats.grossProfit = (stats.totalSales - stats.totalSalesReturns) - stats.totalCOGS;
@@ -2820,9 +2976,38 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             const mEMatch = `strftime('%Y-%m', date) = ?`;
             const mHMatch = `(strftime('%Y-%m', payment_date) = ? OR strftime('%Y-%m', month) = ?)`;
 
-            const mS = await dbGet(`SELECT SUM(grand_total) as t FROM sales WHERE ${companyMatch} AND ${mMatch}`, [...qParams, mStr]);
-            const mSR = await dbGet(`SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
-            const mCOGS = await dbGet(`SELECT SUM(si.quantity * p.cost_price) as t FROM sale_items si JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND strftime('%Y-%m', s.sale_date) = ?`, [...qParams, mStr]);
+            let mSSql = `SELECT SUM(grand_total) as t FROM sales WHERE ${companyMatch} AND ${mMatch}`;
+            let mSP = [...qParams, mStr];
+            if (customerId && customerId !== 'all') {
+                mSSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                mSP.push(customerId, customerId);
+            }
+            if (paymentStatus && paymentStatus !== 'all') {
+                mSSql += ` AND LOWER(payment_status) = ?`;
+                mSP.push(paymentStatus.toLowerCase());
+            }
+            const mS = await dbGet(mSSql, mSP);
+
+            let mSRSql = `SELECT SUM(total_amount) as t FROM sale_returns WHERE ${companyMatch} AND ${mEMatch}`;
+            let mSRP = [...qParams, mStr];
+            if (customerId && customerId !== 'all') {
+                mSRSql += ` AND (customer_id = ? OR customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                mSRP.push(customerId, customerId);
+            }
+            const mSR = await dbGet(mSRSql, mSRP);
+
+            let mCOGSSql = `SELECT SUM(si.quantity * p.cost_price) as t FROM sale_items si JOIN sales s ON si.sale_id = s.id OR si.sale_id = s.global_id JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND strftime('%Y-%m', s.sale_date) = ?`;
+            let mCOGSP = [...qParams, mStr];
+            if (customerId && customerId !== 'all') {
+                mCOGSSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                mCOGSP.push(customerId, customerId);
+            }
+            if (paymentStatus && paymentStatus !== 'all') {
+                mCOGSSql += ` AND LOWER(s.payment_status) = ?`;
+                mCOGSP.push(paymentStatus.toLowerCase());
+            }
+            const mCOGS = await dbGet(mCOGSSql, mCOGSP);
+
             const mE = await dbGet(`SELECT SUM(amount) as t FROM expenses WHERE ${companyMatch} AND ${mEMatch}`, [...qParams, mStr]);
             const mSal = await dbGet(`SELECT SUM(net_salary) as t FROM salary_records WHERE ${companyMatch} AND ${mHMatch}`, [...qParams, mStr, mStr]);
 

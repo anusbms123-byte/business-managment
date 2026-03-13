@@ -197,6 +197,7 @@ const Sales = ({ currentUser }) => {
     const paymentStatus = effectivePaidAmount >= grandTotal ? 'PAID' : (effectivePaidAmount > 0 ? 'PARTIAL' : 'DUE');
 
     const handleEdit = (sale) => {
+        resetForm();
         setEditingId(sale.id);
         setSelectedCustomer(sale.customerId || sale.customer_id || '');
 
@@ -222,7 +223,9 @@ const Sales = ({ currentUser }) => {
         setNotes(sale.notes || '');
 
         const cust = customers.find(c => c.id === (sale.customerId || sale.customer_id));
-        setPreviousBalance(cust?.balance || 0);
+        const currentCustBalance = cust?.current_balance || cust?.balance || 0;
+        const saleDue = (sale.total_amount || sale.totalAmount || sale.grandTotal || 0) - (sale.paid_amount || sale.paidAmount || sale.amountPaid || 0);
+        setPreviousBalance(currentCustBalance - saleDue);
 
         setIsModalOpen(true);
     };
@@ -275,6 +278,7 @@ const Sales = ({ currentUser }) => {
     };
 
     const executeSaveSale = async () => {
+        setSaving(true);
         const cust = customers.find(c => c.id === selectedCustomer);
         try {
             const saleData = {
@@ -389,10 +393,10 @@ const Sales = ({ currentUser }) => {
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredSales.map((sale) => (
-                                <tr key={sale.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group border-b border-slate-50 dark:border-slate-800 last:border-0 text-slate-800 dark:text-slate-100">
-                                    <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+                                <tr key={sale.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-0 text-slate-800 dark:text-slate-100">
+                                    <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                                         <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{sale.invoiceNo}</div>
                                         <div className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">{sale.date ? new Date(sale.date).toLocaleString() : 'N/A'}</div>
                                     </td>
@@ -412,11 +416,11 @@ const Sales = ({ currentUser }) => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
-                                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
+                                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(sale.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
                                             sale.paymentStatus === 'PARTIAL' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' :
                                                 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                             }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${sale.paymentStatus === 'PAID' ? 'bg-emerald-500' :
+                                            <span className={`w-1.5 h-1.5 rounded-full ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(sale.paymentStatus)) ? 'bg-emerald-500' :
                                                 sale.paymentStatus === 'PARTIAL' ? 'bg-amber-500' :
                                                     'bg-rose-500'
                                                 }`}></span>
@@ -675,9 +679,18 @@ const Sales = ({ currentUser }) => {
                                             onChange={(e) => {
                                                 const cid = e.target.value;
                                                 setSelectedCustomer(cid);
-                                                // Use == for loose comparison or Number() for string/number match
                                                 const cust = customers.find(c => String(c.id) === String(cid));
-                                                setPreviousBalance(cust?.balance || 0);
+                                                let balance = cust?.current_balance || cust?.balance || 0;
+
+                                                // If editing same customer, subtract this sale's impact
+                                                if (editingId) {
+                                                    const s = sales.find(sale => sale.id === editingId || sale.global_id === editingId);
+                                                    if (s && String(s.customer_id) === String(cid)) {
+                                                        const due = (s.total_amount || s.totalAmount || s.grandTotal || 0) - (s.paid_amount || s.paidAmount || s.amountPaid || 0);
+                                                        balance -= due;
+                                                    }
+                                                }
+                                                setPreviousBalance(balance);
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
                                             onFocus={(e) => {

@@ -572,30 +572,30 @@ const Products = ({ currentUser }) => {
                                 <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredProducts.map((product) => (
-                                <tr key={product.id} className="transition-all border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/30 dark:hover:bg-slate-800/30">
-                                    <td className="px-6 py-4 sticky left-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-50 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                <tr key={product.id} className="transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/30 dark:hover:bg-slate-800/30">
+                                    <td className="px-6 py-4 sticky left-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                         <div className="text-xs font-bold text-black dark:text-slate-200">{product.sku || '-'}</div>
                                     </td>
-                                    <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+                                    <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                                         <div className="font-bold text-black dark:text-slate-100 text-xs uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.costPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.sellPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase border-b border-slate-50 dark:border-slate-800">{product.unit || 'pcs'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800 text-center">{product.stockQty}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-50 dark:border-slate-800">{product.weight ? `${product.weight}kg` : '-'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight border-b border-slate-50 dark:border-slate-800">{product.brand?.name || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.color || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.size || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.grade || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">{product.condition || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-50 dark:border-slate-800">
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.costPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.sellPrice?.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase border-b border-slate-100 dark:border-slate-800">{product.unit || 'pcs'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 text-center">{product.stockQty}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.weight ? `${product.weight}kg` : '-'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight border-b border-slate-100 dark:border-slate-800">{product.brand?.name || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.color || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.size || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.grade || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.condition || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
                                         {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
                                     </td>
-                                    <td className="px-6 py-4 text-xs text-black dark:text-slate-200 font-bold border-b border-slate-50 dark:border-slate-800">Min:{product.alertQty || 5}</td>
-                                    <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+                                    <td className="px-6 py-4 text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">Min:{product.alertQty || 5}</td>
+                                    <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                                         <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-900">
                                             {product.category?.name || 'Uncategorized'}
                                         </span>

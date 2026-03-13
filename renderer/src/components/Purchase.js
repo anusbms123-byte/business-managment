@@ -280,6 +280,15 @@ const Purchase = ({ currentUser }) => {
 
         setSaving(true);
         try {
+            const currentBillTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue;
+            let finalPaymentStatus = (parseFloat(paidAmount) >= currentBillTotal) ? 'PAID' : (parseFloat(paidAmount) > 0 ? 'PARTIAL' : 'DUE');
+            
+            // If the user explicitly chose RECEIVED as a status from a status dropdown (if any) or if it's already RECEIVED, keep it as a signal of item reception
+            if (paymentStatus === 'RECEIVED' && finalPaymentStatus === 'PAID') {
+                finalPaymentStatus = 'RECEIVED';
+            }
+
+
             const data = {
                 id: editingId,
                 companyId: currentUser?.company_id,
@@ -291,7 +300,7 @@ const Purchase = ({ currentUser }) => {
                 discount: discountValue,
                 tax: taxValue,
                 paymentMethod,
-                paymentStatus,
+                paymentStatus: finalPaymentStatus,
                 dueDate: dueDate || null,
                 notes,
                 items: cart.map(item => ({
@@ -362,7 +371,9 @@ const Purchase = ({ currentUser }) => {
         setCart(loadedCart);
 
         const ven = vendors.find(v => v.id === (purchase.vendorId || purchase.vendor_id));
-        setPreviousBalance(ven?.balance || 0);
+        const currentVenBalance = ven?.current_balance || ven?.balance || 0;
+        const purchaseDue = (purchase.total_amount || purchase.totalAmount || 0) - (purchase.paid_amount || purchase.paidAmount || 0);
+        setPreviousBalance(currentVenBalance - purchaseDue);
 
         setIsModalOpen(true);
     };
@@ -511,7 +522,7 @@ const Purchase = ({ currentUser }) => {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
                                 <tr>
                                     <td colSpan="7" className="px-6 py-20 text-center">
@@ -519,7 +530,7 @@ const Purchase = ({ currentUser }) => {
                                     </td>
                                 </tr>
                             ) : filteredPurchases.map((p) => (
-                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-0">
                                     <td className="px-6 py-4">
                                         <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{p.invoiceNo || `PO-${p.id.toString().slice(-6)}`}</div>
                                         <div className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">{p.date ? new Date(p.date).toLocaleString() : 'N/A'}</div>
@@ -540,12 +551,12 @@ const Purchase = ({ currentUser }) => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.paidAmount >= p.totalAmount ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
-                                            p.paidAmount > 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' :
-                                                'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50'
+                                        <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(p.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
+                                            p.paymentStatus === 'PARTIAL' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' :
+                                                'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                             }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${p.paidAmount >= p.totalAmount ? 'bg-emerald-500' : p.paidAmount > 0 ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
-                                            <span>{p.paidAmount >= p.totalAmount ? 'Fully Paid' : p.paidAmount > 0 ? 'Partial' : 'Ordered'}</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(p.paymentStatus)) ? 'bg-emerald-500' : p.paymentStatus === 'PARTIAL' ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
+                                            <span>{p.paymentStatus || (p.paidAmount >= p.totalAmount ? 'PAID' : 'DUE')}</span>
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -633,7 +644,17 @@ const Purchase = ({ currentUser }) => {
                                                 const vid = e.target.value;
                                                 setVendorId(vid);
                                                 const ven = vendors.find(v => String(v.id) === String(vid));
-                                                setPreviousBalance(ven?.balance || 0);
+                                                let balance = ven?.current_balance || ven?.balance || 0;
+                                                
+                                                // If editing same vendor, subtract this purchase's impact
+                                                if (editingId) {
+                                                    const p = purchases.find(pur => pur.id === editingId || pur.global_id === editingId);
+                                                    if (p && String(p.vendor_id) === String(vid)) {
+                                                        const due = (p.total_amount || p.totalAmount || 0) - (p.paid_amount || p.paidAmount || 0);
+                                                        balance -= due;
+                                                    }
+                                                }
+                                                setPreviousBalance(balance);
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
                                         >
@@ -1009,7 +1030,7 @@ const Purchase = ({ currentUser }) => {
                             <div className="mt-auto pt-4">
                                 <button
                                     onClick={handleSave}
-                                    disabled={cart.length === 0}
+                                    disabled={cart.length === 0 || saving}
                                     className="w-full py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-xl font-bold text-base hover:bg-slate-900 dark:hover:bg-blue-700 shadow-md shadow-blue-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                 >
                                     {saving ? (

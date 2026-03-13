@@ -232,6 +232,8 @@ class SyncService {
             companyId = passedCompanyId;
         }
 
+        const localCompanyId = await this.resolveLocalId('companies', companyId);
+
         // 3. Lookup existing record
         let existingRow = await db.asyncGet(`SELECT id, global_id, updated_at, sync_status FROM ${table} WHERE global_id = ?`, [cloudData.id]);
 
@@ -239,15 +241,15 @@ class SyncService {
             // Fallback business key lookup
             let sql = "";
             let val = "";
-            if (table === 'sales') { sql = `SELECT id, global_id, updated_at, sync_status FROM sales WHERE inv_number = ? AND company_id = ?`; val = cloudData.invoiceNo || cloudData.inv_number; }
-            else if (table === 'products') { sql = `SELECT id, global_id, updated_at, sync_status FROM products WHERE code = ? AND company_id = ?`; val = cloudData.sku || cloudData.code; }
+            if (table === 'sales') { sql = `SELECT id, global_id, updated_at, sync_status FROM sales WHERE inv_number = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.invoiceNo || cloudData.inv_number; }
+            else if (table === 'products') { sql = `SELECT id, global_id, updated_at, sync_status FROM products WHERE code = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.sku || cloudData.code; }
             else if (table === 'users') { sql = `SELECT id, global_id, updated_at, sync_status FROM users WHERE LOWER(username) = LOWER(?)`; val = cloudData.username; }
-            else if (table === 'purchases') { sql = `SELECT id, global_id, updated_at, sync_status FROM purchases WHERE ref_number = ? AND company_id = ?`; val = cloudData.invoiceNo || cloudData.ref_number; }
-            else if (table === 'vendors') { sql = `SELECT id, global_id, updated_at, sync_status FROM vendors WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
-            else if (table === 'customers') { sql = `SELECT id, global_id, updated_at, sync_status FROM customers WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
-            else if (table === 'categories') { sql = `SELECT id, global_id, updated_at, sync_status FROM categories WHERE LOWER(name) = LOWER(?) AND company_id = ?`; val = cloudData.name; }
-            else if (table === 'brands') { sql = `SELECT id, global_id, updated_at, sync_status FROM brands WHERE LOWER(name) = LOWER(?) AND company_id = ?`; val = cloudData.name; }
-            else if (table === 'employees') { sql = `SELECT id, global_id, updated_at, sync_status FROM employees WHERE phone = ? AND company_id = ?`; val = cloudData.phone; }
+            else if (table === 'purchases') { sql = `SELECT id, global_id, updated_at, sync_status FROM purchases WHERE ref_number = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.invoiceNo || cloudData.ref_number; }
+            else if (table === 'vendors') { sql = `SELECT id, global_id, updated_at, sync_status FROM vendors WHERE phone = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.phone; }
+            else if (table === 'customers') { sql = `SELECT id, global_id, updated_at, sync_status FROM customers WHERE phone = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.phone; }
+            else if (table === 'categories') { sql = `SELECT id, global_id, updated_at, sync_status FROM categories WHERE LOWER(name) = LOWER(?) AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.name; }
+            else if (table === 'brands') { sql = `SELECT id, global_id, updated_at, sync_status FROM brands WHERE LOWER(name) = LOWER(?) AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.name; }
+            else if (table === 'employees') { sql = `SELECT id, global_id, updated_at, sync_status FROM employees WHERE phone = ? AND (company_id = ? OR company_id = ? OR company_id = ?)`; val = cloudData.phone; }
             else if (table === 'roles') {
                 const cloudCid = cloudData.company_id || cloudData.companyId;
                 const isSystem = (!cloudCid || cloudCid === 'null' || cloudCid === 'undefined');
@@ -263,7 +265,7 @@ class SyncService {
             else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE LOWER(name) = LOWER(?)`; val = cloudData.name; }
 
             if (sql && val && val !== "" && val !== "null" && val !== "undefined" && val !== null) {
-                const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId];
+                const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId, localCompanyId, String(localCompanyId)];
                 existingRow = await db.asyncGet(sql, params);
                 // Security: Don't merge if they have different Cloud IDs
                 if (existingRow && existingRow.global_id && !existingRow.global_id.includes('-') && existingRow.global_id !== cloudData.id) {
@@ -273,7 +275,31 @@ class SyncService {
         }
 
         // 4. Record Conflict Handling
-        if (existingRow && existingRow.sync_status === 'pending') return; // Protect local changes
+        if (existingRow && existingRow.sync_status === 'pending') {
+            // Even if pending, if we matched by business key and local has a temp UUID, adopt the real Cloud ID
+            // This prevents duplicate POSTs later if the first successful POST didn't update the GID
+            if (cloudData.id && (!existingRow.global_id || (existingRow.global_id.includes('-') && existingRow.global_id.length < 50))) {
+                const oldGid = existingRow.global_id;
+                const newGid = cloudData.id;
+                console.log(`[SYNC] Adopting Cloud ID ${newGid} for pending ${table} record ${existingRow.id} (Matched by business key)`);
+                
+                await db.asyncRun(`UPDATE ${table} SET global_id = ? WHERE id = ?`, [newGid, existingRow.id]);
+                
+                // Update children references to maintain integrity
+                if (table === 'sales') {
+                    await db.asyncRun("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [newGid, oldGid]);
+                    await db.asyncRun("UPDATE sale_returns SET sale_id = ? WHERE sale_id = ?", [newGid, oldGid]);
+                } else if (table === 'purchases') {
+                    await db.asyncRun("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [newGid, oldGid]);
+                    await db.asyncRun("UPDATE purchase_returns SET purchase_id = ? WHERE purchase_id = ?", [newGid, oldGid]);
+                } else if (table === 'roles') {
+                    await db.asyncRun("UPDATE permissions SET role_id = ? WHERE role_id = ?", [newGid, oldGid]);
+                    await db.asyncRun("UPDATE users SET role_id = ? WHERE role_id = ?", [newGid, oldGid]);
+                }
+            }
+            return; // Protect other local changes (amount, items, etc.)
+        }
+
         if (existingRow && existingRow.sync_status !== 'pending') {
             const cloudUpdated = new Date(cloudData.updatedAt || cloudData.updated_at || 0).getTime();
             const localUpdated = new Date(existingRow.updated_at || 0).getTime();
@@ -476,7 +502,7 @@ class SyncService {
             if (table === 'sales' && cloudData.items) {
                 const localSaleId = await this.resolveLocalId('sales', cloudData.id);
                 if (localSaleId) {
-                    await db.asyncRun(`DELETE FROM sale_items WHERE sale_id = ?`, [localSaleId]);
+                    await db.asyncRun(`DELETE FROM sale_items WHERE sale_id = ? OR sale_id = ?`, [localSaleId, cloudData.id]);
                     for (const item of cloudData.items) {
                         const localProductId = await this.resolveLocalId('products', item.productId);
                         await db.asyncRun(`INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localSaleId, localProductId || item.productId, item.quantity, item.price, item.total]);
@@ -485,7 +511,7 @@ class SyncService {
             } else if (table === 'purchases' && cloudData.items) {
                 const localPurchaseId = await this.resolveLocalId('purchases', cloudData.id);
                 if (localPurchaseId) {
-                    await db.asyncRun(`DELETE FROM purchase_items WHERE purchase_id = ?`, [localPurchaseId]);
+                    await db.asyncRun(`DELETE FROM purchase_items WHERE purchase_id = ? OR purchase_id = ?`, [localPurchaseId, cloudData.id]);
                     for (const item of cloudData.items) {
                         const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
                         await db.asyncRun(`INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`, [item.id, localPurchaseId, localProductId || item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost]);
@@ -494,7 +520,7 @@ class SyncService {
             } else if (table === 'sale_returns' && cloudData.items) {
                 const localReturnId = await this.resolveLocalId('sale_returns', cloudData.id);
                 if (localReturnId) {
-                    await db.asyncRun(`DELETE FROM sale_return_items WHERE return_id = ?`, [localReturnId]);
+                    await db.asyncRun(`DELETE FROM sale_return_items WHERE return_id = ? OR return_id = ?`, [localReturnId, cloudData.id]);
                     for (const item of cloudData.items) {
                         const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
                         await db.asyncRun(`INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, unit_price, price, total_price, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [item.id, localReturnId, localProductId || item.productId || item.product_id, item.quantity, item.price || item.unit_price, item.price || item.unit_price, item.total || item.total_price, item.total || item.total_price]);
@@ -503,7 +529,7 @@ class SyncService {
             } else if (table === 'purchase_returns' && cloudData.items) {
                 const localReturnId = await this.resolveLocalId('purchase_returns', cloudData.id);
                 if (localReturnId) {
-                    await db.asyncRun(`DELETE FROM purchase_return_items WHERE return_id = ?`, [localReturnId]);
+                    await db.asyncRun(`DELETE FROM purchase_return_items WHERE return_id = ? OR return_id = ?`, [localReturnId, cloudData.id]);
                     for (const item of cloudData.items) {
                         const localProductId = await this.resolveLocalId('products', item.productId || item.product_id);
                         await db.asyncRun(`INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total_cost, total) VALUES (?, ?, ?, ?, ?, ?, ?)`, [item.id, localReturnId, localProductId || item.productId || item.product_id, item.quantity, item.unitCost || item.unit_cost, item.total || item.total_cost, item.total || item.total_cost]);
