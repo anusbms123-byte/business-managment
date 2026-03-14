@@ -308,12 +308,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                         </button>
                         
                         <div className="hidden md:flex flex-col">
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                                <span className="hover:text-emerald-500 cursor-pointer transition-colors" onClick={() => navigate('/')}>BizNex</span>
-                                <ChevronRight size={10} className="text-slate-300" />
-                                <span className="text-emerald-600 dark:text-emerald-400">{getPageTitle()}</span>
-                            </div>
-                            <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                            <h1 className="text-xl font-semibold text-slate-950 dark:text-white tracking-tight">
                                 {location.pathname === '/' ? `${getGreeting()}, ${user?.fullname?.split(' ')[0] || 'User'}` : getPageTitle()}
                             </h1>
                         </div>

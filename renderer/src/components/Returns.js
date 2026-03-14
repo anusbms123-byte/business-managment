@@ -245,7 +245,7 @@ const Returns = ({ currentUser }) => {
                         <input
                             type="text"
                             placeholder="Search here..."
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -255,24 +255,24 @@ const Returns = ({ currentUser }) => {
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                             <button
                                 onClick={() => setActiveTab('sales')}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${activeTab === 'sales' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-800' : 'text-black dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all tracking-tight ${activeTab === 'sales' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-800' : 'text-black dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'}`}
                             >
-                                Sales Returns
+                                Sales returns
                             </button>
                             <button
                                 onClick={() => setActiveTab('purchases')}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${activeTab === 'purchases' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-800' : 'text-black dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all tracking-tight ${activeTab === 'purchases' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100 dark:border-emerald-800' : 'text-black dark:text-slate-300 hover:text-slate-700 dark:hover:text-white'}`}
                             >
-                                Purchase Returns
+                                Purchase returns
                             </button>
                         </div>
                         {canCreate('returns') && (
                             <button
                                 onClick={() => { resetForm(); setIsModalOpen(true); }}
-                                className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-xl font-bold text-[11px] hover:bg-emerald-700 transition-all active:scale-95 shadow-sm"
+                                className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-sm tracking-tight"
                             >
                                 <Plus size={16} />
-                                <span>Add Return</span>
+                                <span>Add return</span>
                             </button>
                         )}
                     </div>
@@ -282,11 +282,11 @@ const Returns = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-100 dark:bg-slate-800 transition-colors">
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">ID</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Items</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Total</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Action</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">ID</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Items</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight text-right">Total</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -301,19 +301,19 @@ const Returns = ({ currentUser }) => {
                             ) : filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{item.invoiceNo}</div>
-                                        <div className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">{item.date ? new Date(item.date).toLocaleString() : 'N/A'}</div>
+                                        <div className="font-semibold text-sm text-black dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{item.invoiceNo}</div>
+                                        <div className="text-sm text-black dark:text-slate-400 font-medium mt-1">{item.date ? new Date(item.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
+                                        <div className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-400">
-                                            {item.items?.length || 0} Items
+                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-medium text-black dark:text-slate-400">
+                                            {item.items?.length || 0} items
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">PKR {(item.totalAmount || 0).toLocaleString()}</span>
+                                        <span className="text-sm font-semibold text-black dark:text-slate-100 tracking-tight">PKR {(item.totalAmount || 0).toLocaleString()}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -350,14 +350,14 @@ const Returns = ({ currentUser }) => {
                                 <RefreshCcw size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight">{activeTab === 'sales' ? 'Add Sale Return' : 'Add Purchase Return'}</h2>
+                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">{activeTab === 'sales' ? 'Add sale return' : 'Add purchase return'}</h2>
                             </div>
                         </div>
                          <button
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                         >
-                            <span className="text-[10px] font-bold hidden md:block">Close</span>
+                            <span className="text-sm font-semibold tracking-tight hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -368,23 +368,23 @@ const Returns = ({ currentUser }) => {
                         <div className="flex-1 p-6 overflow-y-auto border-r border-slate-200 dark:border-slate-800">
                             <div className="grid grid-cols-4 gap-4 mb-6">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
+                                    <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
                                     <select
-                                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 appearance-none cursor-pointer"
                                         value={selectedEntityId}
                                         onChange={(e) => setSelectedEntityId(e.target.value)}
                                     >
-                                        <option value="">Select {activeTab === 'sales' ? 'Customer' : 'Supplier'}...</option>
+                                        <option value="">Select {activeTab === 'sales' ? 'customer' : 'supplier'}...</option>
                                         {(activeTab === 'sales' ? customers : vendors).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5 col-span-2">
-                                    <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Product</label>
+                                    <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Product</label>
                                     <div className="relative">
                                         <input
                                             ref={productRef}
                                             type="text"
-                                            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
                                             placeholder="Search here..."
                                             value={productSearch}
                                             onChange={(e) => {
@@ -432,10 +432,10 @@ const Returns = ({ currentUser }) => {
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
-                                                            <div className="font-bold text-sm text-slate-800 dark:text-slate-200">{p.name}</div>
-                                                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            <div className="font-semibold text-sm text-black dark:text-slate-200 tracking-tight">{p.name}</div>
+                                                            <div className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
                                                         </div>
-                                                        <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{activeTab === 'sales' ? 'Price' : 'Cost'}: PKR {((activeTab === 'sales' ? p.sellPrice : p.costPrice) || 0).toLocaleString()}</div>
+                                                        <div className="font-semibold text-black dark:text-slate-100 text-sm tracking-tight">{activeTab === 'sales' ? 'Price' : 'Cost'}: PKR {((activeTab === 'sales' ? p.sellPrice : p.costPrice) || 0).toLocaleString()}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -503,11 +503,11 @@ const Returns = ({ currentUser }) => {
                                 </div>
                                 <div className="flex gap-2 items-end">
                                     <div className="flex-1 space-y-1.5">
-                                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Qty</label>
+                                        <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Qty</label>
                                         <input
                                             ref={qtyRef}
                                             type="number"
-                                            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
                                             value={qty}
                                             onChange={(e) => setQty(e.target.value)}
                                             placeholder="0"
@@ -516,10 +516,10 @@ const Returns = ({ currentUser }) => {
                                     </div>
                                     <button
                                         onClick={addToCart}
-                                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all shrink-0 active:scale-95 flex items-center justify-center whitespace-nowrap shadow-sm"
+                                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-all shrink-0 active:scale-95 flex items-center justify-center whitespace-nowrap shadow-sm tracking-tight"
                                     >
                                         <Plus size={20} />
-                                        <span className="text-[10px] font-bold ml-1">Add now</span>
+                                        <span className="ml-1">Add now</span>
                                     </button>
                                 </div>
                             </div>
@@ -529,25 +529,25 @@ const Returns = ({ currentUser }) => {
                                 <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                                         <tr>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-black dark:text-slate-500 text-left">Name</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 text-center">Price</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-black dark:text-slate-500 text-center">Qty</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-black dark:text-slate-500 text-right">Total</th>
-                                            <th className="px-6 py-3 text-[10px] font-bold text-black dark:text-slate-500 text-right">Actions</th>
+                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-left tracking-tight">Name</th>
+                                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 text-center tracking-tight">Price</th>
+                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-center tracking-tight">Qty</th>
+                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Total</th>
+                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                         {cart.map((item, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                                 <td className="px-6 py-4">
-                                                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
+                                                    <div className="text-sm font-semibold text-black dark:text-slate-200 tracking-tight">{item.name}</div>
+                                                    <div className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-medium text-slate-600 dark:text-slate-400 text-xs">PKR {(item.price || 0).toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-center font-medium text-black dark:text-slate-400 text-sm tracking-tight">PKR {(item.price || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-700 dark:text-slate-300">{item.quantity}</span>
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-black dark:text-slate-300 tracking-tight">{item.quantity}</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-medium text-slate-800 dark:text-slate-200 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
+                                                <td className="px-6 py-4 text-right font-semibold text-black dark:text-slate-200 text-sm tracking-tight">PKR {(item.total || 0).toLocaleString()}</td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-all opacity-0 group-hover:opacity-100">
                                                         <Trash2 size={14} />
@@ -571,62 +571,62 @@ const Returns = ({ currentUser }) => {
                         {/* Right: Summary */}
                         <div className="w-[350px] p-6 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
                             <div className="space-y-6 flex-1 overflow-y-auto">
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Return Invoice #</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-sm outline-none focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100"
-                                            value={invoiceNo}
-                                            onChange={(e) => setInvoiceNo(e.target.value)}
-                                            placeholder="ex. RET-889"
-                                        />
-                                    </div>
-                                </div>
+                                 <div className="space-y-4">
+                                     <div className="space-y-1.5">
+                                         <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Return invoice #</label>
+                                         <input
+                                             type="text"
+                                             className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                             value={invoiceNo}
+                                             onChange={(e) => setInvoiceNo(e.target.value)}
+                                             placeholder="ex. RET-889"
+                                         />
+                                     </div>
+                                 </div>
 
-                                <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-400 tracking-tight">
-                                        <span>Subtotal</span>
-                                        <span className="text-slate-800 dark:text-slate-200 font-medium font-mono">PKR {(subTotal || 0).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-400 tracking-tight">
-                                        <span>Handling / Tax</span>
-                                        <input
-                                            type="number"
-                                            className="w-20 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-slate-700 dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-xs"
-                                            value={tax}
-                                            onChange={(e) => setTax(e.target.value)}
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-                                        <span className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Total Amount</span>
-                                        <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tighter">
-                                            PKR {(totalAmount || 0).toLocaleString()}
-                                        </span>
-                                    </div>
-                                </div>
+                                 <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
+                                         <span>Subtotal</span>
+                                         <span className="text-black dark:text-slate-200 font-semibold">PKR {(subTotal || 0).toLocaleString()}</span>
+                                     </div>
+                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
+                                         <span>Handling / tax</span>
+                                         <input
+                                             type="number"
+                                             className="w-24 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-sm"
+                                             value={tax}
+                                             onChange={(e) => setTax(e.target.value)}
+                                             placeholder="0"
+                                         />
+                                     </div>
+                                     <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                                         <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Total amount</span>
+                                         <span className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                                             PKR {(totalAmount || 0).toLocaleString()}
+                                         </span>
+                                     </div>
+                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Notes</label>
-                                    <textarea
-                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none focus:border-emerald-500 transition-all resize-none h-24 text-black dark:text-slate-200"
-                                        placeholder="Details..."
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                                 <div className="space-y-1.5">
+                                     <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Notes</label>
+                                     <textarea
+                                         className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold outline-none focus:border-emerald-500 transition-all resize-none h-24 text-black dark:text-slate-200 placeholder:text-slate-400"
+                                         placeholder="Details..."
+                                         value={notes}
+                                         onChange={(e) => setNotes(e.target.value)}
+                                     />
+                                 </div>
+                             </div>
 
-                            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                <button
-                                    onClick={handleSave}
-                                    disabled={saving || cart.length === 0 || !selectedEntityId}
-                                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-base hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {saving ? <span>Saving...</span> : <span>Save now</span>}
-                                </button>
-                            </div>
+                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                 <button
+                                     onClick={handleSave}
+                                     disabled={saving || cart.length === 0 || !selectedEntityId}
+                                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-semibold text-lg hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 tracking-tight"
+                                 >
+                                     {saving ? <span>Saving...</span> : <span>Save now</span>}
+                                 </button>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -641,14 +641,14 @@ const Returns = ({ currentUser }) => {
                                 <Eye size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight">Return Detail: {selectedReturnDetail.invoiceNo}</h2>
+                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">Return detail: {selectedReturnDetail.invoiceNo}</h2>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsDetailModalOpen(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
                         >
-                             <span className="text-[10px] font-bold hidden md:block text-slate-400 dark:text-slate-500">Close</span>
+                             <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
                             <X size={20} />
                         </button>
                     </div>

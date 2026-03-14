@@ -134,7 +134,7 @@ const Expenses = ({ currentUser }) => {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             placeholder="Search here..."
                         />
                     </div>
@@ -144,10 +144,10 @@ const Expenses = ({ currentUser }) => {
                                 setFormData({ title: '', amount: '', category: 'General', description: '', date: new Date().toISOString().split('T')[0] });
                                 setShowModal(true);
                             }}
-                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 text-sm"
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 text-sm tracking-tight"
                         >
                             <Plus size={16} />
-                            <span>Add Expense</span>
+                            <span>Add expense</span>
                         </button>
                     )}
                 </div>
@@ -156,11 +156,11 @@ const Expenses = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-100 dark:bg-slate-800 transition-colors">
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Date</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Category</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Title</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Amount</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Date</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Category</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Title</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Amount</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -181,17 +181,17 @@ const Expenses = ({ currentUser }) => {
                                 </tr>
                             ) : filteredExpenses?.map((expense) => (
                                 <tr key={expense.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight transition-colors">
+                                    <td className="px-6 py-4 text-sm font-medium text-black dark:text-slate-200 tracking-tight transition-colors">
                                         {expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800/50">
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-sm font-semibold border border-emerald-100 dark:border-emerald-800/50">
                                             {expense.category}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight transition-colors">{expense.title}</td>
+                                    <td className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-200 tracking-tight transition-colors">{expense.title}</td>
                                     <td className="px-6 py-4">
-                                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 tracking-tight transition-colors">
+                                        <span className="text-sm font-semibold text-rose-600 dark:text-rose-400 tracking-tight transition-colors">
                                             PKR {expense.amount?.toLocaleString() ?? '0'}
                                         </span>
                                     </td>
@@ -226,14 +226,14 @@ const Expenses = ({ currentUser }) => {
                                     <DollarSign size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-xl md:text-2xl font-bold text-black dark:text-white tracking-tight truncate transition-colors font-bold">{formData.id ? 'Edit Expense' : 'Add Expense'}</h3>
+                                    <h3 className="text-xl md:text-2xl font-semibold text-black dark:text-white tracking-tight truncate transition-colors">{formData.id ? 'Edit expense' : 'Add expense'}</h3>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
                             >
-                                <span className="text-[10px] font-bold hidden md:block">Close</span>
+                                <span className="text-sm font-semibold hidden md:block tracking-tight text-slate-400 dark:text-slate-500">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -248,38 +248,38 @@ const Expenses = ({ currentUser }) => {
                                             Primary Info
                                         </h4>
 
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Title *</label>
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Title *</label>
                                             <input
                                                 type="text"
                                                 required
                                                 value={formData.title}
                                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-semibold text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                 placeholder="e.g. Office Electricity Bill"
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Amount *</label>
+                                            <div className="space-y-2 text-left">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Amount *</label>
                                                 <div className="relative">
                                                     <input
                                                         type="number"
                                                         required
                                                         value={formData.amount || ''}
                                                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-semibold text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                         placeholder="0"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Category *</label>
+                                            <div className="space-y-2 text-left">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Category *</label>
                                                 <select
                                                     value={formData.category}
                                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-bold text-sm cursor-pointer appearance-none text-slate-800 dark:text-slate-100"
+                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-semibold text-sm cursor-pointer appearance-none text-black dark:text-slate-100"
                                                 >
                                                     <option value="General">General</option>
                                                     <option value="Utilities">Utilities</option>
@@ -293,13 +293,13 @@ const Expenses = ({ currentUser }) => {
                                         </div>
 
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Date *</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Date *</label>
                                             <input
                                                 type="date"
                                                 required
                                                 value={formData.date}
                                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-bold text-sm text-slate-800 dark:text-slate-100"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-semibold text-sm text-black dark:text-slate-100"
                                             />
                                         </div>
                                     </div>
@@ -310,12 +310,12 @@ const Expenses = ({ currentUser }) => {
                                             Other Info
                                         </h4>
 
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Notes</label>
+                                        <div className="space-y-2 text-left">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Notes</label>
                                             <textarea
                                                 value={formData.description}
                                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-bold text-sm h-32 md:h-44 resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all font-semibold text-sm h-32 md:h-44 resize-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                 placeholder="Write any additional details about this expense..."
                                             />
                                         </div>
@@ -326,7 +326,7 @@ const Expenses = ({ currentUser }) => {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm disabled:opacity-70 shadow-sm"
+                                        className="w-full py-4 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm disabled:opacity-70 shadow-sm tracking-tight"
                                     >
                                         {saving ? 'Saving...' : 'Save now'}
                                     </button>

@@ -27,10 +27,10 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
             </div>
         </div>
         <div>
-            <p className="text-black dark:text-slate-200 text-[10px] font-bold mb-1">{title}</p>
+            <p className="text-black dark:text-slate-200 text-sm font-semibold mb-1">{title}</p>
             <h3 className="text-xl font-bold text-black dark:text-white tracking-tight">{value}</h3>
             {subValue && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-2 flex items-center gap-1.5 tracking-tight">
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold mt-2 flex items-center gap-1.5 tracking-tight">
                     {subValue}
                 </p>
             )}
@@ -44,8 +44,8 @@ const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
             <Icon size={18} />
         </div>
         <div>
-            <p className="text-[10px] font-bold text-black dark:text-slate-200">{label}</p>
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 tracking-tight">{value}</p>
+            <p className="text-sm font-semibold text-black dark:text-slate-200">{label}</p>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300 tracking-tight">{value}</p>
         </div>
     </div>
 );
@@ -231,7 +231,7 @@ const Reports = ({ currentUser }) => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
                 <RefreshCw size={32} className="text-emerald-600 animate-spin" />
-                <p className="text-[10px] font-bold text-black">Loading...</p>
+                <p className="text-sm font-semibold text-black dark:text-slate-400">Loading...</p>
             </div>
         );
     }
@@ -244,7 +244,7 @@ const Reports = ({ currentUser }) => {
                         <button
                             key={p}
                             onClick={() => applyPeriod(p)}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold transition-all ${overviewFilter === p ? 'bg-emerald-500 text-white shadow-md border border-emerald-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            className={`px-8 py-2.5 rounded-xl text-sm font-semibold transition-all ${overviewFilter === p ? 'bg-emerald-500 text-white shadow-md border border-emerald-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
@@ -258,7 +258,7 @@ const Reports = ({ currentUser }) => {
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
-                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
+                            className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent w-32"
                         />
                     </div>
                     <div className="flex items-center gap-2 px-3">
@@ -266,7 +266,7 @@ const Reports = ({ currentUser }) => {
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setOverviewFilter('Custom'); }}
-                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
+                            className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent w-32"
                         />
                     </div>
                     <button
@@ -279,15 +279,15 @@ const Reports = ({ currentUser }) => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-emerald-500" onClick={() => setActiveModule('sales')} />
+                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-emerald-600" onClick={() => setActiveModule('sales')} />
                 <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-emerald-600" onClick={() => setActiveModule('purchases')} />
-                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-emerald-500" onClick={() => setActiveModule('inventory')} />
-                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-emerald-700" onClick={() => setActiveModule('expenses')} />
-                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-500" onClick={() => setActiveModule('returns')} />
-                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-700" onClick={() => setActiveModule('suppliers')} />
-                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-emerald-500" onClick={() => setActiveModule('customers')} />
+                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-emerald-600" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-emerald-600" onClick={() => setActiveModule('expenses')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-600" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-emerald-600" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-emerald-600" onClick={() => setActiveModule('customers')} />
                 <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-600" onClick={() => setActiveModule('hrm')} />
-                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-emerald-800" onClick={() => setActiveModule('netprofit')} />
+                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-emerald-600" onClick={() => setActiveModule('netprofit')} />
             </div>
 
         </div>
@@ -297,126 +297,133 @@ const Reports = ({ currentUser }) => {
         const chartData = (summary?.recentDays || []).slice();
         const moduleMap = {
             sales: {
-                title: 'Sales Report', icon: DollarSign, color: '#10b981', dataKey: 'sales',
+                title: 'Sales Report', icon: DollarSign, color: '#059669', dataKey: 'sales',
                 miniStats: [
-                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-slate-600' },
-                    { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-emerald-600' },
-                    { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
+                    { label: 'Total revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Cost of items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-600' },
+                    { label: 'Gross profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
+                    { label: 'Total invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-emerald-600' },
+                    { label: 'Avg order value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Customer', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Sales Ledger',
                 cols: 5,
-                color: '#10b981'
+                color: '#059669'
             },
             purchases: {
-                title: 'Purchase Report', icon: ShoppingCart, color: '#10b981', dataKey: 'purchases',
+                title: 'Purchase Report', icon: ShoppingCart, color: '#059669', dataKey: 'purchases',
                 miniStats: [
-                    { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
-                    { label: 'Pending Bills', value: `PKR ${(summary?.totalPayablesFromPeriod ?? summary?.totalPayables ?? 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Total Suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Stock Value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-500' }
+                    { label: 'Total purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
+                    { label: 'Pending bills', value: `PKR ${(summary?.totalPayablesFromPeriod ?? summary?.totalPayables ?? 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-emerald-600' },
+                    { label: 'Total suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Stock value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Supplier', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Purchase Log',
                 cols: 4,
-                color: '#10b981'
+                color: '#059669'
             },
             inventory: {
-                title: 'Inventory Report', icon: Package, color: '#10b981', dataKey: 'inventory',
+                title: 'Inventory Report', icon: Package, color: '#059669', dataKey: 'inventory',
                 miniStats: [
-                    { label: 'Stock Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Sale Potential (Sell)', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Expected Profit', value: `PKR ${((summary?.inventoryValuationSell || 0) - (summary?.inventoryValuationCost || 0)).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
-                    { label: 'In Stock', value: `${summary?.inStockCount || 0} Items`, icon: CheckCircle2, color: 'text-emerald-500' },
-                    { label: 'Low Stock', value: `${summary?.lowStockCount || 0} Items`, icon: AlertTriangle, color: 'text-orange-500' },
-                    { label: 'Expiring Soon', value: `${summary?.expiringSoonCount || 0} Items`, icon: Clock, color: 'text-amber-500' },
-                    { label: 'Expired Products', value: `${summary?.expiredCount || 0} Items`, icon: Trash2, color: 'text-rose-600' }
+                    { label: 'Stock value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Sale potential (Sell)', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
+                    { label: 'Expected profit', value: `PKR ${((summary?.inventoryValuationSell || 0) - (summary?.inventoryValuationCost || 0)).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
+                    { label: 'In stock', value: `${summary?.inStockCount || 0} Items`, icon: CheckCircle2, color: 'text-emerald-600' },
+                    { label: 'Low stock', value: `${summary?.lowStockCount || 0} Items`, icon: AlertTriangle, color: 'text-emerald-600' },
+                    { label: 'Expiring soon', value: `${summary?.expiringSoonCount || 0} Items`, icon: Clock, color: 'text-emerald-600' },
+                    { label: 'Expired products', value: `${summary?.expiredCount || 0} Items`, icon: Trash2, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Product Name', 'Category', 'Stock Qty', 'Unit Cost', 'Total Value', 'Status'],
                 tableTitle: 'Inventory Audit',
-                cols: 7
+                cols: 7,
+                color: '#059669'
             },
             expenses: {
-                title: 'Expense Report', icon: TrendingUp, color: '#10b981', dataKey: 'expenses',
+                title: 'Expense Report', icon: TrendingUp, color: '#059669', dataKey: 'expenses',
                 miniStats: [
-                    { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-emerald-500' },
-                    { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-emerald-500' },
-                    { label: 'Snacks & Tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-slate-500' },
-                    { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-emerald-500' },
-                    { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-500' },
-                    { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-slate-500' }
+                    { label: 'Staff payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-emerald-600' },
+                    { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-emerald-600' },
+                    { label: 'Snacks & tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-emerald-600' },
+                    { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-emerald-600' },
+                    { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-600' },
+                    { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-emerald-600' }
                 ],
                 tableCols: selectedExpenseCategory === 'Staff Payroll'
                     ? ['Date', 'Staff Name', 'Designation', 'Basic Pay', 'Bonus/OT', 'Deduction', 'Net Paid']
                     : ['Date', 'Title', 'Category', 'Description', 'Amount'],
                 tableTitle: selectedExpenseCategory === 'Staff Payroll' ? 'Staff Payroll Audit' : 'Expense Journal',
-                cols: 3
+                cols: 3,
+                color: '#059669'
             },
             returns: {
-                title: 'Return Report', icon: RotateCcw, color: '#10b981', dataKey: 'returns',
+                title: 'Return Report', icon: RotateCcw, color: '#059669', dataKey: 'returns',
                 miniStats: [
-                    { label: 'Total Returns', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Sales Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
-                    { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-500' },
+                    { label: 'Total returns', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Sales returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-emerald-600' },
+                    { label: 'Purchase returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-600' },
                     { label: 'Volume', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Returned Products', 'Refund Magnitude'],
                 tableTitle: 'Returns Ledger',
-                cols: 4
+                cols: 4,
+                color: '#059669'
             },
             suppliers: {
-                title: 'Supplier Report', icon: Factory, color: '#475569', dataKey: 'purchases',
+                title: 'Supplier Report', icon: Factory, color: '#059669', dataKey: 'purchases',
                 miniStats: [
-                    { label: 'Total Payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-rose-600' },
-                    { label: 'Supplier Count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Avg Payable', value: `PKR ${(Math.round(summary?.totalPayables / (summary?.vendorCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
-                    { label: 'Total Purchased', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-amber-600' },
-                    { label: 'Active Balance', value: summary?.totalPayables > 0 ? "Pending" : "Clear", icon: AlertTriangle, color: 'text-amber-500' }
+                    { label: 'Total payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
+                    { label: 'Supplier count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Avg payable', value: `PKR ${(Math.round(summary?.totalPayables / (summary?.vendorCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' },
+                    { label: 'Total purchased', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-600' },
+                    { label: 'Active balance', value: summary?.totalPayables > 0 ? "Pending" : "Clear", icon: AlertTriangle, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Supplier Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
                 tableTitle: 'Supplier Ledger Balance',
-                cols: 5
+                cols: 5,
+                color: '#059669'
             },
             customers: {
-                title: 'Customer Report', icon: Users, color: '#14b8a6', dataKey: 'sales',
+                title: 'Customer Report', icon: Users, color: '#059669', dataKey: 'sales',
                 miniStats: [
-                    { label: 'Total Receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-teal-600' },
-                    { label: 'Customer Count', value: `${summary?.customerCount || 0}`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Avg Receivable', value: `PKR ${(Math.round(summary?.totalReceivables / (summary?.customerCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
-                    { label: 'Total Sales to Customers', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Active Balance', value: summary?.totalReceivables > 0 ? "Outstanding" : "Clear", icon: CheckCircle2, color: 'text-teal-500' }
+                    { label: 'Total receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
+                    { label: 'Customer count', value: `${summary?.customerCount || 0}`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Avg receivable', value: `PKR ${(Math.round(summary?.totalReceivables / (summary?.customerCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' },
+                    { label: 'Total sales to customers', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Active balance', value: summary?.totalReceivables > 0 ? "Outstanding" : "Clear", icon: CheckCircle2, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Customer Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
                 tableTitle: 'Customer Ledger Balance',
-                cols: 5
+                cols: 5,
+                color: '#059669'
             },
             hrm: {
-                title: 'Staff Payroll', icon: Users2, color: '#4f46e5', dataKey: 'salaries',
+                title: 'Staff Payroll', icon: Users2, color: '#059669', dataKey: 'salaries',
                 miniStats: [
-                    { label: 'Total Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Active Staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-500' },
-                    { label: 'Avg Salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
-                    { label: 'Total Staff', value: `${summary?.totalEmployees || 0} Records`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Status', value: summary?.employeeCount > 0 ? "Active" : "None", icon: Briefcase, color: 'text-emerald-500' }
+                    { label: 'Total payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Active staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Avg salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' },
+                    { label: 'Total staff', value: `${summary?.totalEmployees || 0} Records`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Status', value: summary?.employeeCount > 0 ? "Active" : "None", icon: Briefcase, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Staff Name', 'Designation', 'Voucher #', 'Paid Date', 'Amount'],
                 tableTitle: 'Payroll History',
-                cols: 5
+                cols: 5,
+                color: '#059669'
             },
             netprofit: {
-                title: 'Profit Report', icon: CreditCard, color: '#3b82f6', dataKey: 'profit',
+                title: 'Profit Report', icon: CreditCard, color: '#059669', dataKey: 'profit',
                 miniStats: [
-                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Operating Costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-400' },
-                    { label: 'Net Profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: summary?.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600' },
-                    { label: 'Profit Margin', value: `${summary?.totalSales > 0 ? Math.round((summary?.netProfit / (summary?.totalSales || 1)) * 100) : 0}%`, icon: Activity, color: 'text-indigo-500' }
+                    { label: 'Total revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Gross profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
+                    { label: 'Operating costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-emerald-600' },
+                    { label: 'Net profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
+                    { label: 'Profit margin', value: `${summary?.totalSales > 0 ? Math.round((summary?.netProfit / (summary?.totalSales || 1)) * 100) : 0}%`, icon: Activity, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Total Sales', 'COGS', 'Expenses', 'Net Profit'],
                 tableTitle: 'Profitability Ledger',
-                cols: 5
+                cols: 5,
+                color: '#059669'
             }
         };
 
@@ -455,58 +462,58 @@ const Reports = ({ currentUser }) => {
                                             </span>
                                         )}
                                         {activeModule === 'suppliers' && selectedVendor !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
                                             </span>
                                         )}
                                         {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
                                             <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-orange-100 text-orange-600'
+                                                : 'bg-emerald-200 text-emerald-700'
                                                 }`}>
                                                 {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
                                             </span>
                                         )}
                                         {activeModule === 'customers' && selectedCustomer !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                             </span>
                                         )}
                                         {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
                                             <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-orange-100 text-orange-600'
+                                                : 'bg-emerald-200 text-emerald-700'
                                                 }`}>
                                                 {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
                                             </span>
                                         )}
                                         {(activeModule === 'netprofit' || activeModule === 'sales') && selectedCustomer !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Filtered Customer'}
                                             </span>
                                         )}
                                         {activeModule === 'netprofit' && selectedVendor !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-orange-100 text-orange-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {vendors.find(v => v.id == selectedVendor)?.name || 'Filtered Vendor'}
                                             </span>
                                         )}
                                         {activeModule === 'netprofit' && selectedEmployee !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {employees.find(e => e.id == selectedEmployee)?.first_name || 'Filtered Staff'}
                                             </span>
                                         )}
                                         {activeModule === 'hrm' && selectedEmployee !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {employees.find(e => e.id == selectedEmployee)?.first_name || 'Staff Member'}
                                             </span>
                                         )}
                                         {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-emerald-200 text-emerald-700'}`}>
                                                 {selectedEmployeeStatus === 'active' ? 'Active Staff' : 'Inactive Staff'}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-black dark:text-slate-400 text-[10px] font-bold mt-1">Detailed Report</p>
+                                    <p className="text-black dark:text-slate-400 text-sm font-semibold mt-1">Detailed report</p>
                                 </div>
                             </div>
                         </div>
@@ -520,9 +527,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Customers</option>
+                                        <option value="all" className="dark:bg-slate-900">All customers</option>
                                         {customers.map(customer => (
                                             <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
                                                 {customer.name}
@@ -536,9 +543,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
+                                        <option value="all" className="dark:bg-slate-900">All suppliers</option>
                                         {vendors.map(v => (
                                             <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
@@ -552,9 +559,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedEmployee}
                                         onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Staff</option>
+                                        <option value="all" className="dark:bg-slate-900">All staff</option>
                                         {employees.map(emp => (
                                             <option key={emp.id} value={emp.id} className="dark:bg-slate-900">
                                                 {emp.first_name} {emp.last_name}
@@ -568,11 +575,11 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Status</option>
-                                        <option value="paid" className="dark:bg-slate-900">Paid Only</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit Only</option>
+                                        <option value="all" className="dark:bg-slate-900">All status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid only</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit only</option>
                                     </select>
                                 </div>
                             </>
@@ -584,9 +591,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Customers</option>
+                                        <option value="all" className="dark:bg-slate-900">All customers</option>
                                         {customers.map(customer => (
                                             <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
                                                 {customer.name}
@@ -616,9 +623,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
+                                        <option value="all" className="dark:bg-slate-900">All suppliers</option>
                                         {vendors.map(v => (
                                             <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
@@ -648,7 +655,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedCategoryId}
                                         onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Categories</option>
                                         {categories.map(c => (
@@ -664,7 +671,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedStockStatus}
                                         onChange={(e) => setSelectedStockStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="low" className="dark:bg-slate-900">Low Stock</option>
@@ -680,7 +687,7 @@ const Reports = ({ currentUser }) => {
                                  <select
                                     value={selectedReturnType}
                                     onChange={(e) => setSelectedReturnType(e.target.value)}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                 >
                                     <option value="all" className="dark:bg-slate-900">All Returns</option>
                                     <option value="sales" className="dark:bg-slate-900">Sales Returns</option>
@@ -694,7 +701,7 @@ const Reports = ({ currentUser }) => {
                                  <select
                                     value={selectedExpenseCategory}
                                     onChange={(e) => setSelectedExpenseCategory(e.target.value)}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                 >
                                     <option value="all" className="dark:bg-slate-900">All Expenses</option>
                                     {expenseCategories.map(cat => (
@@ -712,9 +719,9 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
-                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
+                                        <option value="all" className="dark:bg-slate-900">All suppliers</option>
                                         {vendors.map(v => (
                                             <option key={v.id} value={v.id} className="dark:bg-slate-900">
                                                 {v.name}
@@ -792,7 +799,7 @@ const Reports = ({ currentUser }) => {
                                      <select
                                         value={selectedEmployeeStatus}
                                         onChange={(e) => setSelectedEmployeeStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="active" className="dark:bg-slate-900">Active Only</option>
@@ -809,7 +816,7 @@ const Reports = ({ currentUser }) => {
                                 type="date"
                                 value={dateRange.start}
                                 onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
-                                className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
+                                className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent w-28"
                             />
                             </div>
                             <div className="flex items-center gap-2 px-3">
@@ -817,7 +824,7 @@ const Reports = ({ currentUser }) => {
                                     type="date"
                                     value={dateRange.end}
                                     onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setOverviewFilter('Custom'); }}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
+                                    className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent w-28"
                                 />
                             </div>
                             <button
@@ -936,7 +943,7 @@ const Reports = ({ currentUser }) => {
                                             {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
                                                          <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{c.name}</span>
@@ -960,7 +967,7 @@ const Reports = ({ currentUser }) => {
                                             {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                             {i + 1}
                                                         </div>
                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
@@ -985,7 +992,7 @@ const Reports = ({ currentUser }) => {
                                                 {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
                                                                 {i + 1}
                                                             </div>
                                                              <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{v.name}</span>
@@ -1011,7 +1018,7 @@ const Reports = ({ currentUser }) => {
                                                 {(summary?.topPurchasedProducts || []).slice(0, 3).map((p, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-orange-500' : i === 1 ? 'bg-amber-500' : 'bg-yellow-500'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                                 {i + 1}
                                                             </div>
                                                             <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
@@ -1036,7 +1043,7 @@ const Reports = ({ currentUser }) => {
                                             {(summary?.topValuedItems || []).slice(0, 3).map((p, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-emerald-500' : 'bg-slate-500'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                             {i + 1}
                                                         </div>
                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
@@ -1092,7 +1099,7 @@ const Reports = ({ currentUser }) => {
                                             {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{v.name}</span>
@@ -1117,7 +1124,7 @@ const Reports = ({ currentUser }) => {
                                                 {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-400' : i === 1 ? 'bg-cyan-400' : 'bg-emerald-400'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                                 {i + 1}
                                                             </div>
                                                             <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{c.name}</span>
@@ -1141,7 +1148,7 @@ const Reports = ({ currentUser }) => {
                                                 {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-500' : i === 1 ? 'bg-cyan-500' : 'bg-emerald-500'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                                 {i + 1}
                                                             </div>
                                                             <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
@@ -1167,7 +1174,7 @@ const Reports = ({ currentUser }) => {
                                                 {(summary?.topStaff || []).slice(0, 3).map((s, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-600' : i === 1 ? 'bg-purple-500' : 'bg-emerald-500'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                                 {i + 1}
                                                             </div>
                                                              <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{s.name}</span>
@@ -1213,7 +1220,7 @@ const Reports = ({ currentUser }) => {
                                             {(summary?.topExpenses || []).slice(0, 3).map((e, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-orange-500' : 'bg-slate-500'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
                                                             {i + 1}
                                                         </div>
                                                          <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{e.name}</span>
@@ -1284,10 +1291,10 @@ const Reports = ({ currentUser }) => {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-100 dark:bg-slate-800">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10 border-b border-slate-100 dark:border-slate-800">
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
-                                            <th key={idx} className={`px-8 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 
+                                            <th key={idx} className={`px-8 py-4 text-left text-sm font-semibold text-black dark:text-white uppercase tracking-tight 
                                                 ${(col === 'Total' || col === 'Total Sales' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
@@ -1298,13 +1305,13 @@ const Reports = ({ currentUser }) => {
                                     {((activeModule === 'sales' && summary?.detailedSales) || (activeModule === 'purchases' && summary?.detailedPurchases)) ? (
                                         (activeModule === 'sales' ? summary.detailedSales : summary.detailedPurchases).map((tx, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
+                                                <td className="px-8 py-5 text-sm whitespace-nowrap font-semibold text-black dark:text-slate-200 align-top">
                                                     {new Date(tx.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                 <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                 <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200 align-top">
                                                     {tx.invoiceNo || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200 align-top">
                                                     {tx.customer?.name || tx.vendor?.name || (activeModule === 'sales' ? 'Walk-in' : 'Unknown')}
                                                 </td>
                                                 <td className="px-8 py-5 align-top">
@@ -1330,22 +1337,22 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'inventory' && summary?.detailedInventory ? (
                                         summary.detailedInventory.map((item, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {item.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top">
                                                     {item.category?.name || '-'}
                                                 </td>
                                                  <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100'}`}>
+                                                    <span className={`px-2 py-0.5 rounded text-sm font-semibold ${item.stockQty <= (item.alertQty || 5) ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100'}`}>
                                                         {item.stockQty}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-medium text-slate-500 dark:text-slate-400 text-xs align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
-                                                <td className="px-8 py-5 text-right font-black text-black dark:text-slate-100 text-xs align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-semibold text-slate-500 dark:text-slate-400 text-sm align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-right font-semibold text-black dark:text-slate-100 text-sm align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                                                        {item.stockQty <= 0 ? 'Out of Stock' : item.stockQty <= (item.alertQty || 5) ? 'Low Stock' : 'In Stock'}
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold tracking-wide ${item.stockQty <= 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : item.stockQty <= (item.alertQty || 5) ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                                                        {item.stockQty <= 0 ? 'Out of stock' : item.stockQty <= (item.alertQty || 5) ? 'Low stock' : 'In stock'}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -1358,38 +1365,43 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                                 {selectedExpenseCategory === 'Staff Payroll' ? (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
+                                                        <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 align-top">
+                                                        <td className="px-8 py-5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 align-top">
                                                             {expense.designation || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-slate-800 dark:text-slate-200 text-xs align-top">
+                                                        <td className="px-8 py-5 text-right font-semibold text-slate-800 dark:text-slate-200 text-sm align-top">
                                                             PKR {expense.baseSalary?.toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-emerald-600 dark:text-emerald-400 text-[10px] align-top">
+                                                        <td className="px-8 py-5 text-right font-semibold text-emerald-600 dark:text-emerald-400 text-sm align-top">
                                                             +PKR {(expense.bonus + (expense.overtimePay || 0)).toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-[10px] align-top">
+                                                        <td className="px-8 py-5 text-right font-semibold text-rose-600 dark:text-rose-400 text-sm align-top">
                                                             -PKR {expense.deductions?.toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-black text-emerald-800 dark:text-emerald-200 text-xs align-top">
+                                                        <td className="px-8 py-5 text-right font-semibold text-black dark:text-slate-100 text-sm align-top">
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                        <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
-                                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
+                                                        <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
+                                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-semibold">{expense.category || 'Uncategorized'}</span>
                                                         </td>
                                                         <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[300px] truncate">
                                                             {expense.description || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-left font-black text-rose-600 dark:text-rose-400 text-xs align-top">
+                                                        <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
                                                             PKR {expense.amount?.toLocaleString()}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right align-top">
+                                                            <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                                                Recorded
+                                                            </span>
                                                         </td>
                                                     </>
                                                 )}
@@ -1398,21 +1410,21 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'returns' && summary?.detailedReturns ? (
                                         summary.detailedReturns.map((ret, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {new Date(ret.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                 <td className="px-8 py-5 text-xs font-bold align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                                                        {ret.type}
+                                                 <td className="px-8 py-5 align-top">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${ret.type === 'Sale Return' ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40'}`}>
+                                                        {ret.type === 'Sale Return' ? 'Sale return' : 'Purchase return'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {ret.invoiceNo}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {ret.party}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[250px]">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top max-w-[250px]">
                                                     <div className="flex flex-wrap gap-1">
                                                         {ret.returnDetail?.split(', ').map((item, idx) => (
                                                             <span key={idx} className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400">
@@ -1421,7 +1433,7 @@ const Reports = ({ currentUser }) => {
                                                         )) || <span className="italic text-slate-400 dark:text-slate-600">No details</span>}
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-rose-600 dark:text-rose-400 text-xs align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
                                                     PKR {ret.amount?.toLocaleString()}
                                                 </td>
                                             </tr>
@@ -1429,21 +1441,21 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'suppliers' && summary?.detailedVendors ? (
                                         summary.detailedVendors.map((vendor, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {vendor.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top">
                                                     {vendor.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
                                                     {vendor.address || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-rose-600 dark:text-rose-400 text-xs align-top">
+                                                <td className="px-8 py-5 text-right text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     PKR {(vendor.current_balance || vendor.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                                                        {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40'}`}>
+                                                        {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment due' : 'Clear balance'}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -1451,21 +1463,21 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'customers' && summary?.detailedCustomers ? (
                                         summary.detailedCustomers.map((customer, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {customer.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top">
                                                     {customer.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
                                                     {customer.address || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-teal-600 dark:text-teal-400 text-xs align-top">
+                                                <td className="px-8 py-5 text-right text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     PKR {(customer.current_balance || customer.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
-                                                        {(customer.current_balance || customer.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40'}`}>
+                                                        {(customer.current_balance || customer.balance || 0) > 0 ? 'Payment due' : 'Fully paid'}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -1473,73 +1485,74 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'hrm' && summary?.detailedHRM ? (
                                         summary.detailedHRM.map((rec, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top font-mono tracking-tighter">
-                                                    {rec.staffName}
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
+                                                    <div className="flex flex-col">
+                                                        <span>{rec.staffName}</span>
+                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{rec.employeeId}</span>
+                                                    </div>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-slate-500 dark:text-slate-400 align-top">
                                                     {rec.designation || 'Staff'}
                                                 </td>
                                                  <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${rec.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
+                                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${rec.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
                                                         {rec.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-black dark:text-slate-100 align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">
                                                     {new Date(rec.payment_date).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-slate-700 dark:text-slate-300 text-xs align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
                                                     PKR {(rec.basic_salary || 0).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-emerald-600 dark:text-emerald-400 text-xs align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
                                                     PKR {((rec.bonus || 0) + (rec.overtime_pay || 0)).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-xs align-top">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
                                                     PKR {(rec.deductions || 0).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-emerald-700 dark:text-emerald-400 text-xs align-top bg-emerald-50/30 dark:bg-emerald-900/20">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top bg-emerald-50/30 dark:bg-emerald-900/20">
                                                     PKR {(rec.net_salary || 0).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : activeModule === 'netprofit' && summary?.detailedProfit ? (
+                                        summary.detailedProfit.map((day, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 align-top">{new Date(day.date).toLocaleDateString('en-CA')}</td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 text-right align-top">PKR {day.sales?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-orange-600 dark:text-orange-400 text-right align-top">PKR {day.cogs?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-rose-600 dark:text-rose-400 text-right align-top">PKR {day.expenses?.toLocaleString()}</td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-100 text-right align-top">
+                                                    <span className={day.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                                                        PKR {day.profit?.toLocaleString()}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || activeModule === 'netprofit' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">{row.date}</td>
-                                                {activeModule === 'netprofit' ? (
-                                                    <>
-                                                         <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
-                                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">{row.invoices || 0} Invoices</div>
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-orange-500 dark:text-orange-400 font-mono tracking-tighter">PKR {row.cogs?.toLocaleString()}</span>
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-rose-500 dark:text-rose-400 font-mono tracking-tighter">PKR {row.expenses?.toLocaleString()}</span>
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right align-top bg-slate-50/50 dark:bg-slate-800/50">
-                                                            <span className={`text-xs font-black font-mono tracking-tighter ${row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                                                PKR {row.profit?.toLocaleString()}
-                                                            </span>
-                                                             <div className={`text-[9px] font-black mt-0.5 ${row.profit >= 0 ? 'text-emerald-400 dark:text-emerald-500' : 'text-rose-300 dark:text-rose-500'}`}>
-                                                                {row.profit >= 0 ? 'Surplus' : 'Deficit'}
-                                                            </div>
-                                                        </td>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <td className="px-8 py-5 align-top">
-                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 dark:border-slate-700 inline-block mr-2 group-hover:border-emerald-500 transition-colors"></div>
-                                                             <span className="text-xs font-black text-black dark:text-slate-100 italic">
-                                                                {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
-                                                                    activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
-                                                                        activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
-                                                                            `Activity_ID_${i + 1} Log`}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {row[config.dataKey]?.toLocaleString()}</td>
-                                                    </>
-                                                )}
+                                                <td className="px-8 py-5 text-sm whitespace-nowrap font-semibold text-black dark:text-slate-200">
+                                                    {new Date(row.date).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200">
+                                                    {activeModule === 'netprofit' ? 'Cumulative record' : `Metric ${row.date}`}
+                                                </td>
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200">
+                                                    System activity
+                                                </td>
+                                                <td className="px-8 py-5 text-sm text-slate-500 dark:text-slate-400 font-semibold max-w-xs truncate">
+                                                    Aggregated data log for selected period
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className="text-sm font-semibold text-black dark:text-slate-100">
+                                                        -
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right text-sm font-semibold text-black dark:text-slate-100">
+                                                    PKR {row[config.dataKey]?.toLocaleString()}
+                                                </td>
                                             </tr>
                                         ))
                                     )}

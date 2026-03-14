@@ -136,17 +136,17 @@ const Suppliers = ({ currentUser }) => {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-bold placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-black dark:text-slate-100 focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             placeholder="Search here..."
                         />
                     </div>
                     {canCreate('suppliers') && (
                         <button
                             onClick={() => openModal()}
-                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 text-sm"
+                            className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 text-sm"
                         >
                             <Plus size={18} />
-                            <span>Add Supplier</span>
+                            <span>Add supplier</span>
                         </button>
                     )}
                 </div>
@@ -155,12 +155,12 @@ const Suppliers = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-100 dark:bg-slate-800 transition-colors">
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Supplier Name</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Person Name</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Phone</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Address</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Balance</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Supplier name</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Person name</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Phone</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Address</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight">Balance</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 tracking-tight text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -188,27 +188,27 @@ const Suppliers = ({ currentUser }) => {
                                 <tr key={supplier.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group border-b border-slate-100 dark:border-slate-800 last:border-0">
                                     <td className="px-6 py-4">
                                         <div className="text-left">
-                                            <p className="font-bold text-black dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors text-sm  tracking-tight">{supplier.name}</p>
+                                            <p className="font-semibold text-black dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors text-sm tracking-tight">{supplier.name}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-xs font-bold text-black dark:text-slate-300 text-left">{supplier.contactPerson || 'N/A'}</p>
+                                        <p className="text-sm font-medium text-black dark:text-slate-300 text-left">{supplier.contactPerson || 'N/A'}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 text-left">
+                                    <td className="px-6 py-4 text-sm font-medium text-black dark:text-slate-300 text-left">
                                         <div className="flex items-center gap-2">
                                             <Phone size={12} className="text-black dark:text-slate-400" />
                                             {supplier.phone || 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-1.5 font-bold text-black dark:text-slate-300 text-xs text-left">
-                                            <MapPin size={12} className="text-emerald-500 shrink-0" />
+                                        <div className="flex items-center gap-1.5 font-medium text-black dark:text-slate-300 text-sm text-left">
+                                            <MapPin size={12} className="text-black shrink-0" />
                                             <span className="truncate max-w-[250px]">{supplier.address || 'No address'}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col text-left">
-                                            <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded text-xs font-bold border ${Number(supplier.balance || 0) > 0
+                                            <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded text-sm font-semibold border ${Number(supplier.balance || 0) > 0
                                                 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                                 : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50'
                                                 }`}>
@@ -254,14 +254,14 @@ const Suppliers = ({ currentUser }) => {
                                     <Truck size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-xl md:text-2xl font-bold text-black dark:text-slate-100 tracking-tight truncate transition-colors">{formData.id ? 'Edit Supplier' : 'Add Supplier'}</h3>
+                                    <h3 className="text-xl md:text-2xl font-semibold text-black dark:text-slate-100 tracking-tight truncate transition-colors">{formData.id ? 'Edit supplier' : 'Add supplier'}</h3>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
                             >
-                                <span className="text-[10px] font-bold hidden md:block">Close</span>
+                                <span className="text-sm font-semibold tracking-tight hidden md:block">Close</span>
                                 <X size={20} />
                             </button>
                         </div>
@@ -271,109 +271,109 @@ const Suppliers = ({ currentUser }) => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                     <div className="space-y-4 md:space-y-6 text-left">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-500 flex items-center gap-2">
+                                        <h4 className="text-sm font-semibold text-black dark:text-slate-500 flex items-center gap-2 tracking-tight">
                                             <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
-                                            Primary Info
+                                            Primary info
                                         </h4>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Supplier Name *</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Supplier name *</label>
                                             <div className="relative">
                                                 <input
                                                     required
                                                     type="text"
                                                     value={formData.name}
                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
-                                                    placeholder="e.g. ABC Enterprises"
+                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
+                                                    placeholder="e.g. ABC enterprises"
                                                 />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Phone</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Phone</label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         value={formData.phone}
                                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                         placeholder="0312345678"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Person</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Person</label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         value={formData.contact_person}
                                                         onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                         placeholder="Name"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Email</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Email</label>
                                             <div className="relative">
                                                 <input
                                                     type="email"
                                                     value={formData.email}
                                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                     placeholder="supplier@company.com"
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">GST</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">GST</label>
                                             <input
                                                 type="text"
                                                 value={formData.gst_no}
                                                 onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
-                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                 placeholder="Tax ID"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-4 md:space-y-6 text-left">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-500 flex items-center gap-2">
+                                        <h4 className="text-sm font-semibold text-black dark:text-slate-500 flex items-center gap-2 tracking-tight">
                                             <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
-                                            Other Info
+                                            Other info
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">City</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">City</label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         value={formData.city}
                                                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                         placeholder="City"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Balance</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Balance</label>
                                                 <input
                                                     type="number"
                                                     value={formData.openingBalance || ''}
                                                     onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold text-slate-800 dark:text-slate-100"
+                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold text-black dark:text-slate-100"
                                                     placeholder="0.00"
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Address</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Address</label>
                                             <textarea
                                                 value={formData.address}
                                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                                 rows="3"
-                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all font-bold text-sm outline-none resize-none text-slate-800 dark:text-slate-100"
+                                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all font-semibold text-sm outline-none resize-none text-black dark:text-slate-100 placeholder:text-slate-400"
                                                 placeholder="Full office/warehouse address..."
                                             />
                                         </div>
@@ -384,7 +384,7 @@ const Suppliers = ({ currentUser }) => {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm disabled:opacity-70"
+                                        className="w-full py-4 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm tracking-tight disabled:opacity-70"
                                     >
                                         {saving ? 'Saving...' : 'Save now'}
                                     </button>

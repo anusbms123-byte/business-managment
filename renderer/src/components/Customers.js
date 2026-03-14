@@ -155,7 +155,7 @@ const Customers = ({ currentUser }) => {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-bold"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-black dark:text-slate-100 focus:outline-none focus:bg-white dark:focus:bg-slate-700 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold placeholder:text-slate-400"
                             placeholder="Search here..."
                         />
                     </div>
@@ -166,10 +166,10 @@ const Customers = ({ currentUser }) => {
                         {canCreate('customers') && (
                             <button
                                 onClick={() => openModal()}
-                                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 text-sm"
+                                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 text-sm tracking-tight"
                             >
                                 <Plus size={18} />
-                                <span>Add Customer</span>
+                                <span>Add customer</span>
                             </button>
                         )}
                     </div>
@@ -178,12 +178,12 @@ const Customers = ({ currentUser }) => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-100 dark:bg-slate-800 transition-colors">
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Name</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Contact</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Address</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Balance</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
+                            <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Name</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Contact</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Address</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Balance</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -194,32 +194,32 @@ const Customers = ({ currentUser }) => {
                                     <tr key={customer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group border-b border-slate-100 dark:border-slate-800 last:border-0">
                                         <td className="px-6 py-4">
                                             <div>
-                                                <p className="text-sm font-bold text-black dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-none">{customer.name}</p>
-                                                <p className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">ID: {String(customer.id).slice(-6).toUpperCase()}</p>
+                                                <p className="text-sm font-semibold text-black dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-none">{customer.name}</p>
+                                                <p className="text-sm text-black dark:text-slate-400 font-medium mt-1">ID: {String(customer.id).slice(-6).toUpperCase()}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="space-y-1">
-                                                <div className="flex items-center text-black dark:text-slate-300 text-xs font-bold gap-1.5">
+                                                <div className="flex items-center text-black dark:text-slate-300 text-sm font-medium gap-1.5">
                                                     <Phone size={12} className="text-black dark:text-slate-400" /> {customer.phone || 'N/A'}
                                                 </div>
-                                                <div className="flex items-center text-black dark:text-slate-400 text-[11px] font-bold gap-1.5">
+                                                <div className="flex items-center text-black dark:text-slate-400 text-sm font-medium gap-1.5">
                                                     <Mail size={12} /> {customer.email || 'No email provided'}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 max-w-xs">
-                                            <div className="flex items-center text-black dark:text-slate-300 text-xs font-bold gap-1.5">
+                                            <div className="flex items-center text-black dark:text-slate-300 text-sm font-medium gap-1.5">
                                                 <MapPin size={14} className="text-black dark:text-slate-400 shrink-0" />
                                                 <span className="truncate">{customer.address || 'No address set'}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="space-y-0.5">
-                                                <p className={`text-sm font-bold ${customer.balance > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                <p className={`text-sm font-semibold ${customer.balance > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                                     PKR {(customer.balance || 0).toLocaleString()}
                                                 </p>
-                                                <p className="text-[9px] text-black dark:text-slate-400 font-bold">Limit: {customer.creditLimit || 0}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Limit: PKR {(customer.creditLimit || 0).toLocaleString()}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -248,11 +248,11 @@ const Customers = ({ currentUser }) => {
                                 <tr>
                                     <td colSpan="5" className="px-8 py-32 text-center">
                                         <div className="max-w-xs mx-auto">
-                                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-700">
-                                                <User size={32} className="text-gray-200 dark:text-slate-600" />
+                                            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-slate-700">
+                                                <User size={32} className="text-slate-200 dark:text-slate-600" />
                                             </div>
-                                            <h3 className="text-gray-900 dark:text-slate-100 font-bold text-lg mb-1">No Customers Found</h3>
-                                            <p className="text-gray-400 dark:text-slate-500 text-sm">Add your first customer to start tracking sales and balances.</p>
+                                            <h3 className="text-black dark:text-slate-100 font-bold text-lg mb-1 tracking-tight">No customers found</h3>
+                                            <p className="text-slate-400 dark:text-slate-500 text-sm font-semibold">Add your first customer to start tracking sales and balances.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -272,169 +272,169 @@ const Customers = ({ currentUser }) => {
                                     <Users size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-xl md:text-2xl font-bold text-black dark:text-slate-100 tracking-tight truncate">{formData.id ? 'Edit Customer' : 'Add Customer'}</h3>
+                                    <h3 className="text-xl md:text-2xl font-semibold text-black dark:text-slate-100 tracking-tight">{formData.id ? 'Edit customer' : 'Add customer'}</h3>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
-                            >
-                                <span className="text-[10px] font-bold hidden md:block">Close</span>
-                                <X size={20} />
-                            </button>
+                             <button
+                                 onClick={() => setShowModal(false)}
+                                 className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
+                             >
+                                 <span className="text-sm font-semibold tracking-tight hidden md:block">Close</span>
+                                 <X size={20} />
+                             </button>
                         </div>
 
                         <div className="max-w-7xl mx-auto w-full p-4 md:p-8 pb-24">
                             <form onSubmit={handleSave} className="space-y-8 md:space-y-12">
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                    <div className="space-y-4 md:space-y-6 text-left">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-500 flex items-center gap-2">
-                                            <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
-                                            Primary Info
-                                        </h4>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Name *</label>
-                                            <div className="relative">
-                                                <input
-                                                    required
-                                                    type="text"
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 font-bold"
-                                                    placeholder="Enter Customer Name"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Phone</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={formData.phone}
-                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="0312345678"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Type</label>
-                                                <select
-                                                    value={formData.customerType}
-                                                    onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-bold appearance-none cursor-pointer text-slate-800 dark:text-slate-100"
-                                                >
-                                                    <option value="retail">Retail</option>
-                                                    <option value="wholesale">Wholesale</option>
-                                                    <option value="others">Others</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">CNIC</label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.cnic}
-                                                    onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="42101-1234567-8"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 ml-1">Email</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="customer@email.com"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">GST</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={formData.gst_no}
-                                                    onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="GST Registration No"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                     <div className="space-y-4 md:space-y-6 text-left">
+                                         <h4 className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 tracking-tight">
+                                             <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
+                                             Primary info
+                                         </h4>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Name *</label>
+                                             <div className="relative">
+                                                 <input
+                                                     required
+                                                     type="text"
+                                                     value={formData.name}
+                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 font-semibold placeholder:text-slate-400"
+                                                     placeholder="Enter customer name"
+                                                 />
+                                             </div>
+                                         </div>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Phone</label>
+                                             <div className="relative">
+                                                 <input
+                                                     type="text"
+                                                     value={formData.phone}
+                                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="0312345678"
+                                                 />
+                                             </div>
+                                         </div>
+                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                             <div className="space-y-2 text-left">
+                                                 <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Type</label>
+                                                 <select
+                                                     value={formData.customerType}
+                                                     onChange={(e) => setFormData({ ...formData, customerType: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm font-semibold appearance-none cursor-pointer text-black dark:text-slate-100"
+                                                 >
+                                                     <option value="retail">Retail</option>
+                                                     <option value="wholesale">Wholesale</option>
+                                                     <option value="others">Others</option>
+                                                 </select>
+                                             </div>
+                                             <div className="space-y-2 text-left">
+                                                 <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Cnic</label>
+                                                 <input
+                                                     type="text"
+                                                     value={formData.cnic}
+                                                     onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="42101-1234567-8"
+                                                 />
+                                             </div>
+                                         </div>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Email</label>
+                                             <div className="relative">
+                                                 <input
+                                                     type="email"
+                                                     value={formData.email}
+                                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="customer@email.com"
+                                                 />
+                                             </div>
+                                         </div>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">GST</label>
+                                             <div className="relative">
+                                                 <input
+                                                     type="text"
+                                                     value={formData.gst_no}
+                                                     onChange={(e) => setFormData({ ...formData, gst_no: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="GST registration no"
+                                                 />
+                                             </div>
+                                         </div>
+                                     </div>
 
-                                    <div className="space-y-4 md:space-y-6 text-left">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-500 flex items-center gap-2">
-                                            <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
-                                            Other Info
-                                        </h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Limit</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        value={formData.creditLimit || ''}
-                                                        onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 text-left">
-                                                <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Balance</label>
-                                                <div className="relative">
-                                                    <input
-                                                        type="number"
-                                                        value={formData.openingBalance || ''}
-                                                        onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
-                                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">City</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    value={formData.city}
-                                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="Karachi"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className="text-xs font-bold text-black dark:text-slate-400 ml-1">Address</label>
-                                            <div className="relative">
-                                                <textarea
-                                                    rows="3"
-                                                    value={formData.address}
-                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm resize-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                                    placeholder="Store address, building, etc."
-                                                ></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                     <div className="space-y-4 md:space-y-6 text-left">
+                                         <h4 className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 tracking-tight">
+                                             <div className="w-1 h-4 bg-emerald-600 rounded-full"></div>
+                                             Other info
+                                         </h4>
+                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                             <div className="space-y-2 text-left">
+                                                 <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Credit limit</label>
+                                                 <div className="relative">
+                                                     <input
+                                                         type="number"
+                                                         value={formData.creditLimit || ''}
+                                                         onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                                                         className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                         placeholder="0.00"
+                                                     />
+                                                 </div>
+                                             </div>
+                                             <div className="space-y-2 text-left">
+                                                 <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Opening balance</label>
+                                                 <div className="relative">
+                                                     <input
+                                                         type="number"
+                                                         value={formData.openingBalance || ''}
+                                                         onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+                                                         className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                         placeholder="0.00"
+                                                     />
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">City</label>
+                                             <div className="relative">
+                                                 <input
+                                                     type="text"
+                                                     value={formData.city}
+                                                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="Karachi"
+                                                 />
+                                             </div>
+                                         </div>
+                                         <div className="space-y-2 text-left">
+                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Address</label>
+                                             <div className="relative">
+                                                 <textarea
+                                                     rows="3"
+                                                     value={formData.address}
+                                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                     className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all text-sm resize-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 font-semibold"
+                                                     placeholder="Store address, building, etc."
+                                                 ></textarea>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
 
-                                <div className="pt-8 sticky bottom-0 bg-white dark:bg-slate-900 pb-8 transition-colors">
-                                    <button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm tracking-widest disabled:opacity-70"
-                                    >
-                                        {saving ? 'Saving...' : 'Save now'}
-                                    </button>
-                                </div>
+                                 <div className="pt-8 sticky bottom-0 bg-white dark:bg-slate-900 pb-8 transition-colors">
+                                     <button
+                                         type="submit"
+                                         disabled={saving}
+                                         className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm tracking-tight disabled:opacity-70"
+                                     >
+                                         {saving ? 'Saving...' : 'Save now'}
+                                     </button>
+                                 </div>
                             </form>
                         </div>
                     </div>

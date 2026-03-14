@@ -44,7 +44,7 @@ const StatCard = ({ title, value, change, changeType, percentage, color, icon: I
         <div className="flex items-center justify-between">
             <div className="flex-1 space-y-1">
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
-                <p className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">{value}</p>
+                <p className="text-xl font-medium text-slate-800 dark:text-slate-100 uppercase tracking-tight">{value}</p>
                 <div className="mt-4">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                         {changeType === 'up' ? '+' : ''}{change}%

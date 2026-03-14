@@ -25,8 +25,8 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
         >
             <div className="flex items-center justify-between">
                 <div className="flex-1 space-y-1 text-left">
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
-                    <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">{value}</p>
+                    <p className="text-sm text-black dark:text-slate-400 font-semibold tracking-tight">{title}</p>
+                    <p className="text-xl font-bold text-black dark:text-slate-100 tracking-tight">{value}</p>
                 </div>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${borderColors[color] || 'border-emerald-500'}`}>
                     <Icon size={18} className={color === 'gray' ? 'text-slate-500' : color === 'red' ? 'text-rose-500' : color === 'orange' ? 'text-orange-500' : 'text-emerald-500'} />
@@ -57,7 +57,7 @@ const Inventory = ({ currentUser }) => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`relative flex items-center space-x-2.5 px-6 py-4 text-xs font-black transition-all whitespace-nowrap group ${activeTab === tab.id
+                            className={`relative flex items-center space-x-2.5 px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap group ${activeTab === tab.id
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
@@ -68,7 +68,7 @@ const Inventory = ({ currentUser }) => {
                                 }`}>
                                 <tab.icon size={16} />
                             </div>
-                            <span className="uppercase tracking-widest">{tab.label}</span>
+                            <span className="tracking-tight">{tab.label}</span>
                             {activeTab === tab.id && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full"></div>
                             )}
@@ -151,7 +151,7 @@ const StockTracking = ({ currentUser }) => {
         <div className="animate-in fade-in duration-500">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <StatCard
-                    title="Total Item"
+                    title="Total items"
                     value={stats.total}
                     icon={Package}
                     color="gray"
@@ -167,7 +167,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('in_stock')}
                 />
                 <StatCard
-                    title="Stock Alert"
+                    title="Stock alerts"
                     value={stats.alerts}
                     icon={AlertTriangle}
                     color="red"
@@ -175,7 +175,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('alerts')}
                 />
                 <StatCard
-                    title="Expiry Alert"
+                    title="Expiry alerts"
                     value={stats.expiringSoon}
                     icon={Clock}
                     color="orange"
@@ -183,7 +183,7 @@ const StockTracking = ({ currentUser }) => {
                     onClick={() => setFilterType('expiring_soon')}
                 />
                 <StatCard
-                    title="Out of Stock"
+                    title="Out of stock"
                     value={stats.outOfStock}
                     icon={X}
                     color="gray"
@@ -201,19 +201,19 @@ const StockTracking = ({ currentUser }) => {
             </div>
 
 
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300 font-sans">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-[10px] font-black text-black dark:text-slate-200 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">
+                    <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-4">ID</th>
-                            <th className="px-6 py-4">Name</th>
-                            <th className="px-6 py-4">Brand</th>
-                            <th className="px-6 py-4 text-center">Color</th>
-                            <th className="px-6 py-4 text-center">Size</th>
-                            <th className="px-6 py-4 text-center">Stock</th>
-                            <th className="px-6 py-4 text-center">Alert</th>
-                            <th className="px-6 py-4 text-center">Expiry</th>
-                            <th className="px-6 py-4">Status</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Sku</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Name</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Brand</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Color</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Size</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Stock</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Alert</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Expiry</th>
+                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Status</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -229,31 +229,31 @@ const StockTracking = ({ currentUser }) => {
 
                             return (
                                 <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200">{p.sku || '-'}</td>
-                                    <td className="px-6 py-4 font-bold text-sm text-black dark:text-slate-100 uppercase truncate max-w-[200px]">{p.name}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase">{p.brand?.name || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs font-bold text-black dark:text-slate-200 uppercase">{p.color || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs font-bold text-black dark:text-slate-200 uppercase">{p.size || '-'}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-sm ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
-                                    <td className="px-6 py-4 text-center font-bold text-black dark:text-slate-100 text-xs">{p.alertQty || 5}</td>
-                                    <td className={`px-6 py-4 text-center font-bold text-xs ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>
+                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.sku || '-'}</td>
+                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100 truncate max-w-[200px]">{p.name}</td>
+                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.brand?.name || '-'}</td>
+                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.color || '-'}</td>
+                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.size || '-'}</td>
+                                    <td className={`px-14 py-4 text-center text-sm font-bold ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
+                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.alertQty || 5}</td>
+                                    <td className={`px-14 py-4 text-center text-sm font-bold ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>
                                         {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex gap-2">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${p.stockQty <= 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50' :
-                                                p.stockQty <= (p.alertQty || 5) ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/50' :
-                                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50'
+                                    <td className="px-14 py-4 text-right">
+                                        <div className="flex gap-2 justify-end">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${p.stockQty <= 0 ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400' :
+                                                p.stockQty <= (p.alertQty || 5) ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40' :
+                                                    'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40'
                                                 }`}>
-                                                {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
+                                                {p.stockQty <= 0 ? 'Out of stock' : p.stockQty <= (p.alertQty || 5) ? 'Low stock' : 'In stock'}
                                             </span>
                                             {isExpired && (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800">
+                                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-100 text-rose-600 dark:bg-rose-900/40">
                                                     Expired
                                                 </span>
                                             )}
                                             {isExpiringSoon && (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+                                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-amber-100 text-amber-600 dark:bg-amber-900/40">
                                                     Expiring
                                                 </span>
                                             )}
@@ -263,8 +263,8 @@ const StockTracking = ({ currentUser }) => {
                             );
                         }) : (
                             <tr>
-                                <td colSpan="5" className="px-6 py-20 text-center text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-[10px]">
-                                    No records found
+                                <td colSpan="9" className="px-6 py-20 text-center">
+                                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">No records found</p>
                                 </td>
                             </tr>
                         )}
@@ -313,13 +313,13 @@ const BarcodePrinting = ({ currentUser }) => {
                 {/* Print Configuration */}
                 <div className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm transition-colors duration-300">
                     <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Select Product</label>
+                        <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Select product</label>
                         <div className="relative">
                             <Package className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                             <select
                                 value={selectedProduct?.id || ''}
                                 onChange={(e) => setSelectedProduct(products.find(p => p.id == e.target.value))}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700 dark:text-slate-200"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-semibold text-sm appearance-none outline-none text-black dark:text-slate-200"
                             >
                                 {loading ? <option>Loading...</option> :
                                     products.length === 0 ? <option>No products found</option> :
@@ -332,17 +332,17 @@ const BarcodePrinting = ({ currentUser }) => {
                     </div>
 
                     <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Labels</label>
+                        <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Number of labels</label>
                         <div className="relative">
                             <Printer className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
-                            <input
-                                type="number"
-                                value={numLabels || ''}
-                                onChange={(e) => setNumLabels(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-bold text-sm outline-none text-slate-700 dark:text-slate-200"
-                                placeholder="0"
-                                min="1"
-                            />
+                             <input
+                                 type="number"
+                                 value={numLabels || ''}
+                                 onChange={(e) => setNumLabels(e.target.value)}
+                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-semibold text-sm outline-none text-black dark:text-slate-200"
+                                 placeholder="0"
+                                 min="1"
+                             />
                         </div>
                     </div>
 
@@ -351,7 +351,7 @@ const BarcodePrinting = ({ currentUser }) => {
                     <button
                         onClick={handlePrint}
                         disabled={!selectedProduct || products.length === 0}
-                        className="w-full py-3.5 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                        className="w-full py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm tracking-tight disabled:opacity-50"
                     >
                         <Printer size={18} />
                         <span>Print now</span>
@@ -365,10 +365,10 @@ const BarcodePrinting = ({ currentUser }) => {
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xl mb-6 transform transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl dark:shadow-none">
-                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'SKU-NONE'}</div>
+                        <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-1 tracking-[0.2em] uppercase">{selectedProduct?.sku || 'sku-none'}</div>
                         <div className="h-14 w-48 bg-gradient-to-r from-slate-900 via-white to-slate-900 dark:from-slate-100 dark:via-slate-800 dark:to-slate-100 bg-[length:4px_100%] rounded-sm"></div>
-                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item Name'}</div>
-                        <div className="text-[10px] font-bold text-black dark:text-white mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
+                        <div className="text-base font-bold text-black dark:text-slate-100 mt-3 uppercase tracking-tight">{selectedProduct?.name || 'Item name'}</div>
+                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1">PKR {selectedProduct?.sellPrice?.toLocaleString() || '0'}</div>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">

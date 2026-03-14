@@ -21,7 +21,7 @@ const Backup = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Backup & Restore</h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold mt-1">Download a backup for your safety.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1 tracking-tight">Download a backup for your safety.</p>
                 </div>
             </div>
 
@@ -32,13 +32,13 @@ const Backup = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`relative flex items-center space-x-3 px-6 py-4 text-[10px] font-bold transition-all whitespace-nowrap group ${activeTab === tab.id
+                            className={`relative flex items-center space-x-3 px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap group ${activeTab === tab.id
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
                             <tab.icon size={16} />
-                            <span className="text-black dark:text-white font-bold">{tab.label}</span>
+                            <span className="text-black dark:text-white font-semibold">{tab.label}</span>
                             {activeTab === tab.id && (
                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full"></div>
                             )}
@@ -80,7 +80,7 @@ const LocalBackup = ({ currentUser }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold flex items-center gap-3">
+            <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center gap-3 tracking-tight">
                 <HardDrive size={16} />
                 Download a backup for your safety.
             </div>
@@ -90,40 +90,40 @@ const LocalBackup = ({ currentUser }) => {
                     <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                         {loading ? <Loader2 size={32} className="animate-spin" /> : <Download size={32} />}
                     </div>
-                    <h3 className="text-sm font-bold text-black dark:text-slate-100 mb-2">Backup Data</h3>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-6 px-4 text-center">Save all your data (Products, Sales, etc.) as a file on your computer.</p>
+                    <h3 className="text-sm font-semibold text-black dark:text-slate-100 mb-2">Backup Data</h3>
+                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mb-6 px-4 text-center tracking-tight">Save all your data (Products, Sales, etc.) as a file on your computer.</p>
                     <button
                         onClick={handleBackup}
                         disabled={loading}
-                        className="w-full py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px] disabled:opacity-50"
+                        className="w-full py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-sm disabled:opacity-50 tracking-tight"
                     >
                         {loading ? 'Processing...' : 'Backup Now'}
                     </button>
                     {status && (
-                        <div className={`mt-4 p-3 rounded-lg text-[10px] font-bold w-full ${status.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'}`}>
+                        <div className={`mt-4 p-3 rounded-lg text-sm font-semibold w-full tracking-tight ${status.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'}`}>
                             {status.message}
                         </div>
                     )}
                 </div>
 
                 <div className="p-8 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 text-left">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-6">Help & Instructions</h3>
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-6">Help & Instructions</h3>
                     <div className="space-y-6">
                         <div>
-                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-1">01. When should I backup?</p>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1 tracking-tight">01. When should I backup?</p>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed tracking-tight">
                                 We recommend downloading a backup at the end of every business day to keep your local records updated.
                             </p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-1">02. Where is my file saved?</p>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1 tracking-tight">02. Where is my file saved?</p>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed tracking-tight">
                                 When you click "Backup", you can choose any folder on your computer (like Desktop or Documents) to save the file.
                             </p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-1">03. How to use restore?</p>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1 tracking-tight">03. How to use restore?</p>
+                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 leading-relaxed tracking-tight">
                                 If you need to recover data, go to the "Restore" tab and upload the latest backup file (.json) you saved earlier.
                             </p>
                         </div>
@@ -185,11 +185,11 @@ const RestoreBackup = ({ currentUser }) => {
                     <AlertTriangle size={24} />
                 </div>
                 <div>
-                    <p className="text-xs font-black text-rose-800 dark:text-rose-200">Restore Data (BE CAREFUL)</p>
-                    <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-1 leading-relaxed">
+                    <p className="text-sm font-semibold text-rose-800 dark:text-rose-200 tracking-tight">Restore Data (BE CAREFUL)</p>
+                    <p className="text-sm font-semibold text-rose-600 dark:text-rose-400 mt-1 leading-relaxed tracking-tight">
                         Think before you restore! This file will upload to the cloud and all other users in your company will see this data right away.
                     </p>
-                    <p className="text-[10px] font-bold text-rose-500 dark:text-rose-400 mt-2 leading-relaxed">
+                    <p className="text-xs font-semibold text-rose-500 dark:text-rose-400 mt-2 leading-relaxed tracking-tight">
                         Note: Only use your latest and correct backup file to avoid adding old or wrong data to the system.
                     </p>
                 </div>
@@ -200,12 +200,12 @@ const RestoreBackup = ({ currentUser }) => {
                     <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-amber-100 dark:border-amber-800 shadow-sm shadow-amber-50 dark:shadow-none">
                         {loading ? <Loader2 size={40} className="animate-spin" /> : <Upload size={40} />}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Restore from File</h3>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-8">Select a backup file (.json) to restore your data to the system.</p>
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-2">Restore from File</h3>
+                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mb-8 tracking-tight">Select a backup file (.json) to restore your data to the system.</p>
                     <button
                         onClick={handleRestore}
                         disabled={loading}
-                        className="px-10 py-3.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-md active:scale-95 text-[10px] disabled:opacity-50"
+                        className="px-10 py-3.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-md active:scale-95 text-sm disabled:opacity-50 tracking-tight"
                     >
                         {loading ? 'Restoring...' : 'Upload & Restore'}
                     </button>
@@ -215,12 +215,12 @@ const RestoreBackup = ({ currentUser }) => {
                     <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-rose-100 dark:border-rose-800 shadow-sm shadow-rose-50 dark:shadow-none">
                         {loading ? <Loader2 size={40} className="animate-spin" /> : <RotateCcw size={40} />}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Repair & Sync</h3>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-8">Clear local cache and refresh data from the cloud to fix duplicates or sync errors.</p>
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-2">Repair & Sync</h3>
+                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mb-8 tracking-tight">Clear local cache and refresh data from the cloud to fix duplicates or sync errors.</p>
                     <button
                         onClick={handleResetSync}
                         disabled={loading}
-                        className="px-10 py-3.5 bg-rose-600 dark:bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 dark:hover:bg-rose-700 transition-all shadow-md active:scale-95 text-[10px] disabled:opacity-50"
+                        className="px-10 py-3.5 bg-rose-600 dark:bg-rose-600 text-white rounded-lg font-semibold hover:bg-rose-700 dark:hover:bg-rose-700 transition-all shadow-md active:scale-95 text-sm disabled:opacity-50 tracking-tight"
                     >
                         {loading ? 'Resetting...' : 'Reset & Re-sync Now'}
                     </button>
@@ -228,7 +228,7 @@ const RestoreBackup = ({ currentUser }) => {
             </div>
 
             {status && (
-                <div className={`p-4 rounded-xl text-[10px] font-bold w-full flex items-center gap-3 ${status.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'}`}>
+                <div className={`p-4 rounded-xl text-sm font-semibold w-full flex items-center gap-3 tracking-tight ${status.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'}`}>
                     {status.type === 'success' && <CheckCircle2 size={18} />}
                     {status.message}
                 </div>

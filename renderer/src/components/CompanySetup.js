@@ -76,14 +76,14 @@ const CompanySetup = () => {
                     <div className="p-10">
                         {/* Header */}
                         <div className="mb-8">
-                            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Setup Company</h1>
-                            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Welcome, {username}. Please enter your company details.</p>
+                            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Setup Company</h1>
+                            <p className="text-slate-400 dark:text-slate-500 text-sm font-semibold mt-2 tracking-tight">Welcome, {username}. Please enter your company details.</p>
                         </div>
 
                         {error && (
                             <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-500"></div>
-                                {error}
+                                <span className="text-sm font-semibold tracking-tight">{error}</span>
                             </div>
                         )}
 
@@ -132,13 +132,13 @@ const CompanySetup = () => {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Company Address</label>
+                                <label className="text-sm font-semibold text-black dark:text-slate-500 ml-1 tracking-tight">Company Address</label>
                                 <textarea
                                     name="companyAddress"
                                     rows={2}
                                     value={formData.companyAddress}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 resize-none"
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 resize-none"
                                     placeholder="Enter company address"
                                     required
                                 />
@@ -156,11 +156,11 @@ const CompanySetup = () => {
                                     />
                                 </div>
                                 <div className="flex flex-col space-y-1.5">
-                                    <label className="text-[10px] font-bold text-transparent select-none uppercase tracking-widest ml-1">Action</label>
+                                    <label className="text-sm font-semibold text-transparent select-none ml-1 tracking-tight">Action</label>
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="px-10 h-[46px] bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px] flex items-center justify-center gap-2"
+                                        className="px-10 h-[46px] bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-sm flex items-center justify-center gap-2 tracking-tight"
                                     >
                                         {loading ? 'Creating...' : (
                                             <>
@@ -181,12 +181,12 @@ const CompanySetup = () => {
 
 const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
     <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">{label}</label>
+        <label className="text-sm font-semibold text-black dark:text-slate-500 ml-1 tracking-tight">{label}</label>
         <div className="relative group">
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />}
             <input
                 {...props}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
             />
         </div>
     </div>

@@ -5,9 +5,9 @@ import { useDialog } from '../context/DialogContext';
 
 
 const tabs = [
-    { id: 'profile', label: 'Company Profile', icon: Building2, color: 'emerald' },
+    { id: 'profile', label: 'Company profile', icon: Building2, color: 'emerald' },
     { id: 'users', label: 'Users', icon: Users, color: 'emerald' },
-    { id: 'roles', label: 'Roles & Permissions', icon: Shield, color: 'emerald' },
+    { id: 'roles', label: 'Roles & permissions', icon: Shield, color: 'emerald' },
     { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'emerald' },
     { id: 'helpline', label: 'Complains', icon: Phone, color: 'emerald' },
     { id: 'broadcast', label: 'Broadcast', icon: Megaphone, color: 'emerald' },
@@ -91,13 +91,13 @@ const Company = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`relative flex items-center space-x-3 px-6 py-4 text-[10px] font-bold transition-all whitespace-nowrap group ${activeTab === tab.id
+                                className={`relative flex items-center space-x-3 px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap group ${activeTab === tab.id
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
                                 <tab.icon size={16} />
-                                <span className="text-black dark:text-white font-bold">{label}</span>
+                                <span className="text-black dark:text-white">{label}</span>
                                 {tab.id === 'requests' && isSuperAdmin && counts.requests > 0 && (
                                     <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                                 )}
@@ -283,8 +283,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                placeholder="Search company..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100"
+                                placeholder="Search companies..."
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
                             />
                         </div>
 
@@ -297,7 +297,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                 <button
                                     key={f.id}
                                     onClick={() => setCompanyReferralFilter(f.id)}
-                                    className={`px-3 py-1.5 text-[9px] font-bold rounded-lg transition-all ${companyReferralFilter === f.id
+                                    className={`px-3 py-1.5 text-[10px] font-semibold rounded-lg transition-all ${companyReferralFilter === f.id
                                         ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
                                         : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                         }`}
@@ -308,7 +308,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         </div>
 
                         {canCreate('settings') && (
-                            <Button onClick={() => openModal()} icon={Plus}>Add Company</Button>
+                            <Button onClick={() => openModal()} icon={Plus}>Add company</Button>
                         )}
                     </div>
                 </div>
@@ -381,9 +381,9 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             <form onSubmit={handleSave} className="space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-black dark:text-slate-400 flex items-center gap-2 tracking-tight">
                                             <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
-                                            Core Information
+                                            Core information
                                         </h4>
                                         <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="Enter company name" icon={Building2} />
                                         <div className="grid grid-cols-2 gap-4">
@@ -392,7 +392,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2">
+                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 uppercase tracking-tight">
                                             <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                             Communications
                                         </h4>
@@ -402,21 +402,21 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mt-4">
                                             <div>
-                                                <p className="text-sm font-bold text-black dark:text-slate-100">Organization Status</p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{formData.is_active ? 'Account is live' : 'Account is deactivated'}</p>
+                                                <p className="text-sm font-semibold text-black dark:text-slate-100">Organization status</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{formData.is_active ? 'Account is live' : 'Account is deactivated'}</p>
                                             </div>
                                             <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, is_active: 1 })}
-                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all ${formData.is_active ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-semibold transition-all ${formData.is_active ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     Active
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, is_active: 0 })}
-                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all ${!formData.is_active ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-semibold transition-all ${!formData.is_active ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     Deactivated
                                                 </button>
@@ -424,9 +424,9 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                     </div>
                                     <div className="col-span-full space-y-6">
-                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2">
+                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 uppercase tracking-tight">
                                             <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
-                                            Address Details
+                                            Address details
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormTextarea label="Company Address" required value={formData.address} onChange={v => setFormData({ ...formData, address: v })} placeholder="Enter company address" />
@@ -434,7 +434,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save Changes' : 'Add Company'} />
+                                <ModalFooter onCancel={() => setShowModal(false)} saving={saving} label={formData.id ? 'Save changes' : 'Add company'} />
                             </form>
                         </Modal>
                     )
@@ -451,22 +451,22 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                         <div className="flex-1">
                                             <h2 className="text-xl font-bold text-black dark:text-slate-100 mb-2 tracking-tight">{selectedCompany.name}</h2>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Email Address</span>
-                                                    <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.email || '—'}</p>
+                                                    <span className="text-black dark:text-slate-200 font-semibold block mb-1 tracking-tight text-sm">Email address</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 font-semibold">{selectedCompany.email || '—'}</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Contact No</span>
-                                                    <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.phone || '—'}</p>
+                                                    <span className="text-black dark:text-slate-200 font-semibold block mb-1 tracking-tight text-sm">Contact no</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 font-semibold">{selectedCompany.phone || '—'}</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Office Line</span>
-                                                    <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.officePhone || '—'}</p>
+                                                    <span className="text-black dark:text-slate-200 font-semibold block mb-1 tracking-tight text-sm">Office line</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 font-semibold">{selectedCompany.officePhone || '—'}</p>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Address</span>
-                                                    <p className="text-slate-700 dark:text-slate-300 font-bold leading-relaxed">
+                                                    <span className="text-black dark:text-slate-200 font-semibold block mb-1 tracking-tight text-sm">Address</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
                                                         {selectedCompany.address}<br />
                                                         {selectedCompany.city}
                                                     </p>
@@ -478,11 +478,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-xs font-bold text-black dark:text-slate-500 flex items-center gap-2">
+                                        <h3 className="text-sm font-semibold text-black dark:text-slate-500 flex items-center gap-2 tracking-tight">
                                             <Users size={16} />
-                                            Onboarded Users
+                                            Onboarded users
                                         </h3>
-                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800">
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-semibold border border-emerald-100 dark:border-emerald-800 tracking-tight">
                                             {companyUsers.length} MEMBERS
                                         </span>
                                     </div>
@@ -495,12 +495,12 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                                 <div key={user.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all group">
                                                     <div className="flex items-center gap-3">
                                                         <div>
-                                                            <p className="font-bold text-black dark:text-slate-200 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{user.fullname}</p>
-                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">@{user.username}</p>
+                                                            <p className="font-semibold text-black dark:text-slate-200 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{user.fullname}</p>
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">@{user.username}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3">
-                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold border border-emerald-100 dark:border-emerald-800">
+                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-semibold border border-emerald-100 dark:border-emerald-800 tracking-tight">
                                                             {user.role}
                                                         </span>
                                                         <StatusBadge active={user.is_active} />
@@ -514,7 +514,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         </Modal>
                     )
                 }
-            </div >
+            </div>
         );
     }
 
@@ -547,7 +547,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                 <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                     {canEdit('settings') && (
                         <Button type="submit">
-                            {saving ? 'Updating...' : 'Update Company'}
+                            {saving ? 'Updating...' : 'Update company'}
                         </Button>
                     )}
                 </div>
@@ -738,24 +738,24 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard title="Total Users" value={stats.total} icon={Users} color="blue" />
-                <StatCard title="Active Users" value={stats.active} icon={Check} color="emerald" />
+                <StatCard title="Total users" value={stats.total} icon={Users} color="blue" />
+                <StatCard title="Active users" value={stats.active} icon={Check} color="emerald" />
                 <StatCard title="Admins" value={stats.admins} icon={Shield} color="purple" />
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative group w-full md:w-80">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Search users..."
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all shadow-sm text-black dark:text-slate-100"
-                        />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={16} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search users..."
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
+                    />
                 </div>
                 {canCreate('users') && (
-                    <Button onClick={() => openModal()} icon={Plus}>Add User</Button>
+                    <Button onClick={() => openModal()} icon={Plus}>Add user</Button>
                 )}
             </div>
 
@@ -764,11 +764,11 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">User Name</th>
-                                {isSuperAdmin && <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Company</th>}
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Role</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">User name</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Company</th>}
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Role</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center">Status</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -777,18 +777,18 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-4">
                                             <div>
-                                                <p className="font-bold text-black dark:text-slate-200 text-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{user.fullname}</p>
-                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">@{user.username}</p>
+                                                <p className="font-semibold text-black dark:text-slate-200 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{user.fullname}</p>
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold tracking-tight">@{user.username}</p>
                                             </div>
                                         </div>
                                     </td>
                                     {isSuperAdmin && (
-                                        <td className="px-6 py-4 font-bold text-slate-600 dark:text-slate-400 text-xs">
+                                        <td className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-sm tracking-tight">
                                             {user.company_name || 'System Principal'}
                                         </td>
                                     )}
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800">
+                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-xs font-semibold border border-emerald-100 dark:border-emerald-800 tracking-tight">
                                             {user.role?.replace('_', ' ')}
                                         </span>
                                     </td>
@@ -817,7 +817,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
             </div>
 
             {showModal && (
-                <Modal title={formData.id ? 'Update User' : 'Add New User'} onClose={() => setShowModal(false)} size="md">
+                <Modal title={formData.id ? 'Update user' : 'Add new user'} onClose={() => setShowModal(false)} size="md">
                     <form onSubmit={handleSave} className="space-y-6">
                         {isSuperAdmin && (
                             <FormSelect
@@ -1136,20 +1136,20 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                     )}
                 </div>
             </div>
-            <h3 className="font-bold text-black dark:text-slate-100 text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{role.name}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>
+            <h3 className="font-semibold text-black dark:text-slate-100 text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{role.name}</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed tracking-tight">{role.description || 'No description provided'}</p>
             {isSuperAdmin && (role.company_id || role.companyId) && (
-                <p className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold mt-1">
+                <p className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold mt-1 tracking-tight">
                     <Building2 size={10} className="inline mr-1" />{getCompanyName(role.company_id || role.companyId)}
                 </p>
             )}
             <div className="mt-6 flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-4">
-                <span className={`px-2.5 py-1 rounded text-[10px] font-bold border ${(role.is_system || role.isSystem) ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'}`}>
-                    {(role.is_system || role.isSystem) ? 'Access' : 'Custom Config'}
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border tracking-tight ${(role.is_system || role.isSystem) ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'}`}>
+                    {(role.is_system || role.isSystem) ? 'Access' : 'Custom config'}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 flex items-center gap-1 tracking-tight">
                     <Check size={14} className="text-emerald-500 dark:text-emerald-400" />
-                    {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} Modules
+                    {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} modules
                 </span>
             </div>
         </div>
@@ -1159,7 +1159,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Roles & Permissions</h2>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Roles & permissions</h2>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Company Filter for Super Admin */}
@@ -1168,15 +1168,15 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             <select
                                 value={selectedCompany}
                                 onChange={(e) => setSelectedCompany(e.target.value)}
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-[10px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 tracking-tight"
                             >
-                                <option value="system">System Roles</option>
+                                <option value="system">System roles</option>
                                 {companies.map(c => <option key={c.id} value={c.global_id || c.id}>{c.name}</option>)}
                             </select>
                         </div>
                     )}
                     {canCreate('settings') && (
-                        <Button onClick={() => openModal()} icon={Plus}>Add Role</Button>
+                        <Button onClick={() => openModal()} icon={Plus}>Add role</Button>
                     )}
                 </div>
             </div>
@@ -1208,14 +1208,14 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                     value={formData.target_company_id}
                                     onChange={v => setFormData({ ...formData, target_company_id: v })}
                                     options={companies.map(c => ({ value: c.global_id || c.id, label: c.name }))}
-                                    placeholder="Select Company"
+                                    placeholder="Select company"
                                     icon={Building2}
                                 />
                             </div>
                         )}
 
                         <div>
-                            <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 mb-4">
+                            <h4 className="text-sm font-semibold text-black dark:text-slate-300 flex items-center gap-2 mb-4 tracking-tight">
                                 <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                 Permissions
                             </h4>
@@ -1224,17 +1224,17 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                                             <tr>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Module</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">View</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Create</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Edit</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Delete</th>
+                                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Module</th>
+                                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center text-xs">View</th>
+                                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center text-xs">Create</th>
+                                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center text-xs">Edit</th>
+                                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center text-xs">Delete</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                             {MODULES.map((mod) => (
                                                 <tr key={mod.key} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 group transition-colors">
-                                                    <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-tight">{mod.label}</td>
+                                                    <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 text-sm tracking-tight">{mod.label}</td>
                                                     {['can_view', 'can_create', 'can_edit', 'can_delete'].map(f => (
                                                         <td key={f} className="px-6 py-4 text-center">
                                                             <input
@@ -1288,7 +1288,7 @@ const AuditLog = ({ currentUser }) => {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">System Audit Trail</h2>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">System audit trail</h2>
                 </div>
             </div>
 
@@ -1297,10 +1297,10 @@ const AuditLog = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Timestamp</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Principal</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Method</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Security Details</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Timestamp</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Principal</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight text-center">Method</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Security details</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -1317,21 +1317,21 @@ const AuditLog = ({ currentUser }) => {
                                             <div className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                                                 <ClipboardList size={14} />
                                             </div>
-                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-tight">
                                                 {new Date(log.created_at).toLocaleString()}
                                             </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-tight">{log.fullname || log.username}</p>
+                                        <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm tracking-tight">{log.fullname || log.username}</p>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded text-[10px] font-bold border border-slate-100 dark:border-slate-800">
+                                        <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded text-xs font-semibold border border-slate-100 dark:border-slate-800 tracking-tight">
                                             {log.action}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold max-w-xs truncate group-hover:whitespace-normal group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-all">
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold max-w-xs truncate group-hover:whitespace-normal group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-all tracking-tight">
                                             {log.details || 'No trace description available'}
                                         </p>
                                     </td>
@@ -1414,7 +1414,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                 <Modal title="Reject Request" onClose={() => setRejecting(null)}>
                     <div className="space-y-6">
                         <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/50 rounded-lg">
-                            <p className="text-xs text-rose-600 dark:text-rose-400 font-bold leading-relaxed italic">
+                            <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed italic tracking-tight">
                                 "Rejecting this request will disable the user account for this company."
                             </p>
                         </div>
@@ -1427,16 +1427,16 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                         <div className="flex justify-end gap-3 pt-4 border-t border-slate-50 dark:border-slate-800">
                             <button
                                 onClick={() => setRejecting(null)}
-                                className="px-6 py-2 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs uppercase tracking-widest"
+                                className="px-6 py-2 text-slate-400 dark:text-slate-500 font-semibold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs uppercase tracking-widest"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmReject}
                                 disabled={isRejecting}
-                                className="px-6 py-2 bg-rose-600 text-white rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-sm shadow-rose-100 disabled:opacity-50"
+                                className="px-6 py-2 bg-rose-600 text-white rounded-lg font-semibold text-xs uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-sm shadow-rose-100 disabled:opacity-50"
                             >
-                                {isRejecting ? 'Rejecting...' : 'Reject Request'}
+                                {isRejecting ? 'Rejecting...' : 'Reject request'}
                             </button>
                         </div>
                     </div>
@@ -1449,13 +1449,13 @@ const CompanyRequests = ({ currentUser, onAction }) => {
 
                 <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                     {[
-                        { id: 'all', label: 'All Requests' },
-                        { id: 'with', label: 'Referral Only' }
+                        { id: 'all', label: 'All requests' },
+                        { id: 'with', label: 'Referral only' }
                     ].map(f => (
                         <button
                             key={f.id}
                             onClick={() => setReferralFilter(f.id)}
-                            className={`px-4 py-2 text-[10px] font-black rounded-lg transition-all ${referralFilter === f.id
+                            className={`px-4 py-2 text-[10px] font-semibold rounded-lg transition-all ${referralFilter === f.id
                                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
@@ -1465,8 +1465,8 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                     ))}
                 </div>
 
-                <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-bold border border-emerald-100 dark:border-emerald-800">
-                    {requests.length} Pending
+                <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-100 dark:border-emerald-800 tracking-tight">
+                    {requests.length} pending
                 </div>
             </div>
 
@@ -1483,37 +1483,37 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 {req.referralCode && (
-                                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800 flex items-center gap-1">
+                                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-xs font-semibold border border-emerald-100 dark:border-emerald-800 flex items-center gap-1 tracking-tight">
                                         <Users size={10} /> {req.referralCode}
                                     </span>
                                 )}
-                                <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded text-[10px] font-bold border border-amber-100 dark:border-amber-800">Pending</span>
+                                <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded text-xs font-semibold border border-amber-100 dark:border-amber-800 tracking-tight">Pending</span>
                             </div>
                         </div>
 
                         <h3 className="font-bold text-black dark:text-slate-100 text-lg mb-1">{req.companyName}</h3>
                         <div className="space-y-2 mb-6">
-                            <p className="text-xs text-black dark:text-slate-400 font-bold flex items-center gap-2">
+                            <p className="text-sm text-black dark:text-slate-400 font-semibold flex items-center gap-2">
                                 <Mail size={12} /> {req.companyEmail || 'No Email'}
                             </p>
-                            <p className="text-xs text-black dark:text-slate-400 font-bold flex items-center gap-2">
+                            <p className="text-sm text-black dark:text-slate-400 font-semibold flex items-center gap-2">
                                 <Phone size={12} /> {req.companyPhone || 'No Phone'}
                             </p>
-                            <p className="text-xs text-black dark:text-slate-400 flex items-center gap-2 border-t border-slate-50 dark:border-slate-800 pt-2 mt-2">
-                                <Users size={12} /> Requested by: <span className="font-bold text-black dark:text-slate-100">@{req.user?.username}</span>
+                            <p className="text-sm text-black dark:text-slate-400 flex items-center gap-2 border-t border-slate-50 dark:border-slate-800 pt-2 mt-2">
+                                <Users size={12} /> Requested by: <span className="font-semibold text-black dark:text-slate-100">@{req.user?.username}</span>
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => handleApprove(req.id)}
-                                className="py-2 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100 dark:shadow-none"
+                                className="py-2 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-semibold text-xs hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100 dark:shadow-none tracking-tight"
                             >
                                 Approve
                             </button>
                             <button
                                 onClick={() => setRejecting({ id: req.id, notes: '' })}
-                                className="py-2 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
+                                className="py-2 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg font-semibold text-xs hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors tracking-tight"
                             >
                                 Reject
                             </button>
@@ -1540,8 +1540,8 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
         <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 hover:shadow-md group`}>
             <div className="relative flex items-center justify-between">
                 <div>
-                    <p className="text-black dark:text-slate-400 text-[10px] font-bold mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-black dark:text-slate-100">{value}</h3>
+                    <p className="text-black dark:text-slate-400 text-sm font-semibold mb-1 tracking-tight">{title}</p>
+                    <h3 className="text-xl font-bold text-black dark:text-slate-100 tracking-tight">{value}</h3>
                 </div>
                 <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     <Icon size={20} />
@@ -1556,7 +1556,7 @@ const Button = ({ children, label, onClick, icon: Icon, type = 'button', disable
         type={type}
         onClick={onClick}
         disabled={disabled}
-        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-xs disabled:opacity-50 ${className}`}
+        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-xs disabled:opacity-50 tracking-tight ${className}`}
     >
         {Icon && <Icon size={16} />}
         <span className="whitespace-nowrap">{children || label}</span>
@@ -1564,7 +1564,7 @@ const Button = ({ children, label, onClick, icon: Icon, type = 'button', disable
 );
 
 const StatusBadge = ({ active }) => (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border ${active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800'}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border tracking-tight ${active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800'}`}>
         <span className={`w-1 h-1 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
         {active ? 'Active' : 'Deactivated'}
     </span>
@@ -1579,22 +1579,22 @@ const LoadingSpinner = () => (
 const EmptyState = ({ message, icon: Icon = Info }) => (
     <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
         <Icon size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
-        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">{message}</p>
+        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold tracking-tight">{message}</p>
     </div>
 );
 
 const FormInput = ({ label, type = 'text', value, onChange, required, placeholder, icon: Icon, suffix }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label} {required && '*'}</label>
+        <label className="text-sm font-semibold text-black dark:text-slate-200 ml-1 tracking-tight">{label} {required && '*'}</label>
         <div className="relative">
-            {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold" size={16} />}
+            {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />}
             <input
                 type={type}
                 required={required}
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-semibold text-sm text-black dark:text-slate-100 tracking-tight`}
             />
             {suffix && (
                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
@@ -1607,7 +1607,7 @@ const FormInput = ({ label, type = 'text', value, onChange, required, placeholde
 
 const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label}</label>
+        <label className="text-sm font-semibold text-black dark:text-slate-200 ml-1 tracking-tight">{label}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" size={16} />}
             <textarea
@@ -1615,7 +1615,7 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
                 onChange={e => onChange(e.target.value)}
                 rows={rows}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100 resize-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-semibold text-sm text-black dark:text-slate-100 resize-none tracking-tight`}
             />
         </div>
     </div>
@@ -1623,14 +1623,14 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
 
 const FormSelect = ({ label, value, onChange, options, required, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label} {required && '*'}</label>
+        <label className="text-sm font-semibold text-black dark:text-slate-200 ml-1 tracking-tight">{label} {required && '*'}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />}
             <select
                 required={required}
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm text-black dark:text-slate-100 outline-none appearance-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-semibold text-sm text-black dark:text-slate-100 outline-none appearance-none tracking-tight`}
             >
                 <option value="">{placeholder || 'Select...'}</option>
                 {options.map(opt => <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800">{opt.label}</option>)}
@@ -1656,7 +1656,7 @@ const Modal = ({ title, children, onClose, size = 'md' }) => (
                 onClick={onClose}
                 className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
             >
-                <span className="text-[10px] font-bold hidden md:block">Close</span>
+                <span className="text-[10px] font-semibold hidden md:block tracking-tight">Close</span>
                 <X size={20} />
             </button>
         </div>
@@ -1674,7 +1674,7 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
         <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs"
+            className="px-6 py-2 text-slate-400 dark:text-slate-500 font-semibold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs tracking-tight"
         >
             Discard
         </button>
@@ -1719,9 +1719,9 @@ const ComplainRequests = ({ onAction }) => {
         <div className="space-y-6">
             <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h3 className="text-sm font-bold text-black dark:text-slate-200">Complains</h3>
+                    <h3 className="text-lg font-bold text-black dark:text-slate-200 tracking-tight">Complains</h3>
                 </div>
-                <button onClick={loadData} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold text-[10px] rounded-lg transition-colors border border-slate-100 dark:border-slate-800">Refresh Feed</button>
+                <button onClick={loadData} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-semibold text-xs rounded-lg transition-colors border border-slate-100 dark:border-slate-800 tracking-tight">Refresh feed</button>
             </div>
 
             {requests.length === 0 ? (
@@ -1731,19 +1731,19 @@ const ComplainRequests = ({ onAction }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">User Details</th>
-                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">WhatsApp / Email</th>
-                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">Description</th>
-                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">Status</th>
-                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300 text-right">Actions</th>
+                                <th className="p-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">User details</th>
+                                <th className="p-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">WhatsApp / Email</th>
+                                <th className="p-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Description</th>
+                                <th className="p-4 text-sm font-semibold text-black dark:text-slate-300 tracking-tight">Status</th>
+                                <th className="p-4 text-sm font-semibold text-black dark:text-slate-300 text-right tracking-tight">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {requests.map(req => (
                                 <tr key={req.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="p-4">
-                                        <p className="font-bold text-slate-700 dark:text-slate-200 text-sm italic">{req.fullName}</p>
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
+                                        <p className="font-semibold text-black dark:text-slate-200 text-sm tracking-tight">{req.fullName}</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1 tracking-tight">{new Date(req.createdAt).toLocaleDateString()}</p>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col gap-1">
@@ -1761,10 +1761,10 @@ const ComplainRequests = ({ onAction }) => {
                                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-2 italic">{req.description}</p>
                                     </td>
                                     <td className="p-4">
-                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black
+                                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-tight capitalize
                                             ${req.status === 'PENDING' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'}
                                         `}>
-                                            {req.status}
+                                            {req.status?.toLowerCase()}
                                         </div>
                                     </td>
                                     <td className="p-4">
@@ -1825,24 +1825,24 @@ const SystemBroadcast = () => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-black dark:text-slate-100 mb-6 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-black dark:text-slate-100 mb-6 flex items-center gap-2 tracking-tight">
                     <Send className="text-emerald-600 dark:text-emerald-400" size={20} />
-                    Create New Broadcast
+                    Create new broadcast
                 </h3>
                 <form onSubmit={handleSend} className="space-y-4">
                     <div>
-                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Message Content</label>
+                        <label className="text-sm font-semibold text-black dark:text-slate-200 ml-1 tracking-tight">Message content</label>
                         <textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            className="w-full mt-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all min-h-[120px] text-black dark:text-slate-100"
+                            className="w-full mt-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all min-h-[120px] text-black dark:text-slate-100 tracking-tight"
                             placeholder="Type a message for all system users..."
                             required
                         />
                     </div>
                     <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
                         <div className="w-full md:w-48">
-                            <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Alert Type</label>
+                            <label className="text-sm font-semibold text-black dark:text-slate-200 ml-1 tracking-tight">Alert type</label>
                             <select
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
@@ -1865,7 +1865,7 @@ const SystemBroadcast = () => {
             </div>
 
             <div className="bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden">
-                <h3 className="text-sm font-bold text-black dark:text-slate-500 mb-4">Recent Broadcasts</h3>
+                <h3 className="text-sm font-semibold text-black dark:text-slate-500 mb-4 tracking-tight">Recent broadcasts</h3>
                 <div className="space-y-3">
                     {recentMessages.length === 0 ? (
                         <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">No recent messages found.</p>

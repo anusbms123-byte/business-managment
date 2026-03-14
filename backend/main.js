@@ -1173,7 +1173,7 @@ ipcMain.handle("update-sale", async (e, data) => {
         if (!oldSale) return { success: false, message: "Old sale not found" };
 
         const oldGid = oldSale.global_id;
-        const oldItems = await db.asyncAll("SELECT * FROM sale_items WHERE sale_id=?", [oldGid]);
+        const oldItems = await db.asyncAll("SELECT * FROM sale_items WHERE sale_id=? OR sale_id=?", [oldGid, String(oldSale.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
@@ -1197,7 +1197,7 @@ ipcMain.handle("update-sale", async (e, data) => {
         );
 
         // 4. Delete and Re-insert items, Update New Stock
-        await db.asyncRun("DELETE FROM sale_items WHERE sale_id = ?", [oldGid]);
+        await db.asyncRun("DELETE FROM sale_items WHERE sale_id = ? OR sale_id = ?", [oldGid, String(oldSale.id)]);
 
         if (items && Array.isArray(items)) {
             for (const item of items) {
@@ -1233,7 +1233,7 @@ ipcMain.handle("delete-sale", async (e, id) => {
         if (!sale) return { success: false, message: "Sale not found" };
         const gid = sale.global_id;
 
-        const items = await db.asyncAll("SELECT * FROM sale_items WHERE sale_id = ?", [gid]);
+        const items = await db.asyncAll("SELECT * FROM sale_items WHERE sale_id = ? OR sale_id = ?", [gid, String(sale.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
@@ -1794,8 +1794,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
         const oldPurchase = await db.asyncGet("SELECT * FROM purchases WHERE id=? OR global_id=?", [id, id]);
         if (!oldPurchase) return { success: false, message: "Old purchase not found" };
         const oldGid = oldPurchase.global_id;
-
-        const oldItems = await db.asyncAll("SELECT * FROM purchase_items WHERE purchase_id=?", [oldGid]);
+        const oldItems = await db.asyncAll("SELECT * FROM purchase_items WHERE purchase_id=? OR purchase_id=?", [oldGid, String(oldPurchase.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
@@ -1857,7 +1856,7 @@ ipcMain.handle("delete-purchase", async (e, id) => {
         if (!purchase) return { success: false, message: "Purchase not found" };
         const gid = purchase.global_id;
 
-        const items = await db.asyncAll("SELECT * FROM purchase_items WHERE purchase_id = ?", [gid]);
+        const items = await db.asyncAll("SELECT * FROM purchase_items WHERE purchase_id = ? OR purchase_id = ?", [gid, String(purchase.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
@@ -1991,7 +1990,7 @@ ipcMain.handle("delete-sale-return", async (e, id) => {
         const customer_id = row.customer_id;
         const total_amount = row.total_amount || 0;
 
-        const items = await db.asyncAll("SELECT * FROM sale_return_items WHERE return_id = ?", [gid]);
+        const items = await db.asyncAll("SELECT * FROM sale_return_items WHERE return_id = ? OR return_id = ?", [gid, String(row.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
@@ -2124,7 +2123,7 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
         const vendor_id = row.vendor_id;
         const total_amount = row.total_amount || 0;
 
-        const items = await db.asyncAll("SELECT * FROM purchase_return_items WHERE return_id = ?", [gid]);
+        const items = await db.asyncAll("SELECT * FROM purchase_return_items WHERE return_id = ? OR return_id = ?", [gid, String(row.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 

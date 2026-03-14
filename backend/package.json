@@ -1,6 +1,6 @@
 {
-  "name": "businessmanagementapp",
-  "version": "1.0.37",
+  "name": "BizNex",
+  "version": "1.0.38",
   "description": "Business Management Desktop Application",
   "main": "main.js",
   "author": "Huzaifa",
@@ -25,7 +25,7 @@
   },
   "build": {
     "appId": "com.businessmanagementapp.bms",
-    "productName": "BusinessManagementApp",
+    "productName": "BizNex",
     "directories": {
       "buildResources": "assets",
       "output": "dist"
