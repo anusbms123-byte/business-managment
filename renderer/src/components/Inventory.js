@@ -9,27 +9,27 @@ import Products from './Products';
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
-    const colors = {
-        orange: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500 dark:border-l-blue-600',
-        emerald: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500 dark:border-l-emerald-600',
-        red: 'bg-white dark:bg-slate-900 border-l-4 border-l-rose-500 dark:border-l-rose-600',
-        gray: 'bg-white dark:bg-slate-900 border-l-4 border-l-slate-400 dark:border-l-slate-500',
-        purple: 'bg-white dark:bg-slate-900 border-l-4 border-l-indigo-500 dark:border-l-indigo-600',
-        blue: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500 dark:border-l-blue-600'
+    const borderColors = {
+        orange: 'border-orange-500',
+        emerald: 'border-emerald-500',
+        red: 'border-rose-500',
+        gray: 'border-slate-400',
+        purple: 'border-indigo-500',
+        blue: 'border-blue-500'
     };
 
     return (
         <div
             onClick={onClick}
-            className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border transition-all duration-200 hover:shadow-md group cursor-pointer ${isActive ? 'ring-2 ring-blue-500 dark:ring-blue-600 shadow-md transform scale-[1.02]' : 'border-slate-200 dark:border-slate-800 shadow-sm'}`}
+            className={`bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-xl hover:-translate-y-1 duration-300 cursor-pointer ${isActive ? `ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/10` : ''}`}
         >
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
+            <div className="flex items-center justify-between">
+                <div className="flex-1 space-y-1 text-left">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
+                    <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">{value}</p>
                 </div>
-                <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
-                    <Icon size={20} />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${borderColors[color] || 'border-emerald-500'}`}>
+                    <Icon size={18} className={color === 'gray' ? 'text-slate-500' : color === 'red' ? 'text-rose-500' : color === 'orange' ? 'text-orange-500' : 'text-emerald-500'} />
                 </div>
             </div>
         </div>
@@ -57,20 +57,20 @@ const Inventory = ({ currentUser }) => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`relative flex items-center space-x-2.5 px-6 py-4 text-xs font-bold transition-all whitespace-nowrap group ${activeTab === tab.id
-                                ? 'text-blue-600 dark:text-blue-400'
+                            className={`relative flex items-center space-x-2.5 px-6 py-4 text-xs font-black transition-all whitespace-nowrap group ${activeTab === tab.id
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
                             <div className={`p-1.5 rounded-lg transition-all duration-300 ${activeTab === tab.id
-                                ? `bg-blue-950 dark:bg-blue-600 text-white shadow-sm shadow-blue-100 dark:shadow-none`
-                                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-slate-50 dark:group-hover:bg-slate-700 border border-slate-100 dark:border-slate-700'
+                                ? `bg-emerald-500 text-white`
+                                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-slate-50 dark:group-hover:bg-slate-700 border border-slate-100 dark:border-slate-700 font-bold'
                                 }`}>
                                 <tab.icon size={16} />
                             </div>
                             <span className="uppercase tracking-widest">{tab.label}</span>
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-950 dark:bg-blue-400 rounded-t-full"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-t-full"></div>
                             )}
                         </button>
                     ))}
@@ -203,7 +203,7 @@ const StockTracking = ({ currentUser }) => {
 
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                    <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-[10px] font-black text-black dark:text-slate-200 uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">
                         <tr>
                             <th className="px-6 py-4">ID</th>
                             <th className="px-6 py-4">Name</th>
@@ -216,7 +216,7 @@ const StockTracking = ({ currentUser }) => {
                             <th className="px-6 py-4">Status</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                         {filtered.length > 0 ? filtered.map((p) => {
                             const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
                             const isExpiringSoon = !isExpired && p.expiryDate && (() => {
@@ -319,7 +319,7 @@ const BarcodePrinting = ({ currentUser }) => {
                             <select
                                 value={selectedProduct?.id || ''}
                                 onChange={(e) => setSelectedProduct(products.find(p => p.id == e.target.value))}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700 dark:text-slate-200"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-bold text-sm appearance-none outline-none text-slate-700 dark:text-slate-200"
                             >
                                 {loading ? <option>Loading...</option> :
                                     products.length === 0 ? <option>No products found</option> :
@@ -339,7 +339,7 @@ const BarcodePrinting = ({ currentUser }) => {
                                 type="number"
                                 value={numLabels || ''}
                                 onChange={(e) => setNumLabels(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 transition-all font-bold text-sm outline-none text-slate-700 dark:text-slate-200"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 transition-all font-bold text-sm outline-none text-slate-700 dark:text-slate-200"
                                 placeholder="0"
                                 min="1"
                             />
@@ -351,7 +351,7 @@ const BarcodePrinting = ({ currentUser }) => {
                     <button
                         onClick={handlePrint}
                         disabled={!selectedProduct || products.length === 0}
-                        className="w-full py-3.5 bg-blue-950 dark:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-100 dark:shadow-none hover:bg-slate-900 dark:hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                        className="w-full py-3.5 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
                     >
                         <Printer size={18} />
                         <span>Print now</span>

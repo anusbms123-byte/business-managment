@@ -10,25 +10,27 @@ import { useDialog } from '../context/DialogContext';
 
 // Premium Stat Card Component
 const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
-    const colors = {
-        orange: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500 dark:border-l-blue-600',
-        emerald: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500 dark:border-l-emerald-600',
-        red: 'bg-white dark:bg-slate-900 border-l-4 border-l-rose-500 dark:border-l-rose-600',
-        blue: 'bg-white dark:bg-slate-900 border-l-4 border-l-indigo-500 dark:border-l-indigo-600',
-        gray: 'bg-white dark:bg-slate-900 border-l-4 border-l-slate-400 dark:border-l-slate-500'
+    const borderColors = {
+        orange: 'border-orange-500',
+        emerald: 'border-emerald-500',
+        red: 'border-rose-500',
+        gray: 'border-slate-400',
+        purple: 'border-indigo-500',
+        blue: 'border-blue-500'
     };
 
     return (
         <div
             onClick={onClick}
-            className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border transition-all duration-200 hover:shadow-md group cursor-pointer ${isActive ? 'ring-2 ring-blue-500 dark:ring-blue-600 shadow-md transform scale-[1.02]' : 'border-slate-200 dark:border-slate-800 shadow-sm'}`}>
-            <div className="relative flex items-center justify-between">
-                <div>
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
+            className={`bg-white dark:bg-slate-900 rounded-[24px] p-5 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-xl hover:-translate-y-1 duration-300 cursor-pointer ${isActive ? `ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/10` : ''}`}
+        >
+            <div className="flex items-center justify-between">
+                <div className="flex-1 space-y-1 text-left">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
+                    <p className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight uppercase">{value}</p>
                 </div>
-                <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
-                    <Icon size={20} />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${borderColors[color] || 'border-emerald-500'}`}>
+                    <Icon size={18} className={color === 'gray' ? 'text-slate-500' : color === 'red' ? 'text-rose-500' : color === 'orange' ? 'text-orange-500' : 'text-emerald-500'} />
                 </div>
             </div>
         </div>
@@ -51,13 +53,13 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
 
     return (
         <div className="relative space-y-2">
-            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                <Icon size={12} className="text-black dark:text-slate-400" /> {label}
+            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                {label}
             </label>
             <div className="relative">
                 <input
                     type="text"
-                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
+                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
                     value={searchTerm}
                     onChange={(e) => {
                         setSearchTerm(e.target.value);
@@ -355,7 +357,7 @@ const Products = ({ currentUser }) => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
                         {/* Category Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
                         >
@@ -365,7 +367,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Brand Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterBrand}
                             onChange={(e) => setFilterBrand(e.target.value)}
                         >
@@ -375,7 +377,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Unit Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterUnit}
                             onChange={(e) => setFilterUnit(e.target.value)}
                         >
@@ -391,7 +393,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Color Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterColor}
                             onChange={(e) => setFilterColor(e.target.value)}
                         >
@@ -401,7 +403,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Size Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterSize}
                             onChange={(e) => setFilterSize(e.target.value)}
                         >
@@ -411,7 +413,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Grade Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterGrade}
                             onChange={(e) => setFilterGrade(e.target.value)}
                         >
@@ -421,7 +423,7 @@ const Products = ({ currentUser }) => {
 
                         {/* Stock Filter */}
                         <select
-                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none font-bold"
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
                             value={filterStockStatus}
                             onChange={(e) => setFilterStockStatus(e.target.value)}
                         >
@@ -457,7 +459,7 @@ const Products = ({ currentUser }) => {
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                             <input
                                 type="text"
-                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-800 dark:text-slate-100"
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 transition-all font-bold text-slate-800 dark:text-slate-100"
                                 placeholder="Search here..."
                                 value={searchTerm}
                                 onChange={(e) => {
@@ -538,7 +540,7 @@ const Products = ({ currentUser }) => {
                                     resetForm();
                                     setIsModalOpen(true);
                                 }}
-                                className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-sm uppercase tracking-widest"
+                                className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-500 text-white rounded-lg font-black hover:bg-emerald-600 transition-all active:scale-95 text-sm uppercase tracking-widest"
                             >
                                 <Plus size={18} />
                                 <span>Add Product</span>
@@ -549,59 +551,59 @@ const Products = ({ currentUser }) => {
 
 
 
-                <div ref={tableScrollRef} className="overflow-x-auto scrollbar-hide">
+                <div ref={tableScrollRef} className="overflow-x-auto scrollbar-hide font-sans">
                     <table className="w-full text-left min-w-max border-separate border-spacing-0">
-                        <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                        <thead className="bg-slate-100 dark:bg-slate-800 text-black dark:text-white font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
                             <tr>
-                                <th className="px-6 py-4 sticky left-0 bg-slate-50/100 dark:bg-slate-800 z-10 border-b border-slate-100 dark:border-slate-800">ID</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Name</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Cost Price</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Sell Price</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Unit</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Stock</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Weight</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Brand</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Color</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Size</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Grade</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Condition</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-center">Expiry</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Alert</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Category</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">Status</th>
-                                <th className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">ID</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Name</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Cost Price</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Sell Price</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Unit</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Stock</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Weight</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Brand</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Color</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Size</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Grade</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Condition</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Expiry</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Alert</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Category</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Status</th>
+                                <th className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredProducts.map((product) => (
                                 <tr key={product.id} className="transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/30 dark:hover:bg-slate-800/30">
-                                    <td className="px-6 py-4 sticky left-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                    <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                                         <div className="text-xs font-bold text-black dark:text-slate-200">{product.sku || '-'}</div>
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                                        <div className="font-bold text-black dark:text-slate-100 text-xs uppercase tracking-tight truncate max-w-[200px]">{product.name}</div>
+                                        <div className="font-bold text-black dark:text-slate-100 text-xs truncate max-w-[200px]">{product.name}</div>
                                     </td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.costPrice?.toLocaleString()}</td>
                                     <td className="px-6 py-4 text-center font-bold text-xs text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.sellPrice?.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase border-b border-slate-100 dark:border-slate-800">{product.unit || 'pcs'}</td>
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.unit || 'pcs'}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 text-center">{product.stockQty}</td>
                                     <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.weight ? `${product.weight}kg` : '-'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 uppercase tracking-tight border-b border-slate-100 dark:border-slate-800">{product.brand?.name || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.color || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.size || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.grade || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">{product.condition || '-'}</td>
-                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-200 border-b border-slate-100 dark:border-slate-800">{product.brand?.name || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">{product.color || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">{product.size || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">{product.grade || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">{product.condition || '-'}</td>
+                                    <td className="px-6 py-4 text-center text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">
                                         {product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : '-'}
                                     </td>
                                     <td className="px-6 py-4 text-xs text-black dark:text-slate-200 font-bold border-b border-slate-100 dark:border-slate-800">Min:{product.alertQty || 5}</td>
                                     <td className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-900">
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-900">
                                             {product.category?.name || 'Uncategorized'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
-                                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${product.stockQty > product.alertQty ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
+                                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-[10px] font-bold border ${product.stockQty > product.alertQty ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
                                             product.stockQty > 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                             }`}>
                                             <span className={`w-1 h-1 rounded-full ${product.stockQty > product.alertQty ? 'bg-emerald-500' :
@@ -647,9 +649,9 @@ const Products = ({ currentUser }) => {
                 isModalOpen && (
                     <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all font-sans">
                         {/* Fixed Header */}
-                        <div className="px-4 md:px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 flex-shrink-0">
+                        <div className="px-4 md:px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-800 flex-shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                     <Package size={22} />
                                 </div>
                                 <div className="min-w-0">
@@ -672,14 +674,14 @@ const Products = ({ currentUser }) => {
                                     {/* Basic Info & SKU & Classification */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Tag size={12} className="text-black dark:text-slate-400" /> Name *
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Name *
                                             </label>
                                             <input required type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Enter Product Name" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Layers size={12} className="text-black dark:text-slate-400" /> ID
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                ID
                                             </label>
                                             <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="ID" />
                                         </div>
@@ -700,8 +702,8 @@ const Products = ({ currentUser }) => {
                                             placeholder="Brand name"
                                         />
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Package size={12} className="text-black dark:text-slate-400" /> Unit
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Unit
                                             </label>
                                             <select className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none appearance-none cursor-pointer text-slate-800 dark:text-slate-100" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
                                                 <option value="pcs">Pieces (pcs)</option>
@@ -714,8 +716,8 @@ const Products = ({ currentUser }) => {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black dark:text-slate-400" /> Weight (kg)
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Weight (kg)
                                             </label>
                                             <input type="number" step="0.01" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
                                         </div>
@@ -724,32 +726,32 @@ const Products = ({ currentUser }) => {
                                     {/* Pricing & Stock */}
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Cost Price
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Cost Price
                                             </label>
-                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="Cost Price" />
+                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="Cost Price" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <DollarSign size={12} className="text-black dark:text-slate-400" /> Sell Price *
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Sell Price *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell Price" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Box size={12} className="text-black dark:text-slate-400" /> Stock *
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Stock *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.stock_qty || ''} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <AlertTriangle size={12} className="text-black dark:text-slate-400" /> Alert
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Alert
                                             </label>
                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.alert_qty || ''} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
                                         <div className="space-y-2 md:col-span-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
-                                                <Clock size={12} className="text-black dark:text-slate-400" /> Expiry Date
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">
+                                                Expiry Date
                                             </label>
                                             <input type="date" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
                                         </div>
@@ -789,7 +791,7 @@ const Products = ({ currentUser }) => {
                                             </div>
 
                                             <div className="space-y-2 md:col-span-3">
-                                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">
                                                     Description
                                                 </label>
                                                 <textarea className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none min-h-[100px] text-slate-800 dark:text-slate-100" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
@@ -797,7 +799,7 @@ const Products = ({ currentUser }) => {
                                         </div>
                                     )}
                                     <div className="pt-6 sticky bottom-0 bg-white dark:bg-slate-900 pb-8 transition-colors duration-300">
-                                        <button type="submit" disabled={saving} className="w-full py-4 bg-blue-950 dark:bg-blue-600 text-white font-bold rounded-xl hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-xl shadow-blue-950/20 dark:shadow-none active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70">
+                                        <button type="submit" disabled={saving} className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm uppercase tracking-widest disabled:opacity-70">
                                             {saving ? (
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

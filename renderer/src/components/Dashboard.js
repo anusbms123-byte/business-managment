@@ -17,21 +17,22 @@ import {
 // Circular Progress Component
 const CircularProgress = ({ percentage, color }) => {
     const { isDarkMode } = useTheme();
-    const radius = 18;
+    const radius = 17;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-        <svg className="w-10 h-10 transform -rotate-90">
-            <circle cx="20" cy="20" r={radius} fill="none" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeWidth="3" />
+        <svg className="w-12 h-12 transform -rotate-90">
+            <circle cx="24" cy="24" r={radius} fill="none" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeWidth="2.5" />
             <circle
-                cx="20" cy="20" r={radius}
+                cx="24" cy="24" r={radius}
                 fill="none"
                 stroke={color}
-                strokeWidth="3"
+                strokeWidth="2.5"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
             />
         </svg>
     );
@@ -39,24 +40,23 @@ const CircularProgress = ({ percentage, color }) => {
 
 // Stat Card Component
 const StatCard = ({ title, value, change, changeType, percentage, color, icon: Icon }) => (
-    <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border-l-4 border-slate-200 dark:border-slate-800 border-y border-r border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md group transition-colors duration-300" style={{ borderLeftColor: color }}>
-        <div className="flex items-start justify-between">
-            <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                    {Icon && <Icon size={14} className="text-black dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />}
-                    <p className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-widest">{title}</p>
-                </div>
-                <p className="text-xl font-medium text-black dark:text-slate-200">{value}</p>
-                <div className="mt-3 flex items-center space-x-1.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${changeType === 'up' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
-                        {changeType === 'up' ? '↑' : '↓'} {change}
+    <div className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
+        <div className="flex items-center justify-between">
+            <div className="flex-1 space-y-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
+                <p className="text-xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">{value}</p>
+                <div className="mt-4">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                        {changeType === 'up' ? '+' : ''}{change}%
                     </span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight">Recent Trend</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1.5 uppercase tracking-tighter">From last Week</span>
                 </div>
             </div>
             <div className="relative flex items-center justify-center ml-4">
                 <CircularProgress percentage={percentage} color={color} />
-                <span className="absolute text-[10px] font-black text-black dark:text-slate-200">{percentage}%</span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    {Icon && <Icon size={18} style={{ color }} />}
+                </div>
             </div>
         </div>
     </div>
@@ -111,13 +111,13 @@ const PerformanceChart = ({ data }) => {
             <ResponsiveContainer>
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                     <defs>
-                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
-                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                        </linearGradient>
                         <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
                             <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
@@ -126,10 +126,14 @@ const PerformanceChart = ({ data }) => {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: tickColor, fontSize: 10, fontWeight: 700 }}
+                        interval={data.length > 10 ? Math.floor(data.length / 6) : 0}
                         tickFormatter={(str) => {
                             try {
                                 const d = new Date(str);
-                                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                const isWeek = data.length <= 7;
+                                return isWeek 
+                                    ? d.toLocaleDateString(undefined, { weekday: 'short' })
+                                    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                             } catch (e) { return str; }
                         }}
                         dy={10}
@@ -152,24 +156,24 @@ const PerformanceChart = ({ data }) => {
 
                     <Area
                         type="monotone"
-                        dataKey="sales"
-                        name="Total Sales"
-                        stroke="#2563eb"
-                        strokeWidth={3}
+                        dataKey="profit"
+                        name="Profit"
+                        stroke="#10b981"
+                        strokeWidth={4}
                         fillOpacity={1}
-                        fill="url(#colorSales)"
-                        dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#ffffff' }}
+                        fill="url(#colorProfit)"
+                        dot={false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                     <Area
                         type="monotone"
-                        dataKey="profit"
-                        name="Net Profit"
-                        stroke="#10b981"
-                        strokeWidth={3}
+                        dataKey="sales"
+                        name="Sales"
+                        stroke="#f97316"
+                        strokeWidth={4}
                         fillOpacity={1}
-                        fill="url(#colorProfit)"
-                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#ffffff' }}
+                        fill="url(#colorSales)"
+                        dot={false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                 </AreaChart>
@@ -183,11 +187,12 @@ const Dashboard = ({ currentUser }) => {
     const [recentSales, setRecentSales] = useState([]);
     const [topCustomers, setTopCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('Daily');
+    const [filter, setFilter] = useState('Weekly');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
     useEffect(() => {
         loadDashboardData();
-    }, [currentUser, filter]);
+    }, [currentUser, filter, dateRange]);
 
     const loadDashboardData = async () => {
         if (!currentUser?.company_id) return;
@@ -195,7 +200,12 @@ const Dashboard = ({ currentUser }) => {
         try {
             // Fetch multiple data points in parallel
             const [reportData, salesData, customersData] = await Promise.all([
-                window.electronAPI.getReportSummary({ companyId: currentUser.company_id, period: filter }),
+                window.electronAPI.getReportSummary({ 
+                    companyId: currentUser.company_id, 
+                    period: filter,
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }),
                 window.electronAPI.getSales(currentUser.company_id),
                 window.electronAPI.getCustomers(currentUser.company_id)
             ]);
@@ -221,21 +231,51 @@ const Dashboard = ({ currentUser }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                </div>
-                <div className="flex bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200 dark:border-slate-800 w-fit">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div>
+                <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard</h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+                {/* Quick Filters */}
+                <div className="flex bg-white dark:bg-slate-900 p-1 rounded-[14px] shadow-sm border border-slate-100 dark:border-slate-800">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
-                            onClick={() => setFilter(p)}
-                            className={`px-5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${filter === p ? 'bg-blue-950 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            onClick={() => {
+                                setFilter(p);
+                                setDateRange({ start: '', end: '' }); // Clear custom dates when using quick filters
+                            }}
+                            className={`px-5 py-2 rounded-[11px] text-[11px] font-black uppercase tracking-widest transition-all ${filter === p && !dateRange.start ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
                     ))}
                 </div>
+
+                {/* Custom Date Range */}
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-[14px] shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center px-3 gap-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">From</span>
+                        <input 
+                            type="date" 
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                            className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 outline-none"
+                        />
+                    </div>
+                    <div className="w-px h-4 bg-slate-100 dark:bg-slate-800"></div>
+                    <div className="flex items-center px-3 gap-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">To</span>
+                        <input 
+                            type="date" 
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                            className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 outline-none"
+                        />
+                    </div>
+                </div>
             </div>
+        </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -245,7 +285,7 @@ const Dashboard = ({ currentUser }) => {
                     change="Auto"
                     changeType="up"
                     percentage={summary.totalSales > 0 ? 100 : 0}
-                    color="#2563eb"
+                    color="#10b981"
                     icon={TrendingUp}
                 />
                 <StatCard
@@ -263,7 +303,7 @@ const Dashboard = ({ currentUser }) => {
                     change="Auto"
                     changeType="up"
                     percentage={summary.totalExpenses > 0 ? 100 : 0}
-                    color="#f43f5e"
+                    color="#845EF7"
                     icon={Wallet}
                 />
                 <StatCard
@@ -272,127 +312,147 @@ const Dashboard = ({ currentUser }) => {
                     change="Auto"
                     changeType={summary.netProfit >= 0 ? 'up' : 'down'}
                     percentage={summary.netProfit > 0 ? 100 : 0}
-                    color="#6366f1"
-                    icon={UserPlus}
+                    color={summary.netProfit >= 0 ? "#10b981" : "#FF6B6B"}
+                    icon={TrendingUp}
                 />
             </div>
 
             {/* Main Content Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Overview Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300">
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-300">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight">Sales & Profit</h2>
-                            <p className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mt-1">Movement over time</p>
+                            <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Sales & Profit</h2>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Performance over time</p>
                         </div>
                         <div className="flex items-center space-x-6">
                             <div className="flex items-center space-x-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <span className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest">Total Sales</span>
+                                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Sales</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest">Net Profit</span>
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Profit</span>
                             </div>
                         </div>
                     </div>
                     {loading ? (
-                        <div className="h-[300px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</div>
+                        <div className="h-[350px] flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</div>
                     ) : (
                         <PerformanceChart data={summary.recentDays || []} />
                     )}
                 </div>
 
-                {/* Top Moving Items */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden transition-colors duration-300">
-                    <div className="relative z-10">
-                        <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight mb-8">Best Selling</h2>
-                        <div className="space-y-7">
-                            {(!summary.topProducts || summary.topProducts.length === 0) ? (
-                                <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
-                                    No sales data <br /> recorded yet
-                                </div>
-                            ) : summary.topProducts.map((item, i) => {
-                                // Calculate simple percentage against the top item for visual bars
-                                const maxQty = summary.topProducts[0]?.qtySold || 1;
-                                const percentage = Math.round((item.qtySold / maxQty) * 100);
-
-                                return (
-                                    <div key={i} className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 w-5 h-5 flex items-center justify-center rounded-sm">
-                                                    {i + 1}
-                                                </span>
-                                                <p className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-tight truncate max-w-[120px]">
-                                                    {item.name}
-                                                </p>
-                                            </div>
-                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                                                {item.qtySold} Units
-                                            </span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-full transition-all duration-1000 ease-out"
-                                                style={{ width: `${percentage}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Low Stock Quick Alert */}
-                        {summary.lowStockCount > 0 && (
-                            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center justify-between p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg border border-rose-100 dark:border-rose-800">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                                        <span className="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Low Stock Alert</span>
-                                    </div>
-                                    <span className="text-[10px] font-black text-rose-700 dark:text-rose-300">{summary.lowStockCount} Low</span>
-                                </div>
+                {/* Best Selling Section */}
+                <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-colors duration-300">
+                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter mb-8">Best Selling</h2>
+                    <div className="space-y-7">
+                        {(!summary.topProducts || summary.topProducts.length === 0) ? (
+                            <div className="text-center py-10 text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">
+                                No sales data <br /> recorded yet
                             </div>
-                        )}
+                        ) : summary.topProducts.map((item, i) => {
+                            const maxQty = summary.topProducts[0]?.qtySold || 1;
+                            const percentage = Math.round((item.qtySold / maxQty) * 100);
+
+                            return (
+                                <div key={i} className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 w-5 h-5 flex items-center justify-center rounded-sm">
+                                                {i + 1}
+                                            </span>
+                                            <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight truncate max-w-[120px]">
+                                                {item.name}
+                                            </p>
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                            {item.qtySold} Units
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-1000 ease-out"
+                                            style={{ width: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
 
-            {/* Sales Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300">
-                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-black dark:text-slate-200 uppercase tracking-tight">Recent Sales</h2>
-                    <p className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Latest Invoices</p>
+            {/* Recent Sales Table */}
+            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden transition-colors duration-300">
+                <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Recent Sales</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latest Invoices</p>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50/80 dark:bg-slate-800/80">
-                            <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Invoice ID</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Customer</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Date</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Amount</th>
+                        <thead>
+                            <tr className="bg-slate-100 dark:bg-slate-800">
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Invoice ID</th>
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Customer</th>
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Items</th>
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Method</th>
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Status</th>
+                                <th className="px-8 py-4 text-[11px] font-bold text-black dark:text-white uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</td></tr>
+                                <tr><td colSpan="5" className="px-8 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading...</td></tr>
                             ) : (recentSales?.length ?? 0) === 0 ? (
-                                <tr><td colSpan="5" className="px-6 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No records found</td></tr>
+                                <tr><td colSpan="5" className="px-8 py-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No records found</td></tr>
                             ) : recentSales?.map((sale, i) => (
-                                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">{sale.customer?.name || 'Walk-in Customer'}</td>
-                                    <td className="px-6 py-4 text-xs font-bold text-black dark:text-slate-300 tracking-tight">{sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-tight border ${sale.paymentStatus === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
-                                            {sale.paymentStatus || 'Completed'}
+                                <tr key={i} className="hover:bg-indigo-50/20 dark:hover:bg-indigo-900/10 transition-colors group">
+                                    <td className="px-8 py-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase">INV-{sale.id?.toString().padStart(4, '0') || '0000'}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter mt-0.5">{sale.date ? new Date(sale.date).toLocaleDateString() : 'N/A'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 font-bold text-[10px]">
+                                                {sale.customer?.name?.charAt(0).toUpperCase() || 'W'}
+                                            </div>
+                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{sale.customer?.name || 'Walk-in Customer'}</p>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-4">
+                                        <span className="px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md">
+                                            {sale.totalItems || 1} Products
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-xs font-medium text-black dark:text-slate-300 tracking-tight">PKR {(sale.grandTotal || sale.totalAmount)?.toLocaleString() ?? '0'}</td>
+                                    <td className="px-8 py-4">
+                                        <div className="flex items-center space-x-1.5">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${sale.paymentMethod?.toLowerCase() === 'cash' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{sale.paymentMethod || 'Cash'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-4">
+                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${
+                                            (['PAID', 'RECEIVED', 'SUCCESS'].includes(sale.paymentStatus)) 
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' 
+                                            : sale.paymentStatus === 'PARTIAL'
+                                            ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50'
+                                            : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/50'
+                                        }`}>
+                                            <div className={`w-1 h-1 rounded-full mr-1.5 ${
+                                                (['PAID', 'RECEIVED', 'SUCCESS'].includes(sale.paymentStatus)) ? 'bg-emerald-500' :
+                                                sale.paymentStatus === 'PARTIAL' ? 'bg-amber-500' : 'bg-rose-500'
+                                            }`}></div>
+                                            {(['PAID', 'RECEIVED', 'SUCCESS'].includes(sale.paymentStatus)) ? 'Finished' : 
+                                             sale.paymentStatus === 'PARTIAL' ? 'Partial' : 'Pending'}
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-4 text-right">
+                                        <span className="text-[12px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">PKR {(sale.grandTotal || sale.totalAmount)?.toLocaleString() ?? '0'}</span>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

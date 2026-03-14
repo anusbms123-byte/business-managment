@@ -132,13 +132,13 @@ const CompanySetup = () => {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Company Address</label>
+                                <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Company Address</label>
                                 <textarea
                                     name="companyAddress"
                                     rows={2}
                                     value={formData.companyAddress}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 resize-none"
+                                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600 resize-none"
                                     placeholder="Enter company address"
                                     required
                                 />
@@ -160,7 +160,7 @@ const CompanySetup = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="px-10 h-[46px] bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-[#0B1033] dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2"
+                                        className="px-10 h-[46px] bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px] flex items-center justify-center gap-2"
                                     >
                                         {loading ? 'Creating...' : (
                                             <>
@@ -181,12 +181,12 @@ const CompanySetup = () => {
 
 const FormInput = ({ label, icon: Icon, disabled, ...props }) => (
     <div className="space-y-1.5">
-        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">{label}</label>
         <div className="relative group">
-            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />}
+            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />}
             <input
                 {...props}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
             />
         </div>
     </div>

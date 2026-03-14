@@ -5,12 +5,12 @@ import { useDialog } from '../context/DialogContext';
 
 
 const tabs = [
-    { id: 'profile', label: 'Company Profile', icon: Building2, color: 'blue' },
-    { id: 'users', label: 'Users', icon: Users, color: 'indigo' },
+    { id: 'profile', label: 'Company Profile', icon: Building2, color: 'emerald' },
+    { id: 'users', label: 'Users', icon: Users, color: 'emerald' },
     { id: 'roles', label: 'Roles & Permissions', icon: Shield, color: 'emerald' },
-    { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'amber' },
-    { id: 'helpline', label: 'Complains', icon: Phone, color: 'rose' },
-    { id: 'broadcast', label: 'Broadcast', icon: Megaphone, color: 'purple' },
+    { id: 'requests', label: 'Requests', icon: ClipboardList, color: 'emerald' },
+    { id: 'helpline', label: 'Complains', icon: Phone, color: 'emerald' },
+    { id: 'broadcast', label: 'Broadcast', icon: Megaphone, color: 'emerald' },
 ];
 
 const MODULES = [
@@ -91,13 +91,13 @@ const Company = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`relative flex items-center space-x-3 px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap group ${activeTab === tab.id
-                                    ? 'text-blue-600 dark:text-blue-400'
+                                className={`relative flex items-center space-x-3 px-6 py-4 text-[10px] font-bold transition-all whitespace-nowrap group ${activeTab === tab.id
+                                    ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
                                 <tab.icon size={16} />
-                                <span>{label}</span>
+                                <span className="text-black dark:text-white font-bold">{label}</span>
                                 {tab.id === 'requests' && isSuperAdmin && counts.requests > 0 && (
                                     <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                                 )}
@@ -105,7 +105,7 @@ const Company = () => {
                                     <span className="ml-2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                                 )}
                                 {activeTab === tab.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-t-full"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full"></div>
                                 )}
                             </button>
                         );
@@ -278,13 +278,13 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                     <div className="flex flex-1 flex-col md:flex-row items-center gap-4 max-w-2xl justify-end">
                         <div className="relative group w-full md:w-64">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={16} />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={16} />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 placeholder="Search company..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100"
                             />
                         </div>
 
@@ -297,8 +297,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                 <button
                                     key={f.id}
                                     onClick={() => setCompanyReferralFilter(f.id)}
-                                    className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${companyReferralFilter === f.id
-                                        ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
+                                    className={`px-3 py-1.5 text-[9px] font-bold rounded-lg transition-all ${companyReferralFilter === f.id
+                                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
                                         : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                         }`}
                                 >
@@ -337,7 +337,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                     {canEdit('settings') && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); openModal(c); }}
-                                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all border-l border-slate-100 dark:border-slate-800"
+                                            className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all border-l border-slate-100 dark:border-slate-800"
                                         >
                                             <Edit2 size={16} />
                                         </button>
@@ -346,20 +346,20 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             </div>
 
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate uppercase tracking-tight">{c.name}</h3>
+                                <h3 className="font-bold text-black dark:text-slate-100 text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate tracking-tight">{c.name}</h3>
                                 <div className="mt-3 space-y-2">
                                     <div className="flex items-center text-xs font-bold text-slate-400 dark:text-slate-500 gap-2">
                                         <Building2 size={14} />
                                         <span className="truncate">{c.email || 'No email attached'}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-widest ${c.isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
+                                        <div className={`px-1.5 py-0.5 rounded border text-[10px] font-bold ${c.isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800'}`}>
                                             {c.isActive ? 'Active' : 'Inactive'}
                                         </div>
 
                                     </div>
                                     {c.referralCode && (
-                                        <div className="flex items-center text-[10px] font-bold text-blue-500 dark:text-blue-400 gap-2 uppercase tracking-widest mt-1">
+                                        <div className="flex items-center text-[10px] font-bold text-emerald-500 dark:text-emerald-400 gap-2 mt-1">
                                             <Share2 size={14} />
                                             <span>Referral: {c.referralCompanyName || c.referralCode}</span>
                                         </div>
@@ -381,8 +381,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             <form onSubmit={handleSave} className="space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                        <h4 className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                             Core Information
                                         </h4>
                                         <FormInput label="Company Name" required value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="Enter company name" icon={Building2} />
@@ -392,8 +392,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                             Communications
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
@@ -402,21 +402,21 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mt-4">
                                             <div>
-                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tight">Organization Status</p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">{formData.is_active ? 'Account is live' : 'Account is deactivated'}</p>
+                                                <p className="text-sm font-bold text-black dark:text-slate-100">Organization Status</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{formData.is_active ? 'Account is live' : 'Account is deactivated'}</p>
                                             </div>
                                             <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, is_active: 1 })}
-                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.is_active ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all ${formData.is_active ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     Active
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, is_active: 0 })}
-                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${!formData.is_active ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                    className={`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all ${!formData.is_active ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     Deactivated
                                                 </button>
@@ -424,8 +424,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
                                     </div>
                                     <div className="col-span-full space-y-6">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                            <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                                        <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2">
+                                            <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                             Address Details
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -446,26 +446,26 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                             <div className="space-y-8">
                                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
                                     <div className="flex items-start gap-6">
-                                        <div className="w-20 h-20 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
+                                        <div className="w-20 h-20 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg">
                                             {selectedCompany.name?.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="flex-1">
-                                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 uppercase tracking-tight">{selectedCompany.name}</h2>
+                                            <h2 className="text-xl font-bold text-black dark:text-slate-100 mb-2 tracking-tight">{selectedCompany.name}</h2>
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-xs">
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block mb-1">Email Address</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Email Address</span>
                                                     <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.email || '—'}</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block mb-1">Contact No</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Contact No</span>
                                                     <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.phone || '—'}</p>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block mb-1">Office Line</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Office Line</span>
                                                     <p className="text-slate-700 dark:text-slate-300 font-bold">{selectedCompany.officePhone || '—'}</p>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest block mb-1">Address</span>
+                                                    <span className="text-slate-400 dark:text-slate-500 font-bold block mb-1">Address</span>
                                                     <p className="text-slate-700 dark:text-slate-300 font-bold leading-relaxed">
                                                         {selectedCompany.address}<br />
                                                         {selectedCompany.city}
@@ -478,11 +478,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
 
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <h3 className="text-xs font-bold text-black dark:text-slate-500 flex items-center gap-2">
                                             <Users size={16} />
                                             Onboarded Users
                                         </h3>
-                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold border border-blue-100 dark:border-blue-800">
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800">
                                             {companyUsers.length} MEMBERS
                                         </span>
                                     </div>
@@ -492,15 +492,15 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                             {companyUsers.length === 0 ? (
                                                 <EmptyState message="No users assigned to this tenant" />
                                             ) : companyUsers.map((user) => (
-                                                <div key={user.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800 transition-all group">
+                                                <div key={user.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-800 transition-all group">
                                                     <div className="flex items-center gap-3">
                                                         <div>
-                                                            <p className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight">{user.fullname}</p>
-                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">@{user.username}</p>
+                                                            <p className="font-bold text-black dark:text-slate-200 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{user.fullname}</p>
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">@{user.username}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3">
-                                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-bold uppercase tracking-tight border border-indigo-100">
+                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-bold border border-emerald-100 dark:border-emerald-800">
                                                             {user.role}
                                                         </span>
                                                         <StatusBadge active={user.is_active} />
@@ -519,11 +519,11 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
     }
 
     return (
-        <form onSubmit={handleSave} className="max-w-4xl animate-in fade-in duration-500">
-            <div className="p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <form onSubmit={handleSave} className="w-full animate-in fade-in duration-500">
+            <div className="w-full p-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all">
                 <div className="flex flex-col md:flex-row gap-8">
                     <div className="relative shrink-0">
-                        <div className="relative w-32 h-32 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-5xl shadow-sm">
+                        <div className="relative w-32 h-32 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-black text-5xl shadow-sm">
                             {formData.name?.charAt(0).toUpperCase() || 'C'}
                         </div>
                     </div>
@@ -745,14 +745,14 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative group w-full md:w-80">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Search users..."
-                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 focus:border-blue-500 dark:focus:border-blue-600 transition-all shadow-sm text-black dark:text-slate-100"
-                    />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search users..."
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all shadow-sm text-black dark:text-slate-100"
+                        />
                 </div>
                 {canCreate('users') && (
                     <Button onClick={() => openModal()} icon={Plus}>Add User</Button>
@@ -764,11 +764,11 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">User Name</th>
-                                {isSuperAdmin && <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Company</th>}
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Role</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">User Name</th>
+                                {isSuperAdmin && <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Company</th>}
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Role</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -777,18 +777,18 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-4">
                                             <div>
-                                                <p className="font-bold text-slate-800 dark:text-slate-200 text-xs group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight">{user.fullname}</p>
-                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">@{user.username}</p>
+                                                <p className="font-bold text-black dark:text-slate-200 text-xs group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{user.fullname}</p>
+                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">@{user.username}</p>
                                             </div>
                                         </div>
                                     </td>
                                     {isSuperAdmin && (
-                                        <td className="px-6 py-4 font-bold text-slate-600 dark:text-slate-400 text-xs uppercase tracking-tight">
+                                        <td className="px-6 py-4 font-bold text-slate-600 dark:text-slate-400 text-xs">
                                             {user.company_name || 'System Principal'}
                                         </td>
                                     )}
                                     <td className="px-6 py-4">
-                                        <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded text-[10px] font-bold uppercase tracking-tight border border-indigo-100 dark:border-indigo-800">
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800">
                                             {user.role?.replace('_', ' ')}
                                         </span>
                                     </td>
@@ -798,7 +798,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end space-x-1 transition-opacity">
                                             {canEdit('users') && (
-                                                <button onClick={() => openModal(user)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all">
+                                                <button onClick={() => openModal(user)} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all">
                                                     <Edit2 size={16} />
                                                 </button>
                                             )}
@@ -899,8 +899,8 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                         </div>
                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                             <div>
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Account Status</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">Enable or disable this user</p>
+                                <p className="text-sm font-bold text-black dark:text-slate-200">Account Status</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">Enable or disable this user</p>
                             </div>
                             <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                                 <button
@@ -1119,12 +1119,12 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
     const renderRoleCard = (role) => (
         <div key={role.id || role.global_id} className="group relative bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     <Shield size={24} />
                 </div>
                 <div className="flex gap-1 shadow-sm border border-slate-100 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 overflow-hidden transition-opacity">
                     {canEdit('roles') && (
-                        <button onClick={() => openModal(role)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                        <button onClick={() => openModal(role)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
                             <Edit2 size={16} />
                         </button>
                     )}
@@ -1136,18 +1136,18 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                     )}
                 </div>
             </div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-tight">{role.name}</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>
+            <h3 className="font-bold text-black dark:text-slate-100 text-base group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{role.name}</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-2 line-clamp-2 min-h-[2.5rem] leading-relaxed">{role.description || 'No description provided'}</p>
             {isSuperAdmin && (role.company_id || role.companyId) && (
-                <p className="text-[10px] text-blue-500 dark:text-blue-400 font-bold mt-1 uppercase tracking-widest">
+                <p className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold mt-1">
                     <Building2 size={10} className="inline mr-1" />{getCompanyName(role.company_id || role.companyId)}
                 </p>
             )}
             <div className="mt-6 flex items-center justify-between border-t border-slate-50 dark:border-slate-800 pt-4">
-                <span className={`px-2.5 py-1 rounded text-[10px] font-bold border uppercase tracking-tight ${(role.is_system || role.isSystem) ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'}`}>
+                <span className={`px-2.5 py-1 rounded text-[10px] font-bold border ${(role.is_system || role.isSystem) ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'}`}>
                     {(role.is_system || role.isSystem) ? 'Access' : 'Custom Config'}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
                     <Check size={14} className="text-emerald-500 dark:text-emerald-400" />
                     {role.permissions?.filter(p => p.can_view === 1 || p.canView === true || p.canView === 1).length || 0} Modules
                 </span>
@@ -1168,7 +1168,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             <select
                                 value={selectedCompany}
                                 onChange={(e) => setSelectedCompany(e.target.value)}
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/20"
+                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-[10px] font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
                             >
                                 <option value="system">System Roles</option>
                                 {companies.map(c => <option key={c.id} value={c.global_id || c.id}>{c.name}</option>)}
@@ -1215,8 +1215,8 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                         )}
 
                         <div>
-                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                <div className="w-1 h-3.5 bg-blue-600 rounded-full"></div>
+                            <h4 className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 mb-4">
+                                <div className="w-1 h-3.5 bg-emerald-600 rounded-full"></div>
                                 Permissions
                             </h4>
                             <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -1224,11 +1224,11 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                                             <tr>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Module</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">View</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Create</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Edit</th>
-                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Delete</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Module</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">View</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Create</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Edit</th>
+                                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Delete</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -1242,7 +1242,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                                                                 checked={getPerm(mod.key, f)}
                                                                 onChange={e => updatePerm(mod.key, f, e.target.checked)}
                                                                 disabled={f !== 'can_view' && !getPerm(mod.key, 'can_view')}
-                                                                className={`w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-900 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer ${f !== 'can_view' && !getPerm(mod.key, 'can_view') ? 'opacity-20 cursor-not-allowed' : ''}`}
+                                                                className={`w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-900 text-emerald-600 focus:ring-emerald-500 transition-all cursor-pointer ${f !== 'can_view' && !getPerm(mod.key, 'can_view') ? 'opacity-20 cursor-not-allowed' : ''}`}
                                                             />
                                                         </td>
                                                     ))}
@@ -1297,10 +1297,10 @@ const AuditLog = ({ currentUser }) => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-slate-50/80 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Timestamp</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Principal</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Method</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Security Details</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Timestamp</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Principal</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 text-center">Method</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">Security Details</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -1314,10 +1314,10 @@ const AuditLog = ({ currentUser }) => {
                                 <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                            <div className="p-1.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                                                 <ClipboardList size={14} />
                                             </div>
-                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                                                 {new Date(log.created_at).toLocaleString()}
                                             </span>
                                         </div>
@@ -1326,12 +1326,12 @@ const AuditLog = ({ currentUser }) => {
                                         <p className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-tight">{log.fullname || log.username}</p>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded text-[10px] font-bold uppercase tracking-tight border border-slate-100 dark:border-slate-800">
+                                        <span className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded text-[10px] font-bold border border-slate-100 dark:border-slate-800">
                                             {log.action}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest max-w-xs truncate group-hover:whitespace-normal group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-all">
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold max-w-xs truncate group-hover:whitespace-normal group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-all">
                                             {log.details || 'No trace description available'}
                                         </p>
                                     </td>
@@ -1455,8 +1455,8 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                         <button
                             key={f.id}
                             onClick={() => setReferralFilter(f.id)}
-                            className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${referralFilter === f.id
-                                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
+                            className={`px-4 py-2 text-[10px] font-black rounded-lg transition-all ${referralFilter === f.id
+                                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
@@ -1465,7 +1465,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                     ))}
                 </div>
 
-                <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold uppercase tracking-widest border border-blue-100 dark:border-blue-800">
+                <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-bold border border-emerald-100 dark:border-emerald-800">
                     {requests.length} Pending
                 </div>
             </div>
@@ -1483,11 +1483,11 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 {req.referralCode && (
-                                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold uppercase tracking-widest border border-emerald-100 dark:border-emerald-800 flex items-center gap-1">
+                                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold border border-emerald-100 dark:border-emerald-800 flex items-center gap-1">
                                         <Users size={10} /> {req.referralCode}
                                     </span>
                                 )}
-                                <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded text-[10px] font-bold uppercase tracking-widest border border-amber-100 dark:border-amber-800">Pending</span>
+                                <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded text-[10px] font-bold border border-amber-100 dark:border-amber-800">Pending</span>
                             </div>
                         </div>
 
@@ -1507,13 +1507,13 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => handleApprove(req.id)}
-                                className="py-2 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-[#0B1033] dark:hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100 dark:shadow-none"
+                                className="py-2 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100 dark:shadow-none"
                             >
                                 Approve
                             </button>
                             <button
                                 onClick={() => setRejecting({ id: req.id, notes: '' })}
-                                className="py-2 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
+                                className="py-2 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-lg font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"
                             >
                                 Reject
                             </button>
@@ -1528,10 +1528,10 @@ const CompanyRequests = ({ currentUser, onAction }) => {
 // ============ SHARED COMPONENTS ============
 const StatCard = ({ title, value, icon: Icon, color }) => {
     const colors = {
-        orange: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-500',
+        orange: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500',
         emerald: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500',
         red: 'bg-white dark:bg-slate-900 border-l-4 border-l-rose-500',
-        blue: 'bg-white dark:bg-slate-900 border-l-4 border-l-blue-950 dark:border-l-blue-600',
+        blue: 'bg-white dark:bg-slate-900 border-l-4 border-l-emerald-600',
         purple: 'bg-white dark:bg-slate-900 border-l-4 border-l-indigo-500',
         gray: 'bg-white dark:bg-slate-900 border-l-4 border-l-slate-400 dark:border-l-slate-600'
     };
@@ -1540,10 +1540,10 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
         <div className={`relative overflow-hidden ${colors[color]} p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-200 hover:shadow-md group`}>
             <div className="relative flex items-center justify-between">
                 <div>
-                    <p className="text-black dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
+                    <p className="text-black dark:text-slate-400 text-[10px] font-bold mb-1">{title}</p>
                     <h3 className="text-xl font-bold text-black dark:text-slate-100">{value}</h3>
                 </div>
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     <Icon size={20} />
                 </div>
             </div>
@@ -1556,7 +1556,7 @@ const Button = ({ children, label, onClick, icon: Icon, type = 'button', disable
         type={type}
         onClick={onClick}
         disabled={disabled}
-        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50 ${className}`}
+        className={`flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-xs disabled:opacity-50 ${className}`}
     >
         {Icon && <Icon size={16} />}
         <span className="whitespace-nowrap">{children || label}</span>
@@ -1564,7 +1564,7 @@ const Button = ({ children, label, onClick, icon: Icon, type = 'button', disable
 );
 
 const StatusBadge = ({ active }) => (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border uppercase tracking-tight ${active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800'}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold border ${active ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800'}`}>
         <span className={`w-1 h-1 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
         {active ? 'Active' : 'Deactivated'}
     </span>
@@ -1572,20 +1572,20 @@ const StatusBadge = ({ active }) => (
 
 const LoadingSpinner = () => (
     <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-3 border-slate-100 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-slate-100 dark:border-slate-800 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin"></div>
     </div>
 );
 
 const EmptyState = ({ message, icon: Icon = Info }) => (
     <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
         <Icon size={40} className="mx-auto text-slate-200 dark:text-slate-700 mb-3" />
-        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest">{message}</p>
+        <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">{message}</p>
     </div>
 );
 
 const FormInput = ({ label, type = 'text', value, onChange, required, placeholder, icon: Icon, suffix }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">{label} {required && '*'}</label>
+        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label} {required && '*'}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold" size={16} />}
             <input
@@ -1594,7 +1594,7 @@ const FormInput = ({ label, type = 'text', value, onChange, required, placeholde
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${suffix ? 'pr-10' : 'pr-4'} py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100`}
             />
             {suffix && (
                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
@@ -1607,7 +1607,7 @@ const FormInput = ({ label, type = 'text', value, onChange, required, placeholde
 
 const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" size={16} />}
             <textarea
@@ -1615,7 +1615,7 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
                 onChange={e => onChange(e.target.value)}
                 rows={rows}
                 placeholder={placeholder}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100 resize-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 outline-none transition-all font-bold text-sm text-black dark:text-slate-100 resize-none`}
             />
         </div>
     </div>
@@ -1623,14 +1623,14 @@ const FormTextarea = ({ label, value, onChange, rows = 3, placeholder, icon: Ico
 
 const FormSelect = ({ label, value, onChange, options, required, placeholder, icon: Icon }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">{label} {required && '*'}</label>
+        <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">{label} {required && '*'}</label>
         <div className="relative">
             {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />}
             <select
                 required={required}
                 value={value || ''}
                 onChange={e => onChange(e.target.value)}
-                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm text-black dark:text-slate-100 outline-none appearance-none`}
+                className={`w-full ${Icon ? 'pl-10' : 'px-4'} pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm text-black dark:text-slate-100 outline-none appearance-none`}
             >
                 <option value="">{placeholder || 'Select...'}</option>
                 {options.map(opt => <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800">{opt.label}</option>)}
@@ -1645,18 +1645,18 @@ const Modal = ({ title, children, onClose, size = 'md' }) => (
         {/* Full-Page Header */}
         <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                     <Building2 size={22} />
                 </div>
                 <div>
-                    <h3 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight uppercase">{title}</h3>
+                    <h3 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight">{title}</h3>
                 </div>
             </div>
             <button
                 onClick={onClose}
                 className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
             >
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
+                <span className="text-[10px] font-bold hidden md:block">Close</span>
                 <X size={20} />
             </button>
         </div>
@@ -1674,7 +1674,7 @@ const ModalFooter = ({ onCancel, saving, label = 'Save Changes' }) => (
         <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-2 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs uppercase tracking-widest"
+            className="px-6 py-2 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs"
         >
             Discard
         </button>
@@ -1719,9 +1719,9 @@ const ComplainRequests = ({ onAction }) => {
         <div className="space-y-6">
             <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Complains</h3>
+                    <h3 className="text-sm font-bold text-black dark:text-slate-200">Complains</h3>
                 </div>
-                <button onClick={loadData} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-colors border border-slate-100 dark:border-slate-800">Refresh Feed</button>
+                <button onClick={loadData} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold text-[10px] rounded-lg transition-colors border border-slate-100 dark:border-slate-800">Refresh Feed</button>
             </div>
 
             {requests.length === 0 ? (
@@ -1731,11 +1731,11 @@ const ComplainRequests = ({ onAction }) => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                                <th className="p-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">User Details</th>
-                                <th className="p-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">WhatsApp / Email</th>
-                                <th className="p-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Description</th>
-                                <th className="p-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Status</th>
-                                <th className="p-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">User Details</th>
+                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">WhatsApp / Email</th>
+                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">Description</th>
+                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300">Status</th>
+                                <th className="p-4 text-[10px] font-bold text-black dark:text-slate-300 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1743,7 +1743,7 @@ const ComplainRequests = ({ onAction }) => {
                                 <tr key={req.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="p-4">
                                         <p className="font-bold text-slate-700 dark:text-slate-200 text-sm italic">{req.fullName}</p>
-                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex flex-col gap-1">
@@ -1761,7 +1761,7 @@ const ComplainRequests = ({ onAction }) => {
                                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-2 italic">{req.description}</p>
                                     </td>
                                     <td className="p-4">
-                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest
+                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black
                                             ${req.status === 'PENDING' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800'}
                                         `}>
                                             {req.status}
@@ -1825,28 +1825,28 @@ const SystemBroadcast = () => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
-                    <Send className="text-blue-600 dark:text-blue-400" size={20} />
+                <h3 className="text-lg font-bold text-black dark:text-slate-100 mb-6 flex items-center gap-2">
+                    <Send className="text-emerald-600 dark:text-emerald-400" size={20} />
                     Create New Broadcast
                 </h3>
                 <form onSubmit={handleSend} className="space-y-4">
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Message Content</label>
+                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Message Content</label>
                         <textarea
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            className="w-full mt-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all min-h-[120px] text-black dark:text-slate-100"
+                            className="w-full mt-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all min-h-[120px] text-black dark:text-slate-100"
                             placeholder="Type a message for all system users..."
                             required
                         />
                     </div>
                     <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
                         <div className="w-full md:w-48">
-                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Alert Type</label>
+                            <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Alert Type</label>
                             <select
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
-                                className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100"
+                                className="w-full mt-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100"
                             >
                                 <option value="general" className="dark:bg-slate-900">📢 General</option>
                                 <option value="alert" className="dark:bg-slate-900">⚠️ Urgent Alert</option>
@@ -1855,7 +1855,7 @@ const SystemBroadcast = () => {
                         </div>
                         <button
                             disabled={sending}
-                            className="px-8 py-2.5 bg-blue-900 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/10 dark:shadow-none flex items-center gap-2 text-sm uppercase tracking-widest disabled:opacity-50"
+                            className="px-8 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-lg active:scale-95 flex items-center gap-2 text-sm disabled:opacity-50"
                         >
                             <Send size={18} />
                             {sending ? 'Broadcasting...' : 'Broadcast Now'}
@@ -1865,7 +1865,7 @@ const SystemBroadcast = () => {
             </div>
 
             <div className="bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden">
-                <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Recent Broadcasts</h3>
+                <h3 className="text-sm font-bold text-black dark:text-slate-500 mb-4">Recent Broadcasts</h3>
                 <div className="space-y-3">
                     {recentMessages.length === 0 ? (
                         <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">No recent messages found.</p>
@@ -1881,7 +1881,7 @@ const SystemBroadcast = () => {
                                     </span>
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">{new Date(m.createdAt).toLocaleString()}</span>
                                 </div>
-                                <p className="text-sm text-slate-800 dark:text-slate-200 font-bold">{m.content}</p>
+                                <p className="text-sm text-black dark:text-slate-200 font-bold">{m.content}</p>
                             </div>
                         </div>
                     ))}

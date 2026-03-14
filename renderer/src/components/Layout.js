@@ -5,6 +5,7 @@ import {
     Receipt, BarChart3, UserCog, Settings, LogOut, Bell, Mail, ChevronRight,
     UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, LifeBuoy, Menu, Sun, Moon
 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 // Define all menu items with their permission keys
@@ -30,16 +31,16 @@ const SETTINGS_MENU_ITEMS = [
 const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
     <div
         onClick={onClick}
-        className={`group relative flex items-center justify-between px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${active
-            ? 'bg-slate-800 text-white font-medium shadow-sm'
-            : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+        className={`group relative flex items-center justify-between px-4 py-2.5 rounded-xl cursor-pointer transition-all duration-300 border outline-none ${active
+            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border-emerald-100/50 dark:border-emerald-800/50'
+            : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10'
             }`}
     >
-        <div className="relative flex items-center space-x-4">
-            <Icon size={22} className={active ? 'text-blue-400' : 'text-slate-200 group-hover:text-blue-400 transition-colors'} />
-            <span className="text-[15px] text-white">{label}</span>
+        <div className="relative flex items-center space-x-3.5">
+            <Icon size={18} className={active ? 'text-emerald-500' : 'text-slate-400 group-hover:text-emerald-500 transition-colors'} />
+            <span className="text-[13px] tracking-tight">{label}</span>
         </div>
-        {hasSubmenu && <ChevronRight size={16} className="relative text-gray-500 group-hover:text-orange-400 transition-colors" />}
+        {hasSubmenu && <ChevronRight size={14} className="relative text-slate-300 group-hover:text-emerald-400 transition-colors" />}
     </div>
 );
 
@@ -59,6 +60,14 @@ const Layout = ({ children, user, permissions, onLogout }) => {
     const [supportView, setSupportView] = useState('list'); // 'list' or 'new'
     const [supportForm, setSupportForm] = useState({ whatsapp: '', description: '' });
     const [submittingSupport, setSubmittingSupport] = useState(false);
+    
+    // Persist viewed state to hide dots after viewing
+    const [lastSeenSupportResolves, setLastSeenSupportResolves] = useState(() => 
+        parseInt(localStorage.getItem('bms_last_seen_support') || '0', 10)
+    );
+    const [lastSeenMsgCount, setLastSeenMsgCount] = useState(() => 
+        parseInt(localStorage.getItem('bms_last_seen_msg') || '0', 10)
+    );
 
     const fetchMessages = async () => {
         try {
@@ -161,6 +170,41 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         }
     };
 
+    // Helper to get current page title
+    const getPageTitle = () => {
+        const path = location.pathname;
+        if (path === '/') return 'Dashboard';
+        
+        const menuItem = ALL_MENU_ITEMS.find(item => item.path === path);
+        if (menuItem) return menuItem.label;
+        
+        const settingsItem = SETTINGS_MENU_ITEMS.find(item => item.path === path);
+        if (settingsItem) return settingsItem.label;
+
+        // Custom mappings for specific routes
+        const customTitles = {
+            '/company': 'Company Profile',
+            '/users': 'User Management',
+            '/backup': 'System Backup',
+            '/setup-company': 'Initialize Business'
+        };
+
+        return customTitles[path] || 'BizNex';
+    };
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good Morning';
+        if (hour < 18) return 'Good Afternoon';
+        return 'Good Evening';
+    };
+
+    const currentResolved = supportRequests.filter(r => r.status === 'RESOLVED').length;
+    const showSupportDot = currentResolved > lastSeenSupportResolves;
+
+    const currentMsgCount = adminMessages.length;
+    const showMsgDot = currentMsgCount > lastSeenMsgCount;
+
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-slate-950 overflow-hidden relative">
             {/* Mobile Sidebar Overlay */}
@@ -173,26 +217,19 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
             {/* Sidebar */}
             <div className={`
-                fixed lg:static inset-y-0 left-0 z-[70] w-72 bg-[#0B1033] dark:bg-slate-900 border-r border-transparent dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out
+                fixed lg:static inset-y-0 left-0 z-[70] w-64 bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="relative h-20 flex items-center px-6 border-b border-slate-800/50">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-300">
-                            <LayoutDashboard className="text-white" size={20} />
-                        </div>
-                        <div className="overflow-hidden">
-                            <span className="text-xl font-extrabold tracking-tight text-white block truncate max-w-[180px]">BizNex</span>
-                        </div>
-                    </div>
+                <div className="relative h-20 flex items-center justify-center mb-2">
+                    <span className="text-2xl font-black tracking-tighter text-emerald-600 dark:text-emerald-400 block truncate uppercase">BizNex</span>
                 </div>
 
                 {/* Super Admin Special: Settings at Top */}
                 {isSuperAdmin && visibleSettingsItems.length > 0 && (
                     <div className="relative px-4 mt-4 space-y-1.5 ">
                         <div className="px-2 py-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Administration</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Administration</span>
                         </div>
                         {visibleSettingsItems.map((item) => (
                             <SidebarItem
@@ -208,8 +245,8 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
                 {/* Menu Label */}
                 {visibleMenuItems.length > 0 && (
-                    <div className="relative px-6 py-4 mt-2">
-                        <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Main Menu</span>
+                    <div className="relative px-6 py-2 mt-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Menu</span>
                     </div>
                 )}
 
@@ -227,14 +264,14 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                 </div>
 
                 {/* Bottom Section: Regular Settings and Logout */}
-                <div className="relative px-4 pt-4 pb-8 border-t border-slate-800/50 mt-auto">
+                <div className="relative px-4 pt-4 pb-8 border-t border-slate-100 dark:border-slate-800 mt-auto">
                     {/* Settings Section (Only for Non-Super-Admin here) */}
                     {!isSuperAdmin && visibleSettingsItems.length > 0 && (
                         <div className="mb-4">
                             <div className="px-2 py-1">
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Settings</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Settings</span>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1">
                                 {visibleSettingsItems.map((item) => (
                                     <SidebarItem
                                         key={item.key}
@@ -250,10 +287,10 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
                     <div
                         onClick={onLogout}
-                        className="group flex items-center space-x-3 px-4 py-3.5 rounded-xl cursor-pointer text-red-400 hover:text-white hover:bg-red-500/20 transition-all duration-300 border border-red-500/20 hover:border-red-500/40"
+                        className="group flex items-center space-x-3 px-4 py-3 rounded-xl cursor-pointer text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all duration-300"
                     >
-                        <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-                        <span className="text-sm font-medium">Logout</span>
+                        <LogOut size={18} className="text-rose-500/70 group-hover:translate-x-1 transition-transform" />
+                        <span className="text-xs font-bold uppercase">Logout</span>
                     </div>
                 </div>
             </div>
@@ -261,15 +298,24 @@ const Layout = ({ children, user, permissions, onLogout }) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Header */}
-                <header className="h-20 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shadow-sm shrink-0 transition-colors duration-300">
-                    <div className="flex items-center gap-4">
+                <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0 transition-all duration-300 z-50">
+                    <div className="flex items-center gap-4 flex-1">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 lg:hidden bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="p-2.5 lg:hidden bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-all shadow-sm"
                         >
-                            <Menu size={22} />
+                            <Menu size={20} />
                         </button>
-                        <div className="hidden md:block">
+                        
+                        <div className="hidden md:flex flex-col">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <span className="hover:text-emerald-500 cursor-pointer transition-colors" onClick={() => navigate('/')}>BizNex</span>
+                                <ChevronRight size={10} className="text-slate-300" />
+                                <span className="text-emerald-600 dark:text-emerald-400">{getPageTitle()}</span>
+                            </div>
+                            <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                                {location.pathname === '/' ? `${getGreeting()}, ${user?.fullname?.split(' ')[0] || 'User'}` : getPageTitle()}
+                            </h1>
                         </div>
                     </div>
 
@@ -277,12 +323,12 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                     <div className="flex items-center space-x-2 md:space-x-6">
                         <button
                             onClick={toggleTheme}
-                            className="relative flex items-center h-9 w-16 p-1 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 transition-all duration-300 hover:border-blue-400 dark:hover:border-blue-500 group shadow-inner"
+                            className="relative flex items-center h-9 w-16 p-1 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 transition-all duration-300 hover:border-emerald-400 dark:hover:border-emerald-500 group shadow-inner"
                             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
                             {/* Sliding bubble */}
                             <div className={`
-                                flex items-center justify-center w-7 h-7 rounded-full bg-white dark:bg-blue-600 shadow-md transform transition-transform duration-500 ease-in-out
+                                flex items-center justify-center w-7 h-7 rounded-full bg-white dark:bg-emerald-600 shadow-md transform transition-transform duration-500 ease-in-out
                                 ${isDarkMode ? 'translate-x-7 rotate-[360deg]' : 'translate-x-0'}
                             `}>
                                 {isDarkMode ? (
@@ -302,178 +348,158 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
 
 
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setShowSupport(!showSupport);
-                                    setShowMessages(false);
-                                    setSupportView('list');
-                                }}
-                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showSupport ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                            >
-                                <Mail size={18} />
-                                {supportRequests.some(r => r.status === 'RESOLVED') && (
-                                    <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
-                                )}
-                            </button>
+                        <div className="relative flex items-center gap-2 md:gap-4">
+                            {/* Support Trigger */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => {
+                                        setShowSupport(!showSupport);
+                                        setShowMessages(false);
+                                        setSupportView('list');
+                                        if (!showSupport) {
+                                            setLastSeenSupportResolves(currentResolved);
+                                            localStorage.setItem('bms_last_seen_support', currentResolved);
+                                        }
+                                    }}
+                                    className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showSupport ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
+                                >
+                                    <Mail size={18} className="group-hover:scale-110 transition-transform" />
+                                    {showSupportDot && (
+                                        <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
+                                    )}
+                                </button>
 
-                            {/* Support Dropdown */}
-                            {showSupport && (
-                                <>
-                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
-                                    <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                                        {supportView === 'list' ? (
-                                            <>
-                                                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                                                    <h3 className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
-                                                        <LifeBuoy size={14} className="text-blue-500" />
-                                                        Help & Support
-                                                    </h3>
-                                                    <button
-                                                        onClick={() => setSupportView('new')}
-                                                        className="text-[9px] font-bold text-blue-600 hover:text-blue-700 uppercase flex items-center gap-1"
-                                                    >
-                                                        <Plus size={12} /> New Ticket
-                                                    </button>
-                                                </div>
-                                                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                                    {supportRequests.length === 0 ? (
-                                                        <div className="p-10 text-center">
-                                                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                                <Mail size={24} className="text-slate-300" />
-                                                            </div>
-                                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No support tickets</p>
-                                                            <button
-                                                                onClick={() => setSupportView('new')}
-                                                                className="mt-4 text-[10px] font-bold text-blue-600 hover:underline uppercase"
-                                                            >
-                                                                Contact Super Admin
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="divide-y divide-slate-50">
-                                                            {supportRequests.map((req) => (
-                                                                <div key={req.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                                                    <div className="flex items-center justify-between mb-1">
-                                                                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' :
-                                                                            req.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
-                                                                                'bg-slate-100 text-slate-600'
-                                                                            }`}>
-                                                                            {req.status}
-                                                                        </span>
-                                                                        <span className="text-[9px] text-slate-400 font-medium">
-                                                                            {new Date(req.createdAt).toLocaleDateString()}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs text-slate-700 dark:text-slate-300 font-bold line-clamp-2 leading-snug">{req.description}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="p-5 animate-in slide-in-from-right-4 duration-300">
-                                                <div className="flex items-center gap-2 mb-4">
-                                                    <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500">
-                                                        <ChevronLeft size={16} />
-                                                    </button>
-                                                    <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">New Support Ticket</h3>
-                                                </div>
-                                                <form onSubmit={handleSupportSubmit} className="space-y-4">
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">WhatsApp No (Optional)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={supportForm.whatsapp}
-                                                            onChange={(e) => setSupportForm({ ...supportForm, whatsapp: e.target.value })}
-                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-all"
-                                                            placeholder="Format: +92..."
-                                                        />
+                                {/* Support Dropdown */}
+                                {showSupport && (
+                                    <>
+                                        <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
+                                        <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                            {supportView === 'list' ? (
+                                                <>
+                                                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                                        <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase flex items-center gap-2">
+                                                            <LifeBuoy size={14} className="text-emerald-500" />
+                                                            Help & Support
+                                                        </h3>
+                                                        <button
+                                                            onClick={() => setSupportView('new')}
+                                                            className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
+                                                        >
+                                                            <Plus size={12} /> New Ticket
+                                                        </button>
                                                     </div>
-                                                    <div>
-                                                        <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Issue Description</label>
+                                                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                        {supportRequests.length === 0 ? (
+                                                            <div className="p-10 text-center">
+                                                                <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                                    <Mail size={24} className="text-slate-300 dark:text-slate-600" />
+                                                                </div>
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase">No support tickets</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                                                {supportRequests.map((req) => (
+                                                                    <div key={req.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                                        <div className="flex items-center justify-between mb-1">
+                                                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                                                {req.status}
+                                                                            </span>
+                                                                            <span className="text-[9px] text-slate-400 font-medium">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                                                        </div>
+                                                                        <p className="text-xs text-slate-700 dark:text-slate-300 font-bold line-clamp-2 leading-tight">{req.description}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="p-5">
+                                                    <div className="flex items-center gap-2 mb-4">
+                                                        <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500">
+                                                            <ChevronLeft size={16} />
+                                                        </button>
+                                                        <h3 className="text-xs font-bold text-black dark:text-slate-200 uppercase">New Support Ticket</h3>
+                                                    </div>
+                                                    <form onSubmit={handleSupportSubmit} className="space-y-4">
                                                         <textarea
                                                             required
                                                             value={supportForm.description}
                                                             onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
-                                                            className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-blue-500 transition-all min-h-[100px]"
-                                                            placeholder="Describe your problem or request..."
+                                                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 outline-none transition-all min-h-[100px]"
+                                                            placeholder="Describe your issue..."
                                                         />
-                                                    </div>
-                                                    <button
-                                                        type="submit"
-                                                        disabled={submittingSupport}
-                                                        className="w-full py-2.5 bg-[#0B1033] text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                                    >
-                                                        <Send size={14} />
-                                                        {submittingSupport ? 'Sending...' : 'Submit Request'}
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        )}
-                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 text-center">
-                                            <button onClick={() => setShowSupport(false)} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Close</button>
+                                                        <button type="submit" disabled={submittingSupport} className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-[10px] uppercase hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                                                            <Send size={14} />
+                                                            {submittingSupport ? 'Sending...' : 'Submit Request'}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setShowMessages(!showMessages);
-                                    setShowSupport(false);
-                                }}
-                                className={`p-2 md:p-2.5 rounded-lg transition-all duration-200 relative ${showMessages ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                            >
-                                <Bell size={20} />
-                                {adminMessages.length > 0 && (
-                                    <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
+                                    </>
                                 )}
-                            </button>
-
-                            {/* Messages Dropdown */}
-                            {showMessages && (
-                                <>
-                                    <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
-                                    <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 rounded-t-xl">
-                                            <h3 className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">System Notifications</h3>
-                                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">{adminMessages.length} Messages</span>
-                                        </div>
-                                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                                            {adminMessages.length === 0 ? (
-                                                <div className="p-8 text-center bg-white dark:bg-slate-900">
-                                                    <Bell size={32} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" />
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No notifications</p>
-                                                </div>
-                                            ) : adminMessages.map((msg) => (
-                                                <div key={msg.id} className="p-4 border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${msg.type === 'alert' ? 'bg-rose-500' :
-                                                            msg.type === 'update' ? 'bg-emerald-500' : 'bg-blue-500'
-                                                            }`}></div>
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-snug">{msg.content}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 text-center rounded-b-xl">
-                                            <button onClick={() => setShowMessages(false)} className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Close</button>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                        <div className="flex items-center space-x-2 md:space-x-3 pl-2 md:pl-4 border-l border-slate-200 dark:border-slate-800 ml-1 md:ml-2">
-                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#0B1033] dark:bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-100 dark:shadow-blue-900/20 shrink-0">
-                                {user?.fullname?.charAt(0).toUpperCase() || 'U'}
                             </div>
-                            <div className="hidden sm:block">
-                                <p className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{user?.fullname || 'User'}</p>
-                                <p className="text-[9px] md:text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">{user?.role?.replace('_', ' ') || 'User'}</p>
+
+                            {/* Notifications Trigger */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => {
+                                        setShowMessages(!showMessages);
+                                        setShowSupport(false);
+                                        if (!showMessages) {
+                                            setLastSeenMsgCount(currentMsgCount);
+                                            localStorage.setItem('bms_last_seen_msg', currentMsgCount);
+                                        }
+                                    }}
+                                    className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showMessages ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
+                                >
+                                    <Bell size={18} className="group-hover:rotate-12 transition-transform" />
+                                    {showMsgDot && (
+                                        <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 border-2 border-white rounded-full"></span>
+                                    )}
+                                </button>
+
+                                {showMessages && (
+                                    <>
+                                        <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
+                                        <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                                <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase">System Notifications</h3>
+                                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{adminMessages.length} New</span>
+                                            </div>
+                                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                {adminMessages.length === 0 ? (
+                                                    <div className="p-10 text-center">
+                                                        <Bell size={24} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" />
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">No notifications</p>
+                                                    </div>
+                                                ) : adminMessages.map((msg) => (
+                                                    <div key={msg.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-tight">{msg.content}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-slate-100 dark:border-slate-800">
+                            <div className="flex flex-col items-end hidden sm:flex">
+                                <p className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{user?.fullname?.split(' ')[0] || 'User'}</p>
+                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 lowercase mt-0.5">{user?.role || 'authorized'}</p>
+                            </div>
+                            <div className="relative group cursor-pointer">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-black shadow-lg shadow-emerald-500/20 shrink-0 border-2 border-white dark:border-slate-800 group-hover:scale-105 transition-all">
+                                    {user?.fullname?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
                             </div>
                         </div>
                     </div>

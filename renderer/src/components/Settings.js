@@ -116,53 +116,53 @@ const Settings = ({ currentUser, onUpdateUser }) => {
         setSaving(false);
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Loading...</div>;
+    if (loading) return <div className="p-8 text-center text-slate-400 font-bold animate-pulse">Loading...</div>;
 
     if (isSuperAdmin) {
         return (
-            <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight text-center md:text-left">Profile Settings</h1>
+                    <h1 className="text-2xl font-bold text-black dark:text-slate-100 tracking-tight text-center md:text-left">Profile Settings</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center md:text-left">Manage your account details and password.</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 space-y-8">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Account Details</h2>
+                        <div className="w-1.5 h-6 bg-emerald-600 dark:bg-emerald-400 rounded-full"></div>
+                        <h2 className="text-sm font-bold text-black dark:text-slate-200">Account Details</h2>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Full Name</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-2">Full Name</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all font-sans"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 value={profileData.fullname}
                                 onChange={(e) => setProfileData({ ...profileData, fullname: e.target.value })}
                                 placeholder="Full Name"
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Username</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-2">Username</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all font-sans"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 value={profileData.username}
                                 onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
                                 placeholder="Username"
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Password</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-2">Password</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all font-sans"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 value={profileData.password}
                                 onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
                                 placeholder="Enter password"
                             />
-                            <p className="mt-2 text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Keep blank if you don't want to change it.</p>
+                            <p className="mt-2 text-[9px] text-slate-400 dark:text-slate-500 font-bold">Keep blank if you don't want to change it.</p>
                         </div>
                     </div>
 
@@ -170,9 +170,9 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                         <button
                             onClick={handleSaveProfile}
                             disabled={saving}
-                            className="bg-blue-600 dark:bg-blue-600 text-white px-10 py-3 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 dark:shadow-none active:scale-95 disabled:opacity-50"
+                            className="bg-emerald-600 dark:bg-emerald-600 text-white px-10 py-3 rounded-lg font-bold text-[10px] hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                         >
-                            {saving ? 'Loading...' : 'Save now'}
+                            {saving ? 'Saving...' : 'Save now'}
                         </button>
                     </div>
                 </div>
@@ -183,7 +183,7 @@ const Settings = ({ currentUser, onUpdateUser }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Business Settings</h1>
+                <h1 className="text-2xl font-bold text-black dark:text-slate-100 tracking-tight">Business Settings</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage your business details and preferences.</p>
             </div>
 
@@ -191,55 +191,55 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                 {/* Company Info */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-950 dark:bg-blue-400 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Business Info</h2>
+                        <div className="w-1.5 h-6 bg-emerald-600 dark:bg-emerald-400 rounded-full"></div>
+                        <h2 className="text-sm font-bold text-black dark:text-slate-200">Business Info</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Business Name</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Business Name</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 placeholder="ex. ABC Shop"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Phone Number</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Phone Number</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 placeholder="03XXXXXXXXX"
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-1">
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Email Address</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Email Address</label>
                             <input
                                 type="email"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 placeholder="ex. shop@email.com"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-1">
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Tax Number</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Tax Number</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold placeholder:text-slate-400 placeholder:font-bold"
                                 placeholder="ex. 1234567-8"
                                 value={formData.tax_no}
                                 onChange={(e) => setFormData({ ...formData, tax_no: e.target.value })}
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Address</label>
+                            <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Address</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all"
                                 placeholder="Business location"
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -253,13 +253,13 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                 {/* Currency */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-950 dark:bg-blue-400 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Currency Settings</h2>
+                        <div className="w-1.5 h-6 bg-emerald-600 dark:bg-emerald-400 rounded-full"></div>
+                        <h2 className="text-sm font-bold text-black dark:text-slate-200">Currency Settings</h2>
                     </div>
                     <div className="w-full md:w-80">
-                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Select Currency</label>
+                        <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Select Currency</label>
                         <select
-                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all"
                             value={formData.currency_symbol}
                             onChange={(e) => setFormData({ ...formData, currency_symbol: e.target.value })}
                         >
@@ -277,12 +277,12 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                 {/* Printer */}
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-950 dark:bg-blue-400 rounded-full"></div>
-                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight">Printer Settings</h2>
+                        <div className="w-1.5 h-6 bg-emerald-600 dark:bg-emerald-400 rounded-full"></div>
+                        <h2 className="text-sm font-bold text-black dark:text-slate-200">Printer Settings</h2>
                     </div>
                     <div className="w-full md:w-80">
-                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Default Thermal/POS Printer</label>
-                        <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all">
+                        <label className="block text-[10px] font-bold text-black dark:text-slate-500 mb-1.5">Default Thermal/POS Printer</label>
+                        <select className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all">
                             <option className="dark:bg-slate-900">System Default Printer</option>
                             <option className="dark:bg-slate-900">Microsoft Print to PDF</option>
                             <option className="dark:bg-slate-900">Zonal Thermal-58</option>
@@ -294,9 +294,9 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                     {canEdit('settings') && (
                         <button
                             onClick={handleSaveCompany}
-                            className="flex items-center justify-center space-x-2 px-8 py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest"
+                            className="flex items-center justify-center space-x-2 px-8 py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px]"
                         >
-                            {saving ? 'Loading...' : 'Save now'}
+                            {saving ? 'Saving...' : 'Save now'}
                         </button>
                     )}
                 </div>

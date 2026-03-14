@@ -96,7 +96,7 @@ const Login = ({ onLoginSuccess }) => {
             <div className="absolute top-10 right-10 z-20">
                 <button
                     onClick={toggleTheme}
-                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none hover:scale-110 active:scale-95 transition-all duration-300 group"
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl shadow-emerald-500/5 dark:shadow-none hover:scale-110 active:scale-95 transition-all duration-300 group"
                     title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 >
                     {isDarkMode ? (
@@ -108,7 +108,7 @@ const Login = ({ onLoginSuccess }) => {
             </div>
 
             {/* Minimal Decorative Elements */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 dark:bg-blue-900/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/30 dark:bg-emerald-900/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-100/50 dark:bg-slate-900/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
             <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
@@ -116,11 +116,11 @@ const Login = ({ onLoginSuccess }) => {
                     <div className="p-12">
                         {/* Header */}
                         <div className="text-center mb-10">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl mb-6 border border-blue-100 dark:border-blue-900/50">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl mb-6 border border-emerald-100 dark:border-emerald-900/50">
                                 <LayoutDashboard size={32} />
                             </div>
                             <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">BizNex</h1>
-                            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest mt-2">Business Management System</p>
+                            <p className="text-slate-400 dark:text-slate-500 text-xs font-bold mt-2">Business Management System</p>
                         </div>
 
                         {/* Error Message */}
@@ -133,14 +133,14 @@ const Login = ({ onLoginSuccess }) => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest ml-1">Username</label>
+                                <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Username</label>
                                 <div className="relative group">
-                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                     <input
                                         type="text"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                         placeholder="Enter username"
                                         required
                                     />
@@ -148,21 +148,21 @@ const Login = ({ onLoginSuccess }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest ml-1">Password</label>
+                                <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Password</label>
                                 <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                        className="w-full pl-12 pr-12 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                         placeholder="Enter password"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
@@ -172,7 +172,7 @@ const Login = ({ onLoginSuccess }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 disabled:active:scale-100 mt-4"
+                                className="w-full py-3.5 bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px] disabled:opacity-70 mt-4"
                             >
                                 {loading ? (
                                     <div className="flex items-center justify-center gap-2">
@@ -180,13 +180,13 @@ const Login = ({ onLoginSuccess }) => {
                                         <span>Authenticating...</span>
                                     </div>
                                 ) : (
-                                    <span>Login</span>
+                                    <span className='text-sm'>Login</span>
                                 )}
                             </button>
                             <div className="text-center mt-4">
                                 <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
                                     Don't have an account?{' '}
-                                    <Link to="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">Register New company</Link>
+                                    <Link to="/signup" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">Register New company</Link>
                                 </p>
                             </div>
                         </form>
@@ -197,10 +197,10 @@ const Login = ({ onLoginSuccess }) => {
             {/* Support Trigger */}
             <button
                 onClick={() => setShowSupport(true)}
-                className="absolute bottom-10 right-10 w-14 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 hover:scale-110 transition-all group"
+                className="absolute bottom-10 right-10 w-14 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800 hover:scale-110 transition-all group"
             >
                 <HelpCircle size={24} />
-                <span className="absolute right-full mr-4 bg-slate-800 dark:bg-slate-700 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">
+                <span className="absolute right-full mr-4 bg-slate-800 dark:bg-slate-700 text-white text-[10px] font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                     Need Help?
                 </span>
             </button>
@@ -213,7 +213,7 @@ const Login = ({ onLoginSuccess }) => {
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Support Helpline</h2>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-1">Submit your issue below</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">Submit your issue below</p>
                                 </div>
                                 <button onClick={closeSupport} className="w-10 h-10 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 transition-colors">
                                     <X size={20} />
@@ -231,14 +231,14 @@ const Login = ({ onLoginSuccess }) => {
                             ) : (
                                 <form onSubmit={handleSupportSubmit} className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Full Name</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Full Name</label>
                                         <div className="relative group">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                             <input
                                                 required
                                                 value={supportData.fullName}
                                                 onChange={e => setSupportData({ ...supportData, fullName: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                 placeholder="Your name"
                                             />
                                         </div>
@@ -246,28 +246,28 @@ const Login = ({ onLoginSuccess }) => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Official Email</label>
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Official Email</label>
                                             <div className="relative group">
-                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                                 <input
                                                     type="email"
                                                     required
                                                     value={supportData.email}
                                                     onChange={e => setSupportData({ ...supportData, email: e.target.value })}
-                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                     placeholder="mail@host.com"
                                                 />
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Contact No</label>
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Contact No</label>
                                             <div className="relative group">
-                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                                 <input
                                                     required
                                                     value={supportData.whatsapp}
                                                     onChange={e => setSupportData({ ...supportData, whatsapp: e.target.value })}
-                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                     placeholder="+92 300..."
                                                 />
                                             </div>
@@ -275,15 +275,15 @@ const Login = ({ onLoginSuccess }) => {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Issue Description</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">Issue Description</label>
                                         <div className="relative group">
-                                            <FileText className="absolute left-4 top-4 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                                            <FileText className="absolute left-4 top-4 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />
                                             <textarea
                                                 required
                                                 rows={4}
                                                 value={supportData.description}
                                                 onChange={e => setSupportData({ ...supportData, description: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                 placeholder="Explain your problem..."
                                             />
                                         </div>
@@ -292,12 +292,12 @@ const Login = ({ onLoginSuccess }) => {
                                     <button
                                         type="submit"
                                         disabled={supportLoading}
-                                        className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest mt-4 disabled:opacity-70"
+                                        className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 text-[10px] mt-4 disabled:opacity-70"
                                     >
                                         {supportLoading ? (
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         ) : (
-                                            <span>Submit report</span>
+                                            <span className='text-sm'>Submit report</span>
                                         )}
                                     </button>
                                 </form>

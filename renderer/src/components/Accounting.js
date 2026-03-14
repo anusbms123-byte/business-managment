@@ -31,14 +31,14 @@ const Accounting = () => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`relative flex items-center space-x-3 px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap group ${activeTab === tab.id
-                                ? 'text-blue-600 dark:text-blue-400'
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
                             <tab.icon size={16} />
                             <span>{tab.label}</span>
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-500 rounded-t-full"></div>
                             )}
                         </button>
                     ))}
@@ -60,7 +60,7 @@ const ChartOfAccounts = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-end">
             {canCreate('accounting') && (
-                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
                     <Plus size={16} />
                     <span>Add Account</span>
                 </button>
@@ -77,7 +77,7 @@ const ChartOfAccounts = () => (
                 <div key={i} className="flex flex-col">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className={`w-1 h-3.5 bg-blue-600 dark:bg-blue-500 rounded-full`}></div>
+                            <div className={`w-1 h-3.5 bg-emerald-600 dark:bg-emerald-500 rounded-full`}></div>
                             {category.type}
                         </h4>
                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800">{category.accounts.length} ACCOUNTS</span>
@@ -86,8 +86,8 @@ const ChartOfAccounts = () => (
                         <div className="divide-y divide-slate-50 dark:divide-slate-800">
                             {category.accounts.map((account, j) => (
                                 <div key={j} className="px-5 py-3.5 flex justify-between items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/30 group transition-all">
-                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{account}</span>
-                                    <button className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:text-blue-600 dark:hover:text-blue-400 hover:underline decoration-2 underline-offset-4 transition-all">View</button>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{account}</span>
+                                    <button className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline decoration-2 underline-offset-4 transition-all">View</button>
                                 </div>
                             ))}
                         </div>
@@ -102,7 +102,7 @@ const JournalEntries = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex justify-end">
             {canCreate('accounting') && (
-                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
                     <Plus size={16} />
                     <span>New Journal Entry</span>
                 </button>
@@ -111,13 +111,13 @@ const JournalEntries = () => (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-black">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Post Date</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Ref ID</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">GL Account</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Debit</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Credit</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Post Date</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Ref ID</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">GL Account</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Debit</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Credit</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -146,11 +146,11 @@ const ExpenseTracking = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <div className="w-1 h-3.5 bg-blue-600 dark:bg-blue-500 rounded-full"></div>
+                <div className="w-1 h-3.5 bg-emerald-600 dark:bg-emerald-500 rounded-full"></div>
                 Operational Expenditures
             </h3>
             {canCreate('accounting') && (
-                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
+                <button className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">
                     <Plus size={16} />
                     <span>Add Expense</span>
                 </button>
@@ -179,12 +179,12 @@ const ExpenseTracking = () => (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-black">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Date</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Category</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Description</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Amount</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Date</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Category</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Description</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Amount</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -215,27 +215,27 @@ const GeneralLedger = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-3 w-full md:w-auto">
-                <select className="flex-1 md:w-64 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all">
+                <select className="flex-1 md:w-64 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-widest outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all">
                     <option>Select General Account</option>
                     <option>Cash in Hand</option>
                     <option>Bank Account</option>
                     <option>Sales Revenue</option>
                 </select>
-                <button className="px-6 py-2 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">Generate</button>
+                <button className="px-6 py-2 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-slate-900 transition-all shadow-sm shadow-emerald-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest">Generate</button>
             </div>
-            <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline decoration-2 underline-offset-4 decoration-blue-200">Export Ledger</button>
+            <button className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest hover:underline decoration-2 underline-offset-4 decoration-emerald-200">Export Ledger</button>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-black">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Post Date</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Transaction Details</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Debit</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Credit</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Running Balance</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Post Date</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Transaction Details</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Debit</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Credit</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Running Balance</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -262,18 +262,18 @@ const GeneralLedger = () => (
 
 const TrialBalance = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+        <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
             <Info size={16} />
             Check all balanced ledger positions across all organizations.
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/50">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-black">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Mapped Account Profile</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Debit Balance</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Credit Balance</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">Mapped Account Profile</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Debit Balance</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-slate-800 text-right">Credit Balance</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -287,7 +287,7 @@ const TrialBalance = () => (
                             { account: 'Operations Expenses', debit: 31500, credit: 0 },
                         ].map((row, i) => (
                             <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group">
-                                <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{row.account}</td>
+                                <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{row.account}</td>
                                 <td className="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">{row.debit > 0 ? `PKR ${row.debit.toLocaleString()}` : '—'}</td>
                                 <td className="px-6 py-4 text-right font-bold text-rose-600 dark:text-rose-400 tracking-tight">{row.credit > 0 ? `PKR ${row.credit.toLocaleString()}` : '—'}</td>
                             </tr>

@@ -99,7 +99,7 @@ const Signup = () => {
                 </button>
             </div>
             {/* Minimal Decorative Elements */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 dark:bg-blue-900/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/30 dark:bg-emerald-900/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-100/50 dark:bg-slate-900/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
 
             <div className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
@@ -107,10 +107,10 @@ const Signup = () => {
                     <div className="p-10">
                         {/* Header */}
                         <div className="text-center mb-10">
-                            <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400 rounded-xl mb-4 border border-blue-100 dark:border-blue-900/50">
+                            <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 rounded-xl mb-4 border border-emerald-100 dark:border-emerald-900/50">
                                 <LayoutDashboard size={28} />
                             </div>
-                            <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Sign Up</h1>
+                            <h1 className="text-2xl font-black text-black dark:text-slate-100 tracking-tight">Sign Up</h1>
                         </div>
 
                         {error && (
@@ -172,7 +172,7 @@ const Signup = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 bg-blue-950 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-bold hover:bg-[#0B1033] transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-[10px] uppercase tracking-widest disabled:opacity-70 flex items-center justify-center gap-2"
+                                className="w-full py-3.5 bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all shadow-sm active:scale-95 text-[10px] disabled:opacity-70 flex items-center justify-center gap-2"
                             >
                                 {loading ? 'Creating Account...' : (
                                     <>
@@ -186,7 +186,7 @@ const Signup = () => {
                         <div className="mt-8 text-center">
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
                                 Already have an account?{' '}
-                                <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">Login</Link>
+                                <Link to="/login" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">Login</Link>
                             </p>
                         </div>
                     </div>
@@ -198,18 +198,18 @@ const Signup = () => {
 
 const FormInput = ({ label, icon: Icon, disabled, showToggle, isVisible, onToggle, ...props }) => (
     <div className="space-y-1.5 text-left">
-        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{label}</label>
+        <label className="text-[10px] font-bold text-black dark:text-slate-500 ml-1">{label}</label>
         <div className="relative group">
-            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />}
+            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={18} />}
             <input
                 {...props}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} ${showToggle ? 'pr-12' : 'pr-4'} py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} ${showToggle ? 'pr-12' : 'pr-4'} py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-600 dark:focus:border-emerald-500 transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600`}
             />
             {showToggle && (
                 <button
                     type="button"
                     onClick={onToggle}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
                     {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>

@@ -21,13 +21,13 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
 
     return (
         <div className="relative space-y-2">
-            <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 ml-1">
+            <label className="text-[10px] font-bold text-black dark:text-slate-300 flex items-center gap-2 ml-1">
                 <Icon size={12} className="text-black dark:text-slate-400" /> {label}
             </label>
             <div className="relative">
                 <input
                     type="text"
-                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
+                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
                     value={searchTerm}
                     onChange={(e) => {
                         setSearchTerm(e.target.value);
@@ -51,7 +51,7 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
                             filteredOptions.map(opt => (
                                 <div
                                     key={opt.id}
-                                    className="px-5 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-400 transition-colors flex items-center justify-between"
+                                    className="px-5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors flex items-center justify-between"
                                     onMouseDown={(e) => {
                                         e.preventDefault();
                                         setSearchTerm(opt.name);
@@ -60,11 +60,11 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
                                     }}
                                 >
                                     <span>{opt.name}</span>
-                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
+                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
                                 </div>
                             ))
                         ) : (
-                            <div className="px-5 py-3 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50/30 dark:bg-blue-900/10 flex items-center gap-2">
+                            <div className="px-5 py-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-900/10 flex items-center gap-2">
                                 <Plus size={14} />
                                 <span>Add New: "{searchTerm}"</span>
                             </div>
@@ -282,7 +282,7 @@ const Purchase = ({ currentUser }) => {
         try {
             const currentBillTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue;
             let finalPaymentStatus = (parseFloat(paidAmount) >= currentBillTotal) ? 'PAID' : (parseFloat(paidAmount) > 0 ? 'PARTIAL' : 'DUE');
-            
+
             // If the user explicitly chose RECEIVED as a status from a status dropdown (if any) or if it's already RECEIVED, keep it as a signal of item reception
             if (paymentStatus === 'RECEIVED' && finalPaymentStatus === 'PAID') {
                 finalPaymentStatus = 'RECEIVED';
@@ -492,7 +492,7 @@ const Purchase = ({ currentUser }) => {
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                         <input
                             type="text"
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-slate-800 dark:text-slate-100 font-bold"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 transition-all text-slate-800 dark:text-slate-100 font-bold"
                             placeholder="Search here..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -501,7 +501,7 @@ const Purchase = ({ currentUser }) => {
                     {canCreate('purchase') && (
                         <button
                             onClick={() => { resetForm(); setIsModalOpen(true); }}
-                            className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-blue-200 dark:shadow-none"
+                            className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 shadow-sm shadow-emerald-200 dark:shadow-none"
                         >
                             <Plus size={18} />
                             <span>Add Purchase</span>
@@ -511,7 +511,7 @@ const Purchase = ({ currentUser }) => {
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                        <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-black dark:text-slate-100 font-bold text-[10px] border-b border-slate-100 dark:border-slate-800">
                             <tr>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Supplier</th>
@@ -526,32 +526,32 @@ const Purchase = ({ currentUser }) => {
                             {loading ? (
                                 <tr>
                                     <td colSpan="7" className="px-6 py-20 text-center">
-                                        <div className="w-8 h-8 md:w-10 md:h-10 border-4 border-slate-100 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+                                        <div className="w-8 h-8 md:w-10 md:h-10 border-4 border-slate-100 dark:border-slate-800 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
                                     </td>
                                 </tr>
                             ) : filteredPurchases.map((p) => (
                                 <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-0">
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{p.invoiceNo || `PO-${p.id.toString().slice(-6)}`}</div>
+                                        <div className="font-bold text-sm text-black dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{p.invoiceNo || `PO-${p.id.toString().slice(-6)}`}</div>
                                         <div className="text-[10px] text-black dark:text-slate-400 font-bold mt-1">{p.date ? new Date(p.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-bold text-black dark:text-slate-200">
                                         {p.vendor?.name}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-400 uppercase">
+                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-400">
                                             {p.items?.length || 0} Items
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 font-bold text-sm text-black dark:text-slate-100">PKR {(p.totalAmount || 0).toLocaleString()}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-black dark:text-slate-400 uppercase">{p.paymentMethod || 'CASH'}</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-400">{p.paymentMethod || 'CASH'}</span>
                                             <span className="text-xs font-bold text-black dark:text-slate-200">PKR {(p.paidAmount || 0).toLocaleString()}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(p.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
+                                        <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-bold border ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(p.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
                                             p.paymentStatus === 'PARTIAL' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' :
                                                 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                             }`}>
@@ -563,14 +563,14 @@ const Purchase = ({ currentUser }) => {
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => handleShowDetail(p)}
-                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
                                                 title="View Detail"
                                             >
                                                 <Eye size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(p)}
-                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
                                                 title="Edit Order"
                                             >
                                                 <div className="w-4 h-4">
@@ -595,7 +595,7 @@ const Purchase = ({ currentUser }) => {
                                         <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600">
                                             <ShoppingCart size={24} />
                                         </div>
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 uppercase tracking-widest">No purchase recorded yet</p>
+                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 tracking-widest">No purchase recorded yet</p>
                                     </td>
                                 </tr>
                             )}
@@ -609,7 +609,7 @@ const Purchase = ({ currentUser }) => {
                     {/* Fixed Header */}
                     <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <ShoppingCart size={22} />
                             </div>
                             <div>
@@ -620,7 +620,7 @@ const Purchase = ({ currentUser }) => {
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
+                             <span className="text-[10px] font-bold hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -633,19 +633,19 @@ const Purchase = ({ currentUser }) => {
                             {/* Top Input Row (Vendor | Product | Qty) */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-6 flex-shrink-0">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">Supplier</label>
+                                    <label className="text-[10px] font-bold text-black dark:text-slate-300 ml-1">Supplier</label>
                                     <div className="relative">
                                         <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                         <select
                                             ref={vendorRef}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none appearance-none cursor-pointer text-slate-800 dark:text-slate-100"
+                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm outline-none appearance-none cursor-pointer text-slate-800 dark:text-slate-100"
                                             value={vendorId}
                                             onChange={(e) => {
                                                 const vid = e.target.value;
                                                 setVendorId(vid);
                                                 const ven = vendors.find(v => String(v.id) === String(vid));
                                                 let balance = ven?.current_balance || ven?.balance || 0;
-                                                
+
                                                 // If editing same vendor, subtract this purchase's impact
                                                 if (editingId) {
                                                     const p = purchases.find(pur => pur.id === editingId || pur.global_id === editingId);
@@ -670,10 +670,10 @@ const Purchase = ({ currentUser }) => {
 
                                 <div className="space-y-1.5 lg:col-span-2">
                                     <div className="flex justify-between items-center ml-1">
-                                        <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ">Product</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-300 ">Product</label>
                                         <button
                                             onClick={() => setIsQuickProductModalOpen(true)}
-                                            className="text-[10px] font-bold text-blue-600 uppercase hover:underline"
+                                            className="text-[10px] font-bold text-emerald-600 hover:underline"
                                         >
                                             + New Product
                                         </button>
@@ -683,7 +683,7 @@ const Purchase = ({ currentUser }) => {
                                         <input
                                             ref={productRef}
                                             type="text"
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
+                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm outline-none text-slate-800 dark:text-slate-100"
                                             placeholder="Type to search product..."
                                             value={productSearch}
                                             onChange={(e) => {
@@ -730,14 +730,14 @@ const Purchase = ({ currentUser }) => {
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${highlightedIndex === index ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
                                                         onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
                                                         onMouseEnter={() => setHoveredProduct(p)}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
                                                             <div className="font-bold text-sm text-black dark:text-slate-100">{p.name}</div>
-                                                            <div className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            <div className="text-[10px] text-black dark:text-slate-400 font-bold">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
                                                         </div>
                                                         <div className="font-bold text-black dark:text-slate-200 text-sm">Cost: PKR {(p.costPrice || p.cost_price || 0).toLocaleString()}</div>
                                                     </div>
@@ -749,12 +749,12 @@ const Purchase = ({ currentUser }) => {
                                         {isProductListVisible && hoveredProduct && (
                                             <div className="absolute left-full ml-4 top-0 z-[120] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-none p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
                                                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                                         <Package size={20} />
                                                     </div>
                                                     <div className="overflow-hidden">
-                                                        <div className="font-bold text-sm text-black dark:text-slate-100 uppercase tracking-tight truncate">{hoveredProduct.name}</div>
-                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">SKU: {hoveredProduct.sku || 'N/A'}</div>
+                                                        <div className="font-bold text-sm text-black dark:text-slate-100 tracking-tight truncate">{hoveredProduct.name}</div>
+                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">SKU: {hoveredProduct.sku || 'N/A'}</div>
                                                     </div>
                                                 </div>
 
@@ -762,19 +762,19 @@ const Purchase = ({ currentUser }) => {
                                                     {/* Attributes Grid */}
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Color</p>
+                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-0.5">Color</p>
                                                             <p className="text-xs font-bold text-black dark:text-slate-100">{hoveredProduct.color || '-'}</p>
                                                         </div>
                                                         <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Size</p>
+                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-0.5">Size</p>
                                                             <p className="text-xs font-bold text-black dark:text-slate-100">{hoveredProduct.size || '-'}</p>
                                                         </div>
                                                         <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Grade</p>
+                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-0.5">Grade</p>
                                                             <p className="text-xs font-bold text-black dark:text-slate-100">{hoveredProduct.grade || '-'}</p>
                                                         </div>
                                                         <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Status</p>
+                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-0.5">Status</p>
                                                             <p className={`text-xs font-bold ${hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                                                 {hoveredProduct.stockQty <= 0 ? 'Out of Stock' : hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                                             </p>
@@ -784,23 +784,23 @@ const Purchase = ({ currentUser }) => {
                                                     {/* Pricing & Stock */}
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between items-center py-1.5 border-b border-slate-50 dark:border-slate-800">
-                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Cost Price</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Cost Price</span>
                                                             <span className="text-xs font-bold text-black dark:text-slate-100">PKR {hoveredProduct.costPrice?.toLocaleString()}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center py-1.5 border-b border-slate-50 dark:border-slate-800">
-                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Sale Price</span>
-                                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PKR {hoveredProduct.sellPrice?.toLocaleString()}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Sale Price</span>
+                                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">PKR {hoveredProduct.sellPrice?.toLocaleString()}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center py-1.5 border-b border-slate-50 dark:border-slate-800">
-                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Stock Avail</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Stock Avail</span>
                                                             <span className="text-xs font-bold text-black dark:text-slate-100">{hoveredProduct.stockQty} {hoveredProduct.unit}</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Footer Info */}
-                                                    <div className="flex justify-between items-center pt-2 text-[9px] font-bold uppercase tracking-wider">
+                                                    <div className="flex justify-between items-center pt-2 text-[9px] font-bold">
                                                         <span className="text-slate-400 dark:text-slate-500">Brand: <span className="text-black dark:text-slate-300">{hoveredProduct.brand?.name || 'Local'}</span></span>
-                                                        <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md truncate max-w-[100px]">{hoveredProduct.category?.name}</span>
+                                                        <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md truncate max-w-[100px]">{hoveredProduct.category?.name}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -812,7 +812,7 @@ const Purchase = ({ currentUser }) => {
                                                     setDetailProduct(p);
                                                     setShowDetailModal(true);
                                                 }}
-                                                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded bg-white/80 dark:bg-slate-800/80 shadow-sm border border-blue-100 dark:border-blue-900/50 z-10"
+                                                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded bg-white/80 dark:bg-slate-800/80 shadow-sm border border-emerald-100 dark:border-emerald-900/50 z-10"
                                                 title="View Detail"
                                             >
                                                 <Eye size={14} />
@@ -823,12 +823,12 @@ const Purchase = ({ currentUser }) => {
 
                                 <div className="flex gap-2">
                                     <div className="space-y-1.5 flex-1">
-                                        <label className="text-[10px] font-bold text-black dark:text-slate-300 uppercase tracking-widest ml-1">Qty</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-300 ml-1">Quantity</label>
                                         <input
                                             ref={qtyRef}
                                             type="number"
                                             min="1"
-                                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-bold text-sm outline-none text-center text-slate-800 dark:text-slate-100"
+                                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-bold text-sm outline-none text-center text-slate-800 dark:text-slate-100"
                                             value={qty || ''}
                                             placeholder="0"
                                             onChange={(e) => setQty(e.target.value)}
@@ -842,7 +842,7 @@ const Purchase = ({ currentUser }) => {
                                     <button
                                         ref={addBtnRef}
                                         onClick={addToCart}
-                                        className="px-4 py-2 mt-auto bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+                                        className="px-4 py-2 mt-auto bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-sm active:scale-95"
                                     >
                                         <Plus size={20} />
                                     </button>
@@ -853,7 +853,7 @@ const Purchase = ({ currentUser }) => {
                             <div className="flex-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0">
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     <table className="w-full text-left relative">
-                                        <thead className="bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
+                                        <thead className="bg-slate-50/90 dark:bg-slate-800/90 backdrop-blur text-[10px] font-bold text-black dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
                                             <tr>
                                                 <th className="px-6 py-4">Product</th>
                                                 <th className="px-6 py-4 text-center">Cost</th>
@@ -867,7 +867,7 @@ const Purchase = ({ currentUser }) => {
                                                 <tr key={idx} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
                                                     <td className="px-6 py-4">
                                                         <div className="font-bold text-black dark:text-slate-100 text-sm">{item.name}</div>
-                                                        <div className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
+                                                        <div className="text-[10px] text-black dark:text-slate-400 font-bold tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 text-center font-bold text-black dark:text-slate-200 text-xs">PKR {(item.unitCost || 0).toLocaleString()}</td>
                                                     <td className="px-6 py-4">
@@ -889,7 +889,7 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600">
                                                             <ShoppingCart size={24} />
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 uppercase tracking-widest">Cart is empty</p>
+                                                        <p className="text-[10px] font-bold text-black dark:text-slate-500">Cart is empty</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -906,48 +906,48 @@ const Purchase = ({ currentUser }) => {
                                 {/* Invoice Info */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Supplier Inv #</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-500">Supplier Inv #</label>
                                         <input
                                             type="text"
                                             value={invoiceNo}
                                             onChange={(e) => setInvoiceNo(e.target.value)}
-                                            className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-all"
+                                            className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 transition-all"
                                             placeholder="ex. INV-99"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Due Date</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-500">Due Date</label>
                                         <input
                                             type="date"
                                             value={dueDate}
                                             onChange={(e) => setDueDate(e.target.value)}
-                                            className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 transition-all picker:dark:invert"
+                                            className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 transition-all picker:dark:invert"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Financials Summary */}
                                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-xl space-y-3 border border-slate-100 dark:border-slate-800 transition-colors">
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 tracking-tight">
                                         <span>Subtotal</span>
                                         <span className="text-slate-800 dark:text-slate-100">PKR {(subtotal || 0).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 tracking-tight">
                                         <span>Shipping</span>
                                         <input
                                             type="number"
-                                            className="w-20 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-blue-500 outline-none transition-all text-xs"
+                                            className="w-20 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-xs"
                                             value={shippingCost ?? ''}
                                             onChange={(e) => setShippingCost(e.target.value)}
                                             placeholder="0"
                                         />
                                     </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 tracking-tight">
                                         <span>Tax</span>
                                         <div className="flex gap-1">
                                             <input
                                                 type="number"
-                                                className="w-12 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-blue-500 outline-none transition-all text-xs"
+                                                className="w-12 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-xs"
                                                 value={tax ?? ''}
                                                 onChange={(e) => setTax(e.target.value)}
                                                 placeholder="0"
@@ -958,12 +958,12 @@ const Purchase = ({ currentUser }) => {
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 tracking-tight">
                                         <span>Discount</span>
                                         <div className="flex gap-1">
                                             <input
                                                 type="number"
-                                                className="w-12 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-blue-500 outline-none transition-all text-xs"
+                                                className="w-12 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-xs"
                                                 value={discount ?? ''}
                                                 onChange={(e) => setDiscount(e.target.value)}
                                                 placeholder="0"
@@ -974,12 +974,12 @@ const Purchase = ({ currentUser }) => {
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 uppercase tracking-tight">
+                                    <div className="flex justify-between items-center text-xs font-bold text-black dark:text-slate-300 tracking-tight">
                                         <span>Previous Balance</span>
                                         <span className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded text-black dark:text-slate-200">{(previousBalance || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                                        <span className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-[0.2em] block">Grand Total</span>
+                                        <span className="text-[10px] font-bold text-black dark:text-slate-400 block">Grand Total</span>
                                         <span className="text-xl font-bold text-black dark:text-slate-100 tracking-tighter">
                                             PKR {(grandTotal || 0).toLocaleString()}
                                         </span>
@@ -989,11 +989,11 @@ const Purchase = ({ currentUser }) => {
                                 {/* Payment */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Payment Method</label>
+                                        <label className="text-[9px] font-bold text-black dark:text-slate-400">Payment Method</label>
                                         <select
                                             value={paymentMethod}
                                             onChange={(e) => setPaymentMethod(e.target.value)}
-                                            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[10px] font-bold uppercase focus:outline-none cursor-pointer text-black dark:text-slate-100 transition-all"
+                                            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-[10px] font-bold focus:outline-none cursor-pointer text-black dark:text-slate-100 transition-all"
                                         >
                                             <option value="CASH">CASH</option>
                                             <option value="BANK_TRANSFER">BANK TRANSFER</option>
@@ -1001,27 +1001,27 @@ const Purchase = ({ currentUser }) => {
                                         </select>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <label className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Amount Paid</label>
+                                        <label className="text-[9px] font-bold text-black dark:text-slate-400 truncate">Amount Paid</label>
                                         <input
                                             type="number"
-                                            className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-sm text-black dark:text-slate-100 outline-none focus:border-blue-500 transition-all"
+                                            className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-bold text-sm text-black dark:text-slate-100 outline-none focus:border-emerald-500 transition-all"
                                             value={paidAmount ?? ''}
                                             onChange={(e) => setPaidAmount(e.target.value)}
                                             placeholder="0"
                                         />
                                     </div>
                                     <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                                        <label className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest">Balance Due</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-400">Balance Due</label>
                                         <span className="text-xs font-bold text-rose-600 dark:text-rose-400 px-2 py-0.5 bg-rose-50 dark:bg-rose-900/20 rounded">PKR {(balanceDue || 0).toLocaleString()}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Notes</label>
+                                    <label className="text-[9px] font-bold text-black dark:text-slate-400 ml-1">Notes</label>
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
-                                        className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-black dark:text-slate-200 outline-none focus:border-blue-500 transition-all resize-none h-16"
+                                        className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-black dark:text-slate-200 outline-none focus:border-emerald-500 transition-all resize-none h-16"
                                         placeholder="Details..."
                                     />
                                 </div>
@@ -1031,7 +1031,7 @@ const Purchase = ({ currentUser }) => {
                                 <button
                                     onClick={handleSave}
                                     disabled={cart.length === 0 || saving}
-                                    className="w-full py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-xl font-bold text-base hover:bg-slate-900 dark:hover:bg-blue-700 shadow-md shadow-blue-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                    className="w-full py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-xl font-bold text-base hover:bg-emerald-700 dark:hover:bg-emerald-700 shadow-md shadow-emerald-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
                                         <span>Processing...</span>
@@ -1056,12 +1056,12 @@ const Purchase = ({ currentUser }) => {
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                        <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                             <Package size={24} />
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-bold text-black dark:text-slate-100">{detailProduct.name}</h3>
-                                            <p className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-widest">Product Details</p>
+                                            <p className="text-[10px] text-black dark:text-slate-400 font-bold">Product Details</p>
                                         </div>
                                     </div>
                                     <button onClick={() => setShowDetailModal(false)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all">
@@ -1072,31 +1072,31 @@ const Purchase = ({ currentUser }) => {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 transition-all">
-                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mb-1">Cost Price</p>
+                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 mb-1">Cost Price</p>
                                             <p className="text-sm font-bold text-black dark:text-slate-100">PKR {detailProduct.costPrice?.toLocaleString() || 0}</p>
                                         </div>
                                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 transition-all">
-                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mb-1">Sale Price</p>
+                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 mb-1">Sale Price</p>
                                             <p className="text-sm font-bold text-black dark:text-slate-100">PKR {detailProduct.sellPrice?.toLocaleString() || 0}</p>
                                         </div>
                                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 transition-all">
-                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mb-1">Current Stock</p>
+                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 mb-1">Current Stock</p>
                                             <p className="text-sm font-bold text-black dark:text-slate-100">{detailProduct.stockQty} {detailProduct.unit || 'pcs'}</p>
                                         </div>
                                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-800 transition-all">
-                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 uppercase tracking-widest mb-1">SKU / Code</p>
+                                            <p className="text-[9px] font-bold text-black dark:text-slate-400 mb-1">SKU / Code</p>
                                             <p className="text-sm font-bold text-black dark:text-slate-100">{detailProduct.code || detailProduct.sku || 'N/A'}</p>
                                         </div>
                                     </div>
 
-                                    <div className="p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+                                    <div className="p-4 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-xl border border-emerald-100/50 dark:border-emerald-900/30">
                                         <div className="flex flex-col gap-1">
-                                            <p className="text-[9px] font-bold text-blue-400 dark:text-blue-500 uppercase tracking-widest">Secondary Details</p>
-                                            <div className="flex justify-between text-xs py-1 border-b border-blue-100/30 dark:border-blue-900/20">
+                                            <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Secondary Details</p>
+                                            <div className="flex justify-between text-xs py-1 border-b border-emerald-100/30 dark:border-emerald-900/20">
                                                 <span className="text-slate-500 dark:text-slate-400 font-medium">Category</span>
                                                 <span className="text-slate-700 dark:text-slate-200 font-bold">{detailProduct.category?.name || 'Uncategorized'}</span>
                                             </div>
-                                            <div className="flex justify-between text-xs py-1 border-b border-blue-100/30 dark:border-blue-900/20">
+                                            <div className="flex justify-between text-xs py-1 border-b border-emerald-100/30 dark:border-emerald-900/20">
                                                 <span className="text-slate-500 dark:text-slate-400 font-medium">Brand</span>
                                                 <span className="text-slate-700 dark:text-slate-200 font-bold">{detailProduct.brand?.name || 'N/A'}</span>
                                             </div>
@@ -1110,7 +1110,7 @@ const Purchase = ({ currentUser }) => {
 
                                 <button
                                     onClick={() => setShowDetailModal(false)}
-                                    className="w-full mt-6 py-3 bg-slate-900 dark:bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-blue-700 transition-all active:scale-[0.98]"
+                                    className="w-full mt-6 py-3 bg-slate-900 dark:bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-emerald-700 transition-all active:scale-[0.98]"
                                 >
                                     CLOSE DETAIL
                                 </button>
@@ -1141,21 +1141,21 @@ const Purchase = ({ currentUser }) => {
                             <form onSubmit={handleQuickProductSave} className="space-y-6">
                                 {/* Core Details */}
                                 <div className="space-y-4">
-                                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2">
                                         <div className="w-4 h-[1px] bg-slate-200 dark:bg-slate-800" /> Primary Information
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2 md:col-span-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <Box size={12} className="text-black dark:text-slate-400" /> Name *
                                             </label>
-                                            <input required type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 dark:focus:border-blue-600 dark:focus:ring-blue-900/20 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="Name" />
+                                            <input required type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 dark:focus:border-emerald-600 dark:focus:ring-emerald-900/20 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="Name" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <Tag size={12} className="text-black dark:text-slate-400" /> SKU-Number
                                             </label>
-                                            <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="SKU-Number" />
+                                            <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="SKU-Number" />
                                         </div>
 
                                         <CreatableSelect
@@ -1176,7 +1176,7 @@ const Purchase = ({ currentUser }) => {
                                         />
 
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <Box size={12} className="text-black dark:text-slate-400" /> Unit
                                             </label>
                                             <select className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none cursor-pointer text-black dark:text-slate-100 transition-all" value={quickProductForm.unit} onChange={e => setQuickProductForm({ ...quickProductForm, unit: e.target.value })}>
@@ -1192,39 +1192,39 @@ const Purchase = ({ currentUser }) => {
 
                                 {/* Inventory & Pricing */}
                                 <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2">
                                         <div className="w-4 h-[1px] bg-slate-200 dark:bg-slate-800" /> Pricing & Stock
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <DollarSign size={12} className="text-black dark:text-slate-400" /> Cost *
                                             </label>
-                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.cost_price} onChange={e => setQuickProductForm({ ...quickProductForm, cost_price: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.cost_price} onChange={e => setQuickProductForm({ ...quickProductForm, cost_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <DollarSign size={12} className="text-black dark:text-slate-400" /> Sale *
                                             </label>
-                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sell_price} onChange={e => setQuickProductForm({ ...quickProductForm, sell_price: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sell_price} onChange={e => setQuickProductForm({ ...quickProductForm, sell_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <AlertTriangle size={12} className="text-black dark:text-slate-400" /> Alert
                                             </label>
-                                            <input type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.alert_qty} onChange={e => setQuickProductForm({ ...quickProductForm, alert_qty: e.target.value })} placeholder="5" />
+                                            <input type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.alert_qty} onChange={e => setQuickProductForm({ ...quickProductForm, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <Box size={12} className="text-black dark:text-slate-400" /> Stock *
                                             </label>
-                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.stock_qty} onChange={e => setQuickProductForm({ ...quickProductForm, stock_qty: e.target.value })} placeholder="0" />
+                                            <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.stock_qty} onChange={e => setQuickProductForm({ ...quickProductForm, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 flex items-center gap-2 ml-1">
                                                 <Clock size={12} className="text-black dark:text-slate-400" /> Expiry
                                             </label>
-                                            <input type="date" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 picker:dark:invert" value={quickProductForm.expiry_date} onChange={e => setQuickProductForm({ ...quickProductForm, expiry_date: e.target.value })} />
+                                            <input type="date" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 picker:dark:invert" value={quickProductForm.expiry_date} onChange={e => setQuickProductForm({ ...quickProductForm, expiry_date: e.target.value })} />
                                         </div>
                                     </div>
                                 </div>
@@ -1234,7 +1234,7 @@ const Purchase = ({ currentUser }) => {
                                     <button
                                         type="button"
                                         onClick={() => setShowQuickOptional(!showQuickOptional)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-widest transition-all"
+                                        className="flex items-center gap-2 px-4 py-2 bg-slate-100/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-[10px] font-bold text-slate-500 transition-all"
                                     >
                                         {showQuickOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                         {showQuickOptional ? 'Hide Additional Specs' : 'Add More Attributes (Color, Size...)'}
@@ -1245,29 +1245,29 @@ const Purchase = ({ currentUser }) => {
                                     <div className="space-y-6 animate-in slide-in-from-top-4 duration-300">
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Color</label>
-                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.color} onChange={e => setQuickProductForm({ ...quickProductForm, color: e.target.value })} placeholder="e.g. Natural Titanium" />
+                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Color</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.color} onChange={e => setQuickProductForm({ ...quickProductForm, color: e.target.value })} placeholder="e.g. Natural Titanium" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Size</label>
-                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.size} onChange={e => setQuickProductForm({ ...quickProductForm, size: e.target.value })} placeholder="e.g. 256GB" />
+                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Size</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.size} onChange={e => setQuickProductForm({ ...quickProductForm, size: e.target.value })} placeholder="e.g. 256GB" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Grade / Quality</label>
-                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.grade} onChange={e => setQuickProductForm({ ...quickProductForm, grade: e.target.value })} placeholder="e.g. A+" />
+                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Grade / Quality</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.grade} onChange={e => setQuickProductForm({ ...quickProductForm, grade: e.target.value })} placeholder="e.g. A+" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Condition</label>
-                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.condition} onChange={e => setQuickProductForm({ ...quickProductForm, condition: e.target.value })} placeholder="e.g. A+, New, Used" />
+                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Condition</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.condition} onChange={e => setQuickProductForm({ ...quickProductForm, condition: e.target.value })} placeholder="e.g. A+, New, Used" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Weight (kg)</label>
-                                                <input type="number" step="0.01" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.weight} onChange={e => setQuickProductForm({ ...quickProductForm, weight: e.target.value })} placeholder="0.00" />
+                                                <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Weight (kg)</label>
+                                                <input type="number" step="0.01" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.weight} onChange={e => setQuickProductForm({ ...quickProductForm, weight: e.target.value })} placeholder="0.00" />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1">Description</label>
-                                            <textarea className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none min-h-[100px] resize-none focus:border-blue-500 dark:focus:border-blue-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.description} onChange={e => setQuickProductForm({ ...quickProductForm, description: e.target.value })} placeholder="Technical specifications or notes..." />
+                                            <label className="text-[10px] font-bold text-black dark:text-slate-400 ml-1">Description</label>
+                                            <textarea className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none min-h-[100px] resize-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.description} onChange={e => setQuickProductForm({ ...quickProductForm, description: e.target.value })} placeholder="Technical specifications or notes..." />
                                         </div>
                                     </div>
                                 )}
@@ -1285,7 +1285,7 @@ const Purchase = ({ currentUser }) => {
                                 <button
                                     onClick={handleQuickProductSave}
                                     disabled={saving}
-                                    className="px-8 py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-slate-900 dark:hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-2 min-w-[200px]"
+                                    className="px-8 py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-2 min-w-[200px]"
                                 >
                                     {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={18} />}
                                     <span>{saving ? 'Saving...' : 'Save now'}</span>
@@ -1300,18 +1300,18 @@ const Purchase = ({ currentUser }) => {
                     {/* Header */}
                     <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <Eye size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight uppercase">Purchase Detail: {selectedPurchaseDetail.invoiceNo || `PO-${selectedPurchaseDetail.id.toString().slice(-6)}`}</h2>
+                                <h2 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight">Purchase Detail: {selectedPurchaseDetail.invoiceNo || `PO-${selectedPurchaseDetail.id.toString().slice(-6)}`}</h2>
                             </div>
                         </div>
                         <button
                             onClick={() => setIsDetailModalOpen(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block text-slate-400 dark:text-slate-500">Close</span>
+                            <span className="text-[10px] font-bold hidden md:block text-slate-400 dark:text-slate-500">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -1321,11 +1321,11 @@ const Purchase = ({ currentUser }) => {
                             {/* Purchase Overview Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                    <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                         <Calendar size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Date & Time</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">Date & Time</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100">{new Date(selectedPurchaseDetail.date).toLocaleString()}</h3>
                                     </div>
                                 </div>
@@ -1334,7 +1334,7 @@ const Purchase = ({ currentUser }) => {
                                         <User size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Supplier</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">Supplier</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100">{selectedPurchaseDetail.vendor?.name || 'N/A'}</h3>
                                     </div>
                                 </div>
@@ -1343,7 +1343,7 @@ const Purchase = ({ currentUser }) => {
                                         <CreditCard size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Payment Method</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">Payment Method</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100">{selectedPurchaseDetail.paymentMethod || 'CASH'}</h3>
                                     </div>
                                 </div>
@@ -1352,30 +1352,30 @@ const Purchase = ({ currentUser }) => {
                             {/* Totals Section */}
                             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                    <h3 className="text-xs font-bold text-black dark:text-slate-400 uppercase tracking-[0.2em]">Financial Summary</h3>
+                                    <h3 className="text-xs font-bold text-black dark:text-slate-400">Financial Summary</h3>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Subtotal</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Subtotal</p>
                                         <p className="text-lg font-bold text-black dark:text-slate-100">PKR {selectedPurchaseDetail.subTotal?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Tax/Charges</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Tax/Charges</p>
                                         <p className="text-lg font-bold text-black dark:text-slate-100">PKR {((selectedPurchaseDetail.tax || 0) + (selectedPurchaseDetail.shippingCost || 0)).toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1 text-center md:text-left">
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Total Amount</p>
-                                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tight">PKR {selectedPurchaseDetail.totalAmount?.toLocaleString()}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Total Amount</p>
+                                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {selectedPurchaseDetail.totalAmount?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1 text-right">
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Amount Paid</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Amount Paid</p>
                                         <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">PKR {(selectedPurchaseDetail.paidAmount || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
                                 {selectedPurchaseDetail.notes && (
                                     <div className="px-8 pb-8 pt-2">
                                         <div className="p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Notes</p>
+                                            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mb-2">Notes</p>
                                             <p className="text-xs font-medium text-slate-700 dark:text-slate-300 italic">"{selectedPurchaseDetail.notes}"</p>
                                         </div>
                                     </div>
@@ -1385,7 +1385,7 @@ const Purchase = ({ currentUser }) => {
                             {/* Item Details Heading */}
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                                <h3 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Items Details ({selectedPurchaseDetail.items?.length})</h3>
+                                <h3 className="text-[11px] font-bold text-slate-400 dark:text-slate-500">Items Details ({selectedPurchaseDetail.items?.length})</h3>
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                             </div>
 
@@ -1398,17 +1398,17 @@ const Purchase = ({ currentUser }) => {
 
                                     return (
                                         <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">
-                                            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
-                                                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
+                                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                                     <Package size={24} />
                                                 </div>
                                                 <div className="overflow-hidden">
-                                                    <div className="font-bold text-base text-black dark:text-slate-100 uppercase tracking-tight truncate">{displayProduct.name || item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">SKU: {displayProduct.sku || item.sku || 'N/A'}</div>
+                                                    <div className="font-bold text-base text-black dark:text-slate-100 tracking-tight truncate">{displayProduct.name || item.name}</div>
+                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">SKU: {displayProduct.sku || item.sku || 'N/A'}</div>
                                                 </div>
                                                 <div className="ml-auto text-right">
-                                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block uppercase">Qty</span>
-                                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{item.quantity}</span>
+                                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 block">Qty</span>
+                                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{item.quantity}</span>
                                                 </div>
                                             </div>
 
@@ -1416,39 +1416,39 @@ const Purchase = ({ currentUser }) => {
                                                 {/* Attributes Grid */}
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Color</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.color || '-'}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-1">Color</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200">{displayProduct.color || '-'}</p>
                                                     </div>
                                                     <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Size</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.size || '-'}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-1">Size</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200">{displayProduct.size || '-'}</p>
                                                     </div>
                                                     <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Grade</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.grade || '-'}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-1">Grade</p>
+                                                        <p className="text-sm font-bold text-black dark:text-slate-200">{displayProduct.grade || '-'}</p>
                                                     </div>
                                                     <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Category</p>
-                                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase truncate">{displayProduct.category?.name || 'Local'}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 mb-1">Category</p>
+                                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate">{displayProduct.category?.name || 'Local'}</p>
                                                     </div>
                                                 </div>
 
                                                 {/* Pricing & Total */}
                                                 <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
                                                     <div className="flex justify-between items-center py-1">
-                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Unit Price</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Unit Price</span>
                                                         <span className="text-xs font-bold text-black dark:text-slate-200">PKR {Number(item.price || item.unitCost || item.unit_cost || 0).toLocaleString()}</span>
                                                     </div>
                                                     <div className="h-px bg-slate-200/50 dark:bg-slate-700/50"></div>
                                                     <div className="flex justify-between items-center py-2">
-                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Item Total</span>
-                                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Item Total</span>
+                                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Brand Footer */}
                                                 <div className="flex justify-center pt-2">
-                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">BRAND: <span className="text-black dark:text-slate-200">{displayProduct.brand?.name || 'GENERAL'}</span></span>
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Brand: <span className="text-black dark:text-slate-200">{displayProduct.brand?.name || 'GENERAL'}</span></span>
                                                 </div>
                                             </div>
                                         </div>

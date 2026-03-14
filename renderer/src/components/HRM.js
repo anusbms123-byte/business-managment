@@ -52,15 +52,15 @@ const HRM = ({ currentUser }) => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center space-x-2 px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${activeTab === tab.id
-                                ? 'text-blue-600 dark:text-blue-400'
+                            className={`flex items-center space-x-2 px-6 py-4 text-[10px] font-bold transition-all relative ${activeTab === tab.id
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                 }`}
                         >
                             <tab.icon size={16} />
                             <span>{tab.label}</span>
                             {activeTab === tab.id && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-500 rounded-t-full"></div>
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 dark:bg-emerald-500 rounded-t-full"></div>
                             )}
                         </button>
                     ))}
@@ -133,12 +133,12 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="relative group w-full md:w-80">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={18} />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all shadow-sm text-slate-800 dark:text-slate-100"
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                         placeholder="Search here..."
                     />
                 </div>
@@ -148,7 +148,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                             setFormData({ firstName: '', lastName: '', phone: '', designation: '', salary: '', hourly_rate: '', joiningDate: new Date().toISOString().split('T')[0], isActive: true });
                             setShowModal(true);
                         }}
-                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-xs uppercase tracking-widest"
+                        className="flex items-center justify-center space-x-2 px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 text-xs shadow-sm"
                     >
                         <Plus size={16} />
                         <span>Add Staff</span>
@@ -158,16 +158,16 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
 
             <div className="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-xl">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/80">
+                    <thead className="bg-slate-100 dark:bg-slate-800 transition-colors">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">ID</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Name</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Phone</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Salary</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">OT/Hr</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Joined</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-center">Designation</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">ID</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Name</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Phone</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Salary</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">OT/Hr</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Joined</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-center">Designation</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -175,7 +175,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                             <tr>
                                 <td colSpan="8" className="px-6 py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">
                                     <div className="flex flex-col items-center gap-3">
-                                        <div className="w-8 h-8 border-3 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+                                        <div className="w-8 h-8 border-3 border-slate-100 border-t-emerald-600 rounded-full animate-spin"></div>
                                         <span>Loading...</span>
                                     </div>
                                 </td>
@@ -188,7 +188,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                             <tr
                                 key={emp.id}
                                 onClick={() => setSelectedEmployee(emp)}
-                                className="hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors group cursor-pointer border-b border-slate-50 dark:border-slate-800 relative"
+                                className="hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition-colors group cursor-pointer border-b border-slate-50 dark:border-slate-800 relative"
                             >
                                 <td className="px-6 py-4 font-bold text-black dark:text-slate-200 text-xs tracking-tight">
                                     HRM-{String(emp.id).slice(-4)}
@@ -199,11 +199,11 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                                 <td className="px-6 py-4 text-black dark:text-slate-300 font-bold text-xs">{emp.phone}</td>
                                 <td className="px-6 py-4 font-bold text-black dark:text-slate-200 text-xs">PKR {emp.salary?.toLocaleString() ?? '0'}</td>
                                 <td className="px-6 py-4 font-bold text-black dark:text-slate-200 text-[10px]">PKR {emp.hourlyRate ?? 0}</td>
-                                <td className="px-6 py-4 text-black dark:text-slate-300 font-bold text-[10px] uppercase">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
+                                <td className="px-6 py-4 text-black dark:text-slate-300 font-bold text-[10px]">{emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString() : 'N/A'}</td>
                                 <td className="px-6 py-4 text-center">
                                     <div className="flex flex-col items-center gap-1">
-                                        <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-tight border border-blue-100 dark:border-blue-800">{emp.designation}</span>
-                                        <span className={`text-[9px] font-bold uppercase tracking-widest ${emp.isActive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded text-[10px] font-bold uppercase tracking-tight border border-emerald-100 dark:border-emerald-800">{emp.designation}</span>
+                                        <span className={`text-[9px] font-bold ${emp.isActive ? 'text-emerald-500' : 'text-rose-500'}`}>
                                             {emp.isActive ? '• Active' : '• Inactive'}
                                         </span>
                                     </div>
@@ -211,7 +211,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end space-x-1">
                                         {canEdit('hrm') && (
-                                            <button onClick={(e) => { e.stopPropagation(); setFormData({ ...emp }); setShowModal(true); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                                            <button onClick={(e) => { e.stopPropagation(); setFormData({ ...emp }); setShowModal(true); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors">
                                                 <Edit size={16} />
                                             </button>
                                         )}
@@ -234,19 +234,19 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                     {/* Full-Page Header */}
                     <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <UserPlus size={22} />
                             </div>
                             <div>
-                                <h3 className="text-sm md:text-xl font-bold text-black dark:text-slate-100 tracking-tight uppercase">{formData.id ? 'Edit Staff' : 'Add Staff'}</h3>
-                                <p className="text-[10px] text-black dark:text-slate-400 font-bold uppercase tracking-widest mt-0.5">Staff Management</p>
+                                <h3 className="text-sm md:text-xl font-bold text-black dark:text-white tracking-tight">{formData.id ? 'Edit Staff' : 'Add Staff'}</h3>
+                                <p className="text-[10px] text-black dark:text-slate-400 font-bold mt-0.5">Staff Management</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowModal(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
+                            <span className="text-[10px] font-bold hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -256,53 +256,53 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                             <form onSubmit={handleSave} className="space-y-8 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1 mb-1.5">First Name</label>
-                                        <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">First Name</label>
+                                        <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Last Name</label>
-                                        <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">Last Name</label>
+                                        <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Designation</label>
-                                        <input required type="text" value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="ex. Manager" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">Designation</label>
+                                        <input required type="text" value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="ex. Manager" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Phone Number</label>
-                                        <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0321123456" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">Phone Number</label>
+                                        <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0321123456" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div>
                                         <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Basic Salary (PKR)</label>
-                                        <input required type="number" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0" />
+                                        <input required type="number" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Hourly Rate (PKR)</label>
-                                        <input required type="number" value={formData.hourly_rate} onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">Hourly Rate (PKR)</label>
+                                        <input required type="number" value={formData.hourly_rate} onChange={(e) => setFormData({ ...formData, hourly_rate: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" placeholder="0" />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Joining Date</label>
-                                        <input required type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                        <label className="block text-[10px] font-bold text-black dark:text-slate-400 ml-1 mb-1.5">Joining Date</label>
+                                        <input required type="date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 dark:focus:border-emerald-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-6">
                                     <div className="flex items-center gap-4">
-                                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Active Status:</label>
+                                        <label className="text-[10px] font-bold text-black dark:text-slate-400">Active Status:</label>
                                         <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                                             <button
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, isActive: true })}
-                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.isActive ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${formData.isActive ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                             >
                                                 Active
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, isActive: false })}
-                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${!formData.isActive ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                                className={`px-4 py-1.5 rounded-md text-[10px] font-bold transition-all ${!formData.isActive ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                             >
                                                 Inactive
                                             </button>
@@ -310,8 +310,8 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                    <button type="button" onClick={() => setShowModal(false)} className="px-8 py-3 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">Cancel</button>
-                                    <button type="submit" className="px-10 py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-xl font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all disabled:opacity-50 text-xs uppercase tracking-widest shadow-lg shadow-blue-950/20 dark:shadow-none">{saving ? 'Loading...' : 'Save now'}</button>
+                                    <button type="button" onClick={() => setShowModal(false)} className="px-8 py-3 text-slate-400 dark:text-slate-500 font-bold hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-xs hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">Cancel</button>
+                                    <button type="submit" className="px-10 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 text-xs shadow-sm">{saving ? 'Loading...' : 'Save now'}</button>
                                 </div>
                             </form>
                         </div>
@@ -403,15 +403,15 @@ const Attendance = ({ employees, currentUser }) => {
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                    className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 transition-all"
                 />
                 <div className="relative group w-full md:w-80">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={18} />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all shadow-sm text-slate-800 dark:text-slate-100"
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                         placeholder="Search here..."
                     />
                 </div>
@@ -431,20 +431,20 @@ const Attendance = ({ employees, currentUser }) => {
                     <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{stats.late}</p>
                 </div>
                 <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border-l-4 border-l-slate-400 dark:border-l-slate-600 border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Leave</p>
-                    <p className="text-xl font-bold text-xl font-bold text-slate-800 dark:text-slate-100">{stats.leave}</p>
+                    <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Leave</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{stats.leave}</p>
                 </div>
             </div>
 
             <div className="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-xl">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/80">
+                    <thead className="bg-slate-100 dark:bg-slate-800 transition-colors">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">ID</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Employee</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Check In</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Status</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">ID</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Employee</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Check In</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Status</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -476,7 +476,7 @@ const Attendance = ({ employees, currentUser }) => {
                                     <select
                                         value={att.status}
                                         onChange={(e) => handleStatusChange(att.employeeId, e.target.value)}
-                                        className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight outline-none focus:border-blue-500 dark:focus:border-blue-600"
+                                        className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-tight outline-none focus:border-emerald-500"
                                     >
                                         <option value="Present">Present</option>
                                         <option value="Absent">Absent</option>
@@ -493,7 +493,7 @@ const Attendance = ({ employees, currentUser }) => {
             {canEdit('hrm') && (
                 <button
                     onClick={saveAttendance}
-                    className="flex items-center justify-center px-8 py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 dark:shadow-none active:scale-95 text-xs uppercase tracking-widest disabled:opacity-50"
+                    className="flex items-center justify-center px-8 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all active:scale-95 text-xs shadow-sm disabled:opacity-50"
                 >
                     {saving ? 'Loading...' : 'Save now'}
                 </button>
@@ -599,15 +599,15 @@ const Payroll = ({ employees, currentUser }) => {
                     type="month"
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
-                    className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 dark:focus:border-blue-600 transition-all"
+                    className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all"
                 />
                 <div className="relative group w-full md:w-80">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors" size={18} />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={18} />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 dark:focus:border-blue-600 transition-all shadow-sm text-slate-800 dark:text-slate-100"
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                         placeholder="Search here..."
                     />
                 </div>
@@ -615,15 +615,15 @@ const Payroll = ({ employees, currentUser }) => {
 
             <div className="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-xl">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50/80 dark:bg-slate-800/80">
+                    <thead className="bg-slate-100 dark:bg-slate-800 transition-colors">
                         <tr>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">ID</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Employee</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Basic Pay</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Bonus/OT</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Net Salary</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Status</th>
-                            <th className="px-6 py-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 text-right">Actions</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">ID</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Employee</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Basic Pay</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Bonus/OT</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Net Salary</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800">Status</th>
+                            <th className="px-6 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -644,7 +644,7 @@ const Payroll = ({ employees, currentUser }) => {
                                     <td className="px-6 py-4 font-bold text-emerald-600 dark:text-emerald-400 text-[10px]">
                                         {record ? `+PKR ${(record.bonus + record.overtimePay).toLocaleString()}` : '-'}
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-blue-600 dark:text-blue-400 text-xs">
+                                    <td className="px-6 py-4 font-bold text-emerald-600 dark:text-emerald-400 text-xs">
                                         PKR {record ? record.netSalary.toLocaleString() : emp.salary?.toLocaleString()}
                                     </td>
                                     <td className="px-6 py-4">
@@ -660,7 +660,7 @@ const Payroll = ({ employees, currentUser }) => {
                                                 <>
                                                     <button
                                                         onClick={() => setViewingSlip(record)}
-                                                        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                        className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
                                                         title="View Slip"
                                                     >
                                                         <Eye size={16} />
@@ -700,7 +700,7 @@ const Payroll = ({ employees, currentUser }) => {
                                                         setIsEditing(false);
                                                         setShowModal(true);
                                                     }}
-                                                    className="px-3 py-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
+                                                    className="px-3 py-1 bg-emerald-600 dark:bg-emerald-500 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
                                                 >
                                                     Pay Now
                                                 </button>
@@ -720,10 +720,10 @@ const Payroll = ({ employees, currentUser }) => {
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200 dark:border-slate-800">
                         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                     <DollarSign size={22} />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-tight">{isEditing ? 'Edit Payroll' : 'Add Payroll'}</h3>
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight">{isEditing ? 'Edit Payroll' : 'Add Payroll'}</h3>
                             </div>
                             <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"><X size={18} /></button>
                         </div>
@@ -731,16 +731,16 @@ const Payroll = ({ employees, currentUser }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Overtime Hours</label>
-                                    <input type="number" step="0.5" value={paymentData.otHours} onChange={(e) => setPaymentData({ ...paymentData, otHours: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                    <input type="number" step="0.5" value={paymentData.otHours} onChange={(e) => setPaymentData({ ...paymentData, otHours: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Bonus (PKR)</label>
-                                    <input type="number" value={paymentData.bonus} onChange={(e) => setPaymentData({ ...paymentData, bonus: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                    <input type="number" value={paymentData.bonus} onChange={(e) => setPaymentData({ ...paymentData, bonus: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 mb-1.5">Deductions (PKR)</label>
-                                <input type="number" value={paymentData.deductions} onChange={(e) => setPaymentData({ ...paymentData, deductions: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-blue-500 dark:focus:border-blue-600 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
+                                <input type="number" value={paymentData.deductions} onChange={(e) => setPaymentData({ ...paymentData, deductions: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-bold text-sm text-black dark:text-slate-100 transition-all" />
                             </div>
 
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
@@ -766,12 +766,11 @@ const Payroll = ({ employees, currentUser }) => {
                                     </div>
                                     <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between text-sm font-black text-slate-900 dark:text-slate-100">
                                         <span>Net Payable</span>
-                                        <span className="text-blue-600 dark:text-blue-400">PKR {((selectedEmp.salary || 0) + (parseFloat(paymentData.bonus) || 0) + ((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)) - (parseFloat(paymentData.deductions) || 0)).toLocaleString()}</span>
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">PKR {((selectedEmp.salary || 0) + (parseFloat(paymentData.bonus) || 0) + ((parseFloat(paymentData.otHours) || 0) * (selectedEmp.hourlyRate || 0)) - (parseFloat(paymentData.deductions) || 0)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
-
-                            <button type="submit" disabled={saving} className="w-full py-3 bg-blue-950 dark:bg-blue-600 text-white rounded-lg font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all text-xs uppercase tracking-widest shadow-lg shadow-blue-100 dark:shadow-none active:scale-95 disabled:opacity-50">
+                            <button type="submit" disabled={saving} className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-all text-xs active:scale-95 disabled:opacity-50 shadow-sm">
                                 {saving ? 'Loading...' : 'Save now'}
                             </button>
                         </form>
@@ -785,19 +784,19 @@ const Payroll = ({ employees, currentUser }) => {
                     {/* Full-Page Modal Header */}
                     <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <Eye size={22} />
                             </div>
                             <div>
-                                <h3 className="text-sm md:text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight uppercase">Salary Slip</h3>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">History</p>
+                                <h3 className="text-sm md:text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Salary Slip</h3>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">History</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setViewingSlip(null)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                         >
-                            <span className="text-[10px] font-bold uppercase tracking-widest hidden md:block">Close</span>
+                            <span className="text-[10px] font-bold hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -805,14 +804,14 @@ const Payroll = ({ employees, currentUser }) => {
                     <div className="flex-1 overflow-y-auto p-4 md:p-12 scrollbar-hide bg-slate-50/30 dark:bg-slate-900/30">
                         <div className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 print:shadow-none print:border-none">
                             {/* Slip Header */}
-                            <div className="bg-[#0B1033] dark:bg-slate-950 p-10 text-white flex justify-between items-start border-b border-white/5">
+                            <div className="bg-emerald-900 dark:bg-slate-950 p-10 text-white flex justify-between items-start border-b border-white/5">
                                 <div>
-                                    <h2 className="text-2xl font-black uppercase tracking-tighter">Salary Slip</h2>
-                                    <p className="text-blue-300 dark:text-blue-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Payment Record</p>
+                                    <h2 className="text-2xl font-black tracking-tighter">Salary Slip</h2>
+                                    <p className="text-emerald-200 dark:text-emerald-400 text-[10px] font-bold mt-1">Payment Record</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">Payment Status</p>
-                                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 italic">Confirmed Paid</span>
+                                    <p className="text-[10px] font-bold text-slate-300 dark:text-slate-500 mb-1">Payment Status</p>
+                                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-black border border-emerald-500/30 italic">Confirmed Paid</span>
                                 </div>
                             </div>
 
@@ -821,23 +820,23 @@ const Payroll = ({ employees, currentUser }) => {
                                 <div className="grid grid-cols-2 gap-10">
                                     <div className="space-y-4">
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Employee Details</p>
+                                            <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Employee Details</p>
                                             <p className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">{viewingSlip.employee?.firstName} {viewingSlip.employee?.lastName}</p>
-                                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-0.5">{viewingSlip.employee?.designation}</p>
+                                            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{viewingSlip.employee?.designation}</p>
                                         </div>
                                     </div>
                                     <div className="text-right space-y-4">
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Payment Period</p>
+                                            <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Payment Period</p>
                                             <p className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase">{new Date(viewingSlip.month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Disbursement Date</p>
-                                            <p className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase">{viewingSlip.paymentDate ? new Date(viewingSlip.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                                            <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Disbursement Date</p>
+                                            <p className="text-xs font-black text-slate-800 dark:text-slate-100">{viewingSlip.paymentDate ? new Date(viewingSlip.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Transaction ID</p>
-                                            <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">SLP-{viewingSlip.id.toString().slice(-8).toUpperCase()}</p>
+                                            <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Transaction ID</p>
+                                            <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 tracking-tight">SLP-{viewingSlip.id.toString().slice(-8).toUpperCase()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -847,8 +846,8 @@ const Payroll = ({ employees, currentUser }) => {
                                     <table className="w-full">
                                         <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Description</th>
-                                                <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Amount</th>
+                                                <th className="px-6 py-3 text-left text-[10px] font-bold text-black dark:text-slate-500">Description</th>
+                                                <th className="px-6 py-3 text-right text-[10px] font-bold text-black dark:text-slate-500">Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -859,7 +858,7 @@ const Payroll = ({ employees, currentUser }) => {
                                             <tr className="bg-white dark:bg-slate-900">
                                                 <td className="px-6 py-4">
                                                     <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Overtime Earnings</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">({viewingSlip.overtimeHours} hours at {viewingSlip.employee?.hourlyRate}/hr)</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500">({viewingSlip.overtimeHours} hours at {viewingSlip.employee?.hourlyRate}/hr)</p>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-xs font-bold text-slate-800 dark:text-slate-200">+PKR {viewingSlip.overtimePay?.toLocaleString()}</td>
                                             </tr>
@@ -872,8 +871,8 @@ const Payroll = ({ employees, currentUser }) => {
                                                 <td className="px-6 py-4 text-right text-xs font-bold text-slate-800 dark:text-slate-200">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
                                             </tr>
                                             <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                                                <td className="px-6 py-6 text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">Net Salary</td>
-                                                <td className="px-6 py-6 text-right text-lg font-black text-slate-900 dark:text-slate-100">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
+                                                <td className="px-6 py-6 text-sm font-black text-slate-800 dark:text-slate-200">Net Salary</td>
+                                                <td className="px-6 py-6 text-right text-lg font-black text-emerald-600 dark:text-emerald-400">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -882,12 +881,12 @@ const Payroll = ({ employees, currentUser }) => {
                                 {/* Footer */}
                                 <div className="flex items-start justify-between gap-10 pt-4 border-t border-slate-50 dark:border-slate-800">
                                     <div className="flex-1">
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Notes / Remarks</p>
+                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Notes / Remarks</p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-relaxed">{viewingSlip.notes || 'No special remarks for this period.'}</p>
                                     </div>
                                     <div className="text-center">
                                         <div className="w-32 h-1 bg-slate-100 dark:bg-slate-800 mb-2 mx-auto"></div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Authorized Sign</p>
+                                        <p className="text-[10px] font-bold text-black dark:text-slate-500">Authorized Sign</p>
                                     </div>
                                 </div>
                             </div>
@@ -895,7 +894,7 @@ const Payroll = ({ employees, currentUser }) => {
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-4 print:hidden">
                                 <button
                                     onClick={() => window.print()}
-                                    className="px-8 py-3 bg-[#0B1033] dark:bg-blue-600 text-white rounded-xl font-bold hover:bg-slate-900 dark:hover:bg-blue-700 transition-all text-xs uppercase tracking-widest shadow-xl shadow-blue-900/10 dark:shadow-none flex items-center gap-2 group active:scale-95"
+                                    className="px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all text-xs shadow-xl shadow-emerald-900/10 dark:shadow-none flex items-center gap-2 group active:scale-95"
                                 >
                                     <Calendar size={16} />
                                     Print slip

@@ -7,7 +7,7 @@ import {
     Calendar, Download, ChevronRight,
     TrendingDown, Activity, Layers,
     Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X,
-    Zap, Coffee, Home, Truck, FileText, ShoppingCart as ShoppingCartIcon
+    Zap, Coffee, Home, Truck, FileText
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
@@ -27,10 +27,10 @@ const ReportCard = ({ title, value, subValue, icon: Icon, onClick, colorClass })
             </div>
         </div>
         <div>
-            <p className="text-black dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{title}</p>
-            <h3 className="text-xl font-medium text-black dark:text-slate-100 tracking-tight">{value}</h3>
+            <p className="text-black dark:text-slate-200 text-[10px] font-bold mb-1">{title}</p>
+            <h3 className="text-xl font-bold text-black dark:text-white tracking-tight">{value}</h3>
             {subValue && (
-                <p className="text-[10px] text-black dark:text-slate-400 font-bold mt-2 flex items-center gap-1.5 uppercase tracking-tight">
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-2 flex items-center gap-1.5 tracking-tight">
                     {subValue}
                 </p>
             )}
@@ -44,8 +44,8 @@ const DetailMiniCard = ({ label, value, icon: Icon, color }) => (
             <Icon size={18} />
         </div>
         <div>
-            <p className="text-[9px] font-black text-black dark:text-slate-400 uppercase tracking-widest">{label}</p>
-            <p className="text-sm font-medium text-black dark:text-slate-100 tracking-tight">{value}</p>
+            <p className="text-[10px] font-bold text-black dark:text-slate-200">{label}</p>
+            <p className="text-sm font-bold text-slate-600 dark:text-slate-300 tracking-tight">{value}</p>
         </div>
     </div>
 );
@@ -80,7 +80,7 @@ const Reports = ({ currentUser }) => {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'); // YYYY-MM-DD
     const today = now.toLocaleDateString('en-CA');
     const [dateRange, setDateRange] = useState({ start: firstDayOfMonth, end: today });
-    const [overviewFilter, setOverviewFilter] = useState('All'); // For Dashboard
+    const [overviewFilter, setOverviewFilter] = useState('Daily'); // For Dashboard
 
     const loadVendors = async () => {
         if (!currentUser?.company_id) return;
@@ -170,14 +170,14 @@ const Reports = ({ currentUser }) => {
                 startDate: new Date(dateRange.start + 'T00:00:00').toISOString(),
                 endDate: new Date(dateRange.end + 'T23:59:59').toISOString(),
                 customerId: (activeModule === 'sales' || activeModule === 'customers' || activeModule === 'netprofit') ? selectedCustomer : undefined,
-                vendorId: (activeModule === 'purchases' || activeModule === 'suppliers') ? selectedVendor : undefined,
+                vendorId: (activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'netprofit') ? selectedVendor : undefined,
                 paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'customers' || activeModule === 'netprofit') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
                 expenseCategory: (activeModule === 'expenses' || activeModule === 'netprofit') ? selectedExpenseCategory : undefined,
                 returnType: activeModule === 'returns' ? selectedReturnType : undefined,
-                employeeId: activeModule === 'hrm' ? selectedEmployee : undefined,
-                employeeStatus: activeModule === 'hrm' ? selectedEmployeeStatus : undefined
+                employeeId: (activeModule === 'hrm' || activeModule === 'netprofit') ? selectedEmployee : undefined,
+                employeeStatus: (activeModule === 'hrm' || activeModule === 'netprofit') ? selectedEmployeeStatus : undefined
             });
             setSummary(data);
         } catch (err) {
@@ -230,8 +230,8 @@ const Reports = ({ currentUser }) => {
     if (loading && !summary) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                <RefreshCw size={32} className="text-blue-600 animate-spin" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading...</p>
+                <RefreshCw size={32} className="text-emerald-600 animate-spin" />
+                <p className="text-[10px] font-bold text-black">Loading...</p>
             </div>
         );
     }
@@ -244,7 +244,7 @@ const Reports = ({ currentUser }) => {
                         <button
                             key={p}
                             onClick={() => applyPeriod(p)}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${overviewFilter === p ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-md border border-slate-100 dark:border-blue-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            className={`px-8 py-2.5 rounded-xl text-[10px] font-bold transition-all ${overviewFilter === p ? 'bg-emerald-500 text-white shadow-md border border-emerald-500' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
@@ -258,7 +258,7 @@ const Reports = ({ currentUser }) => {
                             type="date"
                             value={dateRange.start}
                             onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
-                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
+                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
                         />
                     </div>
                     <div className="flex items-center gap-2 px-3">
@@ -266,12 +266,12 @@ const Reports = ({ currentUser }) => {
                             type="date"
                             value={dateRange.end}
                             onChange={(e) => { setDateRange({ ...dateRange, end: e.target.value }); setOverviewFilter('Custom'); }}
-                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
+                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
                         />
                     </div>
                     <button
                         onClick={loadDashboardReport}
-                        className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                        className="bg-emerald-600 text-white p-2.5 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 dark:shadow-none"
                     >
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -279,15 +279,15 @@ const Reports = ({ currentUser }) => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-blue-500 dark:border-l-blue-400" onClick={() => setActiveModule('sales')} />
-                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-amber-500 dark:border-l-amber-400" onClick={() => setActiveModule('purchases')} />
-                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-indigo-500 dark:border-l-indigo-400" onClick={() => setActiveModule('inventory')} />
-                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-rose-500 dark:border-l-rose-400" onClick={() => setActiveModule('expenses')} />
-                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-500 dark:border-l-emerald-400" onClick={() => setActiveModule('returns')} />
-                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-600 dark:border-l-slate-400" onClick={() => setActiveModule('suppliers')} />
-                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-teal-500 dark:border-l-teal-400" onClick={() => setActiveModule('customers')} />
-                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-500 dark:border-l-emerald-400" onClick={() => setActiveModule('hrm')} />
-                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-slate-900 dark:border-l-blue-400" onClick={() => setActiveModule('netprofit')} />
+                <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-emerald-500" onClick={() => setActiveModule('sales')} />
+                <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-emerald-600" onClick={() => setActiveModule('purchases')} />
+                <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-emerald-500" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-emerald-700" onClick={() => setActiveModule('expenses')} />
+                <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-500" onClick={() => setActiveModule('returns')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-slate-700" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-emerald-500" onClick={() => setActiveModule('customers')} />
+                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-600" onClick={() => setActiveModule('hrm')} />
+                <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-emerald-800" onClick={() => setActiveModule('netprofit')} />
             </div>
 
         </div>
@@ -299,34 +299,36 @@ const Reports = ({ currentUser }) => {
             sales: {
                 title: 'Sales Report', icon: DollarSign, color: '#10b981', dataKey: 'sales',
                 miniStats: [
-                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
-                    { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-orange-500' },
+                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Cost of Items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-slate-600' },
                     { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-indigo-500' },
+                    { label: 'Total Invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-emerald-600' },
                     { label: 'Avg Order Value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Customer', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Sales Ledger',
-                cols: 5
+                cols: 5,
+                color: '#10b981'
             },
             purchases: {
                 title: 'Purchase Report', icon: ShoppingCart, color: '#10b981', dataKey: 'purchases',
                 miniStats: [
-                    { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-amber-600' },
+                    { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
                     { label: 'Pending Bills', value: `PKR ${(summary?.totalPayablesFromPeriod ?? summary?.totalPayables ?? 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Total Suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-indigo-500' },
+                    { label: 'Total Suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-emerald-600' },
                     { label: 'Stock Value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-500' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Supplier', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Purchase Log',
-                cols: 4
+                cols: 4,
+                color: '#10b981'
             },
             inventory: {
                 title: 'Inventory Report', icon: Package, color: '#10b981', dataKey: 'inventory',
                 miniStats: [
-                    { label: 'Stock Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
+                    { label: 'Stock Value (Cost)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Sale Potential (Sell)', value: `PKR ${(summary?.inventoryValuationSell || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-                    { label: 'Expected Profit', value: `PKR ${((summary?.inventoryValuationSell || 0) - (summary?.inventoryValuationCost || 0)).toLocaleString()}`, icon: Briefcase, color: 'text-indigo-600' },
+                    { label: 'Expected Profit', value: `PKR ${((summary?.inventoryValuationSell || 0) - (summary?.inventoryValuationCost || 0)).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
                     { label: 'In Stock', value: `${summary?.inStockCount || 0} Items`, icon: CheckCircle2, color: 'text-emerald-500' },
                     { label: 'Low Stock', value: `${summary?.lowStockCount || 0} Items`, icon: AlertTriangle, color: 'text-orange-500' },
                     { label: 'Expiring Soon', value: `${summary?.expiringSoonCount || 0} Items`, icon: Clock, color: 'text-amber-500' },
@@ -339,10 +341,10 @@ const Reports = ({ currentUser }) => {
             expenses: {
                 title: 'Expense Report', icon: TrendingUp, color: '#10b981', dataKey: 'expenses',
                 miniStats: [
-                    { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-indigo-500' },
-                    { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-amber-500' },
-                    { label: 'Snacks & Tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-orange-500' },
-                    { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-blue-500' },
+                    { label: 'Staff Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: Users2, color: 'text-emerald-500' },
+                    { label: 'Bills', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Bills'] || summary?.expenseCategoryBreakdown?.['Electricity'] || 0).toLocaleString()}`, icon: Zap, color: 'text-emerald-500' },
+                    { label: 'Snacks & Tea', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Snacks'] || 0).toLocaleString()}`, icon: Coffee, color: 'text-slate-500' },
+                    { label: 'Rent', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Rent'] || 0).toLocaleString()}`, icon: Home, color: 'text-emerald-500' },
                     { label: 'Transport', value: `PKR ${(summary?.expenseCategoryBreakdown?.['Transport'] || 0).toLocaleString()}`, icon: Truck, color: 'text-emerald-500' },
                     { label: 'General', value: `PKR ${(summary?.expenseCategoryBreakdown?.['General'] || 0).toLocaleString()}`, icon: FileText, color: 'text-slate-500' }
                 ],
@@ -357,18 +359,18 @@ const Reports = ({ currentUser }) => {
                 miniStats: [
                     { label: 'Total Returns', value: `PKR ${(summary?.totalReturns || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Sales Returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-500' },
-                    { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-blue-500' },
-                    { label: 'Volume', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-indigo-500' }
+                    { label: 'Purchase Returns', value: `PKR ${(summary?.totalPurchaseReturns || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-500' },
+                    { label: 'Volume', value: `${summary?.returnCount || 0} Records`, icon: RefreshCw, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Type', 'Invoice #', 'Party Name', 'Returned Products', 'Refund Magnitude'],
                 tableTitle: 'Returns Ledger',
                 cols: 4
             },
             suppliers: {
-                title: 'Supplier Report', icon: Factory, color: '#475569', dataKey: 'payables',
+                title: 'Supplier Report', icon: Factory, color: '#475569', dataKey: 'purchases',
                 miniStats: [
                     { label: 'Total Payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-rose-600' },
-                    { label: 'Supplier Count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Supplier Count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-emerald-600' },
                     { label: 'Avg Payable', value: `PKR ${(Math.round(summary?.totalPayables / (summary?.vendorCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
                     { label: 'Total Purchased', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-amber-600' },
                     { label: 'Active Balance', value: summary?.totalPayables > 0 ? "Pending" : "Clear", icon: AlertTriangle, color: 'text-amber-500' }
@@ -378,10 +380,10 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             customers: {
-                title: 'Customer Report', icon: Users, color: '#14b8a6', dataKey: 'receivables',
+                title: 'Customer Report', icon: Users, color: '#14b8a6', dataKey: 'sales',
                 miniStats: [
                     { label: 'Total Receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-teal-600' },
-                    { label: 'Customer Count', value: `${summary?.customerCount || 0} Clients`, icon: Users, color: 'text-blue-500' },
+                    { label: 'Customer Count', value: `${summary?.customerCount || 0}`, icon: Users, color: 'text-emerald-600' },
                     { label: 'Avg Receivable', value: `PKR ${(Math.round(summary?.totalReceivables / (summary?.customerCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
                     { label: 'Total Sales to Customers', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Active Balance', value: summary?.totalReceivables > 0 ? "Outstanding" : "Clear", icon: CheckCircle2, color: 'text-teal-500' }
@@ -391,21 +393,22 @@ const Reports = ({ currentUser }) => {
                 cols: 5
             },
             hrm: {
-                title: 'HRM Report', icon: Users, color: '#6366f1', dataKey: 'salaries',
+                title: 'Staff Payroll', icon: Users2, color: '#4f46e5', dataKey: 'salaries',
                 miniStats: [
-                    { label: 'Total Salaries', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: CreditCard, color: 'text-indigo-600' },
+                    { label: 'Total Payroll', value: `PKR ${(summary?.totalSalaries || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Active Staff', value: `${summary?.employeeCount || 0} Members`, icon: Users, color: 'text-emerald-500' },
-                    { label: 'Inactive/Exit', value: `${summary?.inactiveEmployees || 0} Members`, icon: AlertTriangle, color: 'text-rose-500' },
-                    { label: 'Payout Frequency', value: "Monthly", icon: RefreshCw, color: 'text-emerald-500' }
+                    { label: 'Avg Salary', value: `PKR ${(Math.round(summary?.totalSalaries / (summary?.employeeCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-slate-500' },
+                    { label: 'Total Staff', value: `${summary?.totalEmployees || 0} Records`, icon: Users, color: 'text-emerald-600' },
+                    { label: 'Status', value: summary?.employeeCount > 0 ? "Active" : "None", icon: Briefcase, color: 'text-emerald-500' }
                 ],
-                tableCols: ['Staff Name', 'Designation', 'Status', 'Payment Date', 'Base Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
+                tableCols: ['Staff Name', 'Designation', 'Voucher #', 'Paid Date', 'Amount'],
                 tableTitle: 'Payroll History',
-                cols: 4
+                cols: 5
             },
             netprofit: {
-                title: 'Profit Report', icon: CreditCard, color: '#0f172a', dataKey: 'profit',
+                title: 'Profit Report', icon: CreditCard, color: '#3b82f6', dataKey: 'profit',
                 miniStats: [
-                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-blue-600' },
+                    { label: 'Total Revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Gross Profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
                     { label: 'Operating Costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-rose-400' },
                     { label: 'Net Profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: summary?.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600' },
@@ -432,19 +435,19 @@ const Reports = ({ currentUser }) => {
                         </button>
                         <div>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                     <config.icon size={22} />
                                 </div>
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
                                         <h1 className="text-xl font-bold text-black dark:text-slate-100 tracking-tight">{config.title}</h1>
                                         {activeModule === 'sales' && selectedCustomer !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                             </span>
                                         )}
                                         {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
                                                 : 'bg-orange-100 text-orange-600'
                                                 }`}>
@@ -452,12 +455,12 @@ const Reports = ({ currentUser }) => {
                                             </span>
                                         )}
                                         {activeModule === 'suppliers' && selectedVendor !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                            <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-lg">
                                                 {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
                                             </span>
                                         )}
                                         {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
                                                 : 'bg-orange-100 text-orange-600'
                                                 }`}>
@@ -465,44 +468,123 @@ const Reports = ({ currentUser }) => {
                                             </span>
                                         )}
                                         {activeModule === 'customers' && selectedCustomer !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                             </span>
                                         )}
                                         {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedPaymentStatus === 'paid'
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
                                                 : 'bg-orange-100 text-orange-600'
                                                 }`}>
                                                 {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
                                             </span>
                                         )}
+                                        {(activeModule === 'netprofit' || activeModule === 'sales') && selectedCustomer !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-teal-100 text-teal-600 px-3 py-1 rounded-lg">
+                                                {customers.find(c => c.id == selectedCustomer)?.name || 'Filtered Customer'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'netprofit' && selectedVendor !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-orange-100 text-orange-600 px-3 py-1 rounded-lg">
+                                                {vendors.find(v => v.id == selectedVendor)?.name || 'Filtered Vendor'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'netprofit' && selectedEmployee !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg">
+                                                {employees.find(e => e.id == selectedEmployee)?.first_name || 'Filtered Staff'}
+                                            </span>
+                                        )}
                                         {activeModule === 'hrm' && selectedEmployee !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg uppercase tracking-wider">
+                                            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg">
                                                 {employees.find(e => e.id == selectedEmployee)?.first_name || 'Staff Member'}
                                             </span>
                                         )}
                                         {activeModule === 'hrm' && selectedEmployeeStatus !== 'all' && (
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedEmployeeStatus === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                                                 {selectedEmployeeStatus === 'active' ? 'Active Staff' : 'Inactive Staff'}
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-black dark:text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Detailed Report</p>
+                                    <p className="text-black dark:text-slate-400 text-[10px] font-bold mt-1">Detailed Report</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {(activeModule === 'sales' || activeModule === 'netprofit') && (
+                        {activeModule === 'netprofit' && (
                             <>
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                     <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Customers</option>
+                                        {customers.map(customer => (
+                                            <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
+                                                {customer.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Factory size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedVendor}
+                                        onChange={(e) => setSelectedVendor(e.target.value)}
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Suppliers</option>
+                                        {vendors.map(v => (
+                                            <option key={v.id} value={v.id} className="dark:bg-slate-900">
+                                                {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Users2 size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedEmployee}
+                                        onChange={(e) => setSelectedEmployee(e.target.value)}
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Staff</option>
+                                        {employees.map(emp => (
+                                            <option key={emp.id} value={emp.id} className="dark:bg-slate-900">
+                                                {emp.first_name} {emp.last_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedPaymentStatus}
+                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Status</option>
+                                        <option value="paid" className="dark:bg-slate-900">Paid Only</option>
+                                        <option value="credit" className="dark:bg-slate-900">Credit Only</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {activeModule === 'sales' && (
+                            <>
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedCustomer}
+                                        onChange={(e) => setSelectedCustomer(e.target.value)}
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Customers</option>
                                         {customers.map(customer => (
@@ -518,7 +600,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
@@ -534,7 +616,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Suppliers</option>
                                         {vendors.map(v => (
@@ -550,7 +632,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
@@ -566,7 +648,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedCategoryId}
                                         onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Categories</option>
                                         {categories.map(c => (
@@ -582,7 +664,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedStockStatus}
                                         onChange={(e) => setSelectedStockStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="low" className="dark:bg-slate-900">Low Stock</option>
@@ -595,10 +677,10 @@ const Reports = ({ currentUser }) => {
                         {activeModule === 'returns' && (
                             <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                 <RotateCcw size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                <select
+                                 <select
                                     value={selectedReturnType}
                                     onChange={(e) => setSelectedReturnType(e.target.value)}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                 >
                                     <option value="all" className="dark:bg-slate-900">All Returns</option>
                                     <option value="sales" className="dark:bg-slate-900">Sales Returns</option>
@@ -609,10 +691,10 @@ const Reports = ({ currentUser }) => {
                         {(activeModule === 'expenses' || activeModule === 'netprofit') && (
                             <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                 <FileText size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                <select
+                                 <select
                                     value={selectedExpenseCategory}
                                     onChange={(e) => setSelectedExpenseCategory(e.target.value)}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                 >
                                     <option value="all" className="dark:bg-slate-900">All Expenses</option>
                                     {expenseCategories.map(cat => (
@@ -630,7 +712,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedVendor}
                                         onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Suppliers</option>
                                         {vendors.map(v => (
@@ -646,7 +728,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
@@ -662,7 +744,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedCustomer}
                                         onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Customers</option>
                                         {customers.map(c => (
@@ -678,7 +760,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedPaymentStatus}
                                         onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
@@ -694,7 +776,7 @@ const Reports = ({ currentUser }) => {
                                     <select
                                         value={selectedEmployee}
                                         onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Staff Members</option>
                                         {employees.map(e => (
@@ -707,10 +789,10 @@ const Reports = ({ currentUser }) => {
 
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                     <Activity size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
+                                     <select
                                         value={selectedEmployeeStatus}
                                         onChange={(e) => setSelectedEmployeeStatus(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent px-2 py-1"
+                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="active" className="dark:bg-slate-900">Active Only</option>
@@ -724,11 +806,11 @@ const Reports = ({ currentUser }) => {
                             <div className="flex items-center gap-2 px-3 border-r border-slate-100 dark:border-slate-700">
                                 <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                                 <input
-                                    type="date"
-                                    value={dateRange.start}
-                                    onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
-                                    className="text-[10px] font-bold text-black dark:text-slate-100 outline-none uppercase bg-transparent w-28"
-                                />
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => { setDateRange({ ...dateRange, start: e.target.value }); setOverviewFilter('Custom'); }}
+                                className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent w-28"
+                            />
                             </div>
                             <div className="flex items-center gap-2 px-3">
                                 <input
@@ -740,7 +822,7 @@ const Reports = ({ currentUser }) => {
                             </div>
                             <button
                                 onClick={loadDetailedReport}
-                                className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                                className="bg-emerald-600 text-white p-2.5 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 dark:shadow-none"
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             </button>
@@ -763,14 +845,26 @@ const Reports = ({ currentUser }) => {
                         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8 overflow-hidden relative">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest mb-1 italic">
-                                        {activeModule === 'inventory' ? 'Stock Added (Cost)' : activeModule === 'expenses' ? 'Spending Analysis' : activeModule === 'returns' ? 'Refund Velocity' : 'Line Chart'}
+                                    <h2 className="text-[10px] font-black text-black dark:text-slate-400 mb-1 italic">
+                                        {activeModule === 'inventory' ? 'Stock Added (Cost)' : 
+                                         activeModule === 'expenses' ? 'Spending Analysis' : 
+                                         activeModule === 'returns' ? 'Refund Velocity' : 
+                                         activeModule === 'suppliers' ? 'Purchase History' :
+                                         activeModule === 'customers' ? 'Sales History' :
+                                         activeModule === 'hrm' ? 'Payroll Velocity' :
+                                         'Trend Analysis'}
                                     </h2>
-                                    <p className="text-xs text-black dark:text-slate-100 font-bold uppercase tracking-tight">
-                                        {activeModule === 'inventory' ? 'Stock Addition Trend' : activeModule === 'expenses' ? 'Expense Velocity' : activeModule === 'returns' ? 'Sales & Purchase Returns' : 'Report History'}
+                                    <p className="text-xs text-black dark:text-slate-100 font-bold tracking-tight">
+                                        {activeModule === 'inventory' ? 'Stock Addition Trend' : 
+                                         activeModule === 'expenses' ? 'Expense Velocity' : 
+                                         activeModule === 'returns' ? 'Sales & Purchase Returns' : 
+                                         activeModule === 'suppliers' ? 'Purchases from Suppliers' :
+                                         activeModule === 'customers' ? 'Sales to Customers' :
+                                         activeModule === 'hrm' ? 'Staff Salary Trend' :
+                                         'Activity History'}
                                     </p>
                                 </div>
-                                <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Download size={18} /></button>
+                                <button className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"><Download size={18} /></button>
                             </div>
                             <div className="h-64 mt-4 -ml-6">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -792,7 +886,7 @@ const Reports = ({ currentUser }) => {
                                         <YAxis hide />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', padding: '10px' }}
-                                            labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                            labelStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
                                             itemStyle={{ color: config.color, fontSize: '10px', fontWeight: 'black' }}
                                         />
                                         <Area
@@ -811,14 +905,22 @@ const Reports = ({ currentUser }) => {
                         <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-black dark:text-slate-100 flex flex-col justify-between relative overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
                             <div className="absolute top-0 right-0 p-10 opacity-5 text-slate-900 dark:text-white"><config.icon size={120} /></div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 italic">
-                                    {activeModule === 'returns' ? 'Total Refunds' : 'Total Amount'}
+                                 <p className="text-[10px] font-bold text-black dark:text-slate-100 italic">
+                                    {activeModule === 'returns' ? 'Total Refunds' : 
+                                     activeModule === 'suppliers' ? 'Total Balance Due' :
+                                     activeModule === 'customers' ? 'Total Receivables' :
+                                     'Total Amount'}
                                 </p>
                                 <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black dark:text-slate-100">
                                     PKR {(
                                         activeModule === 'returns'
                                             ? (selectedReturnType === 'sales' ? (summary?.totalSalesReturns || 0) : selectedReturnType === 'purchases' ? (summary?.totalPurchaseReturns || 0) : (summary?.totalReturns || 0))
-                                            : (summary?.[`total${activeModule.charAt(0).toUpperCase() + activeModule.slice(1)}`] || summary?.[activeModule === 'hrm' ? 'totalSalaries' : activeModule === 'netprofit' ? 'netProfit' : activeModule === 'expenses' ? 'totalExpenses' : 'totalSales'] || 0)
+                                            : (activeModule === 'suppliers' ? (summary?.totalPayables || 0) : 
+                                               activeModule === 'customers' ? (summary?.totalReceivables || 0) :
+                                               activeModule === 'hrm' ? (summary?.totalSalaries || 0) :
+                                               activeModule === 'netprofit' ? (summary?.netProfit || 0) :
+                                               activeModule === 'expenses' ? (summary?.totalExpenses || 0) :
+                                               (summary?.totalSales || 0))
                                     ).toLocaleString()}
                                 </h2>
                             </div>
@@ -826,8 +928,8 @@ const Reports = ({ currentUser }) => {
                                 {activeModule === 'sales' && selectedCustomer === 'all' ? (
                                     /* Top Customers View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Customers</span>
+                                         <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Customers</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                         </div>
                                         <div className="space-y-2">
@@ -837,7 +939,7 @@ const Reports = ({ currentUser }) => {
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{c.name}</span>
+                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{c.name}</span>
                                                     </div>
                                                     <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
                                                 </div>
@@ -850,20 +952,20 @@ const Reports = ({ currentUser }) => {
                                 ) : activeModule === 'sales' && selectedCustomer !== 'all' ? (
                                     /* Top Products View for Specific Customer */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Products</span>
+                                         <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Products</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtySold} Units</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {p.qtySold} Units</span>
                                                 </div>
                                             ))}
                                             {(!summary?.topProducts || summary.topProducts.length === 0) && (
@@ -875,8 +977,8 @@ const Reports = ({ currentUser }) => {
                                     selectedVendor === 'all' ? (
                                         /* Top Suppliers View */
                                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Suppliers</span>
+                                             <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Suppliers</span>
                                                 <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                             </div>
                                             <div className="space-y-2">
@@ -886,7 +988,7 @@ const Reports = ({ currentUser }) => {
                                                             <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                                 {i + 1}
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{v.name}</span>
+                                                             <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{v.name}</span>
                                                         </div>
                                                         <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {v.totalSpent?.toLocaleString()}</span>
                                                     </div>
@@ -897,20 +999,22 @@ const Reports = ({ currentUser }) => {
                                             </div>
                                         </div>
                                     ) : (
-                                        /* Top Purchased Products View */
+                                        /* Top Purchased Products View for Specific Supplier */
                                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Items</span>
-                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
+                                                 <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Supplied Items</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
+                                                </div><span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
                                             </div>
                                             <div className="space-y-2">
                                                 {(summary?.topPurchasedProducts || []).slice(0, 3).map((p, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-blue-500' : i === 1 ? 'bg-cyan-500' : 'bg-indigo-500'}`}>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-orange-500' : i === 1 ? 'bg-amber-500' : 'bg-yellow-500'}`}>
                                                                 {i + 1}
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
                                                         </div>
                                                         <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtyBought} Units</span>
                                                     </div>
@@ -924,18 +1028,18 @@ const Reports = ({ currentUser }) => {
                                 ) : activeModule === 'inventory' ? (
                                     /* Top Valued Stock View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Valued Stock</span>
+                                         <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Valued Stock</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Asset Value</span>
                                         </div>
                                         <div className="space-y-2">
                                             {(summary?.topValuedItems || []).slice(0, 3).map((p, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-blue-500' : 'bg-slate-500'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-500' : i === 1 ? 'bg-emerald-500' : 'bg-slate-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{p.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
                                                     </div>
                                                     <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">PKR {((p.stockQty * p.costPrice) || 0).toLocaleString()}</span>
                                                 </div>
@@ -948,27 +1052,31 @@ const Reports = ({ currentUser }) => {
                                 ) : activeModule === 'returns' ? (
                                     /* Returns Breakdown View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Refund Breakdown</span>
+                                         <div className="flex justify-between items-center mb-4">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Refund Breakdown</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Logic</span>
                                         </div>
                                         <div className="space-y-3">
-                                            <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-rose-500" />
-                                                    <span className="text-[10px] font-black text-black dark:text-slate-200">SALES RETURNS</span>
+                                            {(selectedReturnType === 'all' || selectedReturnType === 'sales') && (
+                                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200">Sales Returns</span>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-rose-600 dark:text-rose-400">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
                                                 </div>
-                                                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                                    <span className="text-[10px] font-black text-black dark:text-slate-200">PURCHASE RETURNS</span>
+                                            )}
+                                            {(selectedReturnType === 'all' || selectedReturnType === 'purchases') && (
+                                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200">Purchase Returns</span>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
                                                 </div>
-                                                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
-                                            </div>
+                                            )}
                                             <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700 flex justify-between items-center px-1">
-                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono uppercase">Activity Frequency</span>
+                                                 <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono">Activity Frequency</span>
                                                 <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{summary?.returnCount || 0} Transactions</span>
                                             </div>
                                         </div>
@@ -977,7 +1085,7 @@ const Reports = ({ currentUser }) => {
                                     /* Top Suppliers by Purchase Volume */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Suppliers</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Suppliers</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Purchases</span>
                                         </div>
                                         <div className="space-y-2">
@@ -987,7 +1095,7 @@ const Reports = ({ currentUser }) => {
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-slate-400' : 'bg-orange-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{v.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{v.name}</span>
                                                     </div>
                                                     <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {v.totalSpent?.toLocaleString()}</span>
                                                 </div>
@@ -998,58 +1106,107 @@ const Reports = ({ currentUser }) => {
                                         </div>
                                     </div>
                                 ) : activeModule === 'customers' ? (
-                                    /* Top Customers by Sales Volume */
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Customers</span>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-400' : i === 1 ? 'bg-cyan-400' : 'bg-blue-400'}`}>
-                                                            {i + 1}
+                                    selectedCustomer === 'all' ? (
+                                        /* Top Customers View */
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Customers</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
+                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-400' : i === 1 ? 'bg-cyan-400' : 'bg-emerald-400'}`}>
+                                                                {i + 1}
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{c.name}</span>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[80px]">{c.name}</span>
+                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                            {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No customer data available</p>
-                                            )}
+                                                ))}
+                                                {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No customer data available</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        /* Top Bought Products View for Specific Customer */
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Bought Items</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
+                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-teal-500' : i === 1 ? 'bg-cyan-500' : 'bg-emerald-500'}`}>
+                                                                {i + 1}
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
+                                                        </div>
+                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtySold} Units</span>
+                                                    </div>
+                                                ))}
+                                                {(!summary?.topProducts || summary.topProducts.length === 0) && (
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
                                 ) : activeModule === 'hrm' ? (
-                                    /* Top Staff View */
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Staff</span>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Paid</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {(summary?.topStaff || []).slice(0, 3).map((s, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-600' : i === 1 ? 'bg-purple-500' : 'bg-blue-500'}`}>
-                                                            {i + 1}
+                                    selectedEmployee === 'all' ? (
+                                        /* Top Staff View */
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Earners</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Paid</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(summary?.topStaff || []).slice(0, 3).map((s, i) => (
+                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-indigo-600' : i === 1 ? 'bg-purple-500' : 'bg-emerald-500'}`}>
+                                                                {i + 1}
+                                                            </div>
+                                                             <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{s.name}</span>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{s.name}</span>
+                                                        <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">PKR {s.totalEarned?.toLocaleString()}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">PKR {s.totalEarned?.toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                            {(!summary?.topStaff || summary.topStaff.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No staff data available</p>
-                                            )}
+                                                ))}
+                                                {(!summary?.topStaff || summary.topStaff.length === 0) && (
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No payroll data available</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        /* Detailed Salary Insight for Specific Employee */
+                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Payroll Analysis</span>
+                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Employee View</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200">Average Payout</span>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">PKR {(Math.round(summary?.totalSalaries / (summary?.detailedHRM?.length || 1)) || 0).toLocaleString()}</span>
+                                                </div>
+                                                <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700 flex justify-between items-center px-1">
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono">Total Records</span>
+                                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{summary?.detailedHRM?.length || 0} Vouchers</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
                                 ) : activeModule === 'expenses' ? (
                                     /* Top Expenses View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Top Categories</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Categories</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
                                         </div>
                                         <div className="space-y-2">
@@ -1059,7 +1216,7 @@ const Reports = ({ currentUser }) => {
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-rose-500' : i === 1 ? 'bg-orange-500' : 'bg-slate-500'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 uppercase truncate max-w-[100px]">{e.name}</span>
+                                                         <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{e.name}</span>
                                                     </div>
                                                     <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400">PKR {e.total?.toLocaleString()}</span>
                                                 </div>
@@ -1073,20 +1230,20 @@ const Reports = ({ currentUser }) => {
                                     /* Profitability History View (3 Months) */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-4">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Quarterly Net Logs</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Quarterly Net Logs</span>
                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Past 3 Months</span>
                                         </div>
                                         <div className="space-y-3">
                                         
-                                            {(summary?.monthlyHistory || []).map((m, i) => (
+                                            {summary?.monthlyHistory?.map((m, i) => (
                                                 <div key={i} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${m.profit >= 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400'}`}>
                                                             {m.month[0]}
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] font-black text-black dark:text-slate-200 uppercase leading-tight">{m.month} {m.year}</span>
-                                                            <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Verified Profit</span>
+                                                         <div className="flex flex-col">
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 leading-tight">{m.month} {m.year}</span>
+                                                            <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 tracking-tighter">Verified Profit</span>
                                                         </div>
                                                     </div>
                                                     <span className={`text-[11px] font-black font-mono ${m.profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
@@ -1100,15 +1257,15 @@ const Reports = ({ currentUser }) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    /* Default View */
+                                     /* Default View */
                                     <>
                                         <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Volume</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Volume</span>
                                             <span className="text-lg font-medium text-black dark:text-slate-200">{summary?.[`${activeModule.replace('netprofit', 'sales')}Count`] || '0'} Logs</span>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Periodic Status</p>
-                                            <p className="text-xs font-black mt-1 italic uppercase tracking-tighter text-blue-900 dark:text-blue-200">Verified & Processed</p>
+                                        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30">
+                                            <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Periodic Status</p>
+                                            <p className="text-xs font-black mt-1 italic tracking-tighter text-emerald-900 dark:text-emerald-200">Verified & Processed</p>
                                         </div>
                                     </>
                                 )}
@@ -1120,17 +1277,17 @@ const Reports = ({ currentUser }) => {
                     {/* Data Table */}
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                         <div className="px-8 py-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                            <h3 className="text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-[0.2em] italic">
-                                {config.tableTitle || 'Report Journal'}
-                            </h3>
+                             <h3 className="text-[10px] font-black text-black dark:text-slate-400 italic">
+                                 {config.tableTitle || 'Report Journal'}
+                             </h3>
                             <span className="text-[9px] font-bold text-black dark:text-slate-100">{config.tableTitle ? `View ${config.tableTitle}` : 'Report logs'}</span>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50/50 dark:bg-slate-800/50">
+                                <thead className="bg-slate-100 dark:bg-slate-800">
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
-                                            <th key={idx} className={`px-8 py-4 text-[10px] font-black text-black dark:text-slate-400 uppercase tracking-widest 
+                                            <th key={idx} className={`px-8 py-4 text-[11px] font-bold text-black dark:text-white border-b border-slate-200 dark:border-slate-700 
                                                 ${(col === 'Total' || col === 'Total Sales' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
@@ -1141,28 +1298,28 @@ const Reports = ({ currentUser }) => {
                                     {((activeModule === 'sales' && summary?.detailedSales) || (activeModule === 'purchases' && summary?.detailedPurchases)) ? (
                                         (activeModule === 'sales' ? summary.detailedSales : summary.detailedPurchases).map((tx, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
                                                     {new Date(tx.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                 <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {tx.invoiceNo || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {tx.customer?.name || tx.vendor?.name || (activeModule === 'sales' ? 'Walk-in' : 'Unknown')}
                                                 </td>
                                                 <td className="px-8 py-5 align-top">
-                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase max-w-[200px] truncate block" title={tx.items?.map(item => item.product?.name || item.name).join(', ')}>
+                                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 max-w-[200px] truncate block" title={tx.items?.map(item => item.product?.name || item.name).join(', ')}>
                                                         {tx.items?.map(item => item.product?.name || item.name).join(', ') || '-'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-center align-top">
-                                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-100 uppercase">
+                                                 <td className="px-8 py-5 text-center align-top">
+                                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-black dark:text-slate-100">
                                                         {tx.items?.length || 0}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                                                         }`}>
                                                         <div className={`w-1 h-1 rounded-full ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
                                                         {tx.paymentStatus || 'DUE'}
@@ -1173,21 +1330,21 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'inventory' && summary?.detailedInventory ? (
                                         summary.detailedInventory.map((item, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
                                                     {item.name}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {item.category?.name || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100'}`}>
+                                                 <td className="px-8 py-5 text-center align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.stockQty <= (item.alertQty || 5) ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-800 text-black dark:text-slate-100'}`}>
                                                         {item.stockQty}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-medium text-slate-500 dark:text-slate-400 text-xs align-top">PKR {(item.costPrice || 0).toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right font-black text-black dark:text-slate-100 text-xs align-top">PKR {((item.stockQty * item.costPrice) || 0).toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${item.stockQty <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : item.stockQty <= (item.alertQty || 5) ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {item.stockQty <= 0 ? 'Out of Stock' : item.stockQty <= (item.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                                     </span>
                                                 </td>
@@ -1196,15 +1353,15 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'expenses' && summary?.detailedExpenses ? (
                                         summary.detailedExpenses.map((expense, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
                                                     {new Date(expense.date).toLocaleDateString('en-CA')}
                                                 </td>
                                                 {selectedExpenseCategory === 'Staff Payroll' ? (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
+                                                        <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase align-top">
+                                                        <td className="px-8 py-5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 align-top">
                                                             {expense.designation || '-'}
                                                         </td>
                                                         <td className="px-8 py-5 text-right font-bold text-slate-800 dark:text-slate-200 text-xs align-top">
@@ -1216,19 +1373,19 @@ const Reports = ({ currentUser }) => {
                                                         <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-[10px] align-top">
                                                             -PKR {expense.deductions?.toLocaleString()}
                                                         </td>
-                                                        <td className="px-8 py-5 text-right font-black text-blue-800 dark:text-blue-200 text-xs align-top">
+                                                        <td className="px-8 py-5 text-right font-black text-emerald-800 dark:text-emerald-200 text-xs align-top">
                                                             PKR {expense.amount?.toLocaleString()}
                                                         </td>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                             {expense.title || '-'}
                                                         </td>
-                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                        <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                             <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">{expense.category || 'Uncategorized'}</span>
                                                         </td>
-                                                        <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[300px] truncate">
+                                                        <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[300px] truncate">
                                                             {expense.description || '-'}
                                                         </td>
                                                         <td className="px-8 py-5 text-left font-black text-rose-600 dark:text-rose-400 text-xs align-top">
@@ -1241,18 +1398,18 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'returns' && summary?.detailedReturns ? (
                                         summary.detailedReturns.map((ret, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">
                                                     {new Date(ret.date).toLocaleDateString('en-CA')}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold uppercase align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                                                 <td className="px-8 py-5 text-xs font-bold align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${ret.type === 'Sale Return' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {ret.type}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {ret.invoiceNo}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
                                                     {ret.party}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[250px]">
@@ -1272,20 +1429,20 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'suppliers' && summary?.detailedVendors ? (
                                         summary.detailedVendors.map((vendor, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
                                                     {vendor.name}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {vendor.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
                                                     {vendor.address || '-'}
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-black text-rose-600 dark:text-rose-400 text-xs align-top">
                                                     PKR {(vendor.current_balance || vendor.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${(vendor.current_balance || vendor.balance || 0) > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {(vendor.current_balance || vendor.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
                                                     </span>
                                                 </td>
@@ -1294,20 +1451,20 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'customers' && summary?.detailedCustomers ? (
                                         summary.detailedCustomers.map((customer, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top">
                                                     {customer.name}
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 align-top">
                                                     {customer.phone || '-'}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase align-top max-w-[200px] truncate">
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-500 dark:text-slate-400 align-top max-w-[200px] truncate">
                                                     {customer.address || '-'}
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-black text-teal-600 dark:text-teal-400 text-xs align-top">
                                                     PKR {(customer.current_balance || customer.balance || 0).toLocaleString()}
                                                 </td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide ${(customer.current_balance || customer.balance || 0) > 0 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
                                                         {(customer.current_balance || customer.balance || 0) > 0 ? 'Payment Due' : 'Clear'}
                                                     </span>
                                                 </td>
@@ -1316,14 +1473,14 @@ const Reports = ({ currentUser }) => {
                                     ) : activeModule === 'hrm' && summary?.detailedHRM ? (
                                         summary.detailedHRM.map((rec, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 uppercase align-top font-mono tracking-tighter">
+                                                <td className="px-8 py-5 text-xs font-black text-black dark:text-slate-100 align-top font-mono tracking-tighter">
                                                     {rec.staffName}
                                                 </td>
-                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase align-top">
+                                                <td className="px-8 py-5 text-xs font-bold text-slate-500 dark:text-slate-400 align-top">
                                                     {rec.designation || 'Staff'}
                                                 </td>
-                                                <td className="px-8 py-5 text-center align-top">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${rec.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
+                                                 <td className="px-8 py-5 text-center align-top">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black ${rec.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
                                                         {rec.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
@@ -1339,7 +1496,7 @@ const Reports = ({ currentUser }) => {
                                                 <td className="px-8 py-5 text-right font-bold text-rose-600 dark:text-rose-400 text-xs align-top">
                                                     PKR {(rec.deductions || 0).toLocaleString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black text-indigo-700 dark:text-indigo-400 text-xs align-top bg-indigo-50/30 dark:bg-indigo-900/20">
+                                                <td className="px-8 py-5 text-right font-black text-emerald-700 dark:text-emerald-400 text-xs align-top bg-emerald-50/30 dark:bg-emerald-900/20">
                                                     PKR {(rec.net_salary || 0).toLocaleString()}
                                                 </td>
                                             </tr>
@@ -1347,12 +1504,12 @@ const Reports = ({ currentUser }) => {
                                     ) : (
                                         chartData.filter(d => activeModule === 'suppliers' || activeModule === 'expenses' || activeModule === 'hrm' || activeModule === 'netprofit' || d[config.dataKey] > 0).map((row, i) => (
                                             <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic uppercase align-top">{row.date}</td>
+                                                <td className="px-8 py-5 text-xs font-bold text-black dark:text-slate-100 font-mono italic align-top">{row.date}</td>
                                                 {activeModule === 'netprofit' ? (
                                                     <>
-                                                        <td className="px-8 py-5 text-right align-top">
-                                                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
-                                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">{row.invoices || 0} Invoices</div>
+                                                         <td className="px-8 py-5 text-right align-top">
+                                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter">PKR {row.sales?.toLocaleString()}</span>
+                                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">{row.invoices || 0} Invoices</div>
                                                         </td>
                                                         <td className="px-8 py-5 text-right align-top">
                                                             <span className="text-xs font-bold text-orange-500 dark:text-orange-400 font-mono tracking-tighter">PKR {row.cogs?.toLocaleString()}</span>
@@ -1364,7 +1521,7 @@ const Reports = ({ currentUser }) => {
                                                             <span className={`text-xs font-black font-mono tracking-tighter ${row.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                 PKR {row.profit?.toLocaleString()}
                                                             </span>
-                                                            <div className={`text-[9px] font-black uppercase mt-0.5 ${row.profit >= 0 ? 'text-emerald-400 dark:text-emerald-500' : 'text-rose-300 dark:text-rose-500'}`}>
+                                                             <div className={`text-[9px] font-black mt-0.5 ${row.profit >= 0 ? 'text-emerald-400 dark:text-emerald-500' : 'text-rose-300 dark:text-rose-500'}`}>
                                                                 {row.profit >= 0 ? 'Surplus' : 'Deficit'}
                                                             </div>
                                                         </td>
@@ -1372,8 +1529,8 @@ const Reports = ({ currentUser }) => {
                                                 ) : (
                                                     <>
                                                         <td className="px-8 py-5 align-top">
-                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 dark:border-slate-700 inline-block mr-2 group-hover:border-blue-500 transition-colors"></div>
-                                                            <span className="text-xs font-black text-black dark:text-slate-100 uppercase italic">
+                                                            <div className="w-2.5 h-2.5 rounded-full border-2 border-slate-200 dark:border-slate-700 inline-block mr-2 group-hover:border-emerald-500 transition-colors"></div>
+                                                             <span className="text-xs font-black text-black dark:text-slate-100 italic">
                                                                 {activeModule === 'sales' ? `${row.invoices} Orders Recieved` :
                                                                     activeModule === 'purchases' ? `${row.invoices} Stock Invoices` :
                                                                         activeModule === 'hrm' ? `${row.invoices || summary?.employeeCount} Staff Members` :
@@ -1394,7 +1551,7 @@ const Reports = ({ currentUser }) => {
                                         (activeModule !== 'sales' && activeModule !== 'purchases' && activeModule !== 'inventory' && activeModule !== 'expenses' && activeModule !== 'returns' && chartData.filter(d => activeModule === 'suppliers' || d[config.dataKey] > 0).length === 0)) && (
                                             <tr>
                                                 <td colSpan={config.tableCols.length} className="px-8 py-20 text-center">
-                                                    <p className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em]">No records found</p>
+                                                     <p className="text-[10px] font-black text-slate-300 dark:text-slate-600">No records found</p>
                                                 </td>
                                             </tr>
                                         )}
