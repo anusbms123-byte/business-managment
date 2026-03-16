@@ -128,7 +128,7 @@ setInterval(async () => {
             console.error("[AUTO-SYNC] Pull failed:", err.message);
         }
     }
-}, 300000);
+}, 60000);
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)

@@ -690,7 +690,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 ...user,
                 company_id: finalCompId,
                 role_id: finalRoleId,
-                password: user.raw_password || user.password || ''
+                password: user.raw_password || (user.password && !user.password.startsWith('$2b$') ? user.password : '')
             });
         } else {
             const defaultRole = roles.find(r => r.name?.toLowerCase() === 'admin' && !(r.company_id || r.companyId));

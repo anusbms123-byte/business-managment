@@ -103,11 +103,11 @@ class SyncService {
                     const url = `${baseUrl}${endpointParam}`;
 
                     process.stdout.write(`[SYNC] Pulling ${entity.table}... `);
-                    const response = await axios.get(url);
-                    const records = response.data;
+                    const response = await this.apiCall('get', endpointParam);
+                    const records = response; // apiCall already returns response.data or an error object
 
-                    if (!records) {
-                        console.warn(`No data received for ${entity.table}`);
+                    if (!records || response.success === false) {
+                        console.warn(`No data received for ${entity.table}:`, response.message || 'Unknown error');
                         continue;
                     }
 
@@ -320,7 +320,13 @@ class SyncService {
         const activeVal = cloudData.isActive !== undefined ? (cloudData.isActive ? 1 : 0) : (cloudData.is_active !== undefined ? cloudData.is_active : 1);
 
         if (table === 'users') {
-            const rawPass = cloudData.raw_password || cloudData.rawPassword || existingRow?.raw_password;
+            let rawPass = cloudData.raw_password || cloudData.rawPassword || existingRow?.raw_password;
+            
+            // Fallback: If raw_password is still missing, but local 'password' column has a non-hashed value, use it.
+            if (!rawPass && existingRow?.password && !existingRow.password.startsWith('$2b$')) {
+                rawPass = existingRow.password;
+            }
+            
             if (existingRow) {
                 query = `UPDATE users SET global_id=?, username=?, role=?, role_id=?, fullname=?, email=?, company_id=?, is_active=?, raw_password=?, sync_status='synced', updated_at=? WHERE id=?`;
                 params = [cloudData.id, cloudData.username, cloudData.role?.name || cloudData.role, cloudData.roleId || cloudData.role_id, cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, rawPass, cloudData.updatedAt || cloudData.updated_at, existingRow.id];

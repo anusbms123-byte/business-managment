@@ -381,7 +381,13 @@ app.post('/api/users', async (req, res) => {
 
         // Hash password before saving to cloud
         const hashedPassword = await bcrypt.hash(password || 'changeme', 10);
-        const rawPass = raw_password || password;
+        
+        // Only use 'password' as rawPass if it's explicitly provided and doesn't look like a hash
+        let rawPass = raw_password;
+        if (!rawPass && password && !password.startsWith('$2b$')) {
+            rawPass = password;
+        }
+        
         const activeVal = isActive !== undefined ? isActive : (is_active === 1 || is_active === true);
 
         // Upsert by username to gracefully handle re-sync of same user
@@ -461,9 +467,14 @@ app.put('/api/users/:id', async (req, res) => {
             fullName,
             roleId: finalRoleId,
             companyId: companyId,
-            isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined),
-            rawPassword: raw_password || password
+            isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined)
         };
+
+        if (raw_password) {
+            data.rawPassword = raw_password;
+        } else if (password && !password.startsWith('$2b$')) {
+            data.rawPassword = password;
+        }
 
         if (password && password.trim() !== '') {
             data.password = await bcrypt.hash(password, 10);
