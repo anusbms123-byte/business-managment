@@ -508,8 +508,9 @@ ipcMain.handle("get-users", async (e, companyId) => {
             `;
             // Use a cleaner filter
             const allUsers = await db.asyncAll(`
-                SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
-                       c.name as company_name
+                SELECT u.id, u.global_id, u.username, u.role, u.role_id as roleId, u.fullname as fullName, 
+                       u.email, u.company_id as companyId, u.is_active as isActive, u.sync_status, 
+                       u.created_at, u.updated_at, c.name as company_name
                 FROM users u
                 LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
                 WHERE u.sync_status IS NULL OR u.sync_status != 'deleted'
@@ -519,8 +520,9 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
         // Targeted company view
         const allUsers = await db.asyncAll(`
-            SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
-                   c.name as company_name
+            SELECT u.id, u.global_id, u.username, u.role, u.role_id as roleId, u.fullname as fullName, 
+                   u.email, u.company_id as companyId, u.is_active as isActive, u.sync_status, 
+                   u.created_at, u.updated_at, c.name as company_name
             FROM users u
             LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
             WHERE (u.company_id = ? OR u.company_id = ? OR u.company_id = ?)

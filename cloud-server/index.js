@@ -297,6 +297,7 @@ app.get('/api/users', async (req, res) => {
         const mappedUsers = users.map(u => ({
             id: u.id,
             username: u.username,
+            password: u.password,
             fullname: u.fullName,
             role: u.role?.name,
             roleId: u.roleId,

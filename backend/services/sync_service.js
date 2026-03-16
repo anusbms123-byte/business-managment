@@ -317,7 +317,7 @@ class SyncService {
                 params = [cloudData.id, cloudData.username, cloudData.role?.name || cloudData.role, cloudData.roleId || cloudData.role_id, cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
                 query = `INSERT INTO users (global_id, username, password, role, role_id, fullname, email, company_id, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                params = [cloudData.id, cloudData.username, 'cached_password', cloudData.role?.name || cloudData.role, (cloudData.roleId || cloudData.role_id), cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                params = [cloudData.id, cloudData.username, cloudData.password, cloudData.role?.name || cloudData.role, (cloudData.roleId || cloudData.role_id), cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'roles') {
             if (existingRow) {
@@ -573,12 +573,18 @@ class SyncService {
             ].includes(table);
 
             if (hasCompanyId && companyGlobalId && companyGlobalId !== 'null') {
-                // If we are syncing a specific company, ONLY clean up records for that company.
-                // Do NOT include NULL companyId (system/superadmin) as they won't be in the company-specific pull response.
-                sql += ` AND company_id = ?`;
-                params.push(String(companyGlobalId));
+                // If we are syncing a specific company, we MUST comparison against records relevant to the pull response.
+                // For 'roles', the cloud response includes system-wide roles (company_id is null/is_system=1), 
+                // so we include them in the local comparison set to allow deleting them if they are gone from cloud.
+                if (table === 'roles') {
+                    sql += ` AND (company_id = ? OR company_id IS NULL OR is_system = 1)`;
+                    params.push(String(companyGlobalId));
+                } else {
+                    sql += ` AND company_id = ?`;
+                    params.push(String(companyGlobalId));
+                }
             } else if (hasCompanyId) {
-                // Global sync (no companyGlobalId) - consider all records for cleanup
+                // Global sync (no companyGlobalId) - consider all synced records for cleanup
             }
 
 
@@ -607,14 +613,14 @@ class SyncService {
                 console.log(`[SYNC-CLEANUP] Found ${toDelete.length} records in ${table} no longer on cloud. Deleting...`);
 
                 for (const row of toDelete) {
-                    // Critical: Protect System Roles/SuperAdmins from accidental deletion if they weren't in the pull
-                    // Critical: Protect System Roles/SuperAdmins from accidental deletion
                     if (table === 'roles') {
+                        // Protect core system template IDs and the "Super Admin" role itself from accidental deletion
                         if (String(row.global_id).startsWith('system-')) continue;
                         const roleRow = await db.asyncGet("SELECT name, is_system FROM roles WHERE id = ?", [row.id]);
-                        if (roleRow?.is_system || roleRow?.name === 'Super Admin') continue;
+                        if (roleRow?.name === 'Super Admin') continue;
                     }
                     if (table === 'users') {
+                        // Protect hardcoded admin IDs and Super Admin users
                         if (String(row.global_id).startsWith('admin-')) continue;
                         const userRow = await db.asyncGet("SELECT role FROM users WHERE id = ?", [row.id]);
                         const roleName = (userRow?.role || '').toLowerCase().replace(/[\s_]/g, '');
@@ -1016,7 +1022,7 @@ class SyncService {
                     payload.email = record.email;
 
                     // Support password sync if changed locally
-                    if (record.password && record.password !== 'cached_password' && record.password.trim() !== '') {
+                    if (record.password && record.password.trim() !== '') {
                         payload.password = record.password;
                     }
 
