@@ -583,18 +583,20 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                     window.electronAPI.getRoles(companyId)
                 ]);
                 const filteredUsers = (Array.isArray(usersData) ? usersData : []).filter(u => {
-                    const isSuper = u.role?.toLowerCase() === 'super admin' || u.role?.toLowerCase() === 'super_admin';
-                    if (isSuper) return false;
+                    // Never show Super Admin users in the list
+                    const roleName = (u.role || '').toLowerCase().replace(/[\s_]/g, '');
+                    if (roleName === 'superadmin') return false;
 
-                    // If companyId filter is active, ensure we only show those users
-                    const uCid = u.company_id || u.companyId;
-                    if (companyId && uCid !== companyId) return false;
+                    // If Super Admin viewing globally (no companyId filter) - show all users
+                    if (isSuperAdmin && !companyId) return true;
 
-                    // If Super Admin is viewing, show company 'Admin' and 'Manager' roles
-                    if (isSuperAdmin) {
-                        const rName = u.role?.toLowerCase();
-                        return rName === 'admin' || rName === 'manager';
+                    // If a specific companyId filter is active, apply it
+                    if (companyId) {
+                        const uCid = String(u.company_id || u.companyId || '');
+                        const filterCid = String(companyId);
+                        return uCid === filterCid;
                     }
+
                     return true;
                 });
                 setUsers(filteredUsers);
@@ -863,11 +865,8 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                         if (isSuperAdmin) {
                                             const roleCid = r.company_id || r.companyId;
                                             const hasNoCompany = !roleCid;
-                                            const roleNameLower = (r.name || '').toLowerCase();
-                                            const isAdminOrManager = roleNameLower === 'admin' || roleNameLower === 'manager';
-
-                                            // 1. Show global Admin & Manager templates
-                                            if (isAdminOrManager && hasNoCompany) return isNotSuper;
+                                            // 1. Show all global templates
+                                            if (hasNoCompany) return isNotSuper;
 
                                             // 2. Show roles that belong to the SELECTED company (e.g. Chase Value)
                                             const targetCid = formData.company_id;

@@ -497,32 +497,42 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
     try {
         if (!targetCid) {
-            // Super Admin global view - Add Join for Company Name
+            // Super Admin global view - show ALL users with company info
             const query = `
                 SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
                        c.name as company_name
                 FROM users u
                 LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
-                WHERE u.sync_status != 'deleted' OR u.sync_status IS NULL
+                WHERE (u.sync_status != 'deleted' AND u.sync_status IS NOT 'deleted')
+                   OR u.sync_status IS NULL
             `;
-            return await db.asyncAll(query);
+            // Use a cleaner filter
+            const allUsers = await db.asyncAll(`
+                SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
+                       c.name as company_name
+                FROM users u
+                LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
+                WHERE u.sync_status IS NULL OR u.sync_status != 'deleted'
+            `);
+            return allUsers;
         }
 
-        // Targeted company view - Add Join for Company Name
-        const query = `
+        // Targeted company view
+        const allUsers = await db.asyncAll(`
             SELECT u.*, u.is_active as isActive, u.fullname as fullName, u.role_id as roleId, u.company_id as companyId,
                    c.name as company_name
             FROM users u
             LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
-            WHERE (u.company_id = ? OR u.company_id = ? OR u.company_id = ?) 
-            AND (u.sync_status != 'deleted' OR u.sync_status IS NULL)
-        `;
-        return await db.asyncAll(query, [ids.localId, ids.globalId, String(ids.localId)]);
+            WHERE (u.company_id = ? OR u.company_id = ? OR u.company_id = ?)
+            AND (u.sync_status IS NULL OR u.sync_status != 'deleted')
+        `, [ids.localId, ids.globalId, String(ids.localId)]);
+        return allUsers;
     } catch (err) {
         console.error("get-users Error:", err.message);
         return [];
     }
 });
+
 
 // Roles & Permissions - LOCAL FIRST
 ipcMain.handle("get-roles", async (e, companyId) => {

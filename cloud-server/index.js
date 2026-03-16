@@ -281,17 +281,12 @@ app.get('/api/users', async (req, res) => {
         if (activeOnly === 'true') where.isActive = true;
 
         if (companyId && companyId !== 'null' && companyId !== '') {
+            // Targeted company view: return all users for this specific company
             where.companyId = companyId;
         } else {
-            // For general view (Super Admin), only show users assigned to companies
-            // AND only show those with 'Admin' role (Owner of the company)
+            // Super Admin global view: return ALL users that belong to ANY company
+            // (excludes Super Admin users who have no companyId)
             where.companyId = { not: null };
-            where.role = {
-                name: {
-                    equals: 'Admin',
-                    mode: 'insensitive'
-                }
-            };
         }
 
         const users = await prisma.user.findMany({
@@ -300,16 +295,22 @@ app.get('/api/users', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Transform to match local format expected by frontend if needed
+        // Transform to match local format expected by frontend
         const mappedUsers = users.map(u => ({
             id: u.id,
             username: u.username,
             fullname: u.fullName,
             role: u.role?.name,
+            roleId: u.roleId,
             role_id: u.roleId,
             company_id: u.companyId,
+            companyId: u.companyId,
             company_name: u.company?.name,
             is_active: u.isActive ? 1 : 0,
+            isActive: u.isActive ? 1 : 0,
+            updatedAt: u.updatedAt,
+            updated_at: u.updatedAt,
+            createdAt: u.createdAt,
             created_at: u.createdAt
         }));
 
