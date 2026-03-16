@@ -1002,6 +1002,13 @@ class SyncService {
                 } else if (table === 'users') {
                     payload.fullName = record.fullname;
                     payload.isActive = record.is_active === 1;
+                    payload.username = record.username;
+                    payload.email = record.email;
+
+                    // Support password sync if changed locally
+                    if (record.password && record.password !== 'cached_password' && record.password.trim() !== '') {
+                        payload.password = record.password;
+                    }
 
                     // Always send role name so cloud can resolve by name
                     payload.role = record.role;

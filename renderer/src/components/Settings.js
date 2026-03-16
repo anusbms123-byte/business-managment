@@ -16,7 +16,7 @@ const Settings = ({ currentUser, onUpdateUser }) => {
     const [profileData, setProfileData] = useState({
         fullname: currentUser?.fullName || currentUser?.fullname || '',
         username: currentUser?.username || '',
-        password: isSuperAdmin ? 'admin123' : ''
+        password: ''
     });
 
     const [loading, setLoading] = useState(false);
@@ -87,11 +87,19 @@ const Settings = ({ currentUser, onUpdateUser }) => {
 
         setSaving(true);
         try {
-            const result = await window.electronAPI.updateUser({
+            // Only send password if it's actually typed
+            const payload = {
                 id: currentUser.id,
-                ...profileData,
+                fullname: profileData.fullname,
+                username: profileData.username,
                 role: currentUser.role // Preserve role
-            });
+            };
+
+            if (profileData.password && profileData.password.trim() !== '') {
+                payload.password = profileData.password;
+            }
+
+            const result = await window.electronAPI.updateUser(payload);
             if (result.success) {
                 showSuccess('Your profile has been updated successfully!');
 
@@ -103,6 +111,9 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                     username: profileData.username
                 };
                 sessionStorage.setItem('user', JSON.stringify(updatedUser));
+
+                // Clear password field after save
+                setProfileData(prev => ({ ...prev, password: '' }));
 
                 if (onUpdateUser) {
                     onUpdateUser(updatedUser, sessionStorage.getItem('permissions') ? JSON.parse(sessionStorage.getItem('permissions')) : []);
