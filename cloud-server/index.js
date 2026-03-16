@@ -283,11 +283,9 @@ app.get('/api/users', async (req, res) => {
         if (companyId && companyId !== 'null' && companyId !== '') {
             // Targeted company view: return all users for this specific company
             where.companyId = companyId;
-        } else {
-            // Super Admin global view: return ALL users that belong to ANY company
-            // (excludes Super Admin users who have no companyId)
-            where.companyId = { not: null };
         }
+        // In global view (no companyId), we return ALL users including Super Admins
+
 
         const users = await prisma.user.findMany({
             where,

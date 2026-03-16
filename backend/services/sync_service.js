@@ -572,15 +572,15 @@ class SyncService {
                 'attendances', 'salary_records', 'audit_logs'
             ].includes(table);
 
-            if (hasCompanyId && companyGlobalId) {
-                // Roles and Users might belong to a company OR be system-wide (NULL)
-                if (table === 'roles' || table === 'users') {
-                    sql += ` AND (company_id = ? OR company_id IS NULL OR company_id = 'null')`;
-                } else {
-                    sql += ` AND company_id = ?`;
-                }
+            if (hasCompanyId && companyGlobalId && companyGlobalId !== 'null') {
+                // If we are syncing a specific company, ONLY clean up records for that company.
+                // Do NOT include NULL companyId (system/superadmin) as they won't be in the company-specific pull response.
+                sql += ` AND company_id = ?`;
                 params.push(String(companyGlobalId));
+            } else if (hasCompanyId) {
+                // Global sync (no companyGlobalId) - consider all records for cleanup
             }
+
 
             const localRecords = await db.asyncAll(sql, params);
             if (!localRecords || localRecords.length === 0) return;
@@ -608,8 +608,18 @@ class SyncService {
 
                 for (const row of toDelete) {
                     // Critical: Protect System Roles/SuperAdmins from accidental deletion if they weren't in the pull
-                    if (table === 'roles' && String(row.global_id).startsWith('system-')) continue;
-                    if (table === 'users' && String(row.global_id).startsWith('admin-')) continue;
+                    // Critical: Protect System Roles/SuperAdmins from accidental deletion
+                    if (table === 'roles') {
+                        if (String(row.global_id).startsWith('system-')) continue;
+                        const roleRow = await db.asyncGet("SELECT name, is_system FROM roles WHERE id = ?", [row.id]);
+                        if (roleRow?.is_system || roleRow?.name === 'Super Admin') continue;
+                    }
+                    if (table === 'users') {
+                        if (String(row.global_id).startsWith('admin-')) continue;
+                        const userRow = await db.asyncGet("SELECT role FROM users WHERE id = ?", [row.id]);
+                        const roleName = (userRow?.role || '').toLowerCase().replace(/[\s_]/g, '');
+                        if (roleName === 'superadmin') continue;
+                    }
 
                     await db.asyncRun(`DELETE FROM ${table} WHERE id = ?`, [row.id]);
 
