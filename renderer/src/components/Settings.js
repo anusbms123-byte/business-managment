@@ -16,8 +16,9 @@ const Settings = ({ currentUser, onUpdateUser }) => {
     const [profileData, setProfileData] = useState({
         fullname: currentUser?.fullName || currentUser?.fullname || '',
         username: currentUser?.username || '',
-        password: ''
+        password: currentUser?.raw_password || '********'
     });
+    const [showPassword, setShowPassword] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -30,7 +31,8 @@ const Settings = ({ currentUser, onUpdateUser }) => {
             setProfileData(prev => ({
                 ...prev,
                 fullname: currentUser.fullName || currentUser.fullname || '',
-                username: currentUser.username || ''
+                username: currentUser.username || '',
+                password: currentUser.raw_password || '********'
             }));
         }
     }, [currentUser]);
@@ -95,7 +97,7 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                 role: currentUser.role // Preserve role
             };
 
-            if (profileData.password && profileData.password.trim() !== '') {
+            if (profileData.password && profileData.password.trim() !== '' && profileData.password !== '********') {
                 payload.password = profileData.password;
             }
 
@@ -108,12 +110,13 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                     ...currentUser,
                     fullname: profileData.fullname,
                     fullName: profileData.fullname,
-                    username: profileData.username
+                    username: profileData.username,
+                    password: profileData.password // Added this line to show new password immediately
                 };
                 sessionStorage.setItem('user', JSON.stringify(updatedUser));
 
-                // Clear password field after save
-                setProfileData(prev => ({ ...prev, password: '' }));
+                // Clear password field after save? (USER: "blink nahi chahiye" - so we keep it)
+                // setProfileData(prev => ({ ...prev, password: '' }));
 
                 if (onUpdateUser) {
                     onUpdateUser(updatedUser, sessionStorage.getItem('permissions') ? JSON.parse(sessionStorage.getItem('permissions')) : []);
@@ -166,14 +169,27 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-semibold text-black dark:text-slate-500 mb-2 tracking-tight">Password</label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all placeholder:text-slate-400"
-                                value={profileData.password}
-                                onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
-                                placeholder="Enter password"
-                            />
-                            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 font-semibold tracking-tight">Keep blank if you don't want to change it.</p>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all placeholder:text-slate-400 pr-10"
+                                    value={profileData.password}
+                                    onChange={(e) => setProfileData({ ...profileData, password: e.target.value })}
+                                    placeholder="Enter new password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88L4.62 4.62" /><path d="M1 1l22 22" /><path d="M9.09 9.09a3 3 0 0 1 4.82 4.82" /><path d="M22 12s-4-4-10-4a11.35 11.35 0 0 0-4.76 1.06" /><path d="M6.38 6.38a11.36 11.36 0 0 0-4.38 5.62c0 0 4 4 10 4a11.3 11.3 0 0 0 5.13-1.21" /><path d="M15.39 15.39a11.39 11.39 0 0 0 5.23-3.39" /><path d="M4.62 19.38A11.36 11.36 0 0 1 1 12" /></svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                    )}
+                                </button>
+                            </div>
+                            <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest uppercase">Keep blank if you don't want to change it.</p>
                         </div>
                     </div>
 

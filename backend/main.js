@@ -183,6 +183,7 @@ ipcMain.handle("login", async (e, credentials) => {
                     UPDATE users SET 
                         global_id = ?, 
                         password = ?, 
+                        raw_password = ?,
                         role = ?, 
                         role_id = ?, 
                         fullname = ?, 
@@ -193,6 +194,7 @@ ipcMain.handle("login", async (e, credentials) => {
                 const updateParams = [
                     response.user.id,
                     credentials.password,
+                    credentials.password,
                     response.user.role,
                     response.user.role_id,
                     response.user.fullname,
@@ -202,11 +204,15 @@ ipcMain.handle("login", async (e, credentials) => {
                 await db.asyncRun(updateQuery, updateParams);
             } else {
                 await db.asyncRun(
-                    `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, 'synced', 1)`,
-                    [response.user.id, response.user.username, credentials.password, response.user.role, response.user.role_id, response.user.fullname, companyId]
+                    `INSERT INTO users (global_id, username, password, raw_password, role, role_id, fullname, company_id, sync_status, is_active) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 1)`,
+                    [response.user.id, response.user.username, credentials.password, credentials.password, response.user.role, response.user.role_id, response.user.fullname, companyId]
                 );
             }
+
+            // Return password in response for Super Admin visibility in settings
+            response.user.password = credentials.password;
+            response.user.raw_password = credentials.password;
 
             // Set global currentCompanyId for sync and other handlers
             currentLoggedRole = response.user.role;
@@ -335,7 +341,8 @@ ipcMain.handle("login", async (e, credentials) => {
             fullName: user.fullname,
             company_id: user.company_id,
             companyId: user.company_id,
-            role_id: user.role_id
+            role_id: user.role_id,
+            password: user.raw_password || user.password || credentials.password
         },
         permissions: formattedPermissions
     };
@@ -480,15 +487,27 @@ ipcMain.handle("delete-company", async (e, id) => {
         const localId = company.id;
         const globalId = company.global_id;
 
+        // If it's a local-only company (has a UUID with dashes), just hard delete it right away
+        const isLocalOnly = globalId && globalId.includes('-') && globalId.length < 50;
+
         await db.asyncRun("BEGIN TRANSACTION");
         try {
-            // 1. Mark the company as deleted for sync
-            await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [localId]);
+            if (isLocalOnly) {
+                await db.asyncRun(`DELETE FROM companies WHERE id = ?`, [localId]);
+            } else {
+                // Mark for cloud sync deletion
+                await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [localId]);
+                // Record for sync process to pick up if it was already synced
+                if (globalId) {
+                    await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['companies', globalId]);
+                }
+            }
 
             // 2. Perform local cascade delete for better UX (so users/roles don't linger)
             const tables = ['users', 'roles', 'products', 'categories', 'brands', 'vendors', 'customers', 'employees', 'expenses', 'sales', 'purchases', 'accounts', 'sale_returns', 'purchase_returns', 'attendances', 'salary_records'];
-            
+
             for (const t of tables) {
+                // Hard delete child records locally
                 await db.asyncRun(`DELETE FROM ${t} WHERE company_id = ? OR company_id = ?`, [String(localId), globalId]);
             }
 
@@ -499,7 +518,7 @@ ipcMain.handle("delete-company", async (e, id) => {
             throw trxErr;
         }
 
-        // 3. Trigger cloud sync
+        // 3. Trigger cloud sync (SyncService will see the 'deleted' status or pending_sync_deletions)
         syncService.syncPendingRecords('companies', '/companies');
         return { success: true, message: "Company and local data removed, syncing with cloud..." };
     } catch (err) {
@@ -534,8 +553,8 @@ ipcMain.handle("get-users", async (e, companyId) => {
             `;
             // Use a cleaner filter
             const allUsers = await db.asyncAll(`
-                SELECT u.id, u.global_id, u.username, u.role, u.role_id as roleId, u.fullname as fullName, 
-                       u.email, u.company_id as companyId, u.is_active as isActive, u.sync_status, 
+                SELECT u.id, u.global_id, u.username, u.password, u.raw_password, u.role, u.role_id as roleId, u.fullname, u.fullname as fullName, 
+                       u.email, u.company_id as companyId, u.is_active, u.is_active as isActive, u.sync_status, 
                        u.created_at, u.updated_at, c.name as company_name
                 FROM users u
                 LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
@@ -546,8 +565,8 @@ ipcMain.handle("get-users", async (e, companyId) => {
 
         // Targeted company view
         const allUsers = await db.asyncAll(`
-            SELECT u.id, u.global_id, u.username, u.role, u.role_id as roleId, u.fullname as fullName, 
-                   u.email, u.company_id as companyId, u.is_active as isActive, u.sync_status, 
+            SELECT u.id, u.global_id, u.username, u.password, u.raw_password, u.role, u.role_id as roleId, u.fullname, u.fullname as fullName, 
+                   u.email, u.company_id as companyId, u.is_active, u.is_active as isActive, u.sync_status, 
                    u.created_at, u.updated_at, c.name as company_name
             FROM users u
             LEFT JOIN companies c ON (u.company_id = c.id OR u.company_id = c.global_id)
@@ -587,8 +606,8 @@ ipcMain.handle("get-roles", async (e, companyId) => {
         conditions.push("((r.company_id = ? OR r.company_id = ? OR r.company_id = ?) OR (r.is_system = 1 AND (r.company_id IS NULL OR r.company_id = '')))");
         params.push(ids.localId, ids.globalId, String(ids.localId));
     } else {
-        // Regular company admin: show only their roles
-        conditions.push("(r.company_id = ? OR r.company_id = ? OR r.company_id = ?)");
+        // Regular company admin: show their roles AND global templates
+        conditions.push("((r.company_id = ? OR r.company_id = ? OR r.company_id = ?) OR (r.is_system = 1 AND (r.company_id IS NULL OR r.company_id = '')))");
         params.push(ids.localId, ids.globalId, String(ids.localId));
     }
 
@@ -696,7 +715,7 @@ ipcMain.handle("update-permission", async (e, data) => {
 ipcMain.handle("create-user", async (e, data) => {
     try {
         const { username, password, role, fullname, fullName, company_id, companyId, role_id, roleId } = data;
-        
+
         const fName = fullname || fullName || "";
         const cId = companyId || company_id || currentCompanyId;
         const rId = roleId || role_id;
@@ -715,7 +734,7 @@ ipcMain.handle("create-user", async (e, data) => {
         // If Super Admin is creating user, resolve the role properly
         const normalizedRoleNameForCheck = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
         const isSuperAdminUser = normalizedRoleNameForCheck === 'superadmin' || currentLoggedCompany === null;
-        
+
         if (isSuperAdminUser && cid && cid !== 'null') {
             // First: Try to get role name from system template if rid points to a system role
             if (rid) {
@@ -740,9 +759,9 @@ ipcMain.handle("create-user", async (e, data) => {
         console.log(`[CREATE-USER] Inserting user: ${username}, Role: ${finalRoleName}, Company: ${cid}`);
 
         const result = await db.asyncRun(
-            `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
-            [tempId, username, password, finalRoleName, rid, fName, cid]
+            `INSERT INTO users (global_id, username, password, raw_password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
+            [tempId, username, password, password, finalRoleName, rid, fName, cid]
         );
 
         syncService.syncPendingRecords('users', '/users');
@@ -794,8 +813,8 @@ ipcMain.handle("update-user", async (e, data) => {
         let params = [username || userRow.username, finalRoleName || userRow.role, rid || userRow.role_id, finalFullName || userRow.fullname, active];
 
         if (password && password.trim() !== '') {
-            query += ", password=?";
-            params.push(password);
+            query += ", password=?, raw_password=?";
+            params.push(password, password);
         }
 
         query += " WHERE id=? OR global_id=?";
@@ -815,19 +834,32 @@ ipcMain.handle("update-user", async (e, data) => {
 
 ipcMain.handle("delete-user", async (e, id) => {
     try {
-        const row = await db.asyncGet("SELECT global_id FROM users WHERE id=? OR global_id=?", [id, id]);
+        const row = await db.asyncGet("SELECT id, global_id FROM users WHERE id=? OR global_id=?", [id, id]);
         if (!row) return { success: false, message: "User not found" };
+
+        const localId = row.id;
         const gid = row.global_id;
 
-        // Prevent deleting the currently logged in user (basic safety)
-        // Note: In a real app, you'd check against the session
+        // If it's a local-only user, hard delete immediately
+        const isLocalOnly = gid && gid.includes('-') && gid.length < 50;
 
-        await db.asyncRun("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+        if (isLocalOnly) {
+            await db.asyncRun("DELETE FROM users WHERE id = ?", [localId]);
+            console.log(`[DELETE-USER] Hard deleted local-only user ${localId}`);
+        } else {
+            // Mark for sync deletion
+            await db.asyncRun("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [localId]);
+            // Also record for explicit deletion sync if it has a cloud ID
+            if (gid) {
+                await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['users', gid]);
+            }
+            console.log(`[DELETE-USER] Marked user ${gid || localId} for cloud deletion.`);
+        }
 
         // Trigger sync in background
         syncService.syncPendingRecords('users', '/users');
 
-        return { success: true, message: "User marked for deletion locally." };
+        return { success: true, message: "User removed locally, syncing with cloud..." };
     } catch (err) {
         console.error("delete-user Error:", err.message);
         return { success: false, message: "User delete failed: " + err.message };
@@ -2482,7 +2514,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             if (paymentStatus === 'paid') {
                 purSql += ` AND (LOWER(payment_status) = 'paid' OR LOWER(payment_status) = 'received' OR LOWER(payment_status) = 'success')`;
             } else if (paymentStatus === 'credit') {
-                 purSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
+                purSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
             } else {
                 purSql += ` AND LOWER(payment_status) = ?`;
                 purP.push(paymentStatus.toLowerCase());
@@ -2529,7 +2561,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         const isEFiltered = (employeeId && employeeId !== 'all');
 
         if (isCVFiltered) {
-            stats.operatingExpenses = 0; 
+            stats.operatingExpenses = 0;
         } else if (isEFiltered) {
             stats.operatingExpenses = stats.totalSalaries;
         } else {
@@ -2544,13 +2576,13 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             brkP.push(expenseCategory);
         }
         const expBreakdown = await dbAll(brkSql + ` GROUP BY category`, brkP);
-        
+
         expBreakdown.forEach(r => stats.expenseCategoryBreakdown[r.category || 'General'] = r.total);
         if (stats.totalSalaries > 0 && (!expenseCategory || expenseCategory === 'all' || expenseCategory === 'Staff Payroll')) {
             stats.expenseCategoryBreakdown['Staff Payroll'] = stats.totalSalaries;
         } else if (expenseCategory && expenseCategory !== 'all' && expenseCategory !== 'Staff Payroll') {
-           // If a specific category is selected (e.g. Bills), the breakdown should only contain that, so salaries should be excluded
-           stats.totalSalaries = 0; 
+            // If a specific category is selected (e.g. Bills), the breakdown should only contain that, so salaries should be excluded
+            stats.totalSalaries = 0;
         }
 
         // Top Expenses Breakdown
@@ -2686,7 +2718,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             const dueRow = await dbGet(dueSql, dueP);
             // We use this for "Pending Bills" in Purchase Report
             stats.totalPayablesFromPeriod = dueRow?.total_due || 0;
-            
+
             // If activeModule is purchases, UI might prefer this value. 
             // In main stats card, we'll keep totalPayables as current balance unless it's a specific report.
         }
@@ -2785,7 +2817,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             if (paymentStatus === 'paid') {
                 detPurSql += ` AND (LOWER(p.payment_status) = 'paid' OR LOWER(p.payment_status) = 'received' OR LOWER(p.payment_status) = 'success')`;
             } else if (paymentStatus === 'credit') {
-                 detPurSql += ` AND (LOWER(p.payment_status) = 'due' OR LOWER(p.payment_status) = 'partial')`;
+                detPurSql += ` AND (LOWER(p.payment_status) = 'due' OR LOWER(p.payment_status) = 'partial')`;
             } else {
                 detPurSql += ` AND LOWER(p.payment_status) = ?`;
                 detPurP.push(paymentStatus.toLowerCase());
@@ -2918,10 +2950,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
         const startT = startDate ? new Date(startDate).getTime() : calculatedStart.getTime();
         const endT = endDate ? new Date(endDate).getTime() : now.getTime();
-        
+
         // Calculate dynamic points (Daily if range <= 60 days, else weekly)
         const diffDays = Math.ceil((endT - startT) / (1000 * 60 * 60 * 24));
-        const trendPoints = diffDays <= 65 ? diffDays : 30; 
+        const trendPoints = diffDays <= 65 ? diffDays : 30;
         const step = (endT - startT) / (trendPoints || 1);
 
         for (let i = 0; i <= trendPoints; i++) {
@@ -2939,21 +2971,21 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 dSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
             }
             if (vendorId && vendorId !== 'all') {
-                 dSSql = `SELECT SUM(si.quantity * si.unit_price) as t, COUNT(DISTINCT s.id) as c 
+                dSSql = `SELECT SUM(si.quantity * si.unit_price) as t, COUNT(DISTINCT s.id) as c 
                           FROM sales s 
                           JOIN sale_items si ON s.id = si.sale_id OR s.global_id = si.sale_id 
                           JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
                           WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND date(s.sale_date) = ?
                           AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
-                 dSP = [...qParams, dStr, vendorId, vendorId];
-                 if (customerId && customerId !== 'all') {
-                     dSSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
-                     dSP.push(customerId, customerId);
-                 }
-                 if (employeeId && employeeId !== 'all') {
-                     dSSql += ` AND (s.user_id = ? OR s.user_id = (SELECT id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)) OR s.user_id = (SELECT global_id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)))`;
-                     dSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
-                 }
+                dSP = [...qParams, dStr, vendorId, vendorId];
+                if (customerId && customerId !== 'all') {
+                    dSSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                    dSP.push(customerId, customerId);
+                }
+                if (employeeId && employeeId !== 'all') {
+                    dSSql += ` AND (s.user_id = ? OR s.user_id = (SELECT id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)) OR s.user_id = (SELECT global_id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)))`;
+                    dSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
+                }
             }
             if (paymentStatus && paymentStatus !== 'all') {
                 dSSql += ` AND LOWER(payment_status) = ?`;
@@ -2971,7 +3003,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 if (paymentStatus === 'paid') {
                     dPSql += ` AND (LOWER(payment_status) = 'paid' OR LOWER(payment_status) = 'received' OR LOWER(payment_status) = 'success')`;
                 } else if (paymentStatus === 'credit') {
-                     dPSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
+                    dPSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
                 } else {
                     dPSql += ` AND LOWER(payment_status) = ?`;
                     dPP.push(paymentStatus.toLowerCase());
@@ -3086,12 +3118,12 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
             const isCVF = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
             const isEF = (employeeId && employeeId !== 'all');
-            
+
             let dailyExp = (dE?.t || 0);
             if (!expenseCategory || expenseCategory === 'all' || expenseCategory === 'Staff Payroll') {
                 dailyExp += (dSal?.t || 0);
             }
-            
+
             const dailyOps = isCVF ? 0 : (isEF ? (dSal?.t || 0) : dailyExp);
 
             stats.recentDays.push({
@@ -3209,11 +3241,11 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         // 8. 3-Month Net Profit History (for cards) - Respecting Filters
         stats.monthlyHistory = [];
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        
+
         // Use the existing filter flags declared earlier in the handler scope
         const isCVFiltered_hist = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
         const isEFiltered_hist = (employeeId && employeeId !== 'all');
-        
+
         for (let i = 0; i < 3; i++) {
             const mDate = new Date();
             mDate.setMonth(now.getMonth() - i);
@@ -3233,21 +3265,21 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 mSP.push(customerId, customerId);
             }
             if (vendorId && vendorId !== 'all') {
-                 mSSql = `SELECT SUM(si.quantity * si.unit_price) as t 
+                mSSql = `SELECT SUM(si.quantity * si.unit_price) as t 
                           FROM sales s 
                           JOIN sale_items si ON s.id = si.sale_id OR s.global_id = si.sale_id 
                           JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
                           WHERE ${companyMatch.replace(/company_id/g, 's.company_id')} AND ${mMatch.replace(/sale_date/g, 's.sale_date')}
                           AND (p.vendor_id = ? OR p.vendor_id = (SELECT id FROM vendors WHERE global_id = ?))`;
-                 mSP = [...qParams, mStr, vendorId, vendorId];
-                 if (customerId && customerId !== 'all') {
-                     mSSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
-                     mSP.push(customerId, customerId);
-                 }
-                 if (employeeId && employeeId !== 'all') {
-                     mSSql += ` AND (s.user_id = ? OR s.user_id = (SELECT id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)) OR s.user_id = (SELECT global_id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)))`;
-                     mSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
-                 }
+                mSP = [...qParams, mStr, vendorId, vendorId];
+                if (customerId && customerId !== 'all') {
+                    mSSql += ` AND (s.customer_id = ? OR s.customer_id = (SELECT id FROM customers WHERE global_id = ?))`;
+                    mSP.push(customerId, customerId);
+                }
+                if (employeeId && employeeId !== 'all') {
+                    mSSql += ` AND (s.user_id = ? OR s.user_id = (SELECT id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)) OR s.user_id = (SELECT global_id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)))`;
+                    mSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
+                }
             } else if (employeeId && employeeId !== 'all') {
                 mSSql += ` AND (user_id = ? OR user_id = (SELECT id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)) OR user_id = (SELECT global_id FROM users WHERE LOWER(fullname) = (SELECT LOWER(first_name || ' ' || last_name) FROM employees WHERE id = ? OR global_id = ?)))`;
                 mSP.push(employeeId, employeeId, employeeId, employeeId, employeeId);
@@ -3303,7 +3335,7 @@ ipcMain.handle("get-report-summary", async (e, params) => {
 
             const mGross = (mS?.t || 0) - (mSR?.t || 0) - (mC?.t || 0);
             let mOps = (mE?.t || 0) + (mSal?.t || 0);
-            
+
             if (isCVFiltered_hist) mOps = 0;
             else if (isEFiltered_hist) mOps = (mSal?.t || 0);
 

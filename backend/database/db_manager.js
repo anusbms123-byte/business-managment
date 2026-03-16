@@ -85,7 +85,7 @@ db.initPromise = (async () => {
     const tables = [
       'pending_sync_deletions (id INTEGER PRIMARY KEY AUTOINCREMENT, table_name TEXT, global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
       'companies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, email TEXT, tax_no TEXT, referral_code TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
-      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, role TEXT, role_id TEXT, fullname TEXT, company_id TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, raw_password TEXT, role TEXT, role_id TEXT, fullname TEXT, company_id TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
       'roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, is_system INTEGER DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
       'permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_id TEXT, module TEXT NOT NULL, can_view INTEGER DEFAULT 0, can_create INTEGER DEFAULT 0, can_edit INTEGER DEFAULT 0, can_delete INTEGER DEFAULT 0, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(role_id, module))',
       'categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
@@ -151,6 +151,7 @@ db.initPromise = (async () => {
       await ensureColumn(t, 'is_active', 'INTEGER', '1');
       await ensureColumn(t, 'created_at', 'DATETIME', 'CURRENT_TIMESTAMP');
       await ensureColumn(t, 'updated_at', 'DATETIME', 'CURRENT_TIMESTAMP');
+      if (t === 'users') await ensureColumn(t, 'raw_password', 'TEXT');
     }
 
     // 4. MODULE SPECIFIC COLUMNS
@@ -349,9 +350,7 @@ db.initPromise = (async () => {
 
     // 6. SEEDS
     const systemRoles = [
-      { gid: 'system-super-admin', name: 'Super Admin', desc: 'System-wide administrative access', modules: ['users', 'roles', 'settings', 'backup'], type: 'full' },
-      { gid: 'system-admin-template', name: 'Admin', desc: 'Full company access (Template)', modules: 'all', type: 'full' },
-      { gid: 'system-manager-template', name: 'Manager', desc: 'Management level access (Template)', modules: 'all', type: 'mid' }
+      { gid: 'system-super-admin', name: 'Super Admin', desc: 'System-wide administrative access', modules: ['users', 'roles', 'settings', 'backup'], type: 'full' }
     ];
 
     const allModules = ['dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory', 'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting', 'users', 'roles', 'settings', 'backup'];
@@ -374,7 +373,15 @@ db.initPromise = (async () => {
       }
     }
 
+    // 6.5 CLEANUP REMOVED SEEDS
+    await db.asyncRun("DELETE FROM roles WHERE global_id = 'system-manager-template'");
+    await db.asyncRun("DELETE FROM permissions WHERE role_id = 'system-manager-template'");
+
     // 7. AUTO-CLEANUP: Merge duplicate system roles (e.g. Manager vs manager)
+    // AND explicitly remove the old admin template if it's not the primary one anymore
+    await db.asyncRun("DELETE FROM roles WHERE global_id = 'system-admin-template'");
+    await db.asyncRun("DELETE FROM permissions WHERE role_id = 'system-admin-template'");
+
     // Sort so that 'system-' global_ids come first
     const allRoles = await db.asyncAll("SELECT id, global_id, name FROM roles WHERE company_id IS NULL OR company_id = '' ORDER BY CASE WHEN global_id LIKE 'system-%' THEN 0 ELSE 1 END ASC, id ASC");
 

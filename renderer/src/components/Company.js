@@ -690,7 +690,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                 ...user,
                 company_id: finalCompId,
                 role_id: finalRoleId,
-                password: ''
+                password: user.raw_password || user.password || ''
             });
         } else {
             const defaultRole = roles.find(r => r.name?.toLowerCase() === 'admin' && !(r.company_id || r.companyId));
@@ -838,7 +838,7 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <FormInput
-                                label={formData.id ? "New Password (Optional)" : "Password"}
+                                label="Password"
                                 type={showPassword ? 'text' : 'password'}
                                 required={!formData.id}
                                 value={formData.password}
@@ -878,10 +878,11 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                             return false;
                                         }
 
-                                        // For regular admins: show roles for their company
+                                        // For regular admins: show roles for their company PLUS global templates
                                         const roleCid = r.company_id || r.companyId;
                                         const targetCid = formData.company_id || currentUser?.company_id || currentUser?.companyId;
-                                        return isNotSuper && roleCid == targetCid;
+                                        const isSystem = (r.is_system === 1 || r.isSystem === true || !roleCid);
+                                        return isNotSuper && (isSystem || roleCid == targetCid);
                                     }).map(r => ({ value: r.global_id || r.id, label: r.name }));
 
                                     // USER REQUEST: If editing an Admin user (created by Super Admin), 
@@ -1078,28 +1079,33 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
         const roleName = (r.name || '').toLowerCase();
         if (roleName === 'super admin' || roleName === 'superadmin' || roleName === 'super_admin') return false;
 
+        const isSystem = (r.is_system === 1 || r.isSystem === true || !(r.company_id || r.companyId));
+
         if (isSuperAdmin) {
-            // If viewing specific company, show roles for that company
-            if (selectedCompany !== 'system' && selectedCompany !== 'all') {
-                const roleCid = r.company_id || r.companyId;
-                return roleCid === selectedCompany;
+            // Super Admin View: Filter by the dropdown (System roles, specific company, or all)
+            if (selectedCompany === 'system') return isSystem;
+            if (selectedCompany !== 'all') {
+                const targetCid = r.company_id || r.companyId;
+                return targetCid == selectedCompany;
             }
-            // If viewing "Templates", show only system roles with no company
-            if (selectedCompany === 'system') {
-                const isTemplate = (r.is_system === 1 || r.isSystem === true || r.is_system === '1') && !(r.company_id || r.companyId);
-                return isTemplate;
-            }
-            // Global view: show everything
             return true;
         }
-        return true;
+
+        // REGULAR ADMIN: Hide all global/system templates from the card list.
+        // They only see roles that belong to their specific company.
+        return !isSystem;
     });
 
-    // De-duplicate by name for Super Admin to ensure only one Admin/Manager shows
+    // De-duplicate by name, prioritizing Global roles (without company_id)
     const roleMap = new Map();
     rawFilteredRoles.forEach(r => {
         const key = (r.name || '').toLowerCase().trim();
-        if (!roleMap.has(key)) roleMap.set(key, r);
+        const existing = roleMap.get(key);
+
+        // If no entry exists, or if the new role is a 'Global' one while the existing is 'Local'
+        if (!existing || (!(r.company_id || r.companyId) && (existing.company_id || existing.companyId))) {
+            roleMap.set(key, r);
+        }
     });
     const filteredRoles = Array.from(roleMap.values());
 
@@ -1122,13 +1128,13 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                     <Shield size={24} />
                 </div>
                 <div className="flex gap-1 shadow-sm border border-slate-100 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 overflow-hidden transition-opacity">
-                    {canEdit('roles') && (
+                    {(canEdit('roles') && (isSuperAdmin || !(role.is_system || role.isSystem))) && (
                         <button onClick={() => openModal(role)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors">
                             <Edit2 size={16} />
                         </button>
                     )}
                     {/* Allow deletion if user has permission OR is Super Admin (but protect core Admin/Manager from accidental deletion) */}
-                    {(canDelete('roles') || isSuperAdmin) && !(['admin', 'manager'].includes((role.name || '').toLowerCase()) && (role.is_system || role.isSystem)) && (
+                    {((canDelete('roles') || isSuperAdmin) && (isSuperAdmin || !(role.is_system || role.isSystem))) && !(['admin', 'manager'].includes((role.name || '').toLowerCase()) && (role.is_system || role.isSystem)) && (
                         <button onClick={() => handleDelete(role.global_id || role.id)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors border-l border-slate-100 dark:border-slate-800">
                             <Trash2 size={16} />
                         </button>
@@ -1162,18 +1168,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Company Filter for Super Admin */}
-                    {isSuperAdmin && (
-                        <div className="flex items-center gap-2">
-                            <select
-                                value={selectedCompany}
-                                onChange={(e) => setSelectedCompany(e.target.value)}
-                                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 tracking-tight"
-                            >
-                                <option value="system">System roles</option>
-                                {companies.map(c => <option key={c.id} value={c.global_id || c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                    )}
+
                     {canCreate('settings') && (
                         <Button onClick={() => openModal()} icon={Plus}>Add role</Button>
                     )}
@@ -1198,20 +1193,7 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             <FormInput label="Description" value={formData.description} onChange={v => setFormData({ ...formData, description: v })} placeholder="Enter role description" />
                         </div>
 
-                        {/* Company Selection for New Role (Super Admin only) */}
-                        {isSuperAdmin && !formData.id && (
-                            <div className="grid grid-cols-1 gap-6 mb-4">
-                                <FormSelect
-                                    label="Select Company"
-                                    required
-                                    value={formData.target_company_id}
-                                    onChange={v => setFormData({ ...formData, target_company_id: v })}
-                                    options={companies.map(c => ({ value: c.global_id || c.id, label: c.name }))}
-                                    placeholder="Select company"
-                                    icon={Building2}
-                                />
-                            </div>
-                        )}
+
 
                         <div>
                             <h4 className="text-sm font-semibold text-black dark:text-slate-300 flex items-center gap-2 mb-4 tracking-tight">

@@ -262,7 +262,7 @@ class SyncService {
                 }
                 sql = ""; // skip generic lookup
             }
-            else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE LOWER(name) = LOWER(?)`; val = cloudData.name; }
+            else if (table === 'companies') { sql = `SELECT id, global_id, updated_at, sync_status FROM companies WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))`; val = cloudData.name; }
 
             if (sql && val && val !== "" && val !== "null" && val !== "undefined" && val !== null) {
                 const params = (table === 'users' || table === 'companies') ? [val] : [val, companyId, localCompanyId, String(localCompanyId)];
@@ -282,9 +282,9 @@ class SyncService {
                 const oldGid = existingRow.global_id;
                 const newGid = cloudData.id;
                 console.log(`[SYNC] Adopting Cloud ID ${newGid} for pending ${table} record ${existingRow.id} (Matched by business key)`);
-                
+
                 await db.asyncRun(`UPDATE ${table} SET global_id = ? WHERE id = ?`, [newGid, existingRow.id]);
-                
+
                 // Update children references to maintain integrity
                 if (table === 'sales') {
                     await db.asyncRun("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [newGid, oldGid]);
@@ -295,6 +295,14 @@ class SyncService {
                 } else if (table === 'roles') {
                     await db.asyncRun("UPDATE permissions SET role_id = ? WHERE role_id = ?", [newGid, oldGid]);
                     await db.asyncRun("UPDATE users SET role_id = ? WHERE role_id = ?", [newGid, oldGid]);
+                } else if (table === 'companies') {
+                    const tables = ['users', 'roles', 'products', 'categories', 'brands', 'vendors', 'customers', 'employees', 'expenses', 'sales', 'purchases', 'accounts', 'sale_returns', 'purchase_returns', 'attendances', 'salary_records'];
+                    for (const t of tables) {
+                        await db.asyncRun(`UPDATE ${t} SET company_id = ? WHERE company_id = ?`, [newGid, oldGid]);
+                    }
+                    console.log(`[SYNC] Updated company_id references for ${tables.length} tables: ${oldGid} -> ${newGid}`);
+                } else if (table === 'users') {
+                    await db.asyncRun("UPDATE sales SET user_id = ? WHERE user_id = ?", [newGid, oldGid]);
                 }
             }
             return; // Protect other local changes (amount, items, etc.)
@@ -312,12 +320,13 @@ class SyncService {
         const activeVal = cloudData.isActive !== undefined ? (cloudData.isActive ? 1 : 0) : (cloudData.is_active !== undefined ? cloudData.is_active : 1);
 
         if (table === 'users') {
+            const rawPass = cloudData.raw_password || cloudData.rawPassword || existingRow?.raw_password;
             if (existingRow) {
-                query = `UPDATE users SET global_id=?, username=?, role=?, role_id=?, fullname=?, email=?, company_id=?, is_active=?, sync_status='synced', updated_at=? WHERE id=?`;
-                params = [cloudData.id, cloudData.username, cloudData.role?.name || cloudData.role, cloudData.roleId || cloudData.role_id, cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                query = `UPDATE users SET global_id=?, username=?, role=?, role_id=?, fullname=?, email=?, company_id=?, is_active=?, raw_password=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.username, cloudData.role?.name || cloudData.role, cloudData.roleId || cloudData.role_id, cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, rawPass, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
-                query = `INSERT INTO users (global_id, username, password, role, role_id, fullname, email, company_id, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                params = [cloudData.id, cloudData.username, cloudData.password, cloudData.role?.name || cloudData.role, (cloudData.roleId || cloudData.role_id), cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                query = `INSERT INTO users (global_id, username, password, raw_password, role, role_id, fullname, email, company_id, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.username, cloudData.password, rawPass || cloudData.password, cloudData.role?.name || cloudData.role, (cloudData.roleId || cloudData.role_id), cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'roles') {
             if (existingRow) {
@@ -1020,6 +1029,7 @@ class SyncService {
                     payload.isActive = record.is_active === 1;
                     payload.username = record.username;
                     payload.email = record.email;
+                    payload.raw_password = record.raw_password;
 
                     // Support password sync if changed locally
                     if (record.password && record.password.trim() !== '') {
@@ -1090,14 +1100,14 @@ class SyncService {
                                     // Update local record with cloud ID before push
                                     const oldGid = globalId;
                                     await db.asyncRun(`UPDATE ${table} SET global_id = ? WHERE id = ?`, [match.id, localId]);
-                                    
+
                                     // Update children references
                                     if (table === 'sales') {
                                         await db.asyncRun("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [match.id, oldGid]);
                                     } else if (table === 'purchases') {
                                         await db.asyncRun("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [match.id, oldGid]);
                                     }
-                                    
+
                                     payload.id = match.id;
                                     isLocalTempUuid = false;
                                 }
@@ -1248,6 +1258,24 @@ class SyncService {
         try {
             if (collision) {
                 console.log(`[SYNC] Merging duplicate ${table}: ID ${localId} -> ${collision.id} (GID: ${globalId})`);
+
+                // CRITICAL: Before deleting the record, transfer all integer-based local references
+                // from localId (local integer) to collision.id (the one we are keeping)
+                if (table === 'sales') {
+                    await db.asyncRun("UPDATE sale_items SET sale_id = ? WHERE sale_id = ?", [collision.id, localId]);
+                    await db.asyncRun("UPDATE sale_returns SET sale_id = ? WHERE sale_id = ?", [collision.id, localId]);
+                } else if (table === 'purchases') {
+                    await db.asyncRun("UPDATE purchase_items SET purchase_id = ? WHERE purchase_id = ?", [collision.id, localId]);
+                    await db.asyncRun("UPDATE purchase_returns SET purchase_id = ? WHERE purchase_id = ?", [collision.id, localId]);
+                } else if (table === 'roles') {
+                    await db.asyncRun("UPDATE users SET role_id = ? WHERE role_id = ?", [collision.id, localId]);
+                } else if (table === 'companies') {
+                    const tables = ['users', 'roles', 'products', 'categories', 'brands', 'vendors', 'customers', 'employees', 'expenses', 'sales', 'purchases', 'accounts', 'sale_returns', 'purchase_returns', 'attendances', 'salary_records', 'audit_logs'];
+                    for (const t of tables) {
+                        await db.asyncRun(`UPDATE ${t} SET company_id = ? WHERE company_id = ?`, [collision.id, localId]);
+                    }
+                }
+
                 await db.asyncRun(`DELETE FROM ${table} WHERE id = ?`, [localId]);
             } else {
                 // Update Parent Record

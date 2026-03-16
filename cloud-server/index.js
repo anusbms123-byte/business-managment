@@ -106,7 +106,8 @@ app.post('/api/auth/login', async (req, res) => {
                 company_id: user.companyId,
                 company_name: user.company?.name,
                 role: user.role?.name,
-                role_id: user.roleId
+                role_id: user.roleId,
+                raw_password: user.rawPassword
             },
             permissions
         });
@@ -227,7 +228,7 @@ app.delete('/api/companies/:id', async (req, res) => {
         // Perform manual cascade delete in a transaction with increased timeout
         await prisma.$transaction(async (tx) => {
             console.log(`[DELETE-COMPANY] Starting cascade for ${companyId}`);
-            
+
             // 1. Delete grandchildren / dependent items
             await tx.saleItem.deleteMany({ where: { sale: { companyId } } });
             await tx.purchaseItem.deleteMany({ where: { purchase: { companyId } } });
@@ -258,7 +259,7 @@ app.delete('/api/companies/:id', async (req, res) => {
 
             // 4. Finally delete the Company
             await tx.company.delete({ where: { id: companyId } });
-            
+
             console.log(`[DELETE-COMPANY] Completed for ${companyId}`);
         }, {
             timeout: 30000 // 30 seconds for large companies
@@ -302,6 +303,7 @@ app.get('/api/users', async (req, res) => {
             id: u.id,
             username: u.username,
             password: u.password,
+            raw_password: u.rawPassword,
             fullname: u.fullName,
             role: u.role?.name,
             roleId: u.roleId,
@@ -323,7 +325,7 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
     try {
-        const { id, username, password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
+        const { id, username, password, raw_password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
 
         // Validate roleId
         let finalRoleId = roleId || null;
@@ -379,6 +381,7 @@ app.post('/api/users', async (req, res) => {
 
         // Hash password before saving to cloud
         const hashedPassword = await bcrypt.hash(password || 'changeme', 10);
+        const rawPass = raw_password || password;
         const activeVal = isActive !== undefined ? isActive : (is_active === 1 || is_active === true);
 
         // Upsert by username to gracefully handle re-sync of same user
@@ -388,10 +391,10 @@ app.post('/api/users', async (req, res) => {
             console.log(`[USERS POST] Username '${username}' already exists (${existing.id}). Updating instead.`);
             user = await prisma.user.update({
                 where: { username },
-                data: { email, fullName, roleId: finalRoleId, companyId, isActive: activeVal }
+                data: { email, fullName, roleId: finalRoleId, companyId, isActive: activeVal, rawPassword: rawPass }
             });
         } else {
-            const createData = { username, password: hashedPassword, email, fullName, roleId: finalRoleId, companyId, isActive: activeVal };
+            const createData = { username, password: hashedPassword, rawPassword: rawPass, email, fullName, roleId: finalRoleId, companyId, isActive: activeVal };
             // If a specific cloud ID is provided, use it
             if (id && !id.includes('-')) createData.id = id;
             user = await prisma.user.create({ data: createData });
@@ -402,7 +405,7 @@ app.post('/api/users', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
     try {
-        const { username, password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
+        const { username, password, raw_password, email, fullName, roleId, companyId, isActive, is_active, role } = req.body;
         const userId = req.params.id;
 
         // Validate roleId
@@ -457,8 +460,9 @@ app.put('/api/users/:id', async (req, res) => {
             email,
             fullName,
             roleId: finalRoleId,
-            companyId,
-            isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined)
+            companyId: companyId,
+            isActive: isActive !== undefined ? isActive : (is_active !== undefined ? (is_active === 1 || is_active === true) : undefined),
+            rawPassword: raw_password || password
         };
 
         if (password && password.trim() !== '') {
@@ -815,16 +819,16 @@ app.put('/api/customers/:id', async (req, res) => {
 app.delete('/api/customers/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        
+
         await prisma.$transaction([
             // Delete Sale Return Items and Returns
             prisma.saleReturnItem.deleteMany({ where: { saleReturn: { customerId: id } } }),
             prisma.saleReturn.deleteMany({ where: { customerId: id } }),
-            
+
             // Delete Sale Items and Sales
             prisma.saleItem.deleteMany({ where: { sale: { customerId: id } } }),
             prisma.sale.deleteMany({ where: { customerId: id } }),
-            
+
             // Delete the customer
             prisma.customer.delete({ where: { id } })
         ]);
@@ -943,16 +947,16 @@ app.put('/api/vendors/:id', async (req, res) => {
 app.delete('/api/vendors/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        
+
         await prisma.$transaction([
             // 1. Delete Purchase Return Items and Returns
             prisma.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { vendorId: id } } }),
             prisma.purchaseReturn.deleteMany({ where: { vendorId: id } }),
-            
+
             // 2. Delete Purchase Items and Purchases
             prisma.purchaseItem.deleteMany({ where: { purchase: { vendorId: id } } }),
             prisma.purchase.deleteMany({ where: { vendorId: id } }),
-            
+
             // 3. Delete the vendor
             prisma.vendor.delete({ where: { id } })
         ]);
@@ -1743,7 +1747,7 @@ app.put('/api/roles/:id', async (req, res) => {
 app.delete('/api/roles/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        
+
         // Protect system roles
         const role = await prisma.role.findUnique({ where: { id } });
         if (role && role.isSystem && ['admin', 'manager'].includes(role.name.toLowerCase())) {
@@ -1956,7 +1960,7 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const id = req.params.id;
-        
+
         // Force delete related records first to satisfy foreign key constraints
         await prisma.$transaction([
             prisma.saleItem.deleteMany({ where: { productId: id } }),
@@ -2697,7 +2701,7 @@ app.get('/api/reports/summary', async (req, res) => {
         let totalSales = sales.reduce((acc, s) => acc + s.grandTotal, 0);
         let totalPurchases = purchases.reduce((acc, p) => acc + p.totalAmount, 0);
         let totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
-        
+
         const totalSalesReturnsRaw = saleReturns.reduce((acc, r) => acc + r.totalAmount, 0);
         const totalPurchaseReturnsRaw = purchaseReturns.reduce((acc, r) => acc + r.totalAmount, 0);
 
