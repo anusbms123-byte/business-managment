@@ -224,19 +224,19 @@ app.delete('/api/companies/:id', async (req, res) => {
     try {
         const companyId = req.params.id;
 
-        // Perform manual cascade delete in a transaction
+        // Perform manual cascade delete in a transaction with increased timeout
         await prisma.$transaction(async (tx) => {
-            // 1. Delete grandchildren / dependent items with complex relations
+            console.log(`[DELETE-COMPANY] Starting cascade for ${companyId}`);
+            
+            // 1. Delete grandchildren / dependent items
             await tx.saleItem.deleteMany({ where: { sale: { companyId } } });
             await tx.purchaseItem.deleteMany({ where: { purchase: { companyId } } });
             await tx.transaction.deleteMany({ where: { account: { companyId } } });
             await tx.attendance.deleteMany({ where: { employee: { companyId } } });
-
-            // Delete Return Items (they cascade from returns, but just to be safe if deleting returns first)
             await tx.saleReturnItem.deleteMany({ where: { saleReturn: { companyId } } });
             await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturn: { companyId } } });
 
-            // 2. Delete main company-linked records
+            // 2. Delete main company-linked records (Order matters for FKs)
             await tx.salaryRecord.deleteMany({ where: { companyId } });
             await tx.saleReturn.deleteMany({ where: { companyId } });
             await tx.purchaseReturn.deleteMany({ where: { companyId } });
@@ -252,12 +252,16 @@ app.delete('/api/companies/:id', async (req, res) => {
             await tx.account.deleteMany({ where: { companyId } });
             await tx.supportRequest.deleteMany({ where: { companyId } });
 
-            // 3. Delete Users and Roles (CompanyRequests and Permissions cascade automatically)
+            // 3. Delete Users and Roles
             await tx.user.deleteMany({ where: { companyId } });
             await tx.role.deleteMany({ where: { companyId } });
 
             // 4. Finally delete the Company
             await tx.company.delete({ where: { id: companyId } });
+            
+            console.log(`[DELETE-COMPANY] Completed for ${companyId}`);
+        }, {
+            timeout: 30000 // 30 seconds for large companies
         });
 
         res.json({ success: true, message: "Company and all associated records deleted successfully" });

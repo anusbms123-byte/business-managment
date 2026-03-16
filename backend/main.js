@@ -473,12 +473,38 @@ ipcMain.handle("update-company", async (e, data) => {
 });
 ipcMain.handle("delete-company", async (e, id) => {
     try {
-        await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [id, id]);
+        // Resolve company global_id first for thorough cleanup
+        const company = await db.asyncGet("SELECT id, global_id FROM companies WHERE id=? OR global_id=?", [id, id]);
+        if (!company) return { success: false, message: "Company not found locally." };
+
+        const localId = company.id;
+        const globalId = company.global_id;
+
+        await db.asyncRun("BEGIN TRANSACTION");
+        try {
+            // 1. Mark the company as deleted for sync
+            await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [localId]);
+
+            // 2. Perform local cascade delete for better UX (so users/roles don't linger)
+            const tables = ['users', 'roles', 'products', 'categories', 'brands', 'vendors', 'customers', 'employees', 'expenses', 'sales', 'purchases', 'accounts', 'sale_returns', 'purchase_returns', 'attendances', 'salary_records'];
+            
+            for (const t of tables) {
+                await db.asyncRun(`DELETE FROM ${t} WHERE company_id = ? OR company_id = ?`, [String(localId), globalId]);
+            }
+
+            await db.asyncRun("COMMIT");
+            console.log(`[DELETE-COMPANY] Local cleanup completed for company ${globalId || localId}`);
+        } catch (trxErr) {
+            await db.asyncRun("ROLLBACK");
+            throw trxErr;
+        }
+
+        // 3. Trigger cloud sync
         syncService.syncPendingRecords('companies', '/companies');
-        return { success: true, message: "Company marked for deletion locally." };
+        return { success: true, message: "Company and local data removed, syncing with cloud..." };
     } catch (err) {
         console.error("delete-company Error:", err.message);
-        return { success: false, message: err.message };
+        return { success: false, message: "Deletion failed: " + err.message };
     }
 });
 
@@ -669,47 +695,56 @@ ipcMain.handle("update-permission", async (e, data) => {
 // Users Management Handlers (Missing previously)
 ipcMain.handle("create-user", async (e, data) => {
     try {
-        const { username, password, role, fullname, company_id, companyId, role_id, roleId } = data;
-        let cid = company_id || companyId || currentCompanyId;
-        let rid = role_id || roleId;
+        const { username, password, role, fullname, fullName, company_id, companyId, role_id, roleId } = data;
+        
+        const fName = fullname || fullName || "";
+        const cId = companyId || company_id || currentCompanyId;
+        const rId = roleId || role_id;
+
+        // Check for existing username locally
+        const existing = await db.asyncGet("SELECT id FROM users WHERE username = ?", [username]);
+        if (existing) {
+            return { success: false, message: "Username already exists locally." };
+        }
+
+        let cid = cId;
+        let rid = rId;
         let finalRoleName = role;
         const tempId = randomUUID();
 
         // If Super Admin is creating user, resolve the role properly
-        const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
-        const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
-        if (isSuperAdmin && cid) {
+        const normalizedRoleNameForCheck = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+        const isSuperAdminUser = normalizedRoleNameForCheck === 'superadmin' || currentLoggedCompany === null;
+        
+        if (isSuperAdminUser && cid && cid !== 'null') {
             // First: Try to get role name from system template if rid points to a system role
             if (rid) {
                 const systemRole = await db.asyncGet("SELECT name FROM roles WHERE (id = ? OR global_id = ?) AND is_system = 1", [rid, rid]);
                 if (systemRole) {
                     finalRoleName = systemRole.name;
-                    console.log(`[CREATE-USER] Resolved system template role name: ${finalRoleName}`);
                 }
             }
 
             // Second: Try to find a company-specific role with the same name
             if (finalRoleName) {
                 const companyRole = await db.asyncGet(
-                    "SELECT id, global_id, name FROM roles WHERE company_id = ? AND LOWER(name) = LOWER(?)",
+                    "SELECT id, global_id FROM roles WHERE company_id = ? AND LOWER(name) = LOWER(?)",
                     [cid, finalRoleName]
                 );
                 if (companyRole) {
                     rid = companyRole.global_id || String(companyRole.id);
-                    console.log(`[AUTO-LINK] Found company-specific role: ${rid} (${companyRole.name})`);
-                } else {
-                    // No company-specific role exists. Still use the system template rid.
-                    // The cloud API will resolve by role name.
-                    console.log(`[CREATE-USER] No company-specific '${finalRoleName}' role found for company ${cid}. Using system template ID: ${rid}`);
                 }
             }
         }
 
+        console.log(`[CREATE-USER] Inserting user: ${username}, Role: ${finalRoleName}, Company: ${cid}`);
+
         const result = await db.asyncRun(
             `INSERT INTO users (global_id, username, password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
-            [tempId, username, password, finalRoleName, rid, fullname, cid]
+            [tempId, username, password, finalRoleName, rid, fName, cid]
         );
+
         syncService.syncPendingRecords('users', '/users');
         return { success: true, id: result.lastID, global_id: tempId, message: "User created locally" };
     } catch (err) {
@@ -720,17 +755,27 @@ ipcMain.handle("create-user", async (e, data) => {
 
 ipcMain.handle("update-user", async (e, data) => {
     try {
-        const { id, username, password, role, fullname, fullName, role_id, roleId, is_active } = data;
+        const { id, username, password, role, is_active, isActive, role_id, roleId } = data;
+        const finalFullName = data.fullname || data.fullName || data.fullname;
         let rid = role_id || roleId;
-        const finalFullName = fullname || fullName;
         let finalRoleName = role;
 
         // Resolve existing data
         const userRow = await db.asyncGet("SELECT * FROM users WHERE id = ? OR global_id = ?", [id, id]);
         if (!userRow) return { success: false, message: "User not found" };
 
-        const active = (is_active !== undefined) ? ((is_active === 1 || is_active === true) ? 1 : 0) : userRow.is_active;
+        // Robustly parse activity status (handle true, "true", 1, "1" etc.)
+        let active;
+        if (isActive !== undefined) {
+            active = (isActive === true || isActive === 1 || isActive === 'true' || isActive === '1') ? 1 : 0;
+        } else if (is_active !== undefined) {
+            active = (is_active === true || is_active === 1 || is_active === 'true' || is_active === '1') ? 1 : 0;
+        } else {
+            active = userRow.is_active;
+        }
+
         const cid = userRow.company_id;
+        console.log(`[USER-UPDATE] Editing user ${username} (Active: ${active})`);
 
         const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
         const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
