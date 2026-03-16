@@ -112,23 +112,29 @@ let currentLoggedRole = null;
 // This ensures local changes go to cloud as soon as connection is available
 setInterval(async () => {
     if (syncService.isPushing) return;
-    console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pushing pending local changes...`);
+    // console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pushing pending local changes...`);
     await syncService.syncPendingRecords();
 }, 30000);
 
-// 2. LOW-FREQUENCY PULL (Every 5 minutes)
+// 2. LOW-FREQUENCY PULL (Every 2 minutes)
 // This keeps local data fresh from cloud
 setInterval(async () => {
     if (syncService.isPulling) return;
-    if (currentLoggedCompany !== undefined) {
-        console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pulling fresh data for: ${currentLoggedCompany === null ? 'Global' : currentLoggedCompany}`);
-        try {
-            await syncService.pullAllData(currentLoggedCompany);
-        } catch (err) {
-            console.error("[AUTO-SYNC] Pull failed:", err.message);
-        }
+    
+    // Convert undefined to null for safety (Super Admin case)
+    const activeCid = (currentLoggedCompany === undefined) ? null : currentLoggedCompany;
+    
+    // We only skip if NO user is logged in. How do we know if NO user is logged in?
+    // If currentLoggedRole is also null, maybe nobody is logged in.
+    if (!currentLoggedRole) return;
+
+    console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pulling fresh data for: ${activeCid === null ? 'Global' : activeCid}`);
+    try {
+        await syncService.pullAllData(activeCid);
+    } catch (err) {
+        console.error("[AUTO-SYNC] Pull failed:", err.message);
     }
-}, 60000);
+}, 120000);
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -3868,14 +3874,20 @@ function createWindow() {
 }
 
 ipcMain.handle("set-active-session", async (e, { companyId, role }) => {
-    console.log(`[SESSION] Renderer informing active session: Company=${companyId}, Role=${role}`);
-    currentLoggedCompany = companyId;
+    // Explicitly handle null vs undefined for Super Admin Global Sync
+    const finalCid = (companyId === undefined || companyId === 'undefined') ? null : companyId;
+    console.log(`[SESSION] Renderer informing active session: Company=${finalCid}, Role=${role}`);
+    
+    currentLoggedCompany = finalCid;
     currentLoggedRole = role;
-    syncService.setCompanyId(companyId);
+    syncService.setCompanyId(finalCid);
+    
     // Trigger immediate push/pull if back online
     syncService.syncPendingRecords();
-    if (companyId !== undefined) {
-        syncService.pullAllData(companyId);
+    
+    // Always trigger pull if role is set (means someone is logged in)
+    if (role) {
+        syncService.pullAllData(finalCid);
     }
     return { success: true };
 });
