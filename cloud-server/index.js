@@ -3149,12 +3149,16 @@ app.post('/api/auth/signup', async (req, res) => {
         }
 
         // Get 'Admin' role ID (default for new signups)
+        // We look for 'ADMIN' or 'Admin' specifically to match the system template
         const adminRole = await prisma.role.findFirst({
-            where: { isSystem: true, name: 'Admin' }
+            where: { 
+                isSystem: true, 
+                name: { in: ['ADMIN', 'Admin', 'admin'] }
+            }
         });
 
         if (!adminRole) {
-            return res.status(500).json({ success: false, message: 'System configuration error: Admin role not found' });
+            return res.status(500).json({ success: false, message: 'System configuration error: Admin role not found. Please ensure a system-wide ADMIN role exists.' });
         }
 
         const passwordHash = await bcrypt.hash(password, 10);

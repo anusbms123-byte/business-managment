@@ -106,7 +106,7 @@ export const DialogProvider = ({ children }) => {
                                     </button>
                                     <button
                                         onClick={dialog.onConfirm}
-                                        className="flex-1 py-2.5 bg-blue-950 dark:bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-slate-900 dark:hover:bg-blue-500 shadow-sm transition-all active:scale-95"
+                                        className="flex-1 py-2.5 bg-emerald-600 dark:bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 dark:hover:bg-emerald-500 shadow-sm transition-all active:scale-95"
                                     >
                                         {dialog.confirmText}
                                     </button>
@@ -116,7 +116,7 @@ export const DialogProvider = ({ children }) => {
                                     onClick={closeDialog}
                                     className={`w-full py-2.5 text-white rounded-lg text-sm font-bold transition-all active:scale-95 ${dialog.type === 'error' ? 'bg-rose-600 hover:bg-rose-700' :
                                         dialog.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700' :
-                                            'bg-blue-950 dark:bg-blue-600 hover:bg-slate-900 dark:hover:bg-blue-500'
+                                            'bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500'
                                         }`}
                                 >
                                     {dialog.confirmText}

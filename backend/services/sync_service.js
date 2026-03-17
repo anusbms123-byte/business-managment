@@ -606,11 +606,13 @@ class SyncService {
             const localRecords = await db.asyncAll(sql, params);
             if (!localRecords || localRecords.length === 0) return;
 
-            // SAFETY CHECK: If cloudIds is empty, we DON'T delete everything.
+            // SAFETY CHECK: If cloudIds is empty, we DON'T delete everything IF we have many records.
             // This protects against 500 errors or empty cloud responses clearing the whole local DB.
             if (!cloudIds || cloudIds.length === 0) {
-                console.warn(`[SYNC-CLEANUP] Cloud returned 0 items for ${table}. Skipping cleanup to prevent mass data loss.`);
-                return;
+                if (localRecords.length > 5) {
+                    console.warn(`[SYNC-CLEANUP] Cloud returned 0 items for ${table}. Skipping cleanup to prevent mass data loss.`);
+                    return;
+                }
             }
 
             // 2. Diff: Find records that exist locally but NOT in the cloud response

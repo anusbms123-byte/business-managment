@@ -175,14 +175,14 @@ ipcMain.handle("login", async (e, credentials) => {
             if (!isSuperAdmin && companyId) {
                 const comp = await db.asyncGet("SELECT is_active FROM companies WHERE id = ? OR global_id = ?", [companyId, companyId]);
                 if (comp && comp.is_active === 0) {
-                    console.log(`Blocked login for ${response.user.username}: Company ${companyId} is inactive.`);
-                    return { success: false, message: "Access Denied: Your company account is currently inactive." };
+                    console.log(`Blocked login for ${response.user.username}: Company ${companyId} is deactivated.`);
+                    return { success: false, message: "Access Denied: Your company account is currently deactivated. Please contact the helpline or support for assistance." };
                 }
             }
 
             // Check User Status (Block if inactive)
             if (response.user.is_active === 0 || response.user.isActive === false) {
-                return { success: false, message: "Access Denied: Your user account is deactivated." };
+                return { success: false, message: "Access Denied: Your user account has been deactivated. Please contact your company administrator." };
             }
             if (existing) {
                 const updateQuery = `
@@ -300,13 +300,13 @@ ipcMain.handle("login", async (e, credentials) => {
     if (user.role?.toLowerCase() !== 'super_admin' && user.company_id) {
         const comp = await db.asyncGet("SELECT is_active FROM companies WHERE id = ? OR global_id = ?", [user.company_id, user.company_id]);
         if (comp && comp.is_active === 0) {
-            return { success: false, message: "Access Denied: Your company account is currently inactive." };
+            return { success: false, message: "Access Denied: Your company account is currently deactivated. Please contact the helpline or support for assistance." };
         }
     }
 
     // Check User Status (Offline)
     if (user.is_active === 0) {
-        return { success: false, message: "Access Denied: Your user account is deactivated." };
+        return { success: false, message: "Access Denied: Your user account has been deactivated. Please contact your company administrator." };
     }
 
     currentCompanyId = user.company_id;
@@ -789,14 +789,15 @@ ipcMain.handle("update-user", async (e, data) => {
         const userRow = await db.asyncGet("SELECT * FROM users WHERE id = ? OR global_id = ?", [id, id]);
         if (!userRow) return { success: false, message: "User not found" };
 
-        // Robustly parse activity status (handle true, "true", 1, "1" etc.)
-        let active;
-        if (isActive !== undefined) {
-            active = (isActive === true || isActive === 1 || isActive === 'true' || isActive === '1') ? 1 : 0;
-        } else if (is_active !== undefined) {
-            active = (is_active === true || is_active === 1 || is_active === 'true' || is_active === '1') ? 1 : 0;
-        } else {
-            active = userRow.is_active;
+        // Robustly parse activity status
+        // Priority: is_active (used by UI buttons) > isActive (old alias) > userRow value
+        let active = userRow.is_active;
+        
+        // We check for null/undefined explicitly because 0 is a valid value
+        if (data.is_active !== undefined && data.is_active !== null) {
+            active = (data.is_active === 1 || data.is_active === true || data.is_active === '1' || data.is_active === 'true') ? 1 : 0;
+        } else if (data.isActive !== undefined && data.isActive !== null) {
+            active = (data.isActive === 1 || data.isActive === true || data.isActive === '1' || data.isActive === 'true') ? 1 : 0;
         }
 
         const cid = userRow.company_id;

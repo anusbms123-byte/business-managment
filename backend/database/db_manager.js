@@ -350,7 +350,8 @@ db.initPromise = (async () => {
 
     // 6. SEEDS
     const systemRoles = [
-      { gid: 'system-super-admin', name: 'Super Admin', desc: 'System-wide administrative access', modules: ['users', 'roles', 'settings', 'backup'], type: 'full' }
+      { gid: 'system-super-admin', name: 'Super Admin', desc: 'System-wide administrative access', modules: ['users', 'roles', 'settings', 'backup'], type: 'full' },
+      { gid: 'cmmmi6r1u0001a6m973d3bkre', name: 'ADMIN', desc: 'Company Administrator with full access', modules: 'all', type: 'full' }
     ];
 
     const allModules = ['dashboard', 'sales', 'purchase', 'returns', 'products', 'inventory', 'customers', 'suppliers', 'expenses', 'reports', 'hrm', 'accounting', 'users', 'roles', 'settings', 'backup'];

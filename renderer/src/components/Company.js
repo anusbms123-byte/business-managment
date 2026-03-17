@@ -84,7 +84,7 @@ const Company = () => {
                             if (tab.id === 'profile') label = 'All Companies';
                             if (tab.id === 'helpline') label = 'Complains';
                             if (tab.id === 'broadcast') label = 'Broadcast';
-                            if (tab.id === 'requests') label = 'Referral';
+                            if (tab.id === 'requests') label = 'Requests';
                         }
 
                         return (
@@ -274,21 +274,19 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         return (
             <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div></div>
+                    <div className="relative group w-full md:w-80">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={16} />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            placeholder="Search companies..."
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
+                        />
+                    </div>
 
-                    <div className="flex flex-1 flex-col md:flex-row items-center gap-4 max-w-2xl justify-end">
-                        <div className="relative group w-full md:w-64">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400 transition-colors" size={16} />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                placeholder="Search companies..."
-                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-emerald-500/5 dark:focus:ring-emerald-500/10 focus:border-emerald-600 dark:focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-[14px] border border-slate-200 dark:border-slate-700">
                             {[
                                 { id: 'all', label: 'All' },
                                 { id: 'with', label: 'Referral' },
@@ -297,8 +295,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                 <button
                                     key={f.id}
                                     onClick={() => setCompanyReferralFilter(f.id)}
-                                    className={`px-3 py-1.5 text-[10px] font-semibold rounded-lg transition-all ${companyReferralFilter === f.id
-                                        ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
+                                    className={`px-5 py-2 text-[11px] font-bold rounded-[10px] transition-all duration-200 ${companyReferralFilter === f.id
+                                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
                                         : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                                         }`}
                                 >
@@ -1423,12 +1421,8 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                     </div>
                 </Modal>
             )}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-xl font-bold text-black dark:text-slate-100 tracking-tight">Referral</h2>
-                </div>
-
-                <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                     {[
                         { id: 'all', label: 'All requests' },
                         { id: 'with', label: 'Referral only' }
@@ -1436,9 +1430,9 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                         <button
                             key={f.id}
                             onClick={() => setReferralFilter(f.id)}
-                            className={`px-4 py-2 text-[10px] font-semibold rounded-lg transition-all ${referralFilter === f.id
-                                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700'
-                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                            className={`px-5 py-2 text-[11px] font-bold rounded-lg transition-all duration-200 ${referralFilter === f.id
+                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/10'
+                                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
                                 }`}
                         >
                             {f.label}
@@ -1446,7 +1440,7 @@ const CompanyRequests = ({ currentUser, onAction }) => {
                     ))}
                 </div>
 
-                <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-100 dark:border-emerald-800 tracking-tight">
+                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg text-[11px] font-bold border border-emerald-100 dark:border-emerald-800">
                     {requests.length} pending
                 </div>
             </div>
