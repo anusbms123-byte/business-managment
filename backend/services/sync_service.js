@@ -364,10 +364,10 @@ class SyncService {
                 params = [cloudData.id, cloudData.invoiceNo || cloudData.inv_number, localCustId, localUserId, cloudData.subTotal || cloudData.total_amount, cloudData.discount, cloudData.tax, cloudData.shippingCost, cloudData.grandTotal || cloudData.grand_total, cloudData.amountPaid || cloudData.amount_paid, cloudData.paymentType || cloudData.paymentMethod || 'CASH', cloudData.paymentStatus || 'paid', cloudData.date || cloudData.sale_date, cloudData.notes || '', companyId, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'customers') {
-            const opBal = cloudData.openingBalance || cloudData.opening_balance || 0;
-            const curBal = cloudData.balance || cloudData.currentBalance || cloudData.current_balance || 0;
-            const cType = cloudData.customerType || cloudData.customer_type || 'retail';
-            const gNo = cloudData.gstNo || cloudData.gst_no;
+            const opBal = cloudData.openingBalance ?? cloudData.opening_balance ?? 0;
+            const curBal = cloudData.balance ?? cloudData.currentBalance ?? cloudData.current_balance ?? 0;
+            const cType = cloudData.customerType ?? cloudData.customer_type ?? 'retail';
+            const gNo = cloudData.gstNo ?? cloudData.gst_no;
 
             if (existingRow) {
                 query = `UPDATE customers SET global_id=?, name=?, phone=?, email=?, address=?, city=?, cnic=?, gst_no=?, customer_type=?, credit_limit=?, opening_balance=?, current_balance=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
@@ -389,11 +389,11 @@ class SyncService {
                 params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'vendors') {
-            const opBal = cloudData.openingBalance || cloudData.opening_balance || 0;
-            const curBal = cloudData.balance || cloudData.currentBalance || cloudData.current_balance || 0;
-            const cPerson = cloudData.contactPerson || cloudData.contact_person;
-            const gNo = cloudData.gstNo || cloudData.gst_no;
-            const cName = cloudData.companyName || cloudData.company_name;
+            const opBal = cloudData.openingBalance ?? cloudData.opening_balance ?? 0;
+            const curBal = cloudData.balance ?? cloudData.currentBalance ?? cloudData.current_balance ?? 0;
+            const cPerson = cloudData.contactPerson ?? cloudData.contact_person;
+            const gNo = cloudData.gstNo ?? cloudData.gst_no;
+            const cName = cloudData.companyName ?? cloudData.company_name;
 
             if (existingRow) {
                 query = `UPDATE vendors SET global_id=?, name=?, phone=?, email=?, address=?, city=?, contact_person=?, gst_no=?, company_name=?, opening_balance=?, current_balance=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
@@ -978,8 +978,8 @@ class SyncService {
                     payload.companyName = record.company_name;
                     payload.contactPerson = record.contact_person;
                     payload.gstNo = record.gst_no;
-                    payload.openingBalance = parseFloat(record.opening_balance || 0);
-                    payload.balance = parseFloat(record.current_balance || record.balance || payload.openingBalance);
+                    payload.openingBalance = parseFloat(record.opening_balance ?? 0);
+                    payload.balance = parseFloat(record.current_balance ?? record.balance ?? payload.openingBalance);
                 } else if (table === 'expenses') {
                     payload.title = record.title;
                     payload.amount = parseFloat(record.amount || 0);

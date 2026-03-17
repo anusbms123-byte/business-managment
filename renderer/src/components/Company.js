@@ -876,18 +876,20 @@ const UserManagement = ({ currentUser, isSuperAdmin }) => {
                                             return false;
                                         }
 
-                                        // For regular admins: show roles for their company PLUS global templates
+                                        // For regular admins: show roles for their company ONLY (hiding global templates)
+                                        // unless the role is already assigned to the user we are editing.
                                         const roleCid = r.company_id || r.companyId;
                                         const targetCid = formData.company_id || currentUser?.company_id || currentUser?.companyId;
-                                        const isSystem = (r.is_system === 1 || r.isSystem === true || !roleCid);
-                                        return isNotSuper && (isSystem || roleCid == targetCid);
+                                        const isCurrent = formData.id && (r.global_id === formData.role_id || String(r.id) === String(formData.role_id));
+                                        
+                                        return isNotSuper && (roleCid == targetCid || isCurrent);
                                     }).map(r => ({ value: r.global_id || r.id, label: r.name }));
 
-                                    // USER REQUEST: If editing an Admin user (created by Super Admin), 
-                                    // ensure "Admin" is available in the list so they can save changes.
-                                    if (!isSuperAdmin && formData.id && (formData.role?.toLowerCase() === 'admin')) {
-                                        if (!filtered.find(o => o.label.toLowerCase() === 'admin')) {
-                                            filtered.push({ value: formData.role_id || formData.roleId, label: 'Admin' });
+                                    // USER REQUEST: If the current role being viewed is "Admin" (from system), 
+                                    // and it's not in the list yet, we ensure it stays visible so they can see/keep it.
+                                    if (!isSuperAdmin && formData.id && (formData.role?.toLowerCase() === 'admin' || formData.role?.toLowerCase() === 'superadmin')) {
+                                        if (!filtered.find(o => o.label.toLowerCase() === formData.role.toLowerCase())) {
+                                            filtered.push({ value: formData.role_id || formData.roleId, label: formData.role });
                                         }
                                     }
                                     return filtered;

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
     Receipt, BarChart3, UserCog, Settings, LogOut, Bell, Mail, ChevronRight,
-    UserSquare, HardDrive, RefreshCcw, Plus, ChevronLeft, Send, LifeBuoy, Menu, Sun, Moon
+    UserSquare, HardDrive, RefreshCcw, RefreshCw, Plus, ChevronLeft, Send, LifeBuoy, Menu, Sun, Moon
 } from 'lucide-react';
 import { Search } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -60,6 +60,8 @@ const Layout = ({ children, user, permissions, onLogout }) => {
     const [supportView, setSupportView] = useState('list'); // 'list' or 'new'
     const [supportForm, setSupportForm] = useState({ whatsapp: '', description: '' });
     const [submittingSupport, setSubmittingSupport] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    
     
     // Persist viewed state to hide dots after viewing
     const [lastSeenSupportResolves, setLastSeenSupportResolves] = useState(() => 
@@ -118,6 +120,24 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         } catch (err) { console.error("Error submitting support:", err); }
         setSubmittingSupport(false);
     };
+    
+    const handleForceSync = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            if (window.electronAPI && window.electronAPI.forceSync) {
+                const res = await window.electronAPI.forceSync(user?.company_id);
+                if (res.success) {
+                    // Force a local state refresh if needed, or just rely on the sync success
+                    window.location.reload(); // Simplest way to refresh all components after a big pull
+                }
+            }
+        } catch (err) {
+            console.error("Refresh failed:", err);
+        }
+        setIsRefreshing(false);
+    };
+    
 
 
     useEffect(() => {
@@ -344,145 +364,159 @@ const Layout = ({ children, user, permissions, onLogout }) => {
 
 
                         <div className="relative flex items-center gap-2 md:gap-4">
-                            {/* Support Trigger */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => {
-                                        setShowSupport(!showSupport);
-                                        setShowMessages(false);
-                                        setSupportView('list');
-                                        if (!showSupport) {
-                                            setLastSeenSupportResolves(currentResolved);
-                                            localStorage.setItem('bms_last_seen_support', currentResolved);
-                                        }
-                                    }}
-                                    className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showSupport ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
-                                >
-                                    <Mail size={18} className="group-hover:scale-110 transition-transform" />
-                                    {showSupportDot && (
-                                        <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
-                                    )}
-                                </button>
+                            {/* Refresh Button - Visible to all */}
+                            <button
+                                onClick={handleForceSync}
+                                disabled={isRefreshing}
+                                className={`p-2.5 rounded-xl transition-all duration-300 relative group ${isRefreshing ? 'bg-emerald-50 text-emerald-600 animate-pulse' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
+                                title="Force Data Sync"
+                            >
+                                <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                            </button>
 
-                                {/* Support Dropdown */}
-                                {showSupport && (
-                                    <>
-                                        <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
-                                        <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                                            {supportView === 'list' ? (
-                                                <>
+                            {!isSuperAdmin && (
+                                <>
+                                    {/* Support Trigger */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => {
+                                                setShowSupport(!showSupport);
+                                                setShowMessages(false);
+                                                setSupportView('list');
+                                                if (!showSupport) {
+                                                    setLastSeenSupportResolves(currentResolved);
+                                                    localStorage.setItem('bms_last_seen_support', currentResolved);
+                                                }
+                                            }}
+                                            className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showSupport ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
+                                        >
+                                            <Mail size={18} className="group-hover:scale-110 transition-transform" />
+                                            {showSupportDot && (
+                                                <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 border-2 border-white rounded-full"></span>
+                                            )}
+                                        </button>
+
+                                        {/* Support Dropdown */}
+                                        {showSupport && (
+                                            <>
+                                                <div className="fixed inset-0 z-[90]" onClick={() => setShowSupport(false)}></div>
+                                                <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                                                    {supportView === 'list' ? (
+                                                        <>
+                                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                                                <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase flex items-center gap-2">
+                                                                    <LifeBuoy size={14} className="text-emerald-500" />
+                                                                    Help & Support
+                                                                </h3>
+                                                                <button
+                                                                    onClick={() => setSupportView('new')}
+                                                                    className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
+                                                                >
+                                                                    <Plus size={12} /> New Ticket
+                                                                </button>
+                                                            </div>
+                                                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                                {supportRequests.length === 0 ? (
+                                                                    <div className="p-10 text-center">
+                                                                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                                            <Mail size={24} className="text-slate-300 dark:text-slate-600" />
+                                                                        </div>
+                                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">No support tickets</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                                                        {supportRequests.map((req) => (
+                                                                            <div key={req.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                                                        {req.status}
+                                                                                    </span>
+                                                                                    <span className="text-[9px] text-slate-400 font-medium">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                                                                </div>
+                                                                                <p className="text-xs text-slate-700 dark:text-slate-300 font-bold line-clamp-2 leading-tight">{req.description}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <div className="p-5">
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500">
+                                                                    <ChevronLeft size={16} />
+                                                                </button>
+                                                                <h3 className="text-xs font-bold text-black dark:text-slate-200 uppercase">New Support Ticket</h3>
+                                                            </div>
+                                                            <form onSubmit={handleSupportSubmit} className="space-y-4">
+                                                                <textarea
+                                                                    required
+                                                                    value={supportForm.description}
+                                                                    onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
+                                                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 outline-none transition-all min-h-[100px]"
+                                                                    placeholder="Describe your issue..."
+                                                                />
+                                                                <button type="submit" disabled={submittingSupport} className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-[10px] uppercase hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                                                                    <Send size={14} />
+                                                                    {submittingSupport ? 'Sending...' : 'Submit Request'}
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Notifications Trigger */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => {
+                                                setShowMessages(!showMessages);
+                                                setShowSupport(false);
+                                                if (!showMessages) {
+                                                    setLastSeenMsgCount(currentMsgCount);
+                                                    localStorage.setItem('bms_last_seen_msg', currentMsgCount);
+                                                }
+                                            }}
+                                            className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showMessages ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
+                                        >
+                                            <Bell size={18} className="group-hover:rotate-12 transition-transform" />
+                                            {showMsgDot && (
+                                                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 border-2 border-white rounded-full"></span>
+                                            )}
+                                        </button>
+
+                                        {showMessages && (
+                                            <>
+                                                <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
+                                                <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
                                                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                                                        <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase flex items-center gap-2">
-                                                            <LifeBuoy size={14} className="text-emerald-500" />
-                                                            Help & Support
-                                                        </h3>
-                                                        <button
-                                                            onClick={() => setSupportView('new')}
-                                                            className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1"
-                                                        >
-                                                            <Plus size={12} /> New Ticket
-                                                        </button>
+                                                        <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase">System Notifications</h3>
+                                                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{adminMessages.length} New</span>
                                                     </div>
                                                     <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                                        {supportRequests.length === 0 ? (
+                                                        {adminMessages.length === 0 ? (
                                                             <div className="p-10 text-center">
-                                                                <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                                    <Mail size={24} className="text-slate-300 dark:text-slate-600" />
+                                                                <Bell size={24} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" />
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase">No notifications</p>
+                                                            </div>
+                                                        ) : adminMessages.map((msg) => (
+                                                            <div key={msg.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
                                                                 </div>
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase">No support tickets</p>
+                                                                <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-tight">{msg.content}</p>
                                                             </div>
-                                                        ) : (
-                                                            <div className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                                {supportRequests.map((req) => (
-                                                                    <div key={req.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                                                        <div className="flex items-center justify-between mb-1">
-                                                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${req.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                                                                {req.status}
-                                                                            </span>
-                                                                            <span className="text-[9px] text-slate-400 font-medium">{new Date(req.createdAt).toLocaleDateString()}</span>
-                                                                        </div>
-                                                                        <p className="text-xs text-slate-700 dark:text-slate-300 font-bold line-clamp-2 leading-tight">{req.description}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                        ))}
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <div className="p-5">
-                                                    <div className="flex items-center gap-2 mb-4">
-                                                        <button onClick={() => setSupportView('list')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500">
-                                                            <ChevronLeft size={16} />
-                                                        </button>
-                                                        <h3 className="text-xs font-bold text-black dark:text-slate-200 uppercase">New Support Ticket</h3>
-                                                    </div>
-                                                    <form onSubmit={handleSupportSubmit} className="space-y-4">
-                                                        <textarea
-                                                            required
-                                                            value={supportForm.description}
-                                                            onChange={(e) => setSupportForm({ ...supportForm, description: e.target.value })}
-                                                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:border-emerald-500 outline-none transition-all min-h-[100px]"
-                                                            placeholder="Describe your issue..."
-                                                        />
-                                                        <button type="submit" disabled={submittingSupport} className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-[10px] uppercase hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
-                                                            <Send size={14} />
-                                                            {submittingSupport ? 'Sending...' : 'Submit Request'}
-                                                        </button>
-                                                    </form>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Notifications Trigger */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => {
-                                        setShowMessages(!showMessages);
-                                        setShowSupport(false);
-                                        if (!showMessages) {
-                                            setLastSeenMsgCount(currentMsgCount);
-                                            localStorage.setItem('bms_last_seen_msg', currentMsgCount);
-                                        }
-                                    }}
-                                    className={`p-2.5 rounded-xl transition-all duration-300 relative group ${showMessages ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md border border-transparent'}`}
-                                >
-                                    <Bell size={18} className="group-hover:rotate-12 transition-transform" />
-                                    {showMsgDot && (
-                                        <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 border-2 border-white rounded-full"></span>
-                                    )}
-                                </button>
-
-                                {showMessages && (
-                                    <>
-                                        <div className="fixed inset-0 z-[90]" onClick={() => setShowMessages(false)}></div>
-                                        <div className="absolute top-12 right-0 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
-                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                                                <h3 className="text-[10px] font-bold text-black dark:text-slate-200 uppercase">System Notifications</h3>
-                                                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{adminMessages.length} New</span>
-                                            </div>
-                                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                                {adminMessages.length === 0 ? (
-                                                    <div className="p-10 text-center">
-                                                        <Bell size={24} className="mx-auto text-slate-200 dark:text-slate-700 mb-2" />
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">No notifications</p>
-                                                    </div>
-                                                ) : adminMessages.map((msg) => (
-                                                    <div key={msg.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <p className="text-xs text-slate-800 dark:text-slate-200 font-bold leading-tight">{msg.content}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-slate-100 dark:border-slate-800">

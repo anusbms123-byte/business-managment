@@ -1215,8 +1215,8 @@ ipcMain.handle("add-sale", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO sales (global_id, customer_id, user_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, customer_id, user_id, invoice_no, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, finalCompanyId]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+            [tempId, customer_id, user_id, invoice_no, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, finalCompanyId, new Date().toISOString()]
         );
 
         const saleId = result.lastID;
@@ -1230,18 +1230,19 @@ ipcMain.handle("add-sale", async (e, data) => {
                     `INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, item.price || item.unit_price, item.total || item.total_price || (qty * (item.price || item.unit_price))]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
             }
         }
 
         // 2. Update Customer Balance
         if (customer_id) {
             const balanceChange = grand_total - amount_paid;
-            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ? WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
+            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
         }
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sales', '/sales');
+        syncService.syncPendingRecords('customers', '/customers');
         return { success: true, id: saleId, global_id: tempId, message: "Sale recorded and stock/balance updated." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -1276,20 +1277,20 @@ ipcMain.handle("update-sale", async (e, data) => {
         // 1. Reverse Old Stock
         if (oldItems && Array.isArray(oldItems)) {
             for (const item of oldItems) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [item.quantity, item.product_id, item.product_id, new Date().toISOString()]);
             }
         }
 
         // 2. Reverse Old Customer Balance
         if (oldSale.customer_id) {
             const oldDiff = oldSale.grand_total - oldSale.amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [oldDiff, oldSale.customer_id, oldSale.customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [oldDiff, oldSale.customer_id, oldSale.customer_id, new Date().toISOString()]);
         }
 
         // 3. Update Sale Record
         await db.asyncRun(
-            `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, payment_status=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-            [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, id, id]
+            `UPDATE sales SET customer_id=?, inv_number=?, total_amount=?, discount=?, grand_total=?, amount_paid=?, payment_method=?, payment_status=?, notes=?, tax_amount=?, shipping_cost=?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`,
+            [customer_id, inv_number, total_amount, discount, grand_total, amount_paid, payment_method, payment_status, notes, tax_amount, shipping_cost, new Date().toISOString(), id, id]
         );
 
         // 4. Delete and Re-insert items, Update New Stock
@@ -1303,18 +1304,19 @@ ipcMain.handle("update-sale", async (e, data) => {
                     `INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), oldGid, pid, qty, item.price || item.unit_price, item.total || item.total_price]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, pid, pid, new Date().toISOString()]);
             }
         }
 
         // 5. Apply New Customer Balance
         if (customer_id) {
             const newDiff = grand_total - amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance + ? WHERE id=? OR global_id=?", [newDiff, customer_id, customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, customer_id, customer_id, new Date().toISOString()]);
         }
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sales', '/sales');
+        syncService.syncPendingRecords('customers', '/customers');
         return { success: true, message: "Sale updated and stock/balance adjusted." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -1336,21 +1338,22 @@ ipcMain.handle("delete-sale", async (e, id) => {
         // 1. Restore Stock
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id, new Date().toISOString()]);
             }
         }
 
         // 2. Adjust Customer Balance
         if (sale.customer_id) {
             const diff = sale.grand_total - sale.amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [diff, sale.customer_id, sale.customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, sale.customer_id, sale.customer_id, new Date().toISOString()]);
         }
 
         // 3. Mark Sale as Deleted
-        await db.asyncRun("UPDATE sales SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+        await db.asyncRun("UPDATE sales SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [new Date().toISOString(), gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sales', '/sales');
+        syncService.syncPendingRecords('customers', '/customers');
         return { success: true, message: "Sale deleted and stock/balance restored." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -1840,8 +1843,8 @@ ipcMain.handle("add-purchase", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+            [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, new Date().toISOString()]
         );
 
         if (items && Array.isArray(items)) {
@@ -1852,17 +1855,18 @@ ipcMain.handle("add-purchase", async (e, data) => {
                     `INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [qty, pid, pid]);
             }
         }
 
         if (vendor_id) {
             const balanceChange = total_amount - paid_amount;
-            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ? WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
+            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
         }
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchases', '/purchases');
+        syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, global_id: tempId, message: "Purchase recorded and stock/balance updated." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -1897,22 +1901,22 @@ ipcMain.handle("update-purchase", async (e, data) => {
         // 1. Reverse Old Stock
         if (oldItems && Array.isArray(oldItems)) {
             for (const item of oldItems) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id, new Date().toISOString()]);
             }
         }
 
         // 2. Reverse Old Vendor Balance
         if (oldPurchase.vendor_id) {
             const oldDiff = oldPurchase.total_amount - oldPurchase.paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [oldDiff, oldPurchase.vendor_id, oldPurchase.vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [oldDiff, oldPurchase.vendor_id, oldPurchase.vendor_id, new Date().toISOString()]);
         }
 
         const purchase_date = data.date || data.purchaseDate || data.purchase_date || oldPurchase.purchase_date || new Date().toISOString().split('T')[0];
 
         // 3. Update Purchase Record
         await db.asyncRun(
-            `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, purchase_date=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
-            [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, id, id]
+            `UPDATE purchases SET vendor_id=?, ref_number=?, total_amount=?, paid_amount=?, shipping_cost=?, discount=?, tax_amount=?, notes=?, payment_method=?, payment_status=?, due_date=?, purchase_date=?, company_id=?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`,
+            [vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, new Date().toISOString(), id, id]
         );
 
         // 4. Delete and Re-insert items, Update New Stock
@@ -1926,18 +1930,19 @@ ipcMain.handle("update-purchase", async (e, data) => {
                     `INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), oldGid, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ? WHERE id=? OR global_id=?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, pid, pid, new Date().toISOString()]);
             }
         }
 
         // 5. Apply New Vendor Balance
         if (vendor_id) {
             const newDiff = total_amount - paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance + ? WHERE id=? OR global_id=?", [newDiff, vendor_id, vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, vendor_id, vendor_id, new Date().toISOString()]);
         }
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchases', '/purchases');
+        syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, message: "Purchase updated and stock/balance adjusted." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -1959,21 +1964,22 @@ ipcMain.handle("delete-purchase", async (e, id) => {
         // 1. Reverse Stock
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [item.quantity, item.product_id, item.product_id, new Date().toISOString()]);
             }
         }
 
         // 2. Adjust Vendor Balance
         if (purchase.vendor_id) {
             const diff = purchase.total_amount - purchase.paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ? WHERE id=? OR global_id=?", [diff, purchase.vendor_id, purchase.vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, purchase.vendor_id, purchase.vendor_id, new Date().toISOString()]);
         }
 
         // 3. Mark Purchase as Deleted
-        await db.asyncRun("UPDATE purchases SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+        await db.asyncRun("UPDATE purchases SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [new Date().toISOString(), gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchases', '/purchases');
+        syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, message: "Purchase deleted and stock/balance restored." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
@@ -2040,8 +2046,8 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-            [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+            [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId, new Date().toISOString()]
         );
 
         const returnId = result.lastID;
@@ -3891,6 +3897,11 @@ ipcMain.handle("set-active-session", async (e, { companyId, role }) => {
         syncService.pullAllData(finalCid);
     }
     return { success: true };
+});
+
+ipcMain.handle("force-sync", async (e, companyId) => {
+    console.log("[SYNC] Manual force-sync triggered for company:", companyId);
+    return await syncService.pullAllData(companyId);
 });
 
 app.whenReady().then(async () => {
