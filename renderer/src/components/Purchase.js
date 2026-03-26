@@ -7,7 +7,7 @@ import {
 import { canCreate, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
 
-const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placeholder }) => {
+const CreatableSelect = ({ label, icon: Icon, value, onChange, onDeleteOption, options, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(value || '');
 
@@ -22,7 +22,7 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
     return (
         <div className="relative space-y-2">
             <label className="text-sm font-semibold text-black dark:text-slate-300 flex items-center gap-2 ml-1 tracking-tight">
-                <Icon size={14} className="text-black dark:text-slate-400" /> {label}
+                {Icon && <Icon size={14} className="text-black dark:text-slate-400" />} {label}
             </label>
             <div className="relative">
                 <input
@@ -51,16 +51,33 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
                             filteredOptions.map(opt => (
                                 <div
                                     key={opt.id}
-                                    className="px-5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer text-sm font-medium text-black dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors flex items-center justify-between"
+                                    className="px-5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer text-sm font-medium text-black dark:text-slate-200 transition-colors flex items-center justify-between group/opt"
                                     onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setSearchTerm(opt.name);
-                                        onChange(opt.name);
-                                        setIsOpen(false);
+                                        if (!e.target.closest('.delete-opt-btn')) {
+                                            e.preventDefault();
+                                            setSearchTerm(opt.name);
+                                            onChange(opt.name);
+                                            setIsOpen(false);
+                                        }
                                     }}
                                 >
                                     <span>{opt.name}</span>
-                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
+                                    <div className="flex items-center gap-2">
+                                        {onDeleteOption && (
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onDeleteOption(opt);
+                                                }}
+                                                className="delete-opt-btn p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/40 rounded-lg transition-all opacity-0 group-hover/opt:opacity-100"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
+                                    </div>
                                 </div>
                             ))
                         ) : (
@@ -245,9 +262,12 @@ const Purchase = ({ currentUser }) => {
 
 
 
-    const handleProductSelect = (product) => {
+    const handleProductSelect = (product, overrideQty) => {
         setSelectedProduct(product.id);
         setProductSearch(product.name);
+        if (overrideQty !== undefined) {
+            setQty(overrideQty);
+        }
         setIsProductListVisible(false);
         setTimeout(() => {
             qtyRef.current?.focus();
@@ -274,9 +294,48 @@ const Purchase = ({ currentUser }) => {
     const grandTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue + parseFloat(previousBalance || 0);
     const balanceDue = Math.max(0, grandTotal - parseFloat(paidAmount || 0));
 
+    const handleDeleteCategory = async (id) => {
+        showConfirm("Are you sure you want to delete this category?", async () => {
+            try {
+                const result = await window.electronAPI.deleteCategory(id);
+                if (result.success) {
+                    const currentCats = await window.electronAPI.getCategories(currentUser?.company_id);
+                    setCategories(Array.isArray(currentCats) ? currentCats : []);
+                    const deletedCat = categories.find(c => c.id === id);
+                    if (quickProductForm.category_name === deletedCat?.name) {
+                        setQuickProductForm(prev => ({ ...prev, category_name: '' }));
+                    }
+                } else {
+                    showError("Failed to delete category: " + result.message);
+                }
+            } catch (err) {
+                showError("Error deleting category");
+            }
+        });
+    };
+
+    const handleDeleteBrand = async (id) => {
+        showConfirm("Are you sure you want to delete this brand?", async () => {
+            try {
+                const result = await window.electronAPI.deleteBrand(id);
+                if (result.success) {
+                    const currentBrands = await window.electronAPI.getBrands(currentUser?.company_id);
+                    setBrands(Array.isArray(currentBrands) ? currentBrands : []);
+                    const deletedBrand = brands.find(b => b.id === id);
+                    if (quickProductForm.brand_name === deletedBrand?.name) {
+                        setQuickProductForm(prev => ({ ...prev, brand_name: '' }));
+                    }
+                } else {
+                    showError("Failed to delete brand: " + result.message);
+                }
+            } catch (err) {
+                showError("Error deleting brand");
+            }
+        });
+    };
+
     const handleSave = async () => {
-        if (!vendorId) return showAlert('Please select a vendor');
-        if (cart.length === 0) return showAlert('Cart is empty');
+        if (cart.length === 0) return alert('Cart is empty');
 
         setSaving(true);
         try {
@@ -370,7 +429,7 @@ const Purchase = ({ currentUser }) => {
         }));
         setCart(loadedCart);
 
-        const ven = vendors.find(v => v.id === (purchase.vendorId || purchase.vendor_id));
+        const ven = vendors.find(v => (v.id == (purchase.vendorId || purchase.vendor_id)) || (v.global_id && v.global_id == (purchase.vendorId || purchase.vendor_id)));
         const currentVenBalance = ven?.current_balance || ven?.balance || 0;
         const purchaseDue = (purchase.total_amount || purchase.totalAmount || 0) - (purchase.paid_amount || purchase.paidAmount || 0);
         setPreviousBalance(currentVenBalance - purchaseDue);
@@ -432,10 +491,11 @@ const Purchase = ({ currentUser }) => {
                 const updatedProducts = Array.isArray(prData) ? prData : [];
                 setProducts(updatedProducts);
 
-                // Auto select the new product
+                // Auto select the new product and populate quantity
                 const newlyCreated = updatedProducts.find(p => p.id === result.id);
                 if (newlyCreated) {
-                    handleProductSelect(newlyCreated);
+                    const stQty = parseInt(quickProductForm.stock_qty) || 1;
+                    handleProductSelect(newlyCreated, stQty);
                 }
 
                 setIsQuickProductModalOpen(false);
@@ -603,7 +663,7 @@ const Purchase = ({ currentUser }) => {
                     </table>
                 </div>
             </div>
-            
+
 
             {isModalOpen && (
                 <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
@@ -621,7 +681,7 @@ const Purchase = ({ currentUser }) => {
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100"
                         >
-                             <span className="text-sm font-semibold hidden md:block tracking-tight text-slate-500 dark:text-slate-400">Close</span>
+                            <span className="text-sm font-semibold hidden md:block tracking-tight text-slate-500 dark:text-slate-400">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -629,12 +689,12 @@ const Purchase = ({ currentUser }) => {
 
                     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-50/30 dark:bg-slate-900">
                         {/* LEFT COLUMN: Inputs & Cart - Fixed Layout */}
-                        <div className="flex-1 p-4 md:p-6 overflow-hidden min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col">
+                        <div className="flex-1 p-4 md:p-6 min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20">
 
                             {/* Top Input Row (Vendor | Product | Qty) */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end mb-6 flex-shrink-0">
                                 <div className="space-y-1.5">
-                                     <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Supplier</label>
+                                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Supplier</label>
                                     <div className="relative">
                                         <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                         <select
@@ -644,22 +704,26 @@ const Purchase = ({ currentUser }) => {
                                             onChange={(e) => {
                                                 const vid = e.target.value;
                                                 setVendorId(vid);
-                                                const ven = vendors.find(v => String(v.id) === String(vid));
-                                                let balance = ven?.current_balance || ven?.balance || 0;
+                                                if (vid === "") {
+                                                    setPreviousBalance(0);
+                                                } else {
+                                                    const ven = vendors.find(v => String(v.id) === String(vid));
+                                                    let balance = ven?.current_balance || ven?.balance || 0;
 
-                                                // If editing same vendor, subtract this purchase's impact
-                                                if (editingId) {
-                                                    const p = purchases.find(pur => pur.id === editingId || pur.global_id === editingId);
-                                                    if (p && String(p.vendor_id) === String(vid)) {
-                                                        const due = (p.total_amount || p.totalAmount || 0) - (p.paid_amount || p.paidAmount || 0);
-                                                        balance -= due;
+                                                    // If editing same vendor, subtract this purchase's impact
+                                                    if (editingId) {
+                                                        const p = purchases.find(pur => pur.id === editingId || pur.global_id === editingId);
+                                                        if (p && (String(p.vendor_id) === String(vid) || (p.vendor && String(p.vendor.id) === String(vid)))) {
+                                                            const due = (p.total_amount || p.totalAmount || 0) - (p.paid_amount || p.paidAmount || 0);
+                                                            balance -= due;
+                                                        }
                                                     }
+                                                    setPreviousBalance(balance);
                                                 }
-                                                setPreviousBalance(balance);
                                             }}
                                             onKeyDown={(e) => handleKeyDown(e, productRef)}
                                         >
-                                             <option value="">Select supplier</option>
+                                            <option value="">Walk-in Supplier</option>
                                             {vendors.map(v => (
                                                 <option key={v.id} value={v.id}>
                                                     {v.name}
@@ -671,7 +735,7 @@ const Purchase = ({ currentUser }) => {
 
                                 <div className="space-y-1.5 lg:col-span-2">
                                     <div className="flex justify-between items-center ml-1">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Product</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Product</label>
                                         <button
                                             onClick={() => setIsQuickProductModalOpen(true)}
                                             className="text-sm font-semibold text-emerald-600 hover:underline tracking-tight"
@@ -731,9 +795,12 @@ const Purchase = ({ currentUser }) => {
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
+                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
                                                         onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
-                                                        onMouseEnter={() => setHoveredProduct(p)}
+                                                        onMouseEnter={() => {
+                                                            setHoveredProduct(p);
+                                                            setHighlightedIndex(index);
+                                                        }}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
@@ -748,7 +815,7 @@ const Purchase = ({ currentUser }) => {
 
                                         {/* Product Hover Detail Card */}
                                         {isProductListVisible && hoveredProduct && (
-                                            <div className="absolute left-full ml-4 top-0 z-[120] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-none p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
+                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-none p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
                                                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
                                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                                         <Package size={20} />
@@ -824,7 +891,7 @@ const Purchase = ({ currentUser }) => {
 
                                 <div className="flex gap-2">
                                     <div className="space-y-1.5 flex-1">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Quantity</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Quantity</label>
                                         <input
                                             ref={qtyRef}
                                             type="number"
@@ -890,7 +957,7 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600">
                                                             <ShoppingCart size={24} />
                                                         </div>
-                                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Cart is empty</p>
+                                                        <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Cart is empty</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -907,17 +974,17 @@ const Purchase = ({ currentUser }) => {
                                 {/* Invoice Info */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Supplier inv #</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Supplier inv #</label>
                                         <input
                                             type="text"
                                             value={invoiceNo}
                                             onChange={(e) => setInvoiceNo(e.target.value)}
                                             className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-sm font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 transition-all"
-                                             placeholder="Ex. inv-99"
+                                            placeholder="Ex. inv-99"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Due date</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Due date</label>
                                         <input
                                             type="date"
                                             value={dueDate}
@@ -930,7 +997,7 @@ const Purchase = ({ currentUser }) => {
                                 {/* Financials Summary */}
                                 <div className="bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-xl space-y-3 border border-slate-100 dark:border-slate-800 transition-colors">
                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-300 tracking-tight">
-                                         <span>Subtotal</span>
+                                        <span>Subtotal</span>
                                         <span className="text-black dark:text-slate-100">PKR {(subtotal || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-300 tracking-tight">
@@ -976,11 +1043,15 @@ const Purchase = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-300 tracking-tight">
-                                        <span>Previous balance</span>
-                                        <span className="px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded text-black dark:text-slate-200 text-sm font-semibold">{(previousBalance || 0).toLocaleString()}</span>
+                                        <span>Previous Balance ({previousBalance >= 0 ? 'Owe Vendor' : 'Credit'})</span>
+                                        <div className="relative w-32 text-right">
+                                            <span className={`px-2 py-1 rounded text-sm font-semibold ${previousBalance > 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
+                                                PKR {Math.abs(Number(previousBalance || 0)).toLocaleString()}
+                                            </span>
+                                        </div>
                                     </div>
-                                     <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                                         <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Grand total</span>
+                                    <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Grand total</span>
                                         <span className="text-xl font-bold text-black dark:text-slate-100 tracking-tighter">
                                             PKR {(grandTotal || 0).toLocaleString()}
                                         </span>
@@ -990,7 +1061,7 @@ const Purchase = ({ currentUser }) => {
                                 {/* Payment */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Payment method</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Payment method</label>
                                         <select
                                             value={paymentMethod}
                                             onChange={(e) => setPaymentMethod(e.target.value)}
@@ -1002,7 +1073,7 @@ const Purchase = ({ currentUser }) => {
                                         </select>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight truncate ml-1">Amount paid</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight truncate ml-1">Amount paid</label>
                                         <input
                                             type="number"
                                             className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-sm text-black dark:text-slate-100 outline-none focus:border-emerald-500 transition-all"
@@ -1012,13 +1083,13 @@ const Purchase = ({ currentUser }) => {
                                         />
                                     </div>
                                     <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                                         <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Balance due</label>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Balance due</label>
                                         <span className="text-sm font-semibold text-rose-600 dark:text-rose-400 px-2 py-0.5 bg-rose-50 dark:bg-rose-900/20 rounded">PKR {(balanceDue || 0).toLocaleString()}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                     <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Notes</label>
+                                    <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Notes</label>
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
@@ -1035,11 +1106,14 @@ const Purchase = ({ currentUser }) => {
                                     className="w-full py-3 bg-emerald-600 dark:bg-emerald-600 text-white rounded-xl font-bold text-base hover:bg-emerald-700 dark:hover:bg-emerald-700 shadow-md shadow-emerald-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
-                                        <span>Processing...</span>
+                                        <div className="flex items-center gap-2 text-white">
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            <span>Processing...</span>
+                                        </div>
                                     ) : (
                                         <>
                                             <Receipt size={18} />
-                                             <span>Save now</span>
+                                            <span>Save now</span>
                                         </>
                                     )}
                                 </button>
@@ -1147,38 +1221,38 @@ const Purchase = ({ currentUser }) => {
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-2 md:col-span-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <Box size={14} className="text-black dark:text-slate-400" /> Name *
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Name *
                                             </label>
                                             <input required type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 dark:focus:border-emerald-600 dark:focus:ring-emerald-900/20 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.name} onChange={e => setQuickProductForm({ ...quickProductForm, name: e.target.value })} placeholder="Name" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <Tag size={14} className="text-black dark:text-slate-400" /> SKU number
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                SKU number
                                             </label>
                                             <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sku} onChange={e => setQuickProductForm({ ...quickProductForm, sku: e.target.value })} placeholder="SKU number" />
                                         </div>
 
                                         <CreatableSelect
                                             label="Category"
-                                            icon={Layers}
-                                            options={categories}
                                             value={quickProductForm.category_name}
+                                            options={categories}
                                             onChange={(val) => setQuickProductForm({ ...quickProductForm, category_name: val })}
-                                            placeholder="Select or type category"
+                                            onDeleteOption={handleDeleteCategory}
+                                            placeholder="Search or enter new..."
                                         />
                                         <CreatableSelect
                                             label="Brand"
-                                            icon={Tag}
-                                            options={brands}
                                             value={quickProductForm.brand_name}
+                                            options={brands}
                                             onChange={(val) => setQuickProductForm({ ...quickProductForm, brand_name: val })}
-                                            placeholder="Select or type brand"
+                                            onDeleteOption={handleDeleteBrand}
+                                            placeholder="Search or enter new..."
                                         />
 
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <Box size={14} className="text-black dark:text-slate-400" /> Unit
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Unit
                                             </label>
                                             <select className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none cursor-pointer text-black dark:text-slate-100 transition-all" value={quickProductForm.unit} onChange={e => setQuickProductForm({ ...quickProductForm, unit: e.target.value })}>
                                                 <option value="pcs">Pieces (pcs)</option>
@@ -1198,32 +1272,32 @@ const Purchase = ({ currentUser }) => {
                                     </h4>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <DollarSign size={14} className="text-black dark:text-slate-400" /> Cost *
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Cost price *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.cost_price} onChange={e => setQuickProductForm({ ...quickProductForm, cost_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <DollarSign size={14} className="text-black dark:text-slate-400" /> Sale *
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Sale price *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.sell_price} onChange={e => setQuickProductForm({ ...quickProductForm, sell_price: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <AlertTriangle size={14} className="text-black dark:text-slate-400" /> Alert
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Alert
                                             </label>
                                             <input type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.alert_qty} onChange={e => setQuickProductForm({ ...quickProductForm, alert_qty: e.target.value })} placeholder="5" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <Box size={14} className="text-black dark:text-slate-400" /> Stock *
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Stock *
                                             </label>
                                             <input required type="number" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.stock_qty} onChange={e => setQuickProductForm({ ...quickProductForm, stock_qty: e.target.value })} placeholder="0" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
-                                                <Clock size={14} className="text-black dark:text-slate-400" /> Expiry
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 flex items-center gap-2 ml-1 tracking-tight">
+                                                Expiry
                                             </label>
                                             <input type="date" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 picker:dark:invert" value={quickProductForm.expiry_date} onChange={e => setQuickProductForm({ ...quickProductForm, expiry_date: e.target.value })} />
                                         </div>
@@ -1246,28 +1320,28 @@ const Purchase = ({ currentUser }) => {
                                     <div className="space-y-6 animate-in slide-in-from-top-4 duration-300">
                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Color</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Color</label>
                                                 <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.color} onChange={e => setQuickProductForm({ ...quickProductForm, color: e.target.value })} placeholder="e.g. Natural Titanium" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Size</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Size</label>
                                                 <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.size} onChange={e => setQuickProductForm({ ...quickProductForm, size: e.target.value })} placeholder="e.g. 256GB" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Grade / quality</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Grade / quality</label>
                                                 <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.grade} onChange={e => setQuickProductForm({ ...quickProductForm, grade: e.target.value })} placeholder="e.g. A+" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Condition</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Condition</label>
                                                 <input type="text" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.condition} onChange={e => setQuickProductForm({ ...quickProductForm, condition: e.target.value })} placeholder="e.g. A+, New, Used" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Weight (kg)</label>
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Weight (kg)</label>
                                                 <input type="number" step="0.01" className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.weight} onChange={e => setQuickProductForm({ ...quickProductForm, weight: e.target.value })} placeholder="0.00" />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1 tracking-tight">Description</label>
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 ml-1 tracking-tight">Description</label>
                                             <textarea className="w-full px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none min-h-[100px] resize-none focus:border-emerald-500 dark:focus:border-emerald-600 transition-all text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={quickProductForm.description} onChange={e => setQuickProductForm({ ...quickProductForm, description: e.target.value })} placeholder="Technical specifications or notes..." />
                                         </div>
                                     </div>
@@ -1326,7 +1400,7 @@ const Purchase = ({ currentUser }) => {
                                         <Calendar size={24} />
                                     </div>
                                     <div>
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Date & time</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Date & time</p>
                                         <h3 className="text-sm font-medium text-black dark:text-slate-100">{new Date(selectedPurchaseDetail.date).toLocaleString()}</h3>
                                     </div>
                                 </div>
@@ -1335,16 +1409,16 @@ const Purchase = ({ currentUser }) => {
                                         <User size={24} />
                                     </div>
                                     <div>
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Supplier</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Supplier</p>
                                         <h3 className="text-sm font-medium text-black dark:text-slate-100">{selectedPurchaseDetail.vendor?.name || 'N/A'}</h3>
                                     </div>
                                 </div>
-                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
                                         <CreditCard size={24} />
                                     </div>
                                     <div>
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Payment method</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Payment method</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100 uppercase">{selectedPurchaseDetail.paymentMethod || 'CASH'}</h3>
                                     </div>
                                 </div>
@@ -1355,21 +1429,21 @@ const Purchase = ({ currentUser }) => {
                                 <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                                     <h3 className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight">Financial summary</h3>
                                 </div>
-                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
                                     <div className="space-y-1">
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Subtotal</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Subtotal</p>
                                         <p className="text-lg font-semibold text-black dark:text-slate-100">PKR {(selectedPurchaseDetail.totalAmount - (selectedPurchaseDetail.tax || 0) - (selectedPurchaseDetail.shippingCost || 0) + (selectedPurchaseDetail.discount || 0)).toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1">
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Tax/charges</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Tax/charges</p>
                                         <p className="text-lg font-semibold text-black dark:text-slate-100">PKR {((selectedPurchaseDetail.tax || 0) + (selectedPurchaseDetail.shippingCost || 0)).toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1 text-center md:text-left">
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Total amount</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Total amount</p>
                                         <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {selectedPurchaseDetail.totalAmount?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1 text-right">
-                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Amount paid</p>
+                                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">Amount paid</p>
                                         <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">PKR {(selectedPurchaseDetail.paidAmount || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
@@ -1399,7 +1473,7 @@ const Purchase = ({ currentUser }) => {
 
                                     return (
                                         <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">
-                                             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
+                                            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
                                                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                                     <Package size={24} />
                                                 </div>
@@ -1435,22 +1509,22 @@ const Purchase = ({ currentUser }) => {
                                                 </div>
 
                                                 {/* Pricing & Total */}
-                                                 <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
-                                                     <div className="flex justify-between items-center py-1">
-                                                         <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Unit price</span>
-                                                         <span className="text-sm font-semibold text-black dark:text-slate-200">PKR {Number(item.price || item.unitCost || item.unit_cost || 0).toLocaleString()}</span>
-                                                     </div>
-                                                     <div className="h-px bg-slate-200/50 dark:bg-slate-700/50"></div>
-                                                     <div className="flex justify-between items-center py-2">
-                                                         <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Item total</span>
-                                                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
-                                                     </div>
-                                                 </div>
+                                                <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
+                                                    <div className="flex justify-between items-center py-1">
+                                                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Unit price</span>
+                                                        <span className="text-sm font-semibold text-black dark:text-slate-200">PKR {Number(item.price || item.unitCost || item.unit_cost || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50"></div>
+                                                    <div className="flex justify-between items-center py-2">
+                                                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Item total</span>
+                                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
 
                                                 {/* Brand Footer */}
-                                                 <div className="flex justify-center pt-2">
-                                                     <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Brand: <span className="text-black dark:text-slate-200 font-medium">{displayProduct.brand?.name || 'GENERAL'}</span></span>
-                                                 </div>
+                                                <div className="flex justify-center pt-2">
+                                                    <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Brand: <span className="text-black dark:text-slate-200 font-medium">{displayProduct.brand?.name || 'GENERAL'}</span></span>
+                                                </div>
                                             </div>
                                         </div>
                                     );

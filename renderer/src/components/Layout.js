@@ -33,11 +33,11 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, hasSubmenu }) => (
         onClick={onClick}
         className={`group relative flex items-center justify-between px-4 py-2.5 rounded-xl cursor-pointer transition-all duration-300 border outline-none ${active
             ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border-emerald-100/50 dark:border-emerald-800/50'
-            : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10'
+            : 'border-transparent text-slate-900 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10'
             }`}
     >
         <div className="relative flex items-center space-x-3.5">
-            <Icon size={18} className={active ? 'text-emerald-500' : 'text-slate-400 group-hover:text-emerald-500 transition-colors'} />
+            <Icon size={18} className={active ? 'text-emerald-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-emerald-500 transition-colors'} />
             <span className="text-[13px] tracking-tight">{label}</span>
         </div>
         {hasSubmenu && <ChevronRight size={14} className="relative text-slate-300 group-hover:text-emerald-400 transition-colors" />}
@@ -241,7 +241,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="relative h-20 flex items-center justify-center mb-2">
+                <div className="relative h-20 flex items-center justify-start px-8 mb-2">
                     <span className="text-2xl font-black tracking-tighter text-emerald-600 dark:text-emerald-400 block truncate uppercase">BizNex</span>
                 </div>
 
@@ -249,7 +249,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                 {isSuperAdmin && visibleSettingsItems.length > 0 && (
                     <div className="relative px-4 mt-4 space-y-1.5 ">
                         <div className="px-2 py-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">Administration</span>
+                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-500 uppercase">Administration</span>
                         </div>
                         {visibleSettingsItems.map((item) => (
                             <SidebarItem
@@ -266,7 +266,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                 {/* Menu Label */}
                 {visibleMenuItems.length > 0 && (
                     <div className="relative px-6 py-2 mt-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Menu</span>
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-500 uppercase">Menu</span>
                     </div>
                 )}
 
@@ -289,7 +289,7 @@ const Layout = ({ children, user, permissions, onLogout }) => {
                     {!isSuperAdmin && visibleSettingsItems.length > 0 && (
                         <div className="mb-4">
                             <div className="px-2 py-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Settings</span>
+                                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-500 uppercase">Settings</span>
                             </div>
                             <div className="space-y-1">
                                 {visibleSettingsItems.map((item) => (

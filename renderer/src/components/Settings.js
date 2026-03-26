@@ -16,7 +16,7 @@ const Settings = ({ currentUser, onUpdateUser }) => {
     const [profileData, setProfileData] = useState({
         fullname: currentUser?.fullName || currentUser?.fullname || '',
         username: currentUser?.username || '',
-        password: currentUser?.raw_password || '********'
+        password: currentUser?.raw_password || currentUser?.password || '********'
     });
     const [showPassword, setShowPassword] = useState(false);
 
@@ -32,7 +32,7 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                 ...prev,
                 fullname: currentUser.fullName || currentUser.fullname || '',
                 username: currentUser.username || '',
-                password: currentUser.raw_password || '********'
+                password: currentUser.raw_password || currentUser.password || '********'
             }));
         }
     }, [currentUser]);
@@ -111,8 +111,14 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                     fullname: profileData.fullname,
                     fullName: profileData.fullname,
                     username: profileData.username,
-                    password: profileData.password // Added this line to show new password immediately
                 };
+
+                // If a new password was provided in the payload, update both password fields
+                if (payload.password) {
+                    updatedUser.password = payload.password;
+                    updatedUser.raw_password = payload.password;
+                }
+
                 sessionStorage.setItem('user', JSON.stringify(updatedUser));
 
                 // Clear password field after save? (USER: "blink nahi chahiye" - so we keep it)

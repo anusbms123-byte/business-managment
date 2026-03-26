@@ -108,28 +108,33 @@ let currentLoggedCompany = undefined;
 let currentLoggedRole = null;
 
 // Background Sync Timers
-// 1. HIGH-FREQUENCY PUSH (Every 5 seconds)
+// 1. HIGH-FREQUENCY PUSH (Every 30 seconds)
 // This ensures local changes go to cloud as soon as connection is available
 setInterval(async () => {
     if (syncService.isPushing) return;
+    // console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pushing pending local changes...`);
     await syncService.syncPendingRecords();
-}, 5000);
+}, 30000);
 
 // 2. LOW-FREQUENCY PULL (Every 2 minutes)
 // This keeps local data fresh from cloud
-// 2. LOW-FREQUENCY PULL (Every 60 seconds)
-// This keeps local data fresh from cloud
 setInterval(async () => {
     if (syncService.isPulling) return;
+
+    // Convert undefined to null for safety (Super Admin case)
     const activeCid = (currentLoggedCompany === undefined) ? null : currentLoggedCompany;
+
+    // We only skip if NO user is logged in. How do we know if NO user is logged in?
+    // If currentLoggedRole is also null, maybe nobody is logged in.
     if (!currentLoggedRole) return;
 
+    console.log(`[${new Date().toLocaleTimeString()}] [AUTO-SYNC] Pulling fresh data for: ${activeCid === null ? 'Global' : activeCid}`);
     try {
         await syncService.pullAllData(activeCid);
     } catch (err) {
         console.error("[AUTO-SYNC] Pull failed:", err.message);
     }
-}, 60000);
+}, 120000);
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -446,7 +451,7 @@ ipcMain.handle("create-company", async (e, data) => {
     try {
         const result = await db.asyncRun(
             `INSERT INTO companies (global_id, name, address, city, phone, office_phone, email, tax_no, referral_code, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, name, address, city, phone, officePh, email, taxNo, refCode]
         );
 
@@ -469,7 +474,7 @@ ipcMain.handle("update-company", async (e, data) => {
 
     try {
         await db.asyncRun(
-            `UPDATE companies SET name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+            `UPDATE companies SET name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=? 
              WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)`,
             [name, address, city, phone, officePh, email, taxNo, refCode, active, id, id]
         );
@@ -498,7 +503,7 @@ ipcMain.handle("delete-company", async (e, id) => {
                 await db.asyncRun(`DELETE FROM companies WHERE id = ?`, [localId]);
             } else {
                 // Mark for cloud sync deletion
-                await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [localId]);
+                await db.asyncRun(`UPDATE companies SET sync_status = 'deleted', updated_at = ? WHERE id = ?`, [localId]);
                 // Record for sync process to pick up if it was already synced
                 if (globalId) {
                     await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['companies', globalId]);
@@ -674,11 +679,11 @@ ipcMain.handle("create-permission", async (e, data) => {
     try {
         const result = await db.asyncRun(
             `INSERT INTO permissions (global_id, role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, role_id, module, v, c, ex, d]
         );
         // Mark the parent role as pending to trigger sync
-        await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?", [role_id, role_id]);
+        await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?", [role_id, role_id]);
         syncService.syncPendingRecords('roles', '/roles');
         return { success: true, id: result.lastID, global_id: tempId };
     } catch (err) {
@@ -696,14 +701,14 @@ ipcMain.handle("update-permission", async (e, data) => {
         const d = (can_delete === true || can_delete == 1) ? 1 : 0;
 
         await db.asyncRun(
-            `UPDATE permissions SET can_view=?, can_create=?, can_edit=?, can_delete=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+            `UPDATE permissions SET can_view=?, can_create=?, can_edit=?, can_delete=?, sync_status='pending', updated_at=? 
              WHERE id=? OR global_id=?`,
             [v, c, ex, d, id, id]
         );
         // Mark the parent role as pending to trigger sync
         const permRow = await db.asyncGet("SELECT role_id FROM permissions WHERE id = ? OR global_id = ?", [id, id]);
         if (permRow) {
-            await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?", [permRow.role_id, permRow.role_id]);
+            await db.asyncRun("UPDATE roles SET sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?", [permRow.role_id, permRow.role_id]);
         }
         syncService.syncPendingRecords('roles', '/roles');
         return { success: true };
@@ -762,7 +767,7 @@ ipcMain.handle("create-user", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO users (global_id, username, password, raw_password, role, role_id, fullname, company_id, sync_status, is_active, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 1, ?)`,
             [tempId, username, password, password, finalRoleName, rid, fName, cid]
         );
 
@@ -812,7 +817,7 @@ ipcMain.handle("update-user", async (e, data) => {
             }
         }
 
-        let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP";
+        let query = "UPDATE users SET username=?, role=?, role_id=?, fullname=?, is_active=?, sync_status='pending', updated_at=?";
         let params = [username || userRow.username, finalRoleName || userRow.role, rid || userRow.role_id, finalFullName || userRow.fullname, active];
 
         if (password && password.trim() !== '') {
@@ -851,7 +856,7 @@ ipcMain.handle("delete-user", async (e, id) => {
             console.log(`[DELETE-USER] Hard deleted local-only user ${localId}`);
         } else {
             // Mark for sync deletion
-            await db.asyncRun("UPDATE users SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [localId]);
+            await db.asyncRun("UPDATE users SET sync_status = 'deleted', updated_at = ? WHERE id = ?", [localId]);
             // Also record for explicit deletion sync if it has a cloud ID
             if (gid) {
                 await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['users', gid]);
@@ -911,7 +916,7 @@ ipcMain.handle("create-role", async (e, data) => {
         const isSystem = (!cid || cid === 'null' || cid === 'undefined') ? 1 : 0;
         const result = await db.asyncRun(
             `INSERT INTO roles (global_id, name, description, company_id, sync_status, is_system, updated_at) 
-             VALUES (?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, 'pending', ?, ?)`,
             [tempId, name, description, cid, isSystem]
         );
 
@@ -928,7 +933,7 @@ ipcMain.handle("create-role", async (e, data) => {
 
                 await db.asyncRun(
                     `INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at, global_id) 
-                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+                     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
                     [tempId, p.module, v, c, ex, d, pId]
                 );
             }
@@ -959,7 +964,7 @@ ipcMain.handle("update-role", async (e, data) => {
 
         // 1. Update Role metadata
         await db.asyncRun(
-            "UPDATE roles SET name = ?, description = ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE roles SET name = ?, description = ?, sync_status = 'pending', updated_at = ? WHERE id = ?",
             [name, description, localId]
         );
 
@@ -977,7 +982,7 @@ ipcMain.handle("update-role", async (e, data) => {
 
                 await db.asyncRun(
                     `INSERT OR REPLACE INTO permissions (role_id, module, can_view, can_create, can_edit, can_delete, sync_status, updated_at, global_id) 
-                     VALUES (?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+                     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
                     [roleKey, p.module, v, c, ex, d, pId]
                 );
             }
@@ -1010,7 +1015,7 @@ ipcMain.handle("delete-role", async (e, id) => {
         await db.asyncRun("BEGIN TRANSACTION");
         try {
             // Mark role as deleted
-            await db.asyncRun("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+            await db.asyncRun("UPDATE roles SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [gid]);
             // Delete associated permissions
             await db.asyncRun("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(gid), String(localId)]);
             await db.asyncRun("COMMIT");
@@ -1076,7 +1081,7 @@ ipcMain.handle("create-product", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO products (global_id, name, code, cost_price, sell_price, stock_quantity, alert_threshold, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, company_id, color, size, grade, condition, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [
                 randomUUID(),
                 name, code, cost_price || 0, sell_price || 0,
@@ -1102,7 +1107,7 @@ ipcMain.handle("update-product", async (e, data) => {
         const code = data.sku || data.code; // Robust mapping for SKU
 
         await db.asyncRun(
-            `UPDATE products SET name=?, code=?, cost_price=?, sell_price=?, stock_quantity=?, alert_threshold=?, category_id=?, vendor_id=?, brand_id=?, unit=?, weight=?, expiry_date=?, description=?, company_id=?, color=?, size=?, grade=?, condition=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            `UPDATE products SET name=?, code=?, cost_price=?, sell_price=?, stock_quantity=?, alert_threshold=?, category_id=?, vendor_id=?, brand_id=?, unit=?, weight=?, expiry_date=?, description=?, company_id=?, color=?, size=?, grade=?, condition=?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`,
             [name, code, cost_price, sell_price, stock_qty, alert_qty, category_id, vendor_id, brand_id, unit, weight, expiry_date, description, companyId || company_id, color, size, grade, condition, id, id]
         );
 
@@ -1120,7 +1125,7 @@ ipcMain.handle("delete-product", async (e, id) => {
         if (!row) return { success: false, message: "Product not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE products SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE products SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('products', '/products');
         return { success: true, message: "Product deleted locally." };
@@ -1226,14 +1231,14 @@ ipcMain.handle("add-sale", async (e, data) => {
                     `INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, item.price || item.unit_price, item.total || item.total_price || (qty * (item.price || item.unit_price))]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
             }
         }
 
         // 2. Update Customer Balance
         if (customer_id) {
             const balanceChange = grand_total - amount_paid;
-            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
+            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -1273,14 +1278,14 @@ ipcMain.handle("update-sale", async (e, data) => {
         // 1. Reverse Old Stock
         if (oldItems && Array.isArray(oldItems)) {
             for (const item of oldItems) {
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Reverse Old Customer Balance
         if (oldSale.customer_id) {
             const oldDiff = oldSale.grand_total - oldSale.amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [oldDiff, oldSale.customer_id, oldSale.customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [oldDiff, oldSale.customer_id, oldSale.customer_id]);
         }
 
         // 3. Update Sale Record
@@ -1300,14 +1305,14 @@ ipcMain.handle("update-sale", async (e, data) => {
                     `INSERT INTO sale_items (global_id, sale_id, product_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), oldGid, pid, qty, item.price || item.unit_price, item.total || item.total_price]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, new Date().toISOString(), pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, pid, pid]);
             }
         }
 
         // 5. Apply New Customer Balance
         if (customer_id) {
             const newDiff = grand_total - amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, new Date().toISOString(), customer_id, customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, customer_id, customer_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -1334,14 +1339,14 @@ ipcMain.handle("delete-sale", async (e, id) => {
         // 1. Restore Stock
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, new Date().toISOString(), item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Adjust Customer Balance
         if (sale.customer_id) {
             const diff = sale.grand_total - sale.amount_paid;
-            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, new Date().toISOString(), sale.customer_id, sale.customer_id]);
+            await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, sale.customer_id, sale.customer_id]);
         }
 
         // 3. Mark Sale as Deleted
@@ -1404,7 +1409,7 @@ ipcMain.handle("create-customer", async (e, data) => {
                 customer_type, credit_limit, opening_balance, current_balance, 
                 company_id, sync_status, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-            [tempId, name, phone, email, address, city, cnic, gst_no, cType, credLim, opBal, opBal, finalCompanyId, new Date().toISOString()]
+            [tempId, name, phone, email, address, city, cnic, gst_no, cType, credLim, opBal, opBal, finalCompanyId]
         );
 
         syncService.syncPendingRecords('customers', '/customers');
@@ -1448,7 +1453,7 @@ ipcMain.handle("update-customer", async (e, data) => {
         }
 
         updates.push("sync_status='pending'");
-        updates.push("updated_at=CURRENT_TIMESTAMP");
+        updates.push("updated_at=?");
 
         if (companyId || company_id) {
             updates.push("company_id=?");
@@ -1473,7 +1478,7 @@ ipcMain.handle("delete-customer", async (e, id) => {
         if (!row) return { success: false, message: "Customer not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE customers SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('customers', '/customers');
         return { success: true, message: "Customer marked for deletion locally." };
@@ -1525,7 +1530,7 @@ ipcMain.handle("create-vendor", async (e, data) => {
             `INSERT INTO vendors (
                 global_id, name, contact_person, phone, email, address, city, gst_no, company_name, 
                 opening_balance, current_balance, company_id, sync_status, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, name, cPerson, phone, email, address, city, gNo, cName, opBal, opBal, finalCompanyId]
         );
 
@@ -1572,7 +1577,7 @@ ipcMain.handle("update-vendor", async (e, data) => {
         }
 
         updates.push("sync_status='pending'");
-        updates.push("updated_at=CURRENT_TIMESTAMP");
+        updates.push("updated_at=?");
 
         if (companyId || company_id) {
             updates.push("company_id=?");
@@ -1597,7 +1602,7 @@ ipcMain.handle("delete-vendor", async (e, id) => {
         if (!row) return { success: false, message: "Vendor not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE vendors SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, message: "Vendor marked for deletion locally." };
@@ -1625,7 +1630,7 @@ ipcMain.handle("create-expense", async (e, data) => {
         const finalCompanyId = companyId || company_id;
         const result = await db.asyncRun(
             `INSERT INTO expenses (global_id, title, amount, date, description, category, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [randomUUID(), title, amount || 0, date, description, category, finalCompanyId]
         );
         syncService.syncPendingRecords('expenses', '/expenses');
@@ -1639,7 +1644,7 @@ ipcMain.handle("create-expense", async (e, data) => {
 ipcMain.handle("update-expense", async (e, data) => {
     try {
         const { id, title, amount, date, description, category, companyId } = data;
-        const query = `UPDATE expenses SET title=?, amount=?, date=?, description=?, category=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`;
+        const query = `UPDATE expenses SET title=?, amount=?, date=?, description=?, category=?, company_id=?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`;
         await db.asyncRun(query, [title, amount, date, description, category, companyId, id, id]);
         syncService.syncPendingRecords('expenses', '/expenses');
         return { success: true, message: "Expense updated locally." };
@@ -1655,7 +1660,7 @@ ipcMain.handle("delete-expense", async (e, id) => {
         if (!row) return { success: false, message: "Expense not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE expenses SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE expenses SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('expenses', '/expenses');
         return { success: true, message: "Expense deleted locally." };
     } catch (err) {
@@ -1685,7 +1690,7 @@ ipcMain.handle("create-category", async (e, data) => {
         const cid = companyId || company_id;
         const tempId = randomUUID();
         const result = await db.asyncRun(
-            `INSERT INTO categories (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            `INSERT INTO categories (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', ?)`,
             [tempId, name, cid]
         );
         syncService.syncPendingRecords('categories', '/categories');
@@ -1717,7 +1722,7 @@ ipcMain.handle("create-brand", async (e, data) => {
         const cid = companyId || company_id;
         const tempId = randomUUID();
         const result = await db.asyncRun(
-            `INSERT INTO brands (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            `INSERT INTO brands (global_id, name, company_id, sync_status, updated_at) VALUES (?, ?, ?, 'pending', ?)`,
             [tempId, name, cid]
         );
         syncService.syncPendingRecords('brands', '/brands');
@@ -1734,7 +1739,7 @@ ipcMain.handle("delete-category", async (e, id) => {
         if (!row) return { success: false, message: "Category not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE categories SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE categories SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('categories', '/categories');
         return { success: true, message: "Category marked for deletion locally." };
     } catch (err) {
@@ -1749,7 +1754,7 @@ ipcMain.handle("delete-brand", async (e, id) => {
         if (!row) return { success: false, message: "Brand not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE brands SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE brands SET sync_status = 'deleted', updated_at = ? WHERE global_id=?`, [gid]);
 
         syncService.syncPendingRecords('brands', '/brands');
         return { success: true, message: "Brand marked for deletion locally." };
@@ -1851,13 +1856,13 @@ ipcMain.handle("add-purchase", async (e, data) => {
                     `INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, pid, pid]);
             }
         }
 
         if (vendor_id) {
             const balanceChange = total_amount - paid_amount;
-            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
+            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -1897,14 +1902,14 @@ ipcMain.handle("update-purchase", async (e, data) => {
         // 1. Reverse Old Stock
         if (oldItems && Array.isArray(oldItems)) {
             for (const item of oldItems) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, new Date().toISOString(), item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Reverse Old Vendor Balance
         if (oldPurchase.vendor_id) {
             const oldDiff = oldPurchase.total_amount - oldPurchase.paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [oldDiff, new Date().toISOString(), oldPurchase.vendor_id, oldPurchase.vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [oldDiff, oldPurchase.vendor_id, oldPurchase.vendor_id]);
         }
 
         const purchase_date = data.date || data.purchaseDate || data.purchase_date || oldPurchase.purchase_date || new Date().toISOString().split('T')[0];
@@ -1926,14 +1931,14 @@ ipcMain.handle("update-purchase", async (e, data) => {
                     `INSERT INTO purchase_items (global_id, purchase_id, product_id, quantity, unit_cost, total_cost) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), oldGid, pid, qty, item.unit_cost || item.unitCost || item.price || 0, item.total_cost || item.totalCost || item.total || 0]
                 );
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [qty, pid, pid]);
             }
         }
 
         // 5. Apply New Vendor Balance
         if (vendor_id) {
             const newDiff = total_amount - paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, new Date().toISOString(), vendor_id, vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, vendor_id, vendor_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -1960,14 +1965,14 @@ ipcMain.handle("delete-purchase", async (e, id) => {
         // 1. Reverse Stock
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [item.quantity, new Date().toISOString(), item.product_id, item.product_id]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`, [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Adjust Vendor Balance
         if (purchase.vendor_id) {
             const diff = purchase.total_amount - purchase.paid_amount;
-            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, new Date().toISOString(), purchase.vendor_id, purchase.vendor_id]);
+            await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, purchase.vendor_id, purchase.vendor_id]);
         }
 
         // 3. Mark Purchase as Deleted
@@ -2042,7 +2047,7 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
             [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId, new Date().toISOString()]
         );
 
@@ -2061,13 +2066,13 @@ ipcMain.handle("add-sale-return", async (e, data) => {
                     [randomUUID(), tempId, pid, qty, price, total]
                 );
                 // For Sale Return, Stock INCREASES
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
             }
         }
 
         // Update Customer Balance (Decrease Receivable)
         if (customer_id) {
-            await db.asyncRun(`UPDATE customers SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
+            await db.asyncRun(`UPDATE customers SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -2095,17 +2100,17 @@ ipcMain.handle("delete-sale-return", async (e, id) => {
         // 1. Reverse Stock (Decrease Stock, as we are cancelling the return)
         if (items && items.length > 0) {
             for (const item of items) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Reverse Customer Balance (Increase Receivable, as we are cancelling the credit)
         if (customer_id) {
-            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
+            await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
         }
 
         // 3. Mark as Deleted
-        await db.asyncRun("UPDATE sale_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+        await db.asyncRun("UPDATE sale_returns SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sale_returns', '/returns/sales');
@@ -2175,7 +2180,7 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO purchase_returns (global_id, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
             [tempId, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, companyId]
         );
 
@@ -2194,13 +2199,13 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
                     [randomUUID(), tempId, pid, qty, uCost, total]
                 );
                 // For Purchase Return, Stock DECREASES
-                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+                await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
             }
         }
 
         // Update Vendor Balance (Decrease Payable)
         if (vendor_id) {
-            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
+            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
         }
 
         await db.asyncRun("COMMIT");
@@ -2228,17 +2233,17 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
         // 1. Reverse Stock (Increase Stock, as we are cancelling the return)
         if (items && items.length > 0) {
             for (const item of items) {
-                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+                await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = ? WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
             }
         }
 
         // 2. Reverse Vendor Balance (Increase Payable, as we are cancelling the debit note)
         if (vendor_id) {
-            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
+            await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
         }
 
         // 3. Mark as Deleted
-        await db.asyncRun("UPDATE purchase_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+        await db.asyncRun("UPDATE purchase_returns SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchase_returns', '/returns/purchases');
@@ -3116,41 +3121,13 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             const dCRow = await dbGet(dCogsSql, dCogsP);
             const dCogsVal = dCRow?.t || 0;
 
-            // Inventory Addition Trend: Purchases + Returns + Manual initial stock for products created today
-            let dInvSql = `
-                SELECT (
-                    SELECT IFNULL(SUM(pi.quantity * pi.unit_cost), 0)
-                    FROM purchase_items pi
-                    JOIN purchases p ON pi.purchase_id = p.id OR pi.purchase_id = p.global_id
-                    JOIN products pr ON pi.product_id = pr.id OR pi.product_id = pr.global_id
-                    WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
-                    AND date(COALESCE(p.purchase_date, p.updated_at)) = ?
-                    ${categoryId && categoryId !== 'all' ? ` AND (pr.category_id = ? OR pr.category_id = (SELECT id FROM categories WHERE global_id = ?))` : ''}
-                ) + (
-                    SELECT IFNULL(SUM(sri.quantity * p.cost_price), 0)
-                    FROM sale_return_items sri
-                    JOIN sale_returns sr ON sri.return_id = sr.id OR sri.return_id = sr.global_id
-                    JOIN products p ON sri.product_id = p.id OR sri.product_id = p.global_id
-                    WHERE (sr.company_id = ? OR sr.company_id = ? OR sr.company_id = ?)
-                    AND date(sr.date) = ?
-                    ${categoryId && categoryId !== 'all' ? ` AND (p.category_id = ? OR p.category_id = (SELECT id FROM categories WHERE global_id = ?))` : ''}
-                ) + (
-                    SELECT IFNULL(SUM(p.stock_quantity * p.cost_price), 0)
-                    FROM products p
-                    WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?)
-                    AND date(COALESCE(p.created_at, p.updated_at)) = ?
-                    AND p.sync_status != 'deleted'
-                    AND NOT EXISTS (SELECT 1 FROM purchase_items pi WHERE pi.product_id = p.id OR pi.product_id = p.global_id)
-                    ${categoryId && categoryId !== 'all' ? ` AND (p.category_id = ? OR p.category_id = (SELECT id FROM categories WHERE global_id = ?))` : ''}
-                ) as cost_val
-            `;
-            let dInvP = [ids.localId, ids.globalId, String(ids.localId), dStr];
-            if (categoryId && categoryId !== 'all') dInvP.push(categoryId, categoryId);
-            dInvP.push(ids.localId, ids.globalId, String(ids.localId), dStr);
-            if (categoryId && categoryId !== 'all') dInvP.push(categoryId, categoryId);
-            dInvP.push(ids.localId, ids.globalId, String(ids.localId), dStr);
-            if (categoryId && categoryId !== 'all') dInvP.push(categoryId, categoryId);
-
+            // Inventory Addition Trend: Combine Purchases and Manual Stock updates on that day
+            let dInvSql = `SELECT SUM(stock_quantity * cost_price) as t FROM products WHERE ${companyMatch} AND date(updated_at) = ? AND sync_status != 'deleted'`;
+            let dInvP = [...qParams, dStr];
+            if (categoryId && categoryId !== 'all') {
+                dInvSql += ` AND (category_id = ? OR category_id = (SELECT id FROM categories WHERE global_id = ?))`;
+                dInvP.push(categoryId, categoryId);
+            }
             const dInvVal = await dbGet(dInvSql, dInvP);
 
             const isCVF = (customerId && customerId !== 'all') || (vendorId && vendorId !== 'all');
@@ -3407,7 +3384,7 @@ ipcMain.handle("create-account", async (e, data) => {
         const { name, type, balance, companyId } = data;
         const tempId = randomUUID();
         const result = await db.asyncRun(
-            `INSERT INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            `INSERT INTO accounts (global_id, name, type, balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, name, type, balance || 0, companyId]
         );
         syncService.syncPendingRecords('accounts', '/account');
@@ -3432,7 +3409,7 @@ ipcMain.handle("create-transaction", async (e, data) => {
         const { account_id, type, amount, date, description, companyId } = data;
         const tempId = randomUUID();
         const result = await db.asyncRun(
-            `INSERT INTO transactions (global_id, account_id, type, amount, date, description, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            `INSERT INTO transactions (global_id, account_id, type, amount, date, description, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, account_id, type, amount, date, description, companyId]
         );
         syncService.syncPendingRecords();
@@ -3479,7 +3456,7 @@ ipcMain.handle("create-employee", async (e, data) => {
 
         const result = await db.asyncRun(
             `INSERT INTO employees (global_id, first_name, last_name, phone, designation, salary, hourly_rate, joining_date, company_id, sync_status, is_active, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
             [tempId, firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, companyId, activeVal]
         );
         syncService.syncPendingRecords('employees', '/employees');
@@ -3498,7 +3475,7 @@ ipcMain.handle("update-employee", async (e, data) => {
         await db.asyncRun(
             `UPDATE employees SET 
                 first_name=?, last_name=?, phone=?, designation=?, salary=?, hourly_rate=?, joining_date=?, is_active=?,
-                sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+                sync_status='pending', updated_at=? 
              WHERE id=? OR global_id=?`,
             [firstName, lastName || '', phone || '', designation, salary || 0, hourly_rate || 0, joiningDate, activeVal, id, id]
         );
@@ -3516,7 +3493,7 @@ ipcMain.handle("delete-employee", async (e, id) => {
         if (!row) return { success: false, message: "Employee not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE employees SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE employees SET sync_status='deleted', updated_at=? WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('employees', '/employees');
         return { success: true, message: "Employee marked for deletion locally." };
     } catch (err) {
@@ -3576,7 +3553,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
                 `UPDATE attendances SET 
                     status=?, 
                     sync_status='pending', 
-                    updated_at=CURRENT_TIMESTAMP,
+                    updated_at=?,
                     check_in = CASE WHEN status != 'Present' AND ? = 'Present' THEN ? ELSE check_in END
                  WHERE id=? OR global_id=?`,
                 [status, status, now, existing.id, existing.global_id]
@@ -3594,7 +3571,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
 
             await db.asyncRun(
                 `INSERT INTO attendances (global_id, employee_id, date, status, company_id, sync_status, updated_at, check_in) 
-                 VALUES (?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
+                 VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
                 [tempId, employeeId, date, status, companyId, checkIn]
             );
             syncService.syncPendingRecords('attendances', '/attendance');
@@ -3611,7 +3588,7 @@ ipcMain.handle("create-attendance", async (e, data) => {
         const { employee_id, date, status, check_in, check_out, companyId } = data;
         const tempId = randomUUID();
         const result = await db.asyncRun(
-            `INSERT INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            `INSERT INTO attendances (global_id, employee_id, date, status, check_in, check_out, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, employee_id, date, status, check_in, check_out, companyId]
         );
         syncService.syncPendingRecords('attendances', '/attendance');
@@ -3626,7 +3603,7 @@ ipcMain.handle("update-attendance", async (e, data) => {
     try {
         const { id, status, check_in, check_out, companyId } = data;
         await db.asyncRun(
-            `UPDATE attendances SET status=?, check_in=?, check_out=?, company_id=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`,
+            `UPDATE attendances SET status=?, check_in=?, check_out=?, company_id=?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?`,
             [status, check_in, check_out, companyId, id, id]
         );
         syncService.syncPendingRecords('attendances', '/attendance');
@@ -3643,7 +3620,7 @@ ipcMain.handle("delete-attendance", async (e, id) => {
         if (!row) return { success: false, message: "Attendance record not found" };
         const gid = row.global_id;
 
-        await db.asyncRun(`UPDATE attendances SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+        await db.asyncRun(`UPDATE attendances SET sync_status='deleted', updated_at=? WHERE global_id=?`, [gid]);
         syncService.syncPendingRecords('attendances', '/attendance');
         return { success: true, message: "Attendance marked for deletion." };
     } catch (err) {
@@ -3752,7 +3729,7 @@ ipcMain.handle("create-salary", async (e, data) => {
             `INSERT INTO salary_records (
                 global_id, employee_id, month, base_salary, bonus, overtime_hours, 
                 overtime_pay, deductions, net_salary, notes, status, payment_date, company_id, sync_status, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, employeeId, month, baseSalary, bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', data.status || 'PAID', data.paymentDate || new Date().toISOString(), companyId]
         );
         syncService.syncPendingRecords('salary_records', '/salary-records');
@@ -3770,7 +3747,7 @@ ipcMain.handle("update-salary", async (e, data) => {
         await db.asyncRun(
             `UPDATE salary_records SET 
                 bonus=?, overtime_hours=?, overtime_pay=?, deductions=?, net_salary=?, notes=?, 
-                sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+                sync_status='pending', updated_at=? 
              WHERE id=? OR global_id=?`,
             [bonus || 0, overtimeHours || 0, overtimePay || 0, deductions || 0, netSalary, notes || '', id, global_id]
         );
@@ -3787,7 +3764,7 @@ ipcMain.handle("delete-salary", async (e, id) => {
         const record = await db.asyncGet("SELECT id, global_id FROM salary_records WHERE id=?", [id]);
         if (!record) return { success: false, message: "Record not found" };
 
-        await db.asyncRun("UPDATE salary_records SET sync_status='deleted', updated_at=CURRENT_TIMESTAMP WHERE id=?", [id]);
+        await db.asyncRun("UPDATE salary_records SET sync_status='deleted', updated_at=? WHERE id=?", [id]);
         syncService.syncPendingRecords('salary_records', '/salary-records');
         return { success: true, message: "Salary marked for deletion" };
     } catch (err) {
@@ -3812,7 +3789,7 @@ ipcMain.handle("add-salary-record", async (e, data) => {
         const tempId = randomUUID();
         const result = await db.asyncRun(
             `INSERT INTO salary_records (global_id, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, notes, payment_date, status, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
             [tempId, employee_id, month, base_salary, bonus, overtime_hours, overtime_pay, deductions, net_salary, data.notes || '', payment_date, status, companyId]
         );
         syncService.syncPendingRecords('salary_records', '/salary-records');
@@ -3853,19 +3830,10 @@ ipcMain.handle("trigger-sync", async () => {
 });
 
 // Network Status Change - Trigger immediate sync when back online
-ipcMain.on("network-status-changed", async (event, status) => {
+ipcMain.on("network-status-changed", (event, status) => {
     if (status === 'online') {
-        console.log("[NETWORK] System is BACK ONLINE. Starting full sync...");
-        
-        // 1. Push all pending local changes first
-        await syncService.syncPendingRecords();
-        
-        // 2. Then pull latest from cloud to ensure local is fresh
-        const activeCid = (currentLoggedCompany === undefined) ? null : currentLoggedCompany;
-        if (currentLoggedRole) {
-            console.log("[NETWORK] Pulling latest data from cloud...");
-            await syncService.pullAllData(activeCid);
-        }
+        console.log("[NETWORK] System is BACK ONLINE. Triggering immediate background sync...");
+        syncService.syncPendingRecords();
     } else {
         console.log("[NETWORK] System went OFFLINE. Sync paused.");
     }

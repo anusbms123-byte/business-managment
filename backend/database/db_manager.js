@@ -154,6 +154,11 @@ db.initPromise = (async () => {
       if (t === 'users') await ensureColumn(t, 'raw_password', 'TEXT');
     }
 
+    // Fix NULL created_at for older records to ensure trend charts work
+    await db.asyncRun("UPDATE products SET created_at = updated_at WHERE created_at IS NULL");
+    await db.asyncRun("UPDATE sales SET sale_date = updated_at WHERE sale_date IS NULL");
+    await db.asyncRun("UPDATE purchases SET purchase_date = updated_at WHERE purchase_date IS NULL");
+
     // 4. MODULE SPECIFIC COLUMNS
     // Products
     await ensureColumn('products', 'code', 'TEXT');

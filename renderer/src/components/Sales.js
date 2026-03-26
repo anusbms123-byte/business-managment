@@ -222,7 +222,7 @@ const Sales = ({ currentUser }) => {
         setPaymentMethod(sale.paymentMethod || sale.payment_method || 'CASH');
         setNotes(sale.notes || '');
 
-        const cust = customers.find(c => c.id === (sale.customerId || sale.customer_id));
+        const cust = customers.find(c => (c.id == (sale.customerId || sale.customer_id)) || (c.global_id && c.global_id == (sale.customerId || sale.customer_id)));
         const currentCustBalance = cust?.current_balance || cust?.balance || 0;
         const saleDue = (sale.total_amount || sale.totalAmount || sale.grandTotal || 0) - (sale.paid_amount || sale.paidAmount || sale.amountPaid || 0);
         setPreviousBalance(currentCustBalance - saleDue);
@@ -370,27 +370,27 @@ const Sales = ({ currentUser }) => {
                         />
                     </div>
                     {canCreate('sales') && (
-                            <button
-                                onClick={() => { resetForm(); setIsModalOpen(true); }}
-                                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 shadow-sm text-sm"
-                            >
-                                <Plus size={18} />
-                                <span>Add sale</span>
-                            </button>
+                        <button
+                            onClick={() => { resetForm(); setIsModalOpen(true); }}
+                            className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 shadow-sm text-sm"
+                        >
+                            <Plus size={18} />
+                            <span>Add sale</span>
+                        </button>
                     )}
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-separate border-spacing-0">
-                            <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Invoice</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Customer</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Items</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Total</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Paid</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Status</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight text-right">Actions</th>
-                            </tr>
+                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Invoice</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Customer</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Items</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Total</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Paid</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight">Status</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-white tracking-tight text-right">Actions</th>
+                        </tr>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredSales.map((sale) => (
                                 <tr key={sale.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group border-b border-slate-100 dark:border-slate-800 last:border-0 text-black dark:text-slate-100 font-semibold">
@@ -664,7 +664,7 @@ const Sales = ({ currentUser }) => {
                     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-50/30 dark:bg-slate-800/20">
 
                         {/* Left: Product Selection */}
-                        <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800">
+                        <div className="flex-1 p-4 md:p-6 min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20">
                             <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end mb-6">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Customer</label>
@@ -759,9 +759,12 @@ const Sales = ({ currentUser }) => {
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${highlightedIndex === index ? 'bg-blue-50 dark:bg-blue-900/40' : ''}`}
+                                                        className={`px-4 py-3 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 transition-all ${highlightedIndex === index ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                                         onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
-                                                        onMouseEnter={() => setHoveredProduct(p)}
+                                                        onMouseEnter={() => {
+                                                            setHoveredProduct(p);
+                                                            setHighlightedIndex(index);
+                                                        }}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
@@ -776,7 +779,7 @@ const Sales = ({ currentUser }) => {
 
                                         {/* Product Hover Detail Card */}
                                         {isProductListVisible && hoveredProduct && (
-                                            <div className="absolute left-full ml-4 top-0 z-[120] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
+                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
                                                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
                                                     <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                                         <Package size={20} />
@@ -863,8 +866,9 @@ const Sales = ({ currentUser }) => {
                             </div>
 
                             {/* Modern Cart Table */}
-                            <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto transition-colors duration-300">
-                                <table className="w-full text-left min-w-[600px]">
+                            <div className="flex-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0 transition-colors duration-300">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                    <table className="w-full text-left min-w-[600px]">
                                     <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-sm font-semibold text-black dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
                                         <tr>
                                             <th className="px-6 py-4">Name</th>
@@ -909,9 +913,10 @@ const Sales = ({ currentUser }) => {
                                 </table>
                             </div>
                         </div>
+                    </div>
 
                         {/* Right: Summary & Checkout */}
-                        <div className="w-full lg:w-[400px] p-4 md:p-6 flex flex-col bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 shrink-0 overflow-y-auto custom-scrollbar transition-colors duration-300">
+                        <div className="w-full lg:w-[400px] p-4 md:p-6 flex flex-col bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 shrink-0 overflow-y-auto custom-scrollbar transition-colors duration-300 relative z-10">
                             <div className="space-y-4">
                                 <div className="space-y-3 px-1">
                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
@@ -977,9 +982,11 @@ const Sales = ({ currentUser }) => {
                                     </div>
 
                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
-                                        <span>Previous Balance</span>
-                                        <div className="relative w-24 text-right px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md">
-                                            <span className={`text-sm font-semibold ${previousBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{Number(previousBalance).toLocaleString()}</span>
+                                        <span>Previous Balance ({previousBalance >= 0 ? 'Owes You' : 'Credit'})</span>
+                                        <div className="relative w-32 text-right px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-md">
+                                            <span className={`text-sm font-semibold ${previousBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                PKR {Math.abs(Number(previousBalance || 0)).toLocaleString()}
+                                            </span>
                                         </div>
                                     </div>
 

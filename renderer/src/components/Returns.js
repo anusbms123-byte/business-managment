@@ -150,7 +150,7 @@ const Returns = ({ currentUser }) => {
     const totalAmount = subTotal + taxValue;
 
     const handleSave = async () => {
-        if (!selectedEntityId || cart.length === 0) return;
+        if (cart.length === 0) return alert('Return cart is empty');
         setSaving(true);
         try {
             const data = {
@@ -353,7 +353,7 @@ const Returns = ({ currentUser }) => {
                                 <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">{activeTab === 'sales' ? 'Add sale return' : 'Add purchase return'}</h2>
                             </div>
                         </div>
-                         <button
+                        <button
                             onClick={() => setIsModalOpen(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                         >
@@ -365,7 +365,7 @@ const Returns = ({ currentUser }) => {
 
                     <div className="flex-1 flex overflow-hidden min-h-0 bg-slate-50/30 dark:bg-slate-900">
                         {/* Left: Product Selection & Cart */}
-                        <div className="flex-1 p-6 overflow-y-auto border-r border-slate-200 dark:border-slate-800">
+                        <div className="flex-1 p-6 border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20 overflow-visible">
                             <div className="grid grid-cols-4 gap-4 mb-6">
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
@@ -374,7 +374,7 @@ const Returns = ({ currentUser }) => {
                                         value={selectedEntityId}
                                         onChange={(e) => setSelectedEntityId(e.target.value)}
                                     >
-                                        <option value="">Select {activeTab === 'sales' ? 'customer' : 'supplier'}...</option>
+                                        <option value="">Walk-in {activeTab === 'sales' ? 'Customer' : 'Supplier'}</option>
                                         {(activeTab === 'sales' ? customers : vendors).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                                     </select>
                                 </div>
@@ -426,9 +426,12 @@ const Returns = ({ currentUser }) => {
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
-                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
+                                                        className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
                                                         onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
-                                                        onMouseEnter={() => setHoveredProduct(p)}
+                                                        onMouseEnter={() => {
+                                                            setHoveredProduct(p);
+                                                            setHighlightedIndex(index);
+                                                        }}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
@@ -443,8 +446,8 @@ const Returns = ({ currentUser }) => {
 
                                         {/* Product Hover Detail Card */}
                                         {isProductListVisible && hoveredProduct && (
-                                            <div className="absolute left-full ml-4 top-0 z-[120] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
-                                                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
+                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
+                                                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
                                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                                         <Package size={20} />
                                                     </div>
@@ -525,8 +528,9 @@ const Returns = ({ currentUser }) => {
                             </div>
 
                             {/* Cart Table */}
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <table className="w-full">
+                            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                    <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                                         <tr>
                                             <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-left tracking-tight">Name</th>
@@ -567,66 +571,74 @@ const Returns = ({ currentUser }) => {
                                 </table>
                             </div>
                         </div>
+                    </div>
 
                         {/* Right: Summary */}
-                        <div className="w-[350px] p-6 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
+                        <div className="w-[350px] p-6 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0 relative z-10 transition-all">
                             <div className="space-y-6 flex-1 overflow-y-auto">
-                                 <div className="space-y-4">
-                                     <div className="space-y-1.5">
-                                         <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Return invoice #</label>
-                                         <input
-                                             type="text"
-                                             className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
-                                             value={invoiceNo}
-                                             onChange={(e) => setInvoiceNo(e.target.value)}
-                                             placeholder="ex. RET-889"
-                                         />
-                                     </div>
-                                 </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Return invoice #</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                            value={invoiceNo}
+                                            onChange={(e) => setInvoiceNo(e.target.value)}
+                                            placeholder="ex. RET-889"
+                                        />
+                                    </div>
+                                </div>
 
-                                 <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
-                                         <span>Subtotal</span>
-                                         <span className="text-black dark:text-slate-200 font-semibold">PKR {(subTotal || 0).toLocaleString()}</span>
-                                     </div>
-                                     <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
-                                         <span>Handling / tax</span>
-                                         <input
-                                             type="number"
-                                             className="w-24 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-sm"
-                                             value={tax}
-                                             onChange={(e) => setTax(e.target.value)}
-                                             placeholder="0"
-                                         />
-                                     </div>
-                                     <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-                                         <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Total amount</span>
-                                         <span className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tighter">
-                                             PKR {(totalAmount || 0).toLocaleString()}
-                                         </span>
-                                     </div>
-                                 </div>
+                                <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
+                                        <span>Subtotal</span>
+                                        <span className="text-black dark:text-slate-200 font-semibold">PKR {(subTotal || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
+                                        <span>Handling / tax</span>
+                                        <input
+                                            type="number"
+                                            className="w-24 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-sm"
+                                            value={tax}
+                                            onChange={(e) => setTax(e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                                        <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Total amount</span>
+                                        <span className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                                            PKR {(totalAmount || 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
 
-                                 <div className="space-y-1.5">
-                                     <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Notes</label>
-                                     <textarea
-                                         className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold outline-none focus:border-emerald-500 transition-all resize-none h-24 text-black dark:text-slate-200 placeholder:text-slate-400"
-                                         placeholder="Details..."
-                                         value={notes}
-                                         onChange={(e) => setNotes(e.target.value)}
-                                     />
-                                 </div>
-                             </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Notes</label>
+                                    <textarea
+                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold outline-none focus:border-emerald-500 transition-all resize-none h-24 text-black dark:text-slate-200 placeholder:text-slate-400"
+                                        placeholder="Details..."
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                    />
+                                </div>
+                            </div>
 
-                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                 <button
-                                     onClick={handleSave}
-                                     disabled={saving || cart.length === 0 || !selectedEntityId}
-                                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-semibold text-lg hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 tracking-tight"
-                                 >
-                                     {saving ? <span>Saving...</span> : <span>Save now</span>}
-                                 </button>
-                             </div>
+                            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving || cart.length === 0}
+                                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-semibold text-lg hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 tracking-tight"
+                                >
+                                    {saving ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            <span>Saving...</span>
+                                        </div>
+                                    ) : (
+                                        <span>Save now</span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -648,7 +660,7 @@ const Returns = ({ currentUser }) => {
                             onClick={() => setIsDetailModalOpen(false)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
                         >
-                             <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
+                            <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
                             <X size={20} />
                         </button>
                     </div>

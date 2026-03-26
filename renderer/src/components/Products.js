@@ -38,7 +38,7 @@ const StatCard = ({ title, value, icon: Icon, color, onClick, isActive }) => {
 };
 
 // Searchable and Creatable Dropdown Component
-const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placeholder }) => {
+const CreatableSelect = ({ label, icon: Icon, value, onChange, onDeleteOption, options, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState(value || '');
 
@@ -83,16 +83,34 @@ const CreatableSelect = ({ label, icon: Icon, value, onChange, options, placehol
                             filteredOptions.map(opt => (
                                 <div
                                     key={opt.id}
-                                    className="px-5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer text-sm font-medium text-black dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors flex items-center justify-between"
+                                    className="px-5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer text-sm font-medium text-black dark:text-slate-200 transition-colors flex items-center justify-between group/opt"
                                     onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setSearchTerm(opt.name);
-                                        onChange(opt.name);
-                                        setIsOpen(false);
+                                        // If clicked target is not the delete button
+                                        if (!e.target.closest('.delete-opt-btn')) {
+                                            e.preventDefault();
+                                            setSearchTerm(opt.name);
+                                            onChange(opt.name);
+                                            setIsOpen(false);
+                                        }
                                     }}
                                 >
                                     <span>{opt.name}</span>
-                                    <span className="text-xs font-semibold text-black dark:text-slate-500 tracking-tight bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
+                                    <div className="flex items-center gap-2">
+                                        {onDeleteOption && (
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onDeleteOption(opt);
+                                                }}
+                                                className="delete-opt-btn p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/40 rounded-lg transition-all opacity-0 group-hover/opt:opacity-100"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 tracking-tight bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">Select</span>
+                                    </div>
                                 </div>
                             ))
                         ) : (
@@ -284,6 +302,46 @@ const Products = ({ currentUser }) => {
             color: '', size: '', grade: '', condition: ''
         });
         setShowOptional(false);
+    };
+
+    const handleDeleteCategory = async (id) => {
+        showConfirm("Are you sure you want to delete this category?", async () => {
+            try {
+                const result = await window.electronAPI.deleteCategory(id);
+                if (result.success) {
+                    const currentCats = await window.electronAPI.getCategories(currentUser.company_id);
+                    setCategories(Array.isArray(currentCats) ? currentCats : []);
+                    const deletedCat = categories.find(c => c.id === id);
+                    if (formData.category_name === deletedCat?.name) {
+                        setFormData(prev => ({ ...prev, category_name: '' }));
+                    }
+                } else {
+                    showError("Failed to delete category: " + result.message);
+                }
+            } catch (err) {
+                showError("Error deleting category");
+            }
+        });
+    };
+
+    const handleDeleteBrand = async (id) => {
+        showConfirm("Are you sure you want to delete this brand?", async () => {
+            try {
+                const result = await window.electronAPI.deleteBrand(id);
+                if (result.success) {
+                    const currentBrands = await window.electronAPI.getBrands(currentUser.company_id);
+                    setBrands(Array.isArray(currentBrands) ? currentBrands : []);
+                    const deletedBrand = brands.find(b => b.id === id);
+                    if (formData.brand_name === deletedBrand?.name) {
+                        setFormData(prev => ({ ...prev, brand_name: '' }));
+                    }
+                } else {
+                    showError("Failed to delete brand: " + result.message);
+                }
+            } catch (err) {
+                showError("Error deleting brand");
+            }
+        });
     };
 
     const handleDelete = async (id) => {
@@ -688,6 +746,7 @@ const Products = ({ currentUser }) => {
                                              value={formData.category_name}
                                              options={categories}
                                              onChange={(val) => setFormData({ ...formData, category_name: val })}
+                                             onDeleteOption={(opt) => handleDeleteCategory(opt.id)}
                                              placeholder="Category name"
                                          />
                                          <CreatableSelect
@@ -696,6 +755,7 @@ const Products = ({ currentUser }) => {
                                              value={formData.brand_name}
                                              options={brands}
                                              onChange={(val) => setFormData({ ...formData, brand_name: val })}
+                                             onDeleteOption={(opt) => handleDeleteBrand(opt.id)}
                                              placeholder="Brand name"
                                          />
                                          <div className="space-y-2">

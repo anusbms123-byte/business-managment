@@ -916,6 +916,7 @@ const Reports = ({ currentUser }) => {
                                     {activeModule === 'returns' ? 'Total Refunds' : 
                                      activeModule === 'suppliers' ? 'Total Balance Due' :
                                      activeModule === 'customers' ? 'Total Receivables' :
+                                     activeModule === 'inventory' ? 'Total Inventory Value' :
                                      'Total Amount'}
                                 </p>
                                 <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black dark:text-slate-100">
@@ -927,6 +928,7 @@ const Reports = ({ currentUser }) => {
                                                activeModule === 'hrm' ? (summary?.totalSalaries || 0) :
                                                activeModule === 'netprofit' ? (summary?.netProfit || 0) :
                                                activeModule === 'expenses' ? (summary?.totalExpenses || 0) :
+                                               activeModule === 'inventory' ? (summary?.inventoryValuationCost || 0) :
                                                (summary?.totalSales || 0))
                                     ).toLocaleString()}
                                 </h2>

@@ -9,6 +9,7 @@ class SyncService {
         this.isPulling = false;
         this.isPushing = false;
         this.pushQueue = [];
+        this.currentPushPromise = null; // New: Promise tracking
         this.CLOUD_URL = CLOUD_URL;
         this.currentCompanyId = null; // Store for fallback
     }
@@ -309,8 +310,13 @@ class SyncService {
         }
 
         if (existingRow && existingRow.sync_status !== 'pending') {
-            const cloudUpdated = new Date(cloudData.updatedAt || cloudData.updated_at || 0).getTime();
-            const localUpdated = new Date(existingRow.updated_at || 0).getTime();
+            const cloudUpdatedStr = cloudData.updatedAt || cloudData.updated_at || "0";
+            const localUpdatedStr = existingRow.updated_at || "0";
+            
+            // Ensure strings are parsed as UTC
+            const cloudUpdated = new Date(cloudUpdatedStr.includes('Z') || cloudUpdatedStr.includes('+') ? cloudUpdatedStr : cloudUpdatedStr + 'Z').getTime();
+            const localUpdated = new Date(localUpdatedStr.includes('Z') || localUpdatedStr.includes('+') ? localUpdatedStr : localUpdatedStr + 'Z').getTime();
+            
             if (cloudUpdated <= localUpdated && existingRow.updated_at) return;
         }
 
@@ -370,8 +376,18 @@ class SyncService {
             const gNo = cloudData.gstNo ?? cloudData.gst_no;
 
             if (existingRow) {
+                // CRITICAL FIX: Do NOT overwrite local current_balance from cloud.
+                // Local balance = result of actual sales transactions on this machine.
+                // Cloud balance may be stale (opening balance only). 
+                // Check if any PENDING sales exist for this customer - if yes, keep local balance.
+                const pendingSalesForCustomer = await db.asyncGet(
+                    `SELECT id FROM sales WHERE (customer_id = ? OR customer_id = ?) AND sync_status = 'pending' LIMIT 1`,
+                    [existingRow.id, cloudData.id]
+                );
+                // Only update balance from cloud if NO pending local transactions
+                const balanceToUse = pendingSalesForCustomer ? existingRow.current_balance : curBal;
                 query = `UPDATE customers SET global_id=?, name=?, phone=?, email=?, address=?, city=?, cnic=?, gst_no=?, customer_type=?, credit_limit=?, opening_balance=?, current_balance=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
-                params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cloudData.cnic, gNo, cType, cloudData.creditLimit || cloudData.credit_limit || 0, opBal, curBal, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cloudData.cnic, gNo, cType, cloudData.creditLimit || cloudData.credit_limit || 0, opBal, balanceToUse, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
                 query = `INSERT INTO customers (global_id, name, phone, email, address, city, cnic, gst_no, customer_type, credit_limit, opening_balance, current_balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
                 params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cloudData.cnic, gNo, cType, cloudData.creditLimit || cloudData.credit_limit || 0, opBal, curBal, companyId, cloudData.updatedAt || cloudData.updated_at];
@@ -396,8 +412,16 @@ class SyncService {
             const cName = cloudData.companyName ?? cloudData.company_name;
 
             if (existingRow) {
+                // CRITICAL FIX: Do NOT overwrite local current_balance from cloud.
+                // Local balance = result of actual purchase transactions on this machine.
+                // Cloud balance may be stale (opening balance only).
+                const pendingPurchasesForVendor = await db.asyncGet(
+                    `SELECT id FROM purchases WHERE (vendor_id = ? OR vendor_id = ?) AND sync_status = 'pending' LIMIT 1`,
+                    [existingRow.id, cloudData.id]
+                );
+                const balanceToUse = pendingPurchasesForVendor ? existingRow.current_balance : curBal;
                 query = `UPDATE vendors SET global_id=?, name=?, phone=?, email=?, address=?, city=?, contact_person=?, gst_no=?, company_name=?, opening_balance=?, current_balance=?, company_id=?, sync_status='synced', updated_at=? WHERE id=?`;
-                params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cPerson, gNo, cName, opBal, curBal, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cPerson, gNo, cName, opBal, balanceToUse, companyId, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
                 query = `INSERT INTO vendors (global_id, name, phone, email, address, city, contact_person, gst_no, company_name, opening_balance, current_balance, company_id, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
                 params = [cloudData.id, cloudData.name, cloudData.phone, cloudData.email, cloudData.address, cloudData.city, cPerson, gNo, cName, opBal, curBal, companyId, cloudData.updatedAt || cloudData.updated_at];
@@ -668,19 +692,24 @@ class SyncService {
         this.pushQueue.push({ table: specificTable, url: specificUrl });
 
         if (this.isPushing) {
-            console.log("[SYNC] Push already in progress, request queued.");
-            return;
+            console.log("[SYNC] Push already in progress, returning tracker.");
+            return this.currentPushPromise;
         }
 
-        this.isPushing = true;
-        try {
-            while (this.pushQueue.length > 0) {
-                const task = this.pushQueue.shift();
-                await this._doSync(task.table, task.url);
-            }
-        } finally {
-            this.isPushing = false;
-        }
+        this.currentPushPromise = (async () => {
+             this.isPushing = true;
+             try {
+                while (this.pushQueue.length > 0) {
+                    const task = this.pushQueue.shift();
+                    await this._doSync(task.table, task.url);
+                }
+             } finally {
+                this.isPushing = false;
+                this.currentPushPromise = null;
+             }
+        })();
+
+        return this.currentPushPromise;
     }
 
     async _doSync(specificTable = null, specificUrl = null) {
@@ -689,22 +718,23 @@ class SyncService {
                 console.log(`[SYNC] Immediate push for ${specificTable}...`);
                 await this.pushEntity(specificTable, specificUrl);
             } else {
+                // Optimized Priority Order (Critical Business Data First)
                 const pushOrder = [
                     { table: 'companies', url: '/companies' },
+                    { table: 'customers', url: '/customers' },
+                    { table: 'vendors', url: '/vendors' },
+                    { table: 'products', url: '/products' },
                     { table: 'categories', url: '/categories' },
                     { table: 'brands', url: '/brands' },
-                    { table: 'vendors', url: '/vendors' },
-                    { table: 'customers', url: '/customers' },
-                    { table: 'roles', url: '/roles' },
-                    { table: 'users', url: '/users' },
-                    { table: 'products', url: '/products' },
-                    { table: 'employees', url: '/employees' },
-                    { table: 'expenses', url: '/expenses' },
                     { table: 'sales', url: '/sales' },
                     { table: 'purchases', url: '/purchases' },
-                    { table: 'accounts', url: '/account' },
                     { table: 'sale_returns', url: '/returns/sales' },
                     { table: 'purchase_returns', url: '/returns/purchases' },
+                    { table: 'expenses', url: '/expenses' },
+                    { table: 'roles', url: '/roles' },
+                    { table: 'users', url: '/users' },
+                    { table: 'employees', url: '/employees' },
+                    { table: 'accounts', url: '/account' },
                     { table: 'attendances', url: '/attendance' },
                     { table: 'salary_records', url: '/salary-records' },
                     { table: 'audit_logs', url: '/audit-logs' }
@@ -832,12 +862,12 @@ class SyncService {
                 if (table === 'products') {
                     // console.log(`[SYNC] Processing Product Payload: ${JSON.stringify(record)}`);
 
-                    payload.cost_price = parseFloat(record.cost_price || 0);
-                    payload.sell_price = parseFloat(record.sell_price || 0);
-                    payload.stock_qty = parseInt(record.stock_quantity || record.stock_qty || 0);
-                    payload.alert_qty = parseInt(record.alert_threshold || record.alert_qty || 5);
+                    payload.cost_price = parseFloat(record.cost_price ?? 0);
+                    payload.sell_price = parseFloat(record.sell_price ?? 0);
+                    payload.stock_qty = parseInt(record.stock_quantity ?? record.stock_qty ?? 0);
+                    payload.alert_qty = parseInt(record.alert_threshold ?? record.alert_qty ?? 5);
                     payload.sku = record.code || record.sku || "";
-                    payload.weight = parseFloat(record.weight || 0);
+                    payload.weight = parseFloat(record.weight ?? 0);
                     payload.expiry_date = record.expiry_date;
                     payload.image_url = record.image_url || null;
 
@@ -855,12 +885,12 @@ class SyncService {
 
                 } else if (table === 'sales') {
                     payload.invoiceNo = record.inv_number || record.invoice_no;
-                    payload.subTotal = parseFloat(record.total_amount || 0);
-                    payload.grandTotal = parseFloat(record.grand_total || 0);
-                    payload.amountPaid = parseFloat(record.amount_paid || 0);
-                    payload.discount = parseFloat(record.discount || 0);
-                    payload.tax = parseFloat(record.tax_amount || 0);
-                    payload.shippingCost = parseFloat(record.shipping_cost || 0);
+                    payload.subTotal = parseFloat(record.total_amount ?? 0);
+                    payload.grandTotal = parseFloat(record.grand_total ?? 0);
+                    payload.amountPaid = parseFloat(record.amount_paid ?? 0);
+                    payload.discount = parseFloat(record.discount ?? 0);
+                    payload.tax = parseFloat(record.tax_amount ?? 0);
+                    payload.shippingCost = parseFloat(record.shipping_cost ?? 0);
                     const rawDate = record.sale_date || record.date;
                     payload.date = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
 
@@ -878,18 +908,18 @@ class SyncService {
                     `, [localId, globalId]);
                     payload.items = items.map(item => ({
                         productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity || 0),
-                        price: parseFloat(item.unit_price || 0),
-                        total: parseFloat(item.total_price || 0)
+                        quantity: parseInt(item.quantity ?? 0),
+                        price: parseFloat(item.unit_price ?? 0),
+                        total: parseFloat(item.total_price ?? 0)
                     }));
 
                 } else if (table === 'purchases') {
                     payload.invoiceNo = record.ref_number || record.invoice_no;
-                    payload.totalAmount = parseFloat(record.total_amount || 0);
-                    payload.paidAmount = parseFloat(record.paid_amount || 0);
-                    payload.shippingCost = parseFloat(record.shipping_cost || 0);
-                    payload.discount = parseFloat(record.discount || 0);
-                    payload.tax = parseFloat(record.tax_amount || 0);
+                    payload.totalAmount = parseFloat(record.total_amount ?? 0);
+                    payload.paidAmount = parseFloat(record.paid_amount ?? 0);
+                    payload.shippingCost = parseFloat(record.shipping_cost ?? 0);
+                    payload.discount = parseFloat(record.discount ?? 0);
+                    payload.tax = parseFloat(record.tax_amount ?? 0);
                     payload.notes = record.notes || "";
                     payload.paymentMethod = record.payment_method || "CASH";
                     payload.paymentStatus = record.payment_status || "RECEIVED";
@@ -906,15 +936,15 @@ class SyncService {
                     `, [localId, globalId]);
                     payload.items = items.map(item => ({
                         productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity || 0),
-                        unitCost: parseFloat(item.unit_cost || 0),
-                        total: parseFloat(item.total_cost || 0)
+                        quantity: parseInt(item.quantity ?? 0),
+                        unitCost: parseFloat(item.unit_cost ?? 0),
+                        total: parseFloat(item.total_cost ?? 0)
                     }));
                 } else if (table === 'sale_returns') {
                     payload.invoiceNo = record.invoice_no || record.inv_number;
-                    payload.subTotal = parseFloat(record.sub_total || 0);
-                    payload.tax = parseFloat(record.tax || record.tax_amount || 0);
-                    payload.totalAmount = parseFloat(record.total_amount || 0);
+                    payload.subTotal = parseFloat(record.sub_total ?? 0);
+                    payload.tax = parseFloat(record.tax ?? record.tax_amount ?? 0);
+                    payload.totalAmount = parseFloat(record.total_amount ?? 0);
                     payload.notes = record.notes;
                     const rawDate = record.date || record.return_date;
                     payload.date = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
@@ -935,9 +965,9 @@ class SyncService {
                     `, [localId, globalId]);
                     payload.items = items.map(item => ({
                         productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity || 0),
-                        price: parseFloat(item.price || 0),
-                        total: parseFloat(item.total || 0)
+                        quantity: parseInt(item.quantity ?? 0),
+                        price: parseFloat(item.price ?? 0),
+                        total: parseFloat(item.total ?? 0)
                     }));
                 } else if (table === 'purchase_returns') {
                     payload.invoiceNo = record.invoice_no || record.inv_number;
@@ -964,16 +994,16 @@ class SyncService {
                     `, [localId, globalId]);
                     payload.items = items.map(item => ({
                         productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity || 0),
-                        unitCost: parseFloat(item.unit_cost || 0),
-                        total: parseFloat(item.total || 0)
+                        quantity: parseInt(item.quantity ?? 0),
+                        unitCost: parseFloat(item.unit_cost ?? 0),
+                        total: parseFloat(item.total ?? 0)
                     }));
                 } else if (table === 'customers') {
                     payload.customerType = record.customer_type || 'retail';
                     payload.gst_no = record.gst_no;
-                    payload.creditLimit = parseFloat(record.credit_limit || 0);
-                    payload.openingBalance = parseFloat(record.opening_balance || 0);
-                    payload.balance = parseFloat(record.current_balance || record.balance || payload.openingBalance);
+                    payload.creditLimit = parseFloat(record.credit_limit ?? 0);
+                    payload.openingBalance = parseFloat(record.opening_balance ?? 0);
+                    payload.balance = parseFloat(record.current_balance ?? record.balance ?? payload.openingBalance);
                 } else if (table === 'vendors') {
                     payload.companyName = record.company_name;
                     payload.contactPerson = record.contact_person;
@@ -982,7 +1012,7 @@ class SyncService {
                     payload.balance = parseFloat(record.current_balance ?? record.balance ?? payload.openingBalance);
                 } else if (table === 'expenses') {
                     payload.title = record.title;
-                    payload.amount = parseFloat(record.amount || 0);
+                    payload.amount = parseFloat(record.amount ?? 0);
                     payload.date = record.date;
                     payload.description = record.description;
                     payload.category = record.category;
@@ -991,8 +1021,8 @@ class SyncService {
                     payload.lastName = record.last_name;
                     payload.phone = record.phone;
                     payload.designation = record.designation;
-                    payload.salary = parseFloat(record.salary || 0);
-                    payload.hourly_rate = parseFloat(record.hourly_rate || 0);
+                    payload.salary = parseFloat(record.salary ?? 0);
+                    payload.hourly_rate = parseFloat(record.hourly_rate ?? 0);
                     payload.joiningDate = record.joining_date;
                     payload.isActive = record.is_active === 1;
                 } else if (table === 'roles') {
@@ -1064,7 +1094,7 @@ class SyncService {
                 } else if (table === 'accounts') {
                     payload.name = record.name;
                     payload.type = record.type;
-                    payload.balance = parseFloat(record.balance || 0);
+                    payload.balance = parseFloat(record.balance ?? 0);
                 } else if (table === 'attendances') {
                     const empRow = await db.asyncAll(`SELECT global_id FROM employees WHERE id = ? OR global_id = ?`, [record.employee_id, record.employee_id]);
                     payload.id = record.global_id;
@@ -1077,12 +1107,12 @@ class SyncService {
                     const empRow = await db.asyncAll(`SELECT global_id FROM employees WHERE id = ? OR global_id = ?`, [record.employee_id, record.employee_id]);
                     payload.employeeId = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
                     payload.month = record.month;
-                    payload.baseSalary = parseFloat(record.base_salary || 0);
-                    payload.bonus = parseFloat(record.bonus || 0);
-                    payload.overtimeHours = parseFloat(record.overtime_hours || 0);
-                    payload.overtimePay = parseFloat(record.overtime_pay || 0);
-                    payload.deductions = parseFloat(record.deductions || 0);
-                    payload.netSalary = parseFloat(record.net_salary || 0);
+                    payload.baseSalary = parseFloat(record.base_salary ?? 0);
+                    payload.bonus = parseFloat(record.bonus ?? 0);
+                    payload.overtimeHours = parseFloat(record.overtime_hours ?? 0);
+                    payload.overtimePay = parseFloat(record.overtime_pay ?? 0);
+                    payload.deductions = parseFloat(record.deductions ?? 0);
+                    payload.netSalary = parseFloat(record.net_salary ?? 0);
                     payload.paymentDate = record.payment_date;
                     payload.status = record.status;
                     payload.notes = record.notes || "";
@@ -1139,9 +1169,20 @@ class SyncService {
 
                 if (response && response.success !== false) {
                     console.log(`[SYNC SUCCESS] ${table} (ID: ${localId}) pushed.`);
-                    await this.markSynced(table, localId, response.id || response.global_id || globalId);
+                    await this.markSynced(table, localId, response.id || response.global_id || globalId, response.updatedAt || response.updated_at);
                 } else {
-                    // Handle unique constraint / collision
+                    // 1. Handle "Not Found" during update (404) - Auto-recreate
+                    if (response?.status === 404 && httpMethod === 'PUT') {
+                        console.warn(`[SYNC] ${table} ID ${globalId} not found on cloud during PUT. Attempting recovery via POST...`);
+                        const postResp = await this.apiCall('POST', endpoint, payload);
+                        if (postResp && postResp.success !== false) {
+                            console.log(`[SYNC RECOVERY] ${table} ID ${localId} recovered to cloud.`);
+                            await this.markSynced(table, localId, postResp.id || postResp.global_id || globalId, postResp.updatedAt || postResp.updated_at);
+                            continue;
+                        }
+                    }
+
+                    // 2. Handle unique constraint / collision (400/409)
                     const msg = (response?.message || '').toLowerCase();
                     const isCollision = response?.status === 400 || response?.status === 409 || (response?.status === 500 && msg.includes('unique constraint'));
 
@@ -1252,9 +1293,9 @@ class SyncService {
         }
     }
 
-    async markSynced(table, localId, globalId, inTxn = false) {
+    async markSynced(table, localId, globalId, cloudUpdatedAt = null, inTxn = false) {
         // First get the OLD global_id from the record to see if we need to update children
-        const row = await db.asyncGet(`SELECT global_id FROM ${table} WHERE id = ?`, [localId]);
+        const row = await db.asyncGet(`SELECT global_id, updated_at FROM ${table} WHERE id = ?`, [localId]);
         if (!row) return; // Record might have been deleted?
 
         const oldGlobalId = row.global_id;
@@ -1287,9 +1328,10 @@ class SyncService {
                 await db.asyncRun(`DELETE FROM ${table} WHERE id = ?`, [localId]);
             } else {
                 // Update Parent Record
+                const finalUpdatedAt = cloudUpdatedAt || row.updated_at || new Date().toISOString();
                 await db.asyncRun(
-                    `UPDATE ${table} SET sync_status = 'synced', global_id = ? WHERE id = ?`,
-                    [globalId, localId]
+                    `UPDATE ${table} SET sync_status = 'synced', global_id = ?, updated_at = ? WHERE id = ?`,
+                    [globalId, finalUpdatedAt, localId]
                 );
             }
 
