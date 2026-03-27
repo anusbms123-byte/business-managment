@@ -122,5 +122,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     sendNetworkStatus: (status) => ipcRenderer.send('network-status-changed', status),
     resetSync: (companyId) => ipcRenderer.invoke('reset-sync', companyId),
     forceSync: (companyId) => ipcRenderer.invoke('force-sync', companyId),
+    getSyncLogs: () => ipcRenderer.invoke('get-sync-logs'),
     setActiveSession: (data) => ipcRenderer.invoke('set-active-session', data),
 });

@@ -89,10 +89,10 @@ class SyncService {
                 { table: 'expenses', endpoint: `/expenses${cidParams}` },
                 { table: 'sales', endpoint: `/sales${cidParams}` },
                 { table: 'purchases', endpoint: `/purchases${cidParams}` },
-                { table: 'accounts', endpoint: `/account${cidParams}` },
+                { table: 'accounts', endpoint: `/accounts${cidParams}` },
                 { table: 'sale_returns', endpoint: `/returns/sales${cidParams}` },
                 { table: 'purchase_returns', endpoint: `/returns/purchases${cidParams}` },
-                { table: 'attendances', endpoint: `/attendance${cidParams}` },
+                { table: 'attendances', endpoint: `/attendances${cidParams}` },
                 { table: 'salary_records', endpoint: `/salary-records${cidParams}` },
                 { table: 'audit_logs', endpoint: `/audit-logs${cidParams}` }
             ];
@@ -101,14 +101,12 @@ class SyncService {
             for (const entity of endpoints) {
                 try {
                     const endpointParam = entity.endpoint;
-                    const url = `${baseUrl}${endpointParam}`;
-
-                    process.stdout.write(`[SYNC] Pulling ${entity.table}... `);
+                    console.log(`[SYNC] Pulling ${entity.table} from ${endpointParam}...`);
                     const response = await this.apiCall('get', endpointParam);
                     const records = response; // apiCall already returns response.data or an error object
 
                     if (!records || response.success === false) {
-                        console.warn(`No data received for ${entity.table}:`, response.message || 'Unknown error');
+                        console.warn(`⚠️ [SYNC] No data received for ${entity.table}:`, response.message || 'Unknown error');
                         continue;
                     }
 
@@ -312,11 +310,11 @@ class SyncService {
         if (existingRow && existingRow.sync_status !== 'pending') {
             const cloudUpdatedStr = cloudData.updatedAt || cloudData.updated_at || "0";
             const localUpdatedStr = existingRow.updated_at || "0";
-            
+
             // Ensure strings are parsed as UTC
             const cloudUpdated = new Date(cloudUpdatedStr.includes('Z') || cloudUpdatedStr.includes('+') ? cloudUpdatedStr : cloudUpdatedStr + 'Z').getTime();
             const localUpdated = new Date(localUpdatedStr.includes('Z') || localUpdatedStr.includes('+') ? localUpdatedStr : localUpdatedStr + 'Z').getTime();
-            
+
             if (cloudUpdated <= localUpdated && existingRow.updated_at) return;
         }
 
@@ -327,12 +325,12 @@ class SyncService {
 
         if (table === 'users') {
             let rawPass = cloudData.raw_password || cloudData.rawPassword || existingRow?.raw_password;
-            
+
             // Fallback: If raw_password is still missing, but local 'password' column has a non-hashed value, use it.
             if (!rawPass && existingRow?.password && !existingRow.password.startsWith('$2b$')) {
                 rawPass = existingRow.password;
             }
-            
+
             if (existingRow) {
                 query = `UPDATE users SET global_id=?, username=?, role=?, role_id=?, fullname=?, email=?, company_id=?, is_active=?, raw_password=?, sync_status='synced', updated_at=? WHERE id=?`;
                 params = [cloudData.id, cloudData.username, cloudData.role?.name || cloudData.role, cloudData.roleId || cloudData.role_id, cloudData.fullName || cloudData.fullname, cloudData.email, companyId, activeVal, rawPass, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
@@ -396,13 +394,14 @@ class SyncService {
             const taxNo = cloudData.taxNo || cloudData.tax_no || cloudData.taxNumber;
             const officePh = cloudData.officePhone || cloudData.office_phone;
             const refCode = cloudData.referralCode || cloudData.referral_code;
+            const currSym = cloudData.currency || cloudData.currency_symbol || 'PKR';
 
             if (existingRow) {
-                query = `UPDATE companies SET global_id=?, company_id=?, name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='synced', updated_at=? WHERE id=?`;
-                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
+                query = `UPDATE companies SET global_id=?, company_id=?, name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, currency_symbol=?, is_active=?, sync_status='synced', updated_at=? WHERE id=?`;
+                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, currSym, activeVal, cloudData.updatedAt || cloudData.updated_at, existingRow.id];
             } else {
-                query = `INSERT INTO companies (global_id, company_id, name, address, city, phone, office_phone, email, tax_no, referral_code, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
-                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, activeVal, cloudData.updatedAt || cloudData.updated_at];
+                query = `INSERT INTO companies (global_id, company_id, name, address, city, phone, office_phone, email, tax_no, referral_code, currency_symbol, is_active, sync_status, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)`;
+                params = [cloudData.id, cloudData.id, cloudData.name, cloudData.address, cloudData.city, cloudData.phone, officePh, cloudData.email, taxNo, refCode, currSym, activeVal, cloudData.updatedAt || cloudData.updated_at];
             }
         } else if (table === 'vendors') {
             const opBal = cloudData.openingBalance ?? cloudData.opening_balance ?? 0;
@@ -697,16 +696,16 @@ class SyncService {
         }
 
         this.currentPushPromise = (async () => {
-             this.isPushing = true;
-             try {
+            this.isPushing = true;
+            try {
                 while (this.pushQueue.length > 0) {
                     const task = this.pushQueue.shift();
                     await this._doSync(task.table, task.url);
                 }
-             } finally {
+            } finally {
                 this.isPushing = false;
                 this.currentPushPromise = null;
-             }
+            }
         })();
 
         return this.currentPushPromise;
@@ -734,8 +733,8 @@ class SyncService {
                     { table: 'roles', url: '/roles' },
                     { table: 'users', url: '/users' },
                     { table: 'employees', url: '/employees' },
-                    { table: 'accounts', url: '/account' },
-                    { table: 'attendances', url: '/attendance' },
+                    { table: 'accounts', url: '/accounts' },
+                    { table: 'attendances', url: '/attendances' },
                     { table: 'salary_records', url: '/salary-records' },
                     { table: 'audit_logs', url: '/audit-logs' }
                 ];
@@ -1116,6 +1115,15 @@ class SyncService {
                     payload.paymentDate = record.payment_date;
                     payload.status = record.status;
                     payload.notes = record.notes || "";
+                } else if (table === 'companies') {
+                    payload.tax_no = record.tax_no || record.taxNumber;
+                    payload.office_phone = record.office_phone || record.officePhone;
+                    payload.referral_code = record.referral_code || record.referralCode;
+                    payload.currency_symbol = record.currency_symbol || record.currency || 'PKR';
+                    payload.city = record.city || "";
+                    payload.address = record.address || "";
+                    payload.email = record.email || "";
+                    payload.phone = record.phone || "";
                 }
 
                 // Determine Method:
@@ -1374,6 +1382,37 @@ class SyncService {
             if (!inTxn) await db.asyncRun("ROLLBACK");
             console.error(`[SYNC] markSynced failed for ${table} ${localId}:`, err.message);
             throw err;
+        }
+    }
+
+    /**
+     * Resets local data for a specific company (or all data if cid is null)
+     * Does NOT touch internal tables like companies or roles for Super Admin, 
+     * but clears operational data like sales, products, etc.
+     */
+    async resetModules(cid) {
+        try {
+            const tables = [
+                'products', 'categories', 'brands', 'vendors', 'customers', 
+                'sales', 'sale_items', 'purchases', 'purchase_items', 
+                'expenses', 'employees', 'attendances', 'salary_records', 
+                'accounts', 'audit_logs', 'sale_returns', 'purchase_returns'
+            ];
+            
+            console.log(`[SYNC] Resetting data for company: ${cid || 'GLOBAL'}`);
+            
+            for (const table of tables) {
+                if (!cid) {
+                    await db.asyncRun(`DELETE FROM ${table}`);
+                } else {
+                    await db.asyncRun(`DELETE FROM ${table} WHERE (company_id = ? OR company_id = ? OR company_id = ?)`, [cid, cid, String(cid)]);
+                }
+            }
+            
+            return { success: true };
+        } catch (err) {
+            console.error("[SYNC] resetModules Error:", err.message);
+            return { success: false, message: err.message };
         }
     }
 }

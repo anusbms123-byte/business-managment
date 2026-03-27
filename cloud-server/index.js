@@ -204,7 +204,7 @@ app.put('/api/companies/:id', async (req, res) => {
                 phone,
                 email,
                 taxNumber: tax_no,
-                currency: currency_symbol,
+                currency: currency_symbol || undefined, // undefined prevents Prisma from updating the field if not provided
                 officePhone: office_phone,
                 privatePhone: private_phone,
                 secondaryAddress: secondary_address,
@@ -915,17 +915,18 @@ app.get('/api/vendors', async (req, res) => {
 
 app.post('/api/vendors', async (req, res) => {
     try {
-        const { companyId, name, company_name, phone, email, address, city, gst_no, openingBalance } = req.body;
+        const { companyId, name, company_name, companyName, contact_person, contactPerson, phone, email, address, city, gst_no, gstNo, openingBalance } = req.body;
         const vendor = await prisma.vendor.create({
             data: {
                 companyId,
                 name,
-                companyName: company_name,
+                companyName: company_name || companyName,
+                contactPerson: contact_person || contactPerson,
                 phone,
                 email,
                 address,
                 city,
-                gstNo: gst_no,
+                gstNo: gst_no || gstNo,
                 openingBalance: parseFloat(openingBalance) || 0,
                 balance: parseFloat(openingBalance) || 0
             }
@@ -936,17 +937,18 @@ app.post('/api/vendors', async (req, res) => {
 
 app.put('/api/vendors/:id', async (req, res) => {
     try {
-        const { name, company_name, phone, email, address, city, gst_no, openingBalance, balance } = req.body;
+        const { name, company_name, companyName, contact_person, contactPerson, phone, email, address, city, gst_no, gstNo, openingBalance, balance } = req.body;
         await prisma.vendor.update({
             where: { id: req.params.id },
             data: {
                 name,
-                companyName: company_name,
+                companyName: company_name || companyName,
+                contactPerson: contact_person || contactPerson,
                 phone,
                 email,
                 address,
                 city,
-                gstNo: gst_no,
+                gstNo: gst_no || gstNo,
                 openingBalance: openingBalance !== undefined ? parseFloat(openingBalance) : undefined,
                 balance: balance !== undefined ? parseFloat(balance) : undefined
             }

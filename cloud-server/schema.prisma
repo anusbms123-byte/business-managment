@@ -223,6 +223,7 @@ model Vendor {
   id              String           @id @default(cuid())
   name            String
   companyName     String?          @map("company_name")
+  contactPerson   String?          @map("contact_person")
   phone           String?
   email           String?
   address         String?

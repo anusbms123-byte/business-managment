@@ -177,7 +177,7 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                         setFormData({
                             ...data,
                             tax_no: data.taxNumber,
-                            currency_symbol: data.currency,
+                            currency_symbol: data.currency || data.currency_symbol || 'PKR',
                             office_phone: data.officePhone || data.office_phone,
                             referral_code: data.referralCode || data.referral_code,
                             private_phone: data.privatePhone,
@@ -227,7 +227,8 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
         } else {
             setFormData({
                 name: '', address: '', phone: '', email: '',
-                office_phone: '', city: '', referral_code: '', is_active: true
+                office_phone: '', city: '', referral_code: '', is_active: true,
+                currency_symbol: 'PKR'
             });
         }
         setShowModal(true);
@@ -356,10 +357,10 @@ const CompanyProfile = ({ currentUser, isSuperAdmin }) => {
                                         </div>
 
                                     </div>
-                                    {c.referralCode && (
+                                    {(c.referralCode && c.referralCode !== 'null' && c.referralCode !== '') && (
                                         <div className="flex items-center text-[10px] font-bold text-emerald-500 dark:text-emerald-400 gap-2 mt-1">
                                             <Share2 size={14} />
-                                            <span>Referral: {c.referralCompanyName || c.referralCode}</span>
+                                            <span>Referral: {(c.referralCompanyName && c.referralCompanyName !== 'N/A') ? c.referralCompanyName : c.referralCode}</span>
                                         </div>
                                     )}
                                 </div>

@@ -209,6 +209,45 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                         </button>
                     </div>
                 </div>
+
+                {/* Sync & System Section (NEW) */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 space-y-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-rose-600 dark:bg-rose-400 rounded-full"></div>
+                        <h2 className="text-sm font-semibold text-black dark:text-slate-200">Sync & System</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-sm font-semibold text-black dark:text-slate-100 mb-2">Cloud Synchronization</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                                If you are missing data or see inconsistencies, you can force a full re-sync from the cloud.
+                                This will clear local data and pull everything fresh.
+                            </p>
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm("Are you sure? This will reload all data from the cloud.")) {
+                                        setSaving(true);
+                                        const res = await window.electronAPI.resetSync(null);
+                                        setSaving(false);
+                                        if (res?.success) showSuccess("Sync reset successfully!");
+                                        else showError("Sync failed: " + (res?.message || "Unknown error"));
+                                    }
+                                }}
+                                className="px-6 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition-all"
+                            >
+                                Reset & Re-sync All Data
+                            </button>
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-semibold text-black dark:text-slate-100 mb-2">System Logs</p>
+                            <div className="bg-slate-950 rounded-lg p-4 font-mono text-[10px] text-emerald-400 h-32 overflow-y-auto mb-2 custom-scrollbar">
+                                <SyncLogsDisplay />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -333,9 +372,72 @@ const Settings = ({ currentUser, onUpdateUser }) => {
                         </button>
                     )}
                 </div>
+
+                <div className="h-px bg-slate-100 dark:bg-slate-800" />
+
+                {/* Sync & System Section for regular users */}
+                <div className="space-y-8 pt-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-rose-600 dark:bg-rose-400 rounded-full"></div>
+                        <h2 className="text-sm font-semibold text-black dark:text-slate-200">Sync & System</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <p className="text-sm font-semibold text-black dark:text-slate-100 mb-2">Cloud Synchronization</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                                If you are missing data or see inconsistencies, you can force a full re-sync from the cloud.
+                                This will clear local data and pull everything fresh.
+                            </p>
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm("Are you sure? This will reload all data from the cloud.")) {
+                                        setSaving(true);
+                                        const res = await window.electronAPI.resetSync(currentUser.company_id);
+                                        setSaving(false);
+                                        if (res?.success) showSuccess("Sync reset successfully!");
+                                        else showError("Sync failed: " + (res?.message || "Unknown error"));
+                                    }
+                                }}
+                                className="px-6 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition-all"
+                            >
+                                Reset & Re-sync My Data
+                            </button>
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-semibold text-black dark:text-slate-100 mb-2">System Logs</p>
+                            <div className="bg-slate-950 rounded-lg p-4 font-mono text-[10px] text-emerald-400 h-48 overflow-y-auto mb-2 custom-scrollbar">
+                                <SyncLogsDisplay />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
+};
+
+const SyncLogsDisplay = () => {
+    const [logs, setLogs] = useState("Waiting for logs...");
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                if (window.electronAPI && window.electronAPI.getSyncLogs) {
+                    const res = await window.electronAPI.getSyncLogs();
+                    if (res.success) setLogs(res.logs);
+                } else {
+                    setLogs("Logging API not available.");
+                }
+            } catch (e) { console.error("Error fetching logs:", e); }
+        };
+        fetchLogs();
+        const timer = setInterval(fetchLogs, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return <pre className="whitespace-pre-wrap">{logs}</pre>;
 };
 
 export default Settings;

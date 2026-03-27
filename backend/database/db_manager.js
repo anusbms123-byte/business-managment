@@ -53,22 +53,21 @@ db.asyncAll = (sql, params = []) => {
   });
 };
 
-// Helper for migrations
+// Helper for migrations - Robust Version
 async function ensureColumn(table, column, type, defaultValue = null) {
   try {
-    // Check if column exists first to avoid unnecessary error logs
-    const info = await db.asyncAll(`PRAGMA table_info(${table})`);
-    const exists = info.some(c => c.name === column);
-    if (!exists) {
-      await db.asyncRun(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-      console.log(`[DB] Added column ${column} to ${table}`);
-      if (defaultValue !== null) {
+    // Brute force: Try to add it. If it exists, SQL will tell us and we catch it.
+    await db.asyncRun(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    console.log(`[DB] Migration: Added column ${column} to ${table}`);
+    
+    if (defaultValue !== null) {
         await db.asyncRun(`UPDATE ${table} SET ${column} = ${defaultValue} WHERE ${column} IS NULL`);
-      }
     }
   } catch (err) {
-    if (!err.message.includes('duplicate column name')) {
-      console.warn(`[DB] Column update skipped for ${table}.${column}:`, err.message);
+    const msg = err.message.toLowerCase();
+    if (!msg.includes('duplicate column name') && !msg.includes('already exists')) {
+      // For any other error, log it as a warning but don't crash
+      // console.warn(`[DB] Info: Column ${column} for ${table}:`, err.message);
     }
   }
 }
@@ -81,38 +80,43 @@ db.initPromise = (async () => {
   console.log("[DB] Initializing strictly...");
 
   try {
-    // 1. CREATE CORE TABLES (IF NOT EXIST)
+    // 1. CREATE CORE TABLES (FULL SCHEMAS)
     const tables = [
       'pending_sync_deletions (id INTEGER PRIMARY KEY AUTOINCREMENT, table_name TEXT, global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
-      'companies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, email TEXT, tax_no TEXT, referral_code TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
-      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, raw_password TEXT, role TEXT, role_id TEXT, fullname TEXT, company_id TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'companies (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, address TEXT, phone TEXT, email TEXT, tax_no TEXT, referral_code TEXT, office_phone TEXT, city TEXT, country TEXT, currency TEXT, website TEXT, logoUrl TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
+      'users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT, raw_password TEXT, role TEXT, role_id TEXT, fullname TEXT, email TEXT, phone TEXT, company_id TEXT, is_active INTEGER DEFAULT 1, sync_status TEXT DEFAULT \'synced\', global_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
       'roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, is_system INTEGER DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)',
       'permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_id TEXT, module TEXT NOT NULL, can_view INTEGER DEFAULT 0, can_create INTEGER DEFAULT 0, can_edit INTEGER DEFAULT 0, can_delete INTEGER DEFAULT 0, global_id TEXT, sync_status TEXT DEFAULT \'synced\', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, UNIQUE(role_id, module))',
-      'categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'brands (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'vendors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'employees (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL)',
-      'products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'customers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'sales (id INTEGER PRIMARY KEY AUTOINCREMENT, inv_number TEXT)',
-      'sale_items (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'purchases (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_number TEXT)',
-      'purchase_items (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)',
-      'audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL)',
-      'accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)',
-      'transactions (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'sale_returns (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'sale_return_items (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'attendances (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'salary_records (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'purchase_returns (id INTEGER PRIMARY KEY AUTOINCREMENT)',
-      'purchase_return_items (id INTEGER PRIMARY KEY AUTOINCREMENT)'
+      'categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'brands (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'vendors (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, company_name TEXT, contact_person TEXT, email TEXT, phone TEXT, address TEXT, city TEXT, gst_no TEXT, opening_balance REAL DEFAULT 0, current_balance REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'employees (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT, designation TEXT, salary REAL DEFAULT 0, hourly_rate REAL DEFAULT 0, joining_date DATETIME, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, code TEXT, description TEXT, category_id TEXT, brand_id TEXT, vendor_id TEXT, cost_price REAL DEFAULT 0, sell_price REAL DEFAULT 0, stock_quantity INTEGER DEFAULT 0, alert_threshold INTEGER DEFAULT 5, image_url TEXT, unit TEXT DEFAULT \'pcs\', weight REAL DEFAULT 0, color TEXT, size TEXT, grade TEXT, condition TEXT, expiry_date DATETIME, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'customers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, customer_type TEXT DEFAULT \'retail\', email TEXT, phone TEXT, address TEXT, city TEXT, cnic TEXT, gst_no TEXT, opening_balance REAL DEFAULT 0, current_balance REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'sales (id INTEGER PRIMARY KEY AUTOINCREMENT, inv_number TEXT, customer_id TEXT, user_id TEXT, total_amount REAL DEFAULT 0, discount REAL DEFAULT 0, tax_amount REAL DEFAULT 0, shipping_cost REAL DEFAULT 0, grand_total REAL DEFAULT 0, amount_paid REAL DEFAULT 0, payment_method TEXT DEFAULT \'cash\', payment_status TEXT DEFAULT \'paid\', sale_date DATETIME DEFAULT CURRENT_TIMESTAMP, notes TEXT, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'sale_items (id INTEGER PRIMARY KEY AUTOINCREMENT, sale_id TEXT, product_id TEXT, quantity INTEGER DEFAULT 1, unit_price REAL DEFAULT 0, total_price REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'purchases (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_number TEXT, vendor_id TEXT, total_amount REAL DEFAULT 0, discount REAL DEFAULT 0, tax_amount REAL DEFAULT 0, shipping_cost REAL DEFAULT 0, paid_amount REAL DEFAULT 0, payment_method TEXT DEFAULT \'cash\', payment_status TEXT DEFAULT \'received\', purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP, due_date DATE, notes TEXT, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'purchase_items (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_id TEXT, product_id TEXT, quantity INTEGER DEFAULT 1, unit_cost REAL DEFAULT 0, total_cost REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, amount REAL DEFAULT 0, date DATETIME DEFAULT CURRENT_TIMESTAMP, description TEXT, category TEXT, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT, balance REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'attendances (id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id TEXT, date DATE, status TEXT, clock_in DATETIME, clock_out DATETIME, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'salary_records (id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id TEXT, month TEXT, year TEXT, base_salary REAL DEFAULT 0, net_salary REAL DEFAULT 0, status TEXT DEFAULT \'paid\', company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT, module TEXT, details TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'sale_returns (id INTEGER PRIMARY KEY AUTOINCREMENT, sale_id TEXT, customer_id TEXT, total_amount REAL DEFAULT 0, return_date DATETIME DEFAULT CURRENT_TIMESTAMP, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'sale_return_items (id INTEGER PRIMARY KEY AUTOINCREMENT, return_id TEXT, product_id TEXT, quantity INTEGER DEFAULT 1, unit_price REAL DEFAULT 0, total_price REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'purchase_returns (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_id TEXT, vendor_id TEXT, total_amount REAL DEFAULT 0, return_date DATETIME DEFAULT CURRENT_TIMESTAMP, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')',
+      'purchase_return_items (id INTEGER PRIMARY KEY AUTOINCREMENT, return_id TEXT, product_id TEXT, quantity INTEGER DEFAULT 1, unit_cost REAL DEFAULT 0, total_cost REAL DEFAULT 0, company_id TEXT, global_id TEXT, sync_status TEXT DEFAULT \'synced\')'
     ];
 
     for (const t of tables) {
       await db.asyncRun(`CREATE TABLE IF NOT EXISTS ${t}`);
     }
+
+    // ENSURE CRITICAL COLUMNS THAT COMMONLY FAIL
+    await ensureColumn('companies', 'office_phone', 'TEXT');
+    await ensureColumn('users', 'email', 'TEXT');
+    await ensureColumn('companies', 'referral_code', 'TEXT');
+    await ensureColumn('companies', 'tax_no', 'TEXT');
 
     // 2. MIGRATIONS
     // Employees Table Fixed Type Change
@@ -153,6 +157,14 @@ db.initPromise = (async () => {
       await ensureColumn(t, 'updated_at', 'DATETIME', 'CURRENT_TIMESTAMP');
       if (t === 'users') await ensureColumn(t, 'raw_password', 'TEXT');
     }
+
+    // CRITICAL: Force columns for companies that are often missing in older installs
+    await ensureColumn('companies', 'tax_no', 'TEXT');
+    await ensureColumn('companies', 'referral_code', 'TEXT');
+    await ensureColumn('companies', 'office_phone', 'TEXT');
+    await ensureColumn('companies', 'city', 'TEXT');
+    await ensureColumn('companies', 'address', 'TEXT');
+    await ensureColumn('users', 'email', 'TEXT');
 
     // Fix NULL created_at for older records to ensure trend charts work
     await db.asyncRun("UPDATE products SET created_at = updated_at WHERE created_at IS NULL");
@@ -274,6 +286,7 @@ db.initPromise = (async () => {
     await ensureColumn('brands', 'description', 'TEXT');
 
     // Expenses
+    await ensureColumn('expenses', 'title', 'TEXT');
     await ensureColumn('expenses', 'amount', 'REAL', '0');
     await ensureColumn('expenses', 'date', 'DATETIME', 'CURRENT_TIMESTAMP');
     await ensureColumn('expenses', 'description', 'TEXT');
@@ -299,6 +312,8 @@ db.initPromise = (async () => {
     await ensureColumn('attendances', 'date', 'DATETIME');
     await ensureColumn('attendances', 'check_in', 'DATETIME');
     await ensureColumn('attendances', 'check_out', 'DATETIME');
+    await ensureColumn('attendances', 'clock_in', 'DATETIME');
+    await ensureColumn('attendances', 'clock_out', 'DATETIME');
 
     await ensureColumn('sale_returns', 'customer_id', 'TEXT');
     await ensureColumn('sale_returns', 'sale_id', 'TEXT');

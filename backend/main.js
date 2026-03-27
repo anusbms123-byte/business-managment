@@ -9,6 +9,12 @@ const log = require("electron-log");
 log.transports.file.level = "info";
 autoUpdater.logger = log;
 
+// Redirect all console logs to electron-log if packaged (production)
+if (app.isPackaged) {
+    Object.assign(console, log.functions);
+    console.log("[STARTUP] Console redirected to electron-log.");
+}
+
 // Auto-updater events
 autoUpdater.on('checking-for-update', () => {
     log.info('Checking for update...');
@@ -353,6 +359,7 @@ ipcMain.handle("login", async (e, credentials) => {
 
 // Companies
 ipcMain.handle("get-companies", async (e, filters = {}) => {
+    console.log(`🔍 [IPC] get-companies called. Role=${currentLoggedRole}, Company=${currentLoggedCompany}`);
     // Only Super Admin can see all companies
     const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
     const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
@@ -366,15 +373,16 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
 
     const { search, referralType, id } = filters;
 
-    // Improved query with Join to get Referral Company Name
+    // Robust query for companies
     let query = `
         SELECT c.*, 
                c.is_active as isActive, 
                c.tax_no as taxNumber, 
                c.office_phone as officePhone,
                c.referral_code as referralCode,
-               (SELECT name FROM companies WHERE (global_id = c.referral_code OR referral_code = c.referral_code) AND global_id != c.global_id LIMIT 1) as referralCompanyName
+               COALESCE(rc.name, 'N/A') as referralCompanyName
         FROM companies c
+        LEFT JOIN companies rc ON c.referral_code = rc.global_id OR c.referral_code = CAST(rc.id AS TEXT)
     `;
 
     let conditions = ["(c.sync_status != 'deleted' OR c.sync_status IS NULL)"];
@@ -412,12 +420,15 @@ ipcMain.handle("get-companies", async (e, filters = {}) => {
 
 ipcMain.handle("get-company", async (e, id) => {
     try {
-        return await db.asyncGet(`SELECT *, 
-                                      is_active as isActive,
-                                      tax_no as taxNumber,
-                                      office_phone as officePhone,
-                                      referral_code as referralCode
-                               FROM companies WHERE id = ? OR global_id = ?`, [id, id]);
+        return await db.asyncGet(`SELECT c.*, 
+                                      c.is_active as isActive,
+                                      c.tax_no as taxNumber,
+                                      c.office_phone as officePhone,
+                                      c.referral_code as referralCode,
+                                      COALESCE(rc.name, 'N/A') as referralCompanyName
+                               FROM companies c
+                               LEFT JOIN companies rc ON c.referral_code = rc.global_id OR c.referral_code = CAST(rc.id AS TEXT)
+                               WHERE c.id = ? OR c.global_id = ?`, [id, id]);
     } catch (err) {
         console.error("get-company Error:", err.message);
         return null;
@@ -437,17 +448,18 @@ ipcMain.handle("reject-company-request", async (e, id, notes) => {
 });
 
 ipcMain.handle("create-company", async (e, data) => {
-    const { name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referral_code, referralCode } = data;
+    const { name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referral_code, referralCode, currency_symbol, currency } = data;
     const tempId = randomUUID();
     const officePh = officePhone || office_phone;
     const taxNo = taxNumber || tax_no;
     const refCode = referralCode || referral_code;
+    const currSym = currency_symbol || currency || 'PKR';
 
     try {
         const result = await db.asyncRun(
-            `INSERT INTO companies (global_id, name, address, city, phone, office_phone, email, tax_no, referral_code, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
-            [tempId, name, address, city, phone, officePh, email, taxNo, refCode]
+            `INSERT INTO companies (global_id, name, address, city, phone, office_phone, email, tax_no, referral_code, currency_symbol, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP)`,
+            [tempId, name, address, city, phone, officePh, email, taxNo, refCode, currSym]
         );
 
         const companyId = result.lastID;
@@ -460,18 +472,19 @@ ipcMain.handle("create-company", async (e, data) => {
 });
 
 ipcMain.handle("update-company", async (e, data) => {
-    const { id, name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referralCode, referral_code, is_active } = data;
+    const { id, name, address, city, phone, officePhone, office_phone, email, taxNumber, tax_no, referralCode, referral_code, is_active, currency_symbol, currency } = data;
     const active = (is_active === 1 || is_active === true) ? 1 : 0;
     // CRITICAL: Prioritize snake_case fields (from Form) over aliases to prevent stale data updates
     const officePh = (office_phone !== undefined) ? office_phone : officePhone;
     const taxNo = (tax_no !== undefined) ? tax_no : taxNumber;
     const refCode = (referral_code !== undefined) ? referral_code : referralCode;
+    const currSym = (currency_symbol !== undefined) ? currency_symbol : currency;
 
     try {
         await db.asyncRun(
-            `UPDATE companies SET name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
+            `UPDATE companies SET name=?, address=?, city=?, phone=?, office_phone=?, email=?, tax_no=?, referral_code=?, currency_symbol=?, is_active=?, sync_status='pending', updated_at=CURRENT_TIMESTAMP 
              WHERE (id=? OR global_id=?) AND (sync_status != 'deleted' OR sync_status IS NULL)`,
-            [name, address, city, phone, officePh, email, taxNo, refCode, active, id, id]
+            [name, address, city, phone, officePh, email, taxNo, refCode, currSym, active, id, id]
         );
         syncService.syncPendingRecords('companies', '/companies');
         return { success: true, message: "Company updated locally" };
@@ -531,6 +544,7 @@ ipcMain.handle("delete-company", async (e, id) => {
 
 // Users - LOCAL FIRST
 ipcMain.handle("get-users", async (e, companyId) => {
+    console.log(`🔍 [IPC] get-users called. Role=${currentLoggedRole}, Company=${currentLoggedCompany}, TargetCid=${companyId}`);
     // If no companyId provided, only Super Admin can see all users
     const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
     const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
@@ -1032,7 +1046,8 @@ ipcMain.handle("delete-role", async (e, id) => {
 // Products - LOCAL FIRST (Full Join for Details)
 ipcMain.handle("get-products", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const query = `
             SELECT p.*,
                    p.is_active as isActive,
@@ -1133,7 +1148,8 @@ ipcMain.handle("delete-product", async (e, id) => {
 // Sales - LOCAL FIRST
 ipcMain.handle("get-sales", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const query = `
             SELECT s.*,
                    s.is_active as isActive,
@@ -1361,7 +1377,8 @@ ipcMain.handle("delete-sale", async (e, id) => {
 // Customers - LOCAL FIRST
 ipcMain.handle("get-customers", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const rows = await db.asyncAll(
             `SELECT *, 
                    is_active as isActive, 
@@ -1486,7 +1503,8 @@ ipcMain.handle("delete-customer", async (e, id) => {
 // Vendors (Suppliers) - LOCAL FIRST
 ipcMain.handle("get-vendors", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const rows = await db.asyncAll(`SELECT *, 
                        is_active as isActive, 
                        current_balance as balance,
@@ -1610,7 +1628,8 @@ ipcMain.handle("delete-vendor", async (e, id) => {
 // Expenses - LOCAL FIRST
 ipcMain.handle("get-expenses", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const rows = await db.asyncAll("SELECT *, is_active as isActive FROM expenses WHERE (company_id = ? OR company_id = ? OR company_id = ?) AND (sync_status != 'deleted' OR sync_status IS NULL) ORDER BY date DESC", [ids.localId, ids.globalId, String(ids.localId)]);
         return rows;
     } catch (err) {
@@ -1760,7 +1779,8 @@ ipcMain.handle("delete-brand", async (e, id) => {
 });
 ipcMain.handle("get-purchases", async (e, companyId) => {
     try {
-        const ids = await resolveCompanyIds(companyId);
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
         const query = `
             SELECT p.*, 
                    v.name as vendorName,
@@ -3856,10 +3876,10 @@ ipcMain.handle("trigger-sync", async () => {
 ipcMain.on("network-status-changed", async (event, status) => {
     if (status === 'online') {
         console.log("[NETWORK] System is BACK ONLINE. Starting full sync...");
-        
+
         // 1. Push all pending local changes first
         await syncService.syncPendingRecords();
-        
+
         // 2. Then pull latest from cloud to ensure local is fresh
         const activeCid = (currentLoggedCompany === undefined) ? null : currentLoggedCompany;
         if (currentLoggedRole) {
@@ -3874,8 +3894,23 @@ ipcMain.on("network-status-changed", async (event, status) => {
 // Create window
 ipcMain.handle("reset-sync", async (e, companyId) => {
     try {
-        const result = await syncService.resetModules(companyId);
-        return result;
+        const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
+        const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
+        
+        // Safety: regular users can ONLY reset their own company
+        let targetCid = companyId;
+        if (!isSuperAdmin) {
+            targetCid = currentLoggedCompany;
+        }
+
+        const result = await syncService.resetModules(targetCid);
+        
+        // Trigger immediate pull after reset
+        if (result && result.success) {
+            syncService.pullAllData(targetCid);
+        }
+        
+        return result || { success: false, message: "No response from resetModules" };
     } catch (err) {
         console.error("reset-sync Error:", err.message);
         return { success: false, message: err.message };
@@ -3935,6 +3970,19 @@ ipcMain.handle("set-active-session", async (e, { companyId, role }) => {
 ipcMain.handle("force-sync", async (e, companyId) => {
     console.log("[SYNC] Manual force-sync triggered for company:", companyId);
     return await syncService.pullAllData(companyId);
+});
+
+// IPC Handler for diagnostic logs
+ipcMain.handle("get-sync-logs", async (e) => {
+    try {
+        if (!app.isPackaged) {
+            return { success: true, logs: "Logs only available in packaged version." };
+        }
+        const logContent = await require('fs').promises.readFile(log.transports.file.getFile().path, 'utf8');
+        return { success: true, logs: logContent.split('\n').slice(-100).join('\n') }; // Last 100 lines
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
 });
 
 app.whenReady().then(async () => {
