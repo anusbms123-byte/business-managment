@@ -4,7 +4,7 @@ const path = require('path');
 const url = require('url');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-ten.vercel.app/api';
+const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-nine.vercel.app/api';
 const dbPath = path.join(__dirname, 'database', 'business.db');
 const db = new sqlite3.Database(dbPath);
 

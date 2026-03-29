@@ -4,7 +4,7 @@ require('dotenv').config();
 
 // Default to local cloud server if Vercel is failing, 
 // or let user specify via CLOUD_URL env var
-const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-ten.vercel.app/api';
+const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-nine.vercel.app/api';
 
 async function pullCompaniesAndUsers() {
     console.log(`Starting data pull from: ${CLOUD_URL}`);

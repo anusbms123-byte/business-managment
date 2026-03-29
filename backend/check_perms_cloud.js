@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const CLOUD_URL = 'https://businessdevelopment-ten.vercel.app/api';
+const CLOUD_URL = 'https://businessdevelopment-nine.vercel.app/api';
 
 async function checkCloudPermissions() {
     console.log("Checking Roles and Permissions on Cloud Database...");

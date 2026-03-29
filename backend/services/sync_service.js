@@ -2,7 +2,7 @@ const db = require('../database/db_manager');
 const axios = require('axios');
 console.log("--- SYNC SERVICE LOADED (MODIFIED) ---");
 
-const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-ten.vercel.app/api';
+const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-nine.vercel.app/api';
 
 class SyncService {
     constructor() {
