@@ -2477,6 +2477,7 @@ app.get(['/api/attendance', '/api/attendances'], async (req, res) => {
 app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
     try {
         const { id, employeeId, status, checkIn, checkOut, date } = req.body;
+        if (!employeeId) return res.status(400).json({ success: false, message: "employeeId is required" });
         const targetDate = date ? new Date(date) : new Date();
         const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
@@ -2489,7 +2490,7 @@ app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
         });
 
         if (existing) {
-            await prisma.attendance.update({
+            const result = await prisma.attendance.update({
                 where: { id: existing.id },
                 data: {
                     status,
@@ -2497,8 +2498,9 @@ app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
                     checkOut: checkOut ? new Date(checkOut) : undefined
                 }
             });
+            res.json({ success: true, id: result.id });
         } else {
-            await prisma.attendance.create({
+            const record = await prisma.attendance.create({
                 data: {
                     id: id && id !== 'null' ? id : undefined,
                     employeeId,
@@ -2508,8 +2510,23 @@ app.post(['/api/attendance', '/api/attendances'], async (req, res) => {
                     checkOut: checkOut ? new Date(checkOut) : null
                 }
             });
+            res.json({ success: true, id: record.id });
         }
-        res.json({ success: true });
+    } catch (e) { handleError(res, e); }
+});
+
+app.put(['/api/attendance/:id', '/api/attendances/:id'], async (req, res) => {
+    try {
+        const { status, checkIn, checkOut } = req.body;
+        const result = await prisma.attendance.update({
+            where: { id: req.params.id },
+            data: {
+                status,
+                checkIn: checkIn ? new Date(checkIn) : undefined,
+                checkOut: checkOut ? new Date(checkOut) : undefined
+            }
+        });
+        res.json({ success: true, id: result.id });
     } catch (e) { handleError(res, e); }
 });
 
@@ -2547,23 +2564,61 @@ app.post(['/api/salaries', '/api/salary-records'], async (req, res) => {
             companyId, employeeId, month, baseSalary, bonus,
             overtimeHours, overtimePay, deductions, netSalary, notes
         } = req.body;
+        if (!employeeId) return res.status(400).json({ success: false, message: "employeeId is required" });
 
-        const record = await prisma.salaryRecord.create({
+        // Upsert logic: If same employee/month exists, update it.
+        const existing = await prisma.salaryRecord.findFirst({
+            where: { employeeId, month }
+        });
+
+        const data = {
+            companyId,
+            employeeId,
+            month,
+            baseSalary: parseFloat(baseSalary),
+            bonus: parseFloat(bonus) || 0,
+            overtimeHours: parseFloat(overtimeHours) || 0,
+            overtimePay: parseFloat(overtimePay) || 0,
+            deductions: parseFloat(deductions) || 0,
+            netSalary: parseFloat(netSalary),
+            notes,
+            status: 'PAID'
+        };
+
+        let result;
+        if (existing) {
+            result = await prisma.salaryRecord.update({
+                where: { id: existing.id },
+                data
+            });
+        } else {
+            result = await prisma.salaryRecord.create({ data });
+        }
+        res.json({ success: true, id: result.id });
+    } catch (e) { handleError(res, e); }
+});
+
+app.put(['/api/salaries/:id', '/api/salary-records/:id'], async (req, res) => {
+    try {
+        const {
+            baseSalary, bonus, overtimeHours, overtimePay,
+            deductions, netSalary, notes, status
+        } = req.body;
+
+        const result = await prisma.salaryRecord.update({
+            where: { id: req.params.id },
             data: {
-                companyId,
-                employeeId,
-                month,
-                baseSalary: parseFloat(baseSalary),
-                bonus: parseFloat(bonus) || 0,
-                overtimeHours: parseFloat(overtimeHours) || 0,
-                overtimePay: parseFloat(overtimePay) || 0,
-                deductions: parseFloat(deductions) || 0,
-                netSalary: parseFloat(netSalary),
+                baseSalary: baseSalary ? parseFloat(baseSalary) : undefined,
+                bonus: bonus ? parseFloat(bonus) : undefined,
+                overtimeHours: overtimeHours ? parseFloat(overtimeHours) : undefined,
+                overtimePay: overtimePay ? parseFloat(overtimePay) : undefined,
+                deductions: deductions ? parseFloat(deductions) : undefined,
+                netSalary: netSalary ? parseFloat(netSalary) : undefined,
                 notes,
-                status: 'PAID'
+                status
             }
         });
-        res.json({ success: true, id: record.id });
+        res.json({ success: true, id: result.id });
     } catch (e) { handleError(res, e); }
 });
 

@@ -1096,15 +1096,29 @@ class SyncService {
                     payload.balance = parseFloat(record.balance ?? 0);
                 } else if (table === 'attendances') {
                     const empRow = await db.asyncAll(`SELECT global_id FROM employees WHERE id = ? OR global_id = ?`, [record.employee_id, record.employee_id]);
+                    const empGid = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
+
+                    if (!empGid) {
+                        console.warn(`[SYNC DEFER] Skipping attendance ID ${record.id} - Employee ${record.employee_id} not yet synced or invalid.`);
+                        continue;
+                    }
+
                     payload.id = record.global_id;
-                    payload.employeeId = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
+                    payload.employeeId = empGid;
                     payload.date = record.date;
                     payload.status = record.status;
                     payload.checkIn = record.check_in;
                     payload.checkOut = record.check_out;
                 } else if (table === 'salary_records') {
                     const empRow = await db.asyncAll(`SELECT global_id FROM employees WHERE id = ? OR global_id = ?`, [record.employee_id, record.employee_id]);
-                    payload.employeeId = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
+                    const empGid = (empRow && empRow.length > 0 && empRow[0].global_id) ? String(empRow[0].global_id) : null;
+
+                    if (!empGid) {
+                        console.warn(`[SYNC DEFER] Skipping salary record ID ${record.id} - Employee ${record.employee_id} not yet synced or invalid.`);
+                        continue;
+                    }
+
+                    payload.employeeId = empGid;
                     payload.month = record.month;
                     payload.baseSalary = parseFloat(record.base_salary ?? 0);
                     payload.bonus = parseFloat(record.bonus ?? 0);
@@ -1393,14 +1407,14 @@ class SyncService {
     async resetModules(cid) {
         try {
             const tables = [
-                'products', 'categories', 'brands', 'vendors', 'customers', 
-                'sales', 'sale_items', 'purchases', 'purchase_items', 
-                'expenses', 'employees', 'attendances', 'salary_records', 
+                'products', 'categories', 'brands', 'vendors', 'customers',
+                'sales', 'sale_items', 'purchases', 'purchase_items',
+                'expenses', 'employees', 'attendances', 'salary_records',
                 'accounts', 'audit_logs', 'sale_returns', 'purchase_returns'
             ];
-            
+
             console.log(`[SYNC] Resetting data for company: ${cid || 'GLOBAL'}`);
-            
+
             for (const table of tables) {
                 if (!cid) {
                     await db.asyncRun(`DELETE FROM ${table}`);
@@ -1408,7 +1422,7 @@ class SyncService {
                     await db.asyncRun(`DELETE FROM ${table} WHERE (company_id = ? OR company_id = ? OR company_id = ?)`, [cid, cid, String(cid)]);
                 }
             }
-            
+
             return { success: true };
         } catch (err) {
             console.error("[SYNC] resetModules Error:", err.message);

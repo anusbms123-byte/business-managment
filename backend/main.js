@@ -3975,11 +3975,15 @@ ipcMain.handle("force-sync", async (e, companyId) => {
 // IPC Handler for diagnostic logs
 ipcMain.handle("get-sync-logs", async (e) => {
     try {
-        if (!app.isPackaged) {
-            return { success: true, logs: "Logs only available in packaged version." };
+        // Even in development, we try to read from the electron-log file if it exists
+        // This is useful for seeing detailed sync activity in the UI.
+        const logFilePath = log.transports.file.getFile().path;
+        if (require('fs').existsSync(logFilePath)) {
+            const logContent = await require('fs').promises.readFile(logFilePath, 'utf8');
+            return { success: true, logs: logContent.split('\n').slice(-200).join('\n') }; // Last 200 lines
+        } else {
+            return { success: true, logs: "Log file not found on disk. (Dev mode: check terminal)" };
         }
-        const logContent = await require('fs').promises.readFile(log.transports.file.getFile().path, 'utf8');
-        return { success: true, logs: logContent.split('\n').slice(-100).join('\n') }; // Last 100 lines
     } catch (err) {
         return { success: false, message: err.message };
     }
