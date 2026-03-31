@@ -88,7 +88,11 @@ db.asyncRun = function (sql, params = []) {
     const upperSql = typeof sql === 'string' ? sql.trim().toUpperCase() : '';
     if (upperSql.startsWith('INSERT') || upperSql.startsWith('UPDATE') || upperSql.startsWith('DELETE')) {
         // Trigger the debounced sync (waits 2 seconds for batching)
-        syncService.triggerPush();
+        // CRITICAL FIX: Only trigger push if NOT currently pulling data from cloud.
+        // This prevents the "Pull -> Local Save -> Push Trigger" loop.
+        if (!syncService.isPulling) {
+            syncService.triggerPush();
+        }
     }
 
     return promise;
@@ -1040,14 +1044,22 @@ ipcMain.handle("delete-role", async (e, id) => {
         const gid = row.global_id;
         const localId = row.id;
 
+        // If it's a local-only role (was just created and hasn't finished its first push), hard delete immediately.
+        // We detect this if gid exists but looks like a UUID (contains hyphen) or sync_status was pending.
+        const isLocalOnly = gid && gid.includes('-') && gid.length < 50;
+
         await db.asyncRun("BEGIN TRANSACTION");
         try {
-            // Mark role as deleted
-            await db.asyncRun("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
+            if (isLocalOnly) {
+                await db.asyncRun("DELETE FROM roles WHERE id = ?", [localId]);
+            } else {
+                // Mark role as deleted for cloud sync
+                await db.asyncRun("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [localId]);
 
-            // Record for explicit deletion sync if it has a cloud ID
-            if (gid) {
-                await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['roles', gid]);
+                // Record for explicit deletion sync if it has a cloud global_id
+                if (gid && !gid.includes('-')) {
+                    await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['roles', gid]);
+                }
             }
 
             // Delete associated permissions (Local cleanup)
@@ -1194,11 +1206,11 @@ ipcMain.handle("get-sales", async (e, companyId) => {
             FROM sales s
             LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id
             LEFT JOIN users u ON s.user_id = u.id OR s.user_id = u.global_id
-            WHERE (s.company_id = ? OR s.company_id = ? OR s.company_id = ?) 
-              AND s.sync_status != 'deleted'
+            WHERE (? IS NULL OR s.company_id = ? OR s.company_id = ? OR s.company_id = ?) 
+              AND (s.sync_status != 'deleted' OR s.sync_status IS NULL)
             ORDER BY s.sale_date DESC
         `;
-        const rows = await db.asyncAll(query, [ids.localId, ids.globalId, String(ids.localId)]);
+        const rows = await db.asyncAll(query, [ids.localId, ids.localId, ids.globalId, String(ids.localId)]);
 
         const salesWithItems = [];
         for (const row of rows) {
@@ -1840,6 +1852,8 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
     try {
         const finalCid = companyId || currentLoggedCompany;
         const ids = await resolveCompanyIds(finalCid);
+        
+        // Use COALESCE for robustness against different schema versions (payment_status vs status)
         const query = `
             SELECT p.*, 
                    v.name as vendorName,
@@ -1857,11 +1871,11 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
                    (SELECT COUNT(*) FROM purchase_items WHERE purchase_id = p.global_id OR purchase_id = CAST(p.id AS TEXT)) as itemCount
             FROM purchases p
             LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
-            WHERE (p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
+            WHERE (? IS NULL OR p.company_id = ? OR p.company_id = ? OR p.company_id = ?) 
               AND (p.sync_status != 'deleted' OR p.sync_status IS NULL)
             ORDER BY p.purchase_date DESC
         `;
-        const rows = await db.asyncAll(query, [ids.localId, ids.globalId, String(ids.localId)]);
+        const rows = await db.asyncAll(query, [ids.localId, ids.localId, ids.globalId, String(ids.localId)]);
 
         const purchasesWithItems = [];
         for (const row of rows) {

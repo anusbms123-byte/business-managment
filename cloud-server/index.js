@@ -1369,10 +1369,12 @@ app.post('/api/returns/sales', async (req, res) => {
             }
 
             // 3. Update Customer Balance (Decrease receivable)
-            await tx.customer.update({
-                where: { id: customerId },
-                data: { balance: { decrement: parseFloat(totalAmount) } }
-            });
+            if (customerId) {
+                await tx.customer.update({
+                    where: { id: customerId },
+                    data: { balance: { decrement: parseFloat(totalAmount) } }
+                });
+            }
 
             return sr;
         });
@@ -1400,10 +1402,12 @@ app.delete('/api/returns/sales/:id', async (req, res) => {
             }
 
             // 2. Revert Customer Balance
-            await tx.customer.update({
-                where: { id: sr.customerId },
-                data: { balance: { increment: sr.totalAmount } }
-            });
+            if (sr.customerId) {
+                await tx.customer.update({
+                    where: { id: sr.customerId },
+                    data: { balance: { increment: sr.totalAmount } }
+                });
+            }
 
             // 3. Delete Return
             await tx.saleReturn.delete({ where: { id } });
@@ -1462,10 +1466,12 @@ app.post('/api/returns/purchases', async (req, res) => {
             }
 
             // 3. Update Vendor Balance (Decrease payable)
-            await tx.vendor.update({
-                where: { id: vendorId },
-                data: { balance: { decrement: parseFloat(totalAmount) } }
-            });
+            if (vendorId) {
+                await tx.vendor.update({
+                    where: { id: vendorId },
+                    data: { balance: { decrement: parseFloat(totalAmount) } }
+                });
+            }
 
             return pr;
         });
@@ -1493,10 +1499,12 @@ app.delete('/api/returns/purchases/:id', async (req, res) => {
             }
 
             // 2. Revert Vendor Balance
-            await tx.vendor.update({
-                where: { id: pr.vendorId },
-                data: { balance: { increment: pr.totalAmount } }
-            });
+            if (pr.vendorId) {
+                await tx.vendor.update({
+                    where: { id: pr.vendorId },
+                    data: { balance: { increment: pr.totalAmount } }
+                });
+            }
 
             // 3. Delete Return
             await tx.purchaseReturn.delete({ where: { id } });

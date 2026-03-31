@@ -537,10 +537,12 @@ const Purchase = ({ currentUser }) => {
         setPreviousBalance(0);
     };
 
-    const filteredPurchases = purchases.filter(p =>
-        p.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.vendor?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredPurchases = purchases.filter(p => {
+        const inv = (p.invoiceNo || p.ref_number || '').toString().toLowerCase();
+        const ven = (p.vendor?.name || p.vendorName || '').toString().toLowerCase();
+        const search = searchTerm.toLowerCase();
+        return inv.includes(search) || ven.includes(search);
+    });
 
     return (
         <div className="relative animate-in fade-in duration-500">

@@ -13,6 +13,8 @@ class SyncService {
         this.CLOUD_URL = CLOUD_URL;
         this.currentCompanyId = null; // Store for fallback
         this.pushTimeout = null; // Debounce timer for grouping pushes
+        this.lastPullTime = 0; // Prevent rapid redundant pulls
+        this.lastPullId = null; // Track which company was last pulled
     }
 
     setCompanyId(id) {
@@ -30,12 +32,13 @@ class SyncService {
             if (this.isPushing) {
                 // If already pushing, wait 2 more seconds and try again
                 console.log("[SYNC] Push in progress, rescheduling trigger...");
+                this.pushTimeout = null; // Clear so a new trigger can be set
                 this.triggerPush();
                 return;
             }
             await this.syncPendingRecords();
             this.pushTimeout = null;
-        }, 2000); // 2 second debounce
+        }, 1500); // 1.5 second debounce (slightly faster but still batched)
     }
 
     async apiCall(method, endpoint, data = null, params = null) {
@@ -67,8 +70,17 @@ class SyncService {
     // INITIAL PULL (Cloud -> Local)
     // ==========================================
     async pullAllData(companyGlobalId) {
+        // RATE LIMIT: Prevent pulling the same data more than once every 30 seconds
+        const now = Date.now();
         if (this.isPulling) return;
+        if (this.lastPullId === companyGlobalId && (now - this.lastPullTime < 30000)) {
+            console.log(`[SYNC] Pull skipped: Data for ${companyGlobalId || 'Global'} was recently synchronized (${Math.round((now - this.lastPullTime) / 1000)}s ago).`);
+            return;
+        }
+
         this.isPulling = true;
+        this.lastPullTime = now;
+        this.lastPullId = companyGlobalId;
 
         // For Super Admin, companyGlobalId might be null/undefined to pull all data
         // If it's explicitly null (not just undefined), we treat it as Global pull
@@ -736,7 +748,7 @@ class SyncService {
             if (specificTable && specificUrl) {
                 // Specific table push — check if it actually has pending records first
                 const hasPending = await db.asyncGet(
-                    `SELECT id FROM ${specificTable} WHERE sync_status='pending' LIMIT 1`
+                    `SELECT id FROM ${specificTable} WHERE sync_status IN ('pending', 'deleted') LIMIT 1`
                 ).catch(() => null);
                 if (hasPending) {
                     console.log(`[SYNC] Pushing ${specificTable} (has pending records)...`);
@@ -773,7 +785,7 @@ class SyncService {
                     try {
                         // Skip the HTTP call entirely if table has nothing pending
                         const hasPending = await db.asyncGet(
-                            `SELECT id FROM ${item.table} WHERE sync_status='pending' LIMIT 1`
+                            `SELECT id FROM ${item.table} WHERE sync_status IN ('pending', 'deleted') LIMIT 1`
                         ).catch(() => ({ id: 1 })); // On error, proceed with push (safe fallback)
 
                         if (!hasPending) {

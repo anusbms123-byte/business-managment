@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard, Package, Truck, ShoppingCart, Users, Building2,
@@ -71,23 +71,23 @@ const Layout = ({ children, user, permissions, onLogout }) => {
         parseInt(localStorage.getItem('bms_last_seen_msg') || '0', 10)
     );
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         try {
             if (window.electronAPI && window.electronAPI.getAdminMessages) {
                 const data = await window.electronAPI.getAdminMessages({ limit: 5 });
                 if (Array.isArray(data)) setAdminMessages(data);
             }
         } catch (err) { console.error("Error fetching admin messages:", err); }
-    };
+    }, []);
 
-    const fetchSupportRequests = async () => {
+    const fetchSupportRequests = useCallback(async () => {
         try {
             if (window.electronAPI && window.electronAPI.getSupportRequests && user?.id) {
                 const data = await window.electronAPI.getSupportRequests({ userId: user.id });
                 if (Array.isArray(data)) setSupportRequests(data);
             }
         } catch (err) { console.error("Error fetching support requests:", err); }
-    };
+    }, [user?.id]);
 
     useEffect(() => {
         fetchMessages();

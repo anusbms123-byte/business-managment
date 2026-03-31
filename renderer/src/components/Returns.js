@@ -225,7 +225,7 @@ const Returns = ({ currentUser }) => {
     };
 
     const filteredData = (activeTab === 'sales' ? saleReturns : purchaseReturns).filter(item => {
-        const entityName = activeTab === 'sales' ? item.customer?.name : item.vendor?.name;
+        const entityName = (activeTab === 'sales' ? item.customer?.name : item.vendor?.name) || `Walk-in ${activeTab === 'sales' ? 'Customer' : 'Supplier'}`;
         return (
             item.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             entityName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -305,7 +305,9 @@ const Returns = ({ currentUser }) => {
                                         <div className="text-sm text-black dark:text-slate-400 font-medium mt-1">{item.date ? new Date(item.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight">{activeTab === 'sales' ? item.customer?.name : item.vendor?.name}</div>
+                                        <div className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight">
+                                            {(activeTab === 'sales' ? item.customer?.name : item.vendor?.name) || `Walk-in ${activeTab === 'sales' ? 'Customer' : 'Supplier'}`}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-medium text-black dark:text-slate-400">
@@ -684,7 +686,9 @@ const Returns = ({ currentUser }) => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</p>
-                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">{(activeTab === 'sales' ? selectedReturnDetail.customer?.name : selectedReturnDetail.vendor?.name) || 'N/A'}</h3>
+                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">
+                                            {(activeTab === 'sales' ? selectedReturnDetail.customer?.name : selectedReturnDetail.vendor?.name) || `Walk-in ${activeTab === 'sales' ? 'Customer' : 'Supplier'}`}
+                                        </h3>
                                     </div>
                                 </div>
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">

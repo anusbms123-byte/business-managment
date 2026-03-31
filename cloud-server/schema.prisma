@@ -416,7 +416,7 @@ model SaleReturn {
   invoiceNo   String           @map("invoice_no")
   date        DateTime         @default(now())
   saleId      String?          @map("sale_id")
-  customerId  String           @map("customer_id")
+  customerId  String?          @map("customer_id")
   subTotal    Float            @map("sub_total")
   tax         Float            @default(0)
   totalAmount Float            @map("total_amount")
@@ -426,7 +426,7 @@ model SaleReturn {
   companyId   String           @map("company_id")
   items       SaleReturnItem[]
   company     Company          @relation(fields: [companyId], references: [id])
-  customer    Customer         @relation(fields: [customerId], references: [id])
+  customer    Customer?        @relation(fields: [customerId], references: [id])
   sale        Sale?            @relation(fields: [saleId], references: [id])
 
   @@map("sale_returns")
@@ -450,7 +450,7 @@ model PurchaseReturn {
   invoiceNo   String?              @map("invoice_no")
   date        DateTime             @default(now())
   purchaseId  String?              @map("purchase_id")
-  vendorId    String               @map("vendor_id")
+  vendorId    String?              @map("vendor_id")
   subTotal    Float                @map("sub_total")
   tax         Float                @default(0)
   totalAmount Float                @map("total_amount")
@@ -461,7 +461,7 @@ model PurchaseReturn {
   items       PurchaseReturnItem[]
   company     Company              @relation(fields: [companyId], references: [id])
   purchase    Purchase?            @relation(fields: [purchaseId], references: [id])
-  vendor      Vendor               @relation(fields: [vendorId], references: [id])
+  vendor      Vendor?              @relation(fields: [vendorId], references: [id])
 
   @@map("purchase_returns")
 }
