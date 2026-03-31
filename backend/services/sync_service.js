@@ -1054,9 +1054,10 @@ class SyncService {
                             total: parseFloat(item.total ?? 0)
                         }));
 
-                    // Optional: If entire items array is empty after filtering, maybe warn
+                    // If items exist locally but none have valid cloud product IDs, mark as synced to stop retry loop
                     if (payload.items.length === 0 && items.length > 0) {
-                        console.warn(`[SYNC DEFER] Sale Return ID ${localId} has no items with valid cloud products. Skipping.`);
+                        console.warn(`[SYNC SKIP] Sale Return ID ${localId} has no items with synced cloud products. Marking synced to stop retry loop.`);
+                        await this.markSynced(table, localId, globalId);
                         continue;
                     }
                 } else if (table === 'purchase_returns') {
@@ -1100,8 +1101,10 @@ class SyncService {
                             total: parseFloat(item.total ?? 0)
                         }));
 
+                    // If items exist locally but none have valid cloud product IDs, mark as synced to stop retry loop
                     if (payload.items.length === 0 && items.length > 0) {
-                        console.warn(`[SYNC DEFER] Purchase Return ID ${localId} has no items with valid cloud products. Skipping.`);
+                        console.warn(`[SYNC SKIP] Purchase Return ID ${localId} has no items with synced cloud products. Marking synced to stop retry loop.`);
+                        await this.markSynced(table, localId, globalId);
                         continue;
                     }
                 } else if (table === 'customers') {

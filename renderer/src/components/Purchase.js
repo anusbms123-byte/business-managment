@@ -539,7 +539,7 @@ const Purchase = ({ currentUser }) => {
 
     const filteredPurchases = purchases.filter(p => {
         const inv = (p.invoiceNo || p.ref_number || '').toString().toLowerCase();
-        const ven = (p.vendor?.name || p.vendorName || '').toString().toLowerCase();
+        const ven = (p.vendor?.name || p.vendorName || 'Walk-in Supplier').toString().toLowerCase();
         const search = searchTerm.toLowerCase();
         return inv.includes(search) || ven.includes(search);
     });
@@ -598,7 +598,7 @@ const Purchase = ({ currentUser }) => {
                                         <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">{p.date ? new Date(p.date).toLocaleString() : 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-200">
-                                        {p.vendor?.name}
+                                        {p.vendor?.name || 'Walk-in Supplier'}
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold">
                                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-semibold text-slate-600 dark:text-slate-400 tracking-tight">
@@ -1416,7 +1416,7 @@ const Purchase = ({ currentUser }) => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1 tracking-tight">Supplier</p>
-                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{selectedPurchaseDetail.vendor?.name || 'N/A'}</h3>
+                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{selectedPurchaseDetail.vendor?.name || 'Walk-in Supplier'}</h3>
                                     </div>
                                 </div>
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
