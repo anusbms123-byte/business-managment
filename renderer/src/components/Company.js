@@ -1134,10 +1134,10 @@ const RolesPermissions = ({ currentUser, isSuperAdmin }) => {
                             <Edit2 size={16} />
                         </button>
                     )}
-                    {/* Allow deletion if user has permission OR is Super Admin (but protect core Admin/Manager from accidental deletion) */}
-                    {((canDelete('roles') || isSuperAdmin) && (isSuperAdmin || !(role.is_system || role.isSystem))) && !(['admin', 'manager'].includes((role.name || '').toLowerCase()) && (role.is_system || role.isSystem)) && (
+                    {/* Allow deletion if user has permission OR is Super Admin (but protect core Admin from accidental deletion) */}
+                    {((canDelete('roles') || isSuperAdmin) && (isSuperAdmin || !(role.is_system || role.isSystem))) && !(['admin', 'super admin', 'superadmin'].includes((role.name || '').toLowerCase()) && (role.is_system || role.isSystem)) && (
                         <button onClick={() => handleDelete(role.global_id || role.id)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors border-l border-slate-100 dark:border-slate-800">
-                            <Trash2 size={16} />
+                             <Trash2 size={16} />
                         </button>
                     )}
                 </div>

@@ -4,7 +4,7 @@ import {
     Trash2, Package, User, Printer,
     Eye, Calendar, CreditCard, ChevronDown, ChevronUp, Clock, DollarSign, Tag, Layers, AlertTriangle
 } from 'lucide-react';
-import { canCreate, canDelete } from '../utils/permissions';
+import { canView, canCreate, canEdit, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
 
 const Sales = ({ currentUser }) => {
@@ -427,29 +427,35 @@ const Sales = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleShowDetail(sale)}
-                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
-                                                title="View detail"
-                                            >
-                                                <Eye size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handlePrint(sale)}
-                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
-                                                title="Print receipt"
-                                            >
-                                                <Printer size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleEdit(sale)}
-                                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
-                                                title="Edit sale"
-                                            >
-                                                <div className="w-4 h-4">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-                                                </div>
-                                            </button>
+                                            {canView('sales') && (
+                                                <button
+                                                    onClick={() => handleShowDetail(sale)}
+                                                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
+                                                    title="View detail"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                            )}
+                                            {canView('sales') && (
+                                                <button
+                                                    onClick={() => handlePrint(sale)}
+                                                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
+                                                    title="Print receipt"
+                                                >
+                                                    <Printer size={16} />
+                                                </button>
+                                            )}
+                                            {canEdit('sales') && (
+                                                <button
+                                                    onClick={() => handleEdit(sale)}
+                                                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-all"
+                                                    title="Edit sale"
+                                                >
+                                                    <div className="w-4 h-4">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                                    </div>
+                                                </button>
+                                            )}
                                             {canDelete('sales') && (
                                                 <button
                                                     onClick={() => handleDeleteSale(sale.id)}
@@ -572,9 +578,10 @@ const Sales = ({ currentUser }) => {
                             {/* Items Grid with Detailed Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
                                 {selectedSaleDetail.items?.map((item, idx) => {
-                                    // Find full product info from state to show all details
-                                    const fullProduct = products.find(p => p.id === (item.productId || item.product_id || item.product?.id));
-                                    const displayProduct = fullProduct || item.product || item;
+                                    // item.product is already enriched by the backend DB JOIN with
+                                    // real-time category, brand, color, size, grade, condition data.
+                                    // Do NOT re-lookup from products state — IDs may be mixed types (int vs UUID).
+                                    const displayProduct = item.product || item;
 
                                     return (
                                         <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">

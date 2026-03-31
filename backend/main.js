@@ -76,6 +76,24 @@ const syncService = require("./services/sync_service");
 const API_URL = syncService.CLOUD_URL;
 let currentCompanyId = null;
 
+// ==========================================
+// SYNC REVOLUTION: Auto-trigger push on change
+// This replaces the 5-second timer with event-based syncing
+// ==========================================
+const originalAsyncRun = db.asyncRun;
+db.asyncRun = function (sql, params = []) {
+    const promise = originalAsyncRun.call(this, sql, params);
+
+    // Detect if this is a data-modifying query
+    const upperSql = typeof sql === 'string' ? sql.trim().toUpperCase() : '';
+    if (upperSql.startsWith('INSERT') || upperSql.startsWith('UPDATE') || upperSql.startsWith('DELETE')) {
+        // Trigger the debounced sync (waits 2 seconds for batching)
+        syncService.triggerPush();
+    }
+
+    return promise;
+};
+
 // Helper: Generic API Call
 async function apiCall(method, endpoint, data = null, params = null) {
     try {
@@ -102,8 +120,11 @@ async function recordDeletion(tableName, globalId) {
     if (!globalId || globalId.includes('-')) return; // Don't sync temp IDs or nulls
     try {
         await db.asyncRun("INSERT INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", [tableName, globalId]);
-        // Trigger a full sync for deletions to be safe, or just wait for the 5-min cycle
-        syncService.syncPendingRecords();
+        // OPTIMIZED: Only send the deletion to cloud — NOT a full 18-table push.
+        // syncPendingDeletions sends a single DELETE request for this specific record.
+        syncService.syncPendingDeletions().catch(err => 
+            console.error(`[MAIN] Deletion sync failed for ${tableName}:`, err.message)
+        );
     } catch (err) {
         console.error(`[MAIN] Failed to record deletion for ${tableName}:`, err.message);
     }
@@ -113,18 +134,14 @@ async function recordDeletion(tableName, globalId) {
 let currentLoggedCompany = undefined;
 let currentLoggedRole = null;
 
-// Background Sync Timers
+/**  REMOVED FOR VERCEL LIMITS - Sync now happens on change or refresh button click.
 // 1. HIGH-FREQUENCY PUSH (Every 5 seconds)
-// This ensures local changes go to cloud as soon as connection is available
 setInterval(async () => {
     if (syncService.isPushing) return;
     await syncService.syncPendingRecords();
 }, 5000);
 
-// 2. LOW-FREQUENCY PULL (Every 2 minutes)
-// This keeps local data fresh from cloud
 // 2. LOW-FREQUENCY PULL (Every 60 seconds)
-// This keeps local data fresh from cloud
 setInterval(async () => {
     if (syncService.isPulling) return;
     const activeCid = (currentLoggedCompany === undefined) ? null : currentLoggedCompany;
@@ -136,6 +153,7 @@ setInterval(async () => {
         console.error("[AUTO-SYNC] Pull failed:", err.message);
     }
 }, 60000);
+**/
 
 // ==========================================
 // IPC HANDLERS (PURE CLOUD BRIDGE)
@@ -313,8 +331,9 @@ ipcMain.handle("login", async (e, credentials) => {
     currentCompanyId = user.company_id;
     currentLoggedCompany = user.company_id;
     syncService.setCompanyId(user.company_id);
-    // Trigger pull even for offline login (if internet is available)
-    syncService.pullAllData(user.company_id);
+    // Pull fresh data from cloud on login (once per session — this is the ONLY place pullAllData fires).
+    // Non-blocking: login completes immediately, sync happens in background.
+    syncService.pullAllData(user.company_id).catch(err => console.error('[LOGIN] Background pull failed:', err.message));
 
     const cid = user.company_id;
     const roleRow = await db.asyncGet("SELECT id, global_id FROM roles WHERE id = ? OR global_id = ? OR (name = ? AND (company_id = ? OR is_system = 1))", [user.role_id, user.role_id, user.role, cid]);
@@ -1013,8 +1032,8 @@ ipcMain.handle("delete-role", async (e, id) => {
         const row = await db.asyncGet("SELECT id, global_id, is_system FROM roles WHERE id = ? OR global_id = ?", [id, id]);
         if (!row) return { success: false, message: "Role not found" };
 
-        // Protect core system roles only
-        if (row.is_system && ['admin', 'manager'].includes((row.name || '').toLowerCase())) {
+        // Protect core system roles only (Super Admin, Admin)
+        if (row.is_system && ['admin', 'super admin', 'superadmin'].includes((row.name || '').toLowerCase())) {
             return { success: false, message: "Core system roles cannot be deleted." };
         }
 
@@ -1176,9 +1195,13 @@ ipcMain.handle("get-sales", async (e, companyId) => {
                 SELECT si.*, 
                        si.unit_price as price, 
                        si.total_price as total,
-                       p.name, p.code as sku, p.sell_price as sellPrice 
+                       p.name, p.code as sku, p.sell_price as sellPrice,
+                       p.color, p.size, p.grade, p.condition,
+                       c.name as category_name, b.name as brand_name
                 FROM sale_items si
                 LEFT JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+                LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id
+                LEFT JOIN brands b ON p.brand_id = b.id OR p.brand_id = b.global_id
                 WHERE (si.sale_id = ? OR si.sale_id = ?)
                 GROUP BY si.id
             `, [row.global_id, String(row.id)]);
@@ -1194,7 +1217,17 @@ ipcMain.handle("get-sales", async (e, companyId) => {
                     productId: item.product_id,
                     price: item.unit_price,
                     total: item.total_price,
-                    product: { id: item.product_id, name: item.name, sku: item.sku }
+                    product: {
+                        id: item.product_id,
+                        name: item.name,
+                        sku: item.sku,
+                        color: item.color,
+                        size: item.size,
+                        grade: item.grade,
+                        condition: item.condition,
+                        category: item.category_name ? { name: item.category_name } : null,
+                        brand: item.brand_name ? { name: item.brand_name } : null
+                    }
                 }))
             });
         }
@@ -1810,9 +1843,13 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
                 SELECT pi.*, 
                        pi.unit_cost as unitCost,
                        pi.total_cost as total,
-                       p.name, p.code as sku, p.cost_price as costPrice 
+                       p.name, p.code as sku, p.cost_price as costPrice,
+                       p.color, p.size, p.grade, p.condition,
+                       c.name as category_name, b.name as brand_name
                 FROM purchase_items pi
                 LEFT JOIN products p ON pi.product_id = p.id OR pi.product_id = p.global_id
+                LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id
+                LEFT JOIN brands b ON p.brand_id = b.id OR p.brand_id = b.global_id
                 WHERE (pi.purchase_id = ? OR pi.purchase_id = ?)
                 GROUP BY pi.id
             `, [row.global_id, String(row.id)]);
@@ -1825,7 +1862,17 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
                     productId: item.product_id,
                     unitCost: item.unit_cost,
                     total: item.total_cost,
-                    product: { id: item.product_id, name: item.name, sku: item.sku }
+                    product: {
+                        id: item.product_id,
+                        name: item.name,
+                        sku: item.sku,
+                        color: item.color,
+                        size: item.size,
+                        grade: item.grade,
+                        condition: item.condition,
+                        category: item.category_name ? { name: item.category_name } : null,
+                        brand: item.brand_name ? { name: item.brand_name } : null
+                    }
                 }))
             });
         }
@@ -2823,7 +2870,14 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         }
         const detSales = await dbAll(detSalesSql + " ORDER BY s.sale_date DESC LIMIT 100", detSalesP);
         for (const r of detSales) {
-            const items = await dbAll(`SELECT si.*, p.name FROM sale_items si JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id WHERE si.sale_id = ? OR si.sale_id = ?`, [r.id, r.global_id]);
+            const items = await dbAll(`
+                SELECT si.*, p.name, p.code as sku, p.color, p.size, p.grade, p.condition,
+                       c.name as category_name, b.name as brand_name
+                FROM sale_items si 
+                LEFT JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id 
+                LEFT JOIN categories c ON p.category_id = c.id OR p.category_id = c.global_id
+                LEFT JOIN brands b ON p.brand_id = b.id OR p.brand_id = b.global_id
+                WHERE si.sale_id = ? OR si.sale_id = ?`, [r.id, r.global_id]);
             stats.detailedSales.push({
                 ...r,
                 date: r.sale_date,
@@ -2832,7 +2886,19 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 totalAmount: r.total_amount,
                 paymentStatus: r.payment_status,
                 customer: { name: r.customer_name || 'Walk-in' },
-                items: items
+                items: items.map(item => ({
+                    ...item,
+                    product: {
+                        name: item.name,
+                        sku: item.sku,
+                        color: item.color,
+                        size: item.size,
+                        grade: item.grade,
+                        condition: item.condition,
+                        category: item.category_name ? { name: item.category_name } : null,
+                        brand: item.brand_name ? { name: item.brand_name } : null
+                    }
+                }))
             });
         }
 
@@ -2854,7 +2920,14 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         }
         const detPurchases = await dbAll(detPurSql + " ORDER BY p.purchase_date DESC LIMIT 100", detPurP);
         for (const r of detPurchases) {
-            const items = await dbAll(`SELECT pi.*, pr.name FROM purchase_items pi JOIN products pr ON pi.product_id = pr.id OR pi.product_id = pr.global_id WHERE pi.purchase_id = ? OR pi.purchase_id = ?`, [r.id, r.global_id]);
+            const items = await dbAll(`
+                SELECT pi.*, pr.name, pr.code as sku, pr.color, pr.size, pr.grade, pr.condition,
+                       c.name as category_name, b.name as brand_name
+                FROM purchase_items pi 
+                LEFT JOIN products pr ON pi.product_id = pr.id OR pi.product_id = pr.global_id 
+                LEFT JOIN categories c ON pr.category_id = c.id OR pr.category_id = c.global_id
+                LEFT JOIN brands b ON pr.brand_id = b.id OR pr.brand_id = b.global_id
+                WHERE pi.purchase_id = ? OR pi.purchase_id = ?`, [r.id, r.global_id]);
             stats.detailedPurchases.push({
                 ...r,
                 date: r.purchase_date,
@@ -2863,7 +2936,19 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 totalAmount: r.total_amount,
                 paymentStatus: r.payment_status,
                 vendor: { name: r.vendor_name || 'Unknown' },
-                items: items
+                items: items.map(item => ({
+                    ...item,
+                    product: {
+                        name: item.name,
+                        sku: item.sku,
+                        color: item.color,
+                        size: item.size,
+                        grade: item.grade,
+                        condition: item.condition,
+                        category: item.category_name ? { name: item.category_name } : null,
+                        brand: item.brand_name ? { name: item.brand_name } : null
+                    }
+                }))
             });
         }
 
@@ -3896,7 +3981,7 @@ ipcMain.handle("reset-sync", async (e, companyId) => {
     try {
         const normalizedRole = (currentLoggedRole || '').toLowerCase().replace(/[\s_]/g, '');
         const isSuperAdmin = normalizedRole === 'superadmin' || currentLoggedCompany === null;
-        
+
         // Safety: regular users can ONLY reset their own company
         let targetCid = companyId;
         if (!isSuperAdmin) {
@@ -3904,12 +3989,12 @@ ipcMain.handle("reset-sync", async (e, companyId) => {
         }
 
         const result = await syncService.resetModules(targetCid);
-        
+
         // Trigger immediate pull after reset
         if (result && result.success) {
             syncService.pullAllData(targetCid);
         }
-        
+
         return result || { success: false, message: "No response from resetModules" };
     } catch (err) {
         console.error("reset-sync Error:", err.message);
@@ -3938,10 +4023,10 @@ function createWindow() {
         win.loadURL("http://localhost:3000");
     }
 
-    // Trigger initial sync on startup to catch anything left over from previous sessions
+    // RATE LIMIT FIX: Removed startup syncPendingRecords.
+    // On cold start no user is logged in yet, so nothing is pending that needs cloud push.
+    // Sync will be triggered correctly after login. Only check for updates.
     win.once('ready-to-show', () => {
-        console.log("[STARTUP] Checking for pending records to sync...");
-        syncService.syncPendingRecords();
         if (app.isPackaged) {
             autoUpdater.checkForUpdatesAndNotify();
         }
@@ -3957,13 +4042,12 @@ ipcMain.handle("set-active-session", async (e, { companyId, role }) => {
     currentLoggedRole = role;
     syncService.setCompanyId(finalCid);
 
-    // Trigger immediate push/pull if back online
+    // RATE LIMIT FIX: Only push pending local changes.
+    // pullAllData() REMOVED — it was firing 18 GET requests every time React navigated
+    // between pages, burning 1M+ requests/month. Pull now only happens on login or
+    // manual force-sync button click.
     syncService.syncPendingRecords();
 
-    // Always trigger pull if role is set (means someone is logged in)
-    if (role) {
-        syncService.pullAllData(finalCid);
-    }
     return { success: true };
 });
 

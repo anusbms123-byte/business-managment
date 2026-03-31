@@ -12,10 +12,30 @@ class SyncService {
         this.currentPushPromise = null; // New: Promise tracking
         this.CLOUD_URL = CLOUD_URL;
         this.currentCompanyId = null; // Store for fallback
+        this.pushTimeout = null; // Debounce timer for grouping pushes
     }
 
     setCompanyId(id) {
         this.currentCompanyId = id ? String(id) : null;
+    }
+
+    /**
+     * Debounced wrapper for syncPendingRecords.
+     * Call this whenever data is modified locally (Sales, Products, etc.)
+     * Groups multiple calls within 2 seconds into a single sync attempt.
+     */
+    triggerPush() {
+        if (this.pushTimeout) clearTimeout(this.pushTimeout);
+        this.pushTimeout = setTimeout(async () => {
+            if (this.isPushing) {
+                // If already pushing, wait 2 more seconds and try again
+                console.log("[SYNC] Push in progress, rescheduling trigger...");
+                this.triggerPush();
+                return;
+            }
+            await this.syncPendingRecords();
+            this.pushTimeout = null;
+        }, 2000); // 2 second debounce
     }
 
     async apiCall(method, endpoint, data = null, params = null) {
@@ -714,10 +734,20 @@ class SyncService {
     async _doSync(specificTable = null, specificUrl = null) {
         try {
             if (specificTable && specificUrl) {
-                console.log(`[SYNC] Immediate push for ${specificTable}...`);
-                await this.pushEntity(specificTable, specificUrl);
+                // Specific table push — check if it actually has pending records first
+                const hasPending = await db.asyncGet(
+                    `SELECT id FROM ${specificTable} WHERE sync_status='pending' LIMIT 1`
+                ).catch(() => null);
+                if (hasPending) {
+                    console.log(`[SYNC] Pushing ${specificTable} (has pending records)...`);
+                    await this.pushEntity(specificTable, specificUrl);
+                } else {
+                    console.log(`[SYNC] Skipping ${specificTable} — no pending records.`);
+                }
             } else {
-                // Optimized Priority Order (Critical Business Data First)
+                // RATE LIMIT FIX: Check each table BEFORE pushing.
+                // Only tables with pending records will make an HTTP call.
+                // Example: Add 1 sale → only 'sales' table pushed (1 call, not 18).
                 const pushOrder = [
                     { table: 'companies', url: '/companies' },
                     { table: 'customers', url: '/customers' },
@@ -741,6 +771,14 @@ class SyncService {
 
                 for (const item of pushOrder) {
                     try {
+                        // Skip the HTTP call entirely if table has nothing pending
+                        const hasPending = await db.asyncGet(
+                            `SELECT id FROM ${item.table} WHERE sync_status='pending' LIMIT 1`
+                        ).catch(() => ({ id: 1 })); // On error, proceed with push (safe fallback)
+
+                        if (!hasPending) {
+                            continue; // Nothing pending in this table — skip API call
+                        }
                         await this.pushEntity(item.table, item.url);
                     } catch (e) {
                         console.error(`[SYNC] Failed to push ${item.table}:`, e.message);
