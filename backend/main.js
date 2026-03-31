@@ -122,7 +122,7 @@ async function recordDeletion(tableName, globalId) {
         await db.asyncRun("INSERT INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", [tableName, globalId]);
         // OPTIMIZED: Only send the deletion to cloud — NOT a full 18-table push.
         // syncPendingDeletions sends a single DELETE request for this specific record.
-        syncService.syncPendingDeletions().catch(err => 
+        syncService.syncPendingDeletions().catch(err =>
             console.error(`[MAIN] Deletion sync failed for ${tableName}:`, err.message)
         );
     } catch (err) {
@@ -1044,7 +1044,13 @@ ipcMain.handle("delete-role", async (e, id) => {
         try {
             // Mark role as deleted
             await db.asyncRun("UPDATE roles SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
-            // Delete associated permissions
+
+            // Record for explicit deletion sync if it has a cloud ID
+            if (gid) {
+                await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['roles', gid]);
+            }
+
+            // Delete associated permissions (Local cleanup)
             await db.asyncRun("DELETE FROM permissions WHERE role_id = ? OR role_id = ?", [String(gid), String(localId)]);
             await db.asyncRun("COMMIT");
         } catch (trxErr) {
@@ -1155,6 +1161,11 @@ ipcMain.handle("delete-product", async (e, id) => {
         const gid = row.global_id;
 
         await db.asyncRun(`UPDATE products SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+
+        // Record for explicit deletion sync
+        if (gid) {
+            await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['products', gid]);
+        }
 
         syncService.syncPendingRecords('products', '/products');
         return { success: true, message: "Product deleted locally." };
@@ -1396,6 +1407,11 @@ ipcMain.handle("delete-sale", async (e, id) => {
         // 3. Mark Sale as Deleted
         await db.asyncRun("UPDATE sales SET sync_status = 'deleted', updated_at = ? WHERE global_id = ?", [new Date().toISOString(), gid]);
 
+        // Record for explicit deletion sync
+        if (gid) {
+            await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['sales', gid]);
+        }
+
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sales', '/sales');
         syncService.syncPendingRecords('customers', '/customers');
@@ -1525,6 +1541,11 @@ ipcMain.handle("delete-customer", async (e, id) => {
 
         await db.asyncRun(`UPDATE customers SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
 
+        // Record for explicit deletion sync
+        if (gid) {
+            await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['customers', gid]);
+        }
+
         syncService.syncPendingRecords('customers', '/customers');
         return { success: true, message: "Customer marked for deletion locally." };
     } catch (err) {
@@ -1649,6 +1670,11 @@ ipcMain.handle("delete-vendor", async (e, id) => {
         const gid = row.global_id;
 
         await db.asyncRun(`UPDATE vendors SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id=?`, [gid]);
+
+        // Record for explicit deletion sync
+        if (gid) {
+            await db.asyncRun("INSERT OR IGNORE INTO pending_sync_deletions (table_name, global_id) VALUES (?, ?)", ['vendors', gid]);
+        }
 
         syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, message: "Vendor marked for deletion locally." };

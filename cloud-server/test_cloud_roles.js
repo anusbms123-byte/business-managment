@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 async function testRoleCreation() {
-    const url = 'http://localhost:2000/api/roles';
+    const url = 'https://business-managment-gamma.vercel.app/api/roles';
 
     // 11 Permissions Payload
     const payload = {

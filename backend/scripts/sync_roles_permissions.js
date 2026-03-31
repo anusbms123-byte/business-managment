@@ -12,7 +12,7 @@ const dbPath = path.join(__dirname, '../database/business.db');
 const db = new sqlite3.Database(dbPath);
 
 // Cloud server URL (can be changed via environment variable)
-const CLOUD_URL = process.env.CLOUD_URL || 'https://businessdevelopment-nine.vercel.app/api';
+const CLOUD_URL = process.env.CLOUD_URL || 'https://business-managment-gamma.vercel.app/api';
 
 console.log('🔄 Starting manual sync of roles and permissions...\n');
 console.log(`Using cloud server: ${CLOUD_URL}\n`);

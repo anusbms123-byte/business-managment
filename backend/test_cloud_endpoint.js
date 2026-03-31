@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const url = 'https://businessdevelopment-nine.vercel.app/api/users';
+const url = 'https://business-managment-gamma.vercel.app/api/users';
 const payload = {
     username: 'test_verify_endpoint_' + Date.now(),
     password: 'password123',

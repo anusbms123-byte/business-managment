@@ -40,7 +40,7 @@ const CompanySetup = () => {
         setLoading(true);
 
         try {
-            const API_URL = 'https://businessdevelopment-nine.vercel.app/api/company-requests';
+            const API_URL = 'https://business-managment-gamma.vercel.app/api/company-requests';
 
             const response = await fetch(API_URL, {
                 method: 'POST',

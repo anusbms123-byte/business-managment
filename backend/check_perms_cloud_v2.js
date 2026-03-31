@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const CLOUD_URL = 'https://businessdevelopment-nine.vercel.app/api';
+const CLOUD_URL = 'https://business-managment-gamma.vercel.app/api';
 const COMPANY_ID = 'cmlorzg040001pqe9f89imr84';
 
 async function checkCloudPermissions() {

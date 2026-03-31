@@ -21,7 +21,7 @@ const Login = ({ onLoginSuccess }) => {
         e.preventDefault();
         setSupportLoading(true);
         try {
-            const API_URL = 'https://businessdevelopment-nine.vercel.app/api/support-requests';
+            const API_URL = 'https://business-managment-gamma.vercel.app/api/support-requests';
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
