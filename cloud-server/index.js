@@ -1338,12 +1338,16 @@ app.post('/api/returns/sales', async (req, res) => {
         const { companyId, customerId, saleId, invoiceNo, subTotal, tax, totalAmount, notes, items } = req.body;
 
         const saleReturn = await prisma.$transaction(async (tx) => {
+            // Normalize IDs to null if they are empty strings
+            const cid = (customerId && customerId !== "" && customerId !== "null") ? customerId : null;
+            const sid = (saleId && saleId !== "" && saleId !== "null") ? saleId : null;
+
             // 1. Create Sale Return
             const sr = await tx.saleReturn.create({
                 data: {
                     companyId,
-                    customerId,
-                    saleId,
+                    customerId: cid,
+                    saleId: sid,
                     invoiceNo,
                     subTotal: parseFloat(subTotal),
                     tax: parseFloat(tax) || 0,
@@ -1369,9 +1373,9 @@ app.post('/api/returns/sales', async (req, res) => {
             }
 
             // 3. Update Customer Balance (Decrease receivable)
-            if (customerId) {
+            if (cid) {
                 await tx.customer.update({
-                    where: { id: customerId },
+                    where: { id: cid },
                     data: { balance: { decrement: parseFloat(totalAmount) } }
                 });
             }
@@ -1435,12 +1439,16 @@ app.post('/api/returns/purchases', async (req, res) => {
         const { companyId, vendorId, purchaseId, invoiceNo, subTotal, tax, totalAmount, notes, items } = req.body;
 
         const purchaseReturn = await prisma.$transaction(async (tx) => {
+            // Normalize IDs to null if they are empty strings
+            const vid = (vendorId && vendorId !== "" && vendorId !== "null") ? vendorId : null;
+            const pid = (purchaseId && purchaseId !== "" && purchaseId !== "null") ? purchaseId : null;
+
             // 1. Create Purchase Return
             const pr = await tx.purchaseReturn.create({
                 data: {
                     companyId,
-                    vendorId,
-                    purchaseId,
+                    vendorId: vid,
+                    purchaseId: pid,
                     invoiceNo,
                     subTotal: parseFloat(subTotal),
                     tax: parseFloat(tax) || 0,
@@ -1466,9 +1474,9 @@ app.post('/api/returns/purchases', async (req, res) => {
             }
 
             // 3. Update Vendor Balance (Decrease payable)
-            if (vendorId) {
+            if (vid) {
                 await tx.vendor.update({
-                    where: { id: vendorId },
+                    where: { id: vid },
                     data: { balance: { decrement: parseFloat(totalAmount) } }
                 });
             }

@@ -945,6 +945,7 @@ class SyncService {
 
                     const customerRow = await db.asyncAll(`SELECT global_id FROM customers WHERE id = ? OR global_id = ?`, [record.customer_id, record.customer_id]);
                     payload.customerId = (customerRow && customerRow.length > 0 && customerRow[0].global_id) ? String(customerRow[0].global_id) : null;
+                    if (payload.customerId === "" || payload.customerId === "null") payload.customerId = null;
 
                     const userRow = await db.asyncAll(`SELECT global_id FROM users WHERE id = ? OR global_id = ?`, [record.user_id, record.user_id]);
                     payload.userId = (userRow && userRow.length > 0 && userRow[0].global_id) ? String(userRow[0].global_id) : null;
@@ -955,12 +956,23 @@ class SyncService {
                         LEFT JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id 
                         WHERE si.sale_id = ? OR si.sale_id = ?
                     `, [localId, globalId]);
-                    payload.items = items.map(item => ({
-                        productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity ?? 0),
-                        price: parseFloat(item.unit_price ?? 0),
-                        total: parseFloat(item.total_price ?? 0)
-                    }));
+
+                    payload.items = items
+                        .filter(item => {
+                            const gid = item.product_global_id || "";
+                            return gid && gid.length > 10 && !gid.includes("-");
+                        })
+                        .map(item => ({
+                            productId: String(item.product_global_id),
+                            quantity: parseInt(item.quantity ?? 0),
+                            price: parseFloat(item.unit_price ?? 0),
+                            total: parseFloat(item.total_price ?? 0)
+                        }));
+
+                    if (payload.items.length === 0 && items.length > 0) {
+                        console.warn(`[SYNC DEFER] Sale ID ${localId} has no items with valid cloud products. Skipping.`);
+                        continue;
+                    }
 
                 } else if (table === 'purchases') {
                     payload.invoiceNo = record.ref_number || record.invoice_no;
@@ -976,6 +988,7 @@ class SyncService {
 
                     const vendorRow = await db.asyncAll(`SELECT global_id FROM vendors WHERE id = ? OR global_id = ?`, [record.vendor_id, record.vendor_id]);
                     payload.vendorId = (vendorRow && vendorRow.length > 0 && vendorRow[0].global_id) ? String(vendorRow[0].global_id) : null;
+                    if (payload.vendorId === "" || payload.vendorId === "null") payload.vendorId = null;
 
                     const items = await db.asyncAll(`
                         SELECT pi.*, p.global_id as product_global_id 
@@ -983,12 +996,23 @@ class SyncService {
                         LEFT JOIN products p ON pi.product_id = p.id OR pi.product_id = p.global_id 
                         WHERE pi.purchase_id = ? OR pi.purchase_id = ?
                     `, [localId, globalId]);
-                    payload.items = items.map(item => ({
-                        productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity ?? 0),
-                        unitCost: parseFloat(item.unit_cost ?? 0),
-                        total: parseFloat(item.total_cost ?? 0)
-                    }));
+
+                    payload.items = items
+                        .filter(item => {
+                            const gid = item.product_global_id || "";
+                            return gid && gid.length > 10 && !gid.includes("-");
+                        })
+                        .map(item => ({
+                            productId: String(item.product_global_id),
+                            quantity: parseInt(item.quantity ?? 0),
+                            unitCost: parseFloat(item.unit_cost ?? 0),
+                            total: parseFloat(item.total_cost ?? 0)
+                        }));
+
+                    if (payload.items.length === 0 && items.length > 0) {
+                        console.warn(`[SYNC DEFER] Purchase ID ${localId} has no items with valid cloud products. Skipping.`);
+                        continue;
+                    }
                 } else if (table === 'sale_returns') {
                     payload.invoiceNo = record.invoice_no || record.inv_number;
                     payload.subTotal = parseFloat(record.sub_total ?? 0);
@@ -1005,19 +1029,36 @@ class SyncService {
                     const saleRow = await db.asyncAll(`SELECT global_id FROM sales WHERE id = ? OR global_id = ?`, [record.sale_id, record.sale_id]);
                     payload.saleId = (saleRow && saleRow.length > 0 && saleRow[0].global_id) ? String(saleRow[0].global_id) : null;
 
-                    // Fetch and map items
+                    // Final fallback to ensure no empty strings are sent for IDs (Cloud DB expects NULL or Valid GID)
+                    if (payload.customerId === "" || payload.customerId === "null") payload.customerId = null;
+                    if (payload.saleId === "" || payload.saleId === "null") payload.saleId = null;
+
+                    // Fetch and map items: ONLY include items where product has a cloud global_id
                     const items = await db.asyncAll(`
                         SELECT sri.*, p.global_id as product_global_id 
                         FROM sale_return_items sri 
                         LEFT JOIN products p ON sri.product_id = p.id OR sri.product_id = p.global_id 
                         WHERE sri.return_id = ? OR sri.return_id = ?
                     `, [localId, globalId]);
-                    payload.items = items.map(item => ({
-                        productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity ?? 0),
-                        price: parseFloat(item.price ?? 0),
-                        total: parseFloat(item.total ?? 0)
-                    }));
+
+                    payload.items = items
+                        .filter(item => {
+                            const gid = item.product_global_id || "";
+                            // Skip products that don't have a valid cloud GID (avoids FK constraint failure)
+                            return gid && gid.length > 10 && !gid.includes("-");
+                        })
+                        .map(item => ({
+                            productId: String(item.product_global_id),
+                            quantity: parseInt(item.quantity ?? 0),
+                            price: parseFloat(item.price ?? 0),
+                            total: parseFloat(item.total ?? 0)
+                        }));
+
+                    // Optional: If entire items array is empty after filtering, maybe warn
+                    if (payload.items.length === 0 && items.length > 0) {
+                        console.warn(`[SYNC DEFER] Sale Return ID ${localId} has no items with valid cloud products. Skipping.`);
+                        continue;
+                    }
                 } else if (table === 'purchase_returns') {
                     payload.invoiceNo = record.invoice_no || record.inv_number;
                     payload.subTotal = parseFloat(record.sub_total || 0);
@@ -1034,19 +1075,35 @@ class SyncService {
                     const purchaseRow = await db.asyncAll(`SELECT global_id FROM purchases WHERE id = ? OR global_id = ?`, [record.purchase_id, record.purchase_id]);
                     payload.purchaseId = (purchaseRow && purchaseRow.length > 0 && purchaseRow[0].global_id) ? String(purchaseRow[0].global_id) : null;
 
-                    // Fetch and map items
+                    // Final fallback to ensure no empty strings are sent for IDs
+                    if (payload.vendorId === "" || payload.vendorId === "null") payload.vendorId = null;
+                    if (payload.purchaseId === "" || payload.purchaseId === "null") payload.purchaseId = null;
+
+                    // Fetch and map items: ONLY include items where product has a cloud global_id
                     const items = await db.asyncAll(`
                         SELECT pri.*, p.global_id as product_global_id 
                         FROM purchase_return_items pri 
                         LEFT JOIN products p ON pri.product_id = p.id OR pri.product_id = p.global_id 
                         WHERE pri.return_id = ? OR pri.return_id = ?
                     `, [localId, globalId]);
-                    payload.items = items.map(item => ({
-                        productId: String(item.product_global_id || item.product_id || ""),
-                        quantity: parseInt(item.quantity ?? 0),
-                        unitCost: parseFloat(item.unit_cost ?? 0),
-                        total: parseFloat(item.total ?? 0)
-                    }));
+
+                    payload.items = items
+                        .filter(item => {
+                            const gid = item.product_global_id || "";
+                            // Skip products that don't have a valid cloud GID
+                            return gid && gid.length > 10 && !gid.includes("-");
+                        })
+                        .map(item => ({
+                            productId: String(item.product_global_id),
+                            quantity: parseInt(item.quantity ?? 0),
+                            unitCost: parseFloat(item.unit_cost ?? 0),
+                            total: parseFloat(item.total ?? 0)
+                        }));
+
+                    if (payload.items.length === 0 && items.length > 0) {
+                        console.warn(`[SYNC DEFER] Purchase Return ID ${localId} has no items with valid cloud products. Skipping.`);
+                        continue;
+                    }
                 } else if (table === 'customers') {
                     payload.customerType = record.customer_type || 'retail';
                     payload.gst_no = record.gst_no;
