@@ -191,7 +191,7 @@ const EmployeeList = ({ employees, onRefresh, currentUser, loading, setSelectedE
                                 className="hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition-colors group cursor-pointer border-b border-slate-50 dark:border-slate-800 relative"
                             >
                                 <td className="px-6 py-4 font-semibold text-black dark:text-slate-200 text-sm tracking-tight">
-                                    HRM-{String(emp.id).slice(-4)}
+                                    KFD-{Number(emp.id) + 99}
                                 </td>
                                 <td className="px-6 py-4 font-semibold text-black dark:text-slate-200 text-sm">
                                     {emp.firstName} {emp.lastName}
@@ -462,7 +462,7 @@ const Attendance = ({ employees, currentUser }) => {
                         ).map((att) => (
                             <tr key={att.employeeId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                 <td className="px-6 py-4 font-semibold text-black dark:text-slate-200 text-sm tracking-tight">
-                                    HRM-{String(att.employeeId).slice(-4)}
+                                    KFD-{Number(att.employeeId) + 99}
                                 </td>
                                 <td className="px-6 py-4 font-semibold text-black dark:text-slate-300 text-sm tracking-tight">{att.name}</td>
                                 <td className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-sm">{att.checkIn}</td>
@@ -637,7 +637,7 @@ const Payroll = ({ employees, currentUser }) => {
                             return (
                                 <tr key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-6 py-4 font-semibold text-black dark:text-slate-200 text-sm tracking-tight">
-                                        HRM-{String(emp.id).slice(-4)}
+                                        KFD-{Number(emp.id) + 99}
                                     </td>
                                     <td className="px-6 py-4 font-semibold text-black dark:text-slate-300 text-sm tracking-tight">{emp.firstName} {emp.lastName}</td>
                                     <td className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-400 text-sm">PKR {emp.salary?.toLocaleString() ?? '0'}</td>

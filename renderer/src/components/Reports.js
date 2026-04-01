@@ -677,6 +677,7 @@ const Reports = ({ currentUser }) => {
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
                                         <option value="due" className="dark:bg-slate-900">Due</option>
                                         <option value="partial" className="dark:bg-slate-900">Partial</option>
+                                        <option value="received" className="dark:bg-slate-900">Received</option>
                                     </select>
                                 </div>
                             </>
@@ -1379,7 +1380,7 @@ const Reports = ({ currentUser }) => {
                                                                     ? 'bg-indigo-500'
                                                                     : 'bg-orange-500'
                                                             }`} />
-                                                        {tx.paymentStatus || 'DUE'}
+                                                        <span className="capitalize">{(tx.paymentStatus || 'DUE').toLowerCase()}</span>
                                                     </span>
                                                 </td>
                                             </tr>

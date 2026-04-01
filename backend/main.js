@@ -2629,8 +2629,6 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         if (paymentStatus && paymentStatus !== 'all') {
             if (paymentStatus === 'paid') {
                 purSql += ` AND (LOWER(payment_status) = 'paid' OR LOWER(payment_status) = 'received' OR LOWER(payment_status) = 'success')`;
-            } else if (paymentStatus === 'credit') {
-                purSql += ` AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`;
             } else {
                 purSql += ` AND LOWER(payment_status) = ?`;
                 purP.push(paymentStatus.toLowerCase());
@@ -2951,8 +2949,6 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         if (paymentStatus && paymentStatus !== 'all') {
             if (paymentStatus === 'paid') {
                 detPurSql += ` AND (LOWER(p.payment_status) = 'paid' OR LOWER(p.payment_status) = 'received' OR LOWER(p.payment_status) = 'success')`;
-            } else if (paymentStatus === 'credit') {
-                detPurSql += ` AND (LOWER(p.payment_status) = 'due' OR LOWER(p.payment_status) = 'partial')`;
             } else {
                 detPurSql += ` AND LOWER(p.payment_status) = ?`;
                 detPurP.push(paymentStatus.toLowerCase());
@@ -3058,9 +3054,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
         }
         // Payment status filter for vendors: credit = due (balance > 0), paid = clear (balance = 0)
         if (paymentStatus && paymentStatus !== 'all') {
-            if (paymentStatus.toLowerCase() === 'credit') {
+            const lowStat = paymentStatus.toLowerCase();
+            if (lowStat === 'credit' || lowStat === 'due' || lowStat === 'partial') {
                 detVendSql += ` AND current_balance > 0`;
-            } else if (paymentStatus.toLowerCase() === 'paid') {
+            } else if (lowStat === 'paid') {
                 detVendSql += ` AND (current_balance = 0 OR current_balance IS NULL)`;
             }
         }
@@ -3078,9 +3075,10 @@ ipcMain.handle("get-report-summary", async (e, params) => {
             detCustP.push(customerId, customerId);
         }
         if (paymentStatus && paymentStatus !== 'all') {
-            if (paymentStatus.toLowerCase() === 'credit') {
+            const lowStat = paymentStatus.toLowerCase();
+            if (lowStat === 'credit' || lowStat === 'due' || lowStat === 'partial') {
                 detCustSql += ` AND current_balance > 0`;
-            } else if (paymentStatus.toLowerCase() === 'paid') {
+            } else if (lowStat === 'paid') {
                 detCustSql += ` AND (current_balance <= 0 OR current_balance IS NULL)`;
             }
         }
@@ -3722,9 +3720,9 @@ ipcMain.handle("save-attendance", async (e, data) => {
                     status=?, 
                     sync_status='pending', 
                     updated_at=CURRENT_TIMESTAMP,
-                    check_in = CASE WHEN status != 'Present' AND ? = 'Present' THEN ? ELSE check_in END
+                    check_in = CASE WHEN (status != 'Present' AND status != 'Late') AND (? = 'Present' OR ? = 'Late') THEN ? ELSE check_in END
                  WHERE id=? OR global_id=?`,
-                [status, status, now, existing.id, existing.global_id]
+                [status, status, status, now, existing.id, existing.global_id]
             );
             syncService.syncPendingRecords('attendances', '/attendance');
             return { success: true, message: "Attendance updated" };
@@ -3735,7 +3733,7 @@ ipcMain.handle("save-attendance", async (e, data) => {
             const emp = await db.asyncGet("SELECT company_id FROM employees WHERE id=? OR global_id=?", [employeeId, employeeId]);
             const companyId = emp?.company_id;
             const now = new Date().toISOString();
-            const checkIn = status === 'Present' ? now : null;
+            const checkIn = (status === 'Present' || status === 'Late') ? now : null;
 
             await db.asyncRun(
                 `INSERT INTO attendances (global_id, employee_id, date, status, company_id, sync_status, updated_at, check_in) 

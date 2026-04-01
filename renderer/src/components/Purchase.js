@@ -133,7 +133,7 @@ const Purchase = ({ currentUser }) => {
     const [taxType, setTaxType] = useState('PERCENT'); // Default tax to percent
     const [paidAmount, setPaidAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('CASH');
-    const [paymentStatus, setPaymentStatus] = useState('RECEIVED');
+    const [paymentStatus, setPaymentStatus] = useState('PAID');
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
     const [productSearch, setProductSearch] = useState('');
@@ -340,12 +340,7 @@ const Purchase = ({ currentUser }) => {
         setSaving(true);
         try {
             const currentBillTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue;
-            let finalPaymentStatus = (parseFloat(paidAmount) >= currentBillTotal) ? 'PAID' : (parseFloat(paidAmount) > 0 ? 'PARTIAL' : 'DUE');
-
-            // If the user explicitly chose RECEIVED as a status from a status dropdown (if any) or if it's already RECEIVED, keep it as a signal of item reception
-            if (paymentStatus === 'RECEIVED' && finalPaymentStatus === 'PAID') {
-                finalPaymentStatus = 'RECEIVED';
-            }
+            const finalPaymentStatus = (parseFloat(paidAmount) >= currentBillTotal) ? 'PAID' : (parseFloat(paidAmount) > 0 ? 'PARTIAL' : 'DUE');
 
 
             const data = {
@@ -944,7 +939,7 @@ const Purchase = ({ currentUser }) => {
                                                         <div className="text-[10px] text-black dark:text-slate-400 font-medium tracking-tight">SKU: {item.sku || 'N/A'}</div>
                                                     </td>
                                                     <td className="px-6 py-4 text-center font-medium text-black dark:text-slate-200 text-sm">PKR {(item.unitCost || 0).toLocaleString()}</td>
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-6 py-4 text-center">
                                                         <div className="w-16 mx-auto px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-center font-medium text-sm text-black dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                                                             {item.quantity}
                                                         </div>

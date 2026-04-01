@@ -144,10 +144,10 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-3 text-xs font-mono text-slate-500 dark:text-slate-400">
-                                        {log.check_in ? new Date(log.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                        {log.checkIn ? new Date(log.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                     </td>
                                     <td className="px-6 py-3 text-xs font-mono text-slate-500 dark:text-slate-400 text-right">
-                                        {log.check_out ? new Date(log.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                        {log.checkOut ? new Date(log.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                     </td>
                                 </tr>
                             ))}
