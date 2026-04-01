@@ -171,6 +171,10 @@ db.initPromise = (async () => {
     await db.asyncRun("UPDATE sales SET sale_date = updated_at WHERE sale_date IS NULL");
     await db.asyncRun("UPDATE purchases SET purchase_date = updated_at WHERE purchase_date IS NULL");
 
+    // FIX: Force re-sync for records with incorrect 'COMPLETED' status (mapped wrongly from cloud previously)
+    await db.asyncRun("UPDATE sales SET updated_at = '2000-01-01T00:00:00Z' WHERE payment_status = 'COMPLETED' OR payment_status = 'completed'");
+    await db.asyncRun("UPDATE purchases SET updated_at = '2000-01-01T00:00:00Z' WHERE payment_status = 'COMPLETED' OR payment_status = 'completed'");
+
     // 4. MODULE SPECIFIC COLUMNS
     // Products
     await ensureColumn('products', 'code', 'TEXT');

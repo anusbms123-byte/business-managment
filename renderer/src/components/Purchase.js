@@ -291,8 +291,14 @@ const Purchase = ({ currentUser }) => {
     const discountValue = discountType === 'PERCENT' ? (subtotal * (parseFloat(discount || 0) || 0)) / 100 : (parseFloat(discount || 0) || 0);
     const taxValue = taxType === 'PERCENT' ? (subtotal * (parseFloat(tax || 0) || 0)) / 100 : (parseFloat(tax || 0) || 0);
 
-    const grandTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue + parseFloat(previousBalance || 0);
-    const balanceDue = Math.max(0, grandTotal - parseFloat(paidAmount || 0));
+    // Bill Total (current invoice only)
+    const currentBillTotal = subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue;
+    const grandTotal = currentBillTotal;
+
+    // Final balance (Previous owe + This bill - Paid)
+    const totalToPay = currentBillTotal + (previousBalance > 0 ? parseFloat(previousBalance) : 0);
+    const balanceDue = (parseFloat(previousBalance) || 0) + currentBillTotal - parseFloat(paidAmount || 0);
+    const effectiveBalanceDue = Math.max(0, balanceDue);
 
     const handleDeleteCategory = async (id) => {
         showConfirm("Are you sure you want to delete this category?", async () => {
@@ -348,7 +354,7 @@ const Purchase = ({ currentUser }) => {
                 companyId: currentUser?.company_id,
                 vendorId,
                 invoiceNo,
-                totalAmount: subtotal + parseFloat(shippingCost || 0) + taxValue - discountValue, // Bill Amount (Excluding Prev Balance)
+                totalAmount: grandTotal, // Bill Amount (Excluding Prev Balance)
                 paidAmount: parseFloat(paidAmount) || 0,
                 shippingCost: parseFloat(shippingCost) || 0,
                 discount: discountValue,
@@ -398,7 +404,9 @@ const Purchase = ({ currentUser }) => {
 
     const handleEdit = (purchase) => {
         setEditingId(purchase.id);
-        setVendorId(purchase.vendorId || purchase.vendor_id || '');
+        const vid = purchase.vendorId || purchase.vendor_id || '';
+        setVendorId(vid);
+        
         setInvoiceNo(purchase.invoiceNo || purchase.ref_number || '');
         setDueDate(purchase.dueDate || purchase.due_date ? new Date(purchase.dueDate || purchase.due_date).toISOString().split('T')[0] : '');
         setPaymentStatus(purchase.paymentStatus || purchase.payment_status || 'RECEIVED');
@@ -424,10 +432,17 @@ const Purchase = ({ currentUser }) => {
         }));
         setCart(loadedCart);
 
-        const ven = vendors.find(v => (v.id == (purchase.vendorId || purchase.vendor_id)) || (v.global_id && v.global_id == (purchase.vendorId || purchase.vendor_id)));
-        const currentVenBalance = ven?.current_balance || ven?.balance || 0;
-        const purchaseDue = (purchase.total_amount || purchase.totalAmount || 0) - (purchase.paid_amount || purchase.paidAmount || 0);
-        setPreviousBalance(currentVenBalance - purchaseDue);
+        const ven = vendors.find(v => 
+            String(v.id) === String(vid) || 
+            (v.global_id && String(v.global_id) === String(vid))
+        );
+        if (!ven || !vid) {
+            setPreviousBalance(0);
+        } else {
+            const currentVenBalance = ven?.current_balance || ven?.balance || 0;
+            const purchaseDue = (purchase.total_amount || purchase.totalAmount || 0) - (purchase.paid_amount || purchase.paidAmount || 0);
+            setPreviousBalance(currentVenBalance - purchaseDue);
+        }
 
         setIsModalOpen(true);
     };
@@ -1084,8 +1099,10 @@ const Purchase = ({ currentUser }) => {
                                         />
                                     </div>
                                     <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Balance due</label>
-                                        <span className="text-sm font-semibold text-rose-600 dark:text-rose-400 px-2 py-0.5 bg-rose-50 dark:bg-rose-900/20 rounded">PKR {(balanceDue || 0).toLocaleString()}</span>
+                                        <label className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight ml-1">Total balance due</label>
+                                        <span className={`text-sm font-semibold px-2 py-0.5 rounded ${balanceDue > 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
+                                            PKR {(Math.abs(balanceDue) || 0).toLocaleString()} {balanceDue < 0 ? '(Credit)' : ''}
+                                        </span>
                                     </div>
                                 </div>
 

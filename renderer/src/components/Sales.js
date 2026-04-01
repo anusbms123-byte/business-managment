@@ -191,20 +191,31 @@ const Sales = ({ currentUser }) => {
     };
 
     const subTotal = cart.reduce((sum, item) => sum + item.total, 0);
-
     const discountValue = discountType === 'PERCENT' ? (subTotal * (Number(discount) || 0)) / 100 : (Number(discount) || 0);
     const taxValue = taxType === 'PERCENT' ? (subTotal * (Number(tax) || 0)) / 100 : (Number(tax) || 0);
 
-    const grandTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue + (Number(previousBalance) || 0);
-    const netBalance = returnChange ? Math.max(0, grandTotal - (Number(amountPaid) || 0)) : grandTotal - (Number(amountPaid) || 0);
-    const changeAmount = Math.max(0, (Number(amountPaid) || 0) - grandTotal);
-    const effectivePaidAmount = returnChange && (Number(amountPaid) || 0) > grandTotal ? grandTotal : (Number(amountPaid) || 0);
-    const paymentStatus = effectivePaidAmount >= grandTotal ? 'PAID' : (effectivePaidAmount > 0 ? 'PARTIAL' : 'DUE');
+    // invoiceTotal = The actual total of the current sale items/costs
+    const invoiceTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue;
+    
+    // grandTotal = For UI display of the invoice itself
+    const grandTotal = invoiceTotal;
+
+    // netBalance = Customer's final balance (Previous + This Sale - Paid)
+    const netBalance = returnChange ? 
+        Math.max(0, (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0)) : 
+        (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0);
+
+    // Change should only be offered if the payment exceeds BOTH the invoice and ANY previous debt
+    const totalDue = invoiceTotal + (previousBalance > 0 ? previousBalance : 0);
+    const changeAmount = Math.max(0, (Number(amountPaid) || 0) - totalDue);
+    const effectivePaidAmount = returnChange && (Number(amountPaid) || 0) > totalDue ? totalDue : (Number(amountPaid) || 0);
+    const paymentStatus = (Number(amountPaid) || 0) >= invoiceTotal ? 'PAID' : (Number(amountPaid) || 0) > 0 ? 'PARTIAL' : 'DUE';
 
     const handleEdit = (sale) => {
         resetForm();
         setEditingId(sale.id);
-        setSelectedCustomer(sale.customerId || sale.customer_id || '');
+        const cid = sale.customerId || sale.customer_id || '';
+        setSelectedCustomer(cid);
 
         // Reconstruct Cart
         const items = sale.items || [];
@@ -227,10 +238,19 @@ const Sales = ({ currentUser }) => {
         setPaymentMethod(sale.paymentMethod || sale.payment_method || 'CASH');
         setNotes(sale.notes || '');
 
-        const cust = customers.find(c => (c.id == (sale.customerId || sale.customer_id)) || (c.global_id && c.global_id == (sale.customerId || sale.customer_id)));
-        const currentCustBalance = cust?.current_balance || cust?.balance || 0;
-        const saleDue = (sale.total_amount || sale.totalAmount || sale.grandTotal || 0) - (sale.paid_amount || sale.paidAmount || sale.amountPaid || 0);
-        setPreviousBalance(currentCustBalance - saleDue);
+        const cust = customers.find(c => 
+            String(c.id) === String(cid) || 
+            (c.global_id && String(c.global_id) === String(cid))
+        );
+
+        if (!cust || !cid) {
+            setPreviousBalance(0);
+        } else {
+            const currentCustBalance = cust?.current_balance || cust?.balance || 0;
+            const saleDue = (sale.total_amount || sale.totalAmount || sale.grandTotal || 0) - (sale.paid_amount || sale.paidAmount || sale.amountPaid || 0);
+            // We want to show what the balance was BEFORE this sale edit session
+            setPreviousBalance(currentCustBalance - saleDue);
+        }
 
         setIsModalOpen(true);
     };
@@ -295,8 +315,8 @@ const Sales = ({ currentUser }) => {
                 subTotal,
                 discount: discountValue,
                 tax: taxValue,
-                totalAmount: grandTotal - (Number(previousBalance) || 0),
-                grandTotal: grandTotal - (Number(previousBalance) || 0),
+                totalAmount: grandTotal,
+                grandTotal: grandTotal,
                 shippingCost: parseFloat(shippingCost),
                 paidAmount: parseFloat(effectivePaidAmount),
                 amountPaid: parseFloat(effectivePaidAmount),
