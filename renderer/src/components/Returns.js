@@ -368,8 +368,8 @@ const Returns = ({ currentUser }) => {
                     <div className="flex-1 flex overflow-hidden min-h-0 bg-slate-50/30 dark:bg-slate-900">
                         {/* Left: Product Selection & Cart */}
                         <div className="flex-1 p-6 border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20 overflow-visible">
-                            <div className="grid grid-cols-4 gap-4 mb-6">
-                                <div className="space-y-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 mb-6 items-end relative z-[150]">
+                                <div className="space-y-1.5 lg:col-span-3">
                                     <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
                                     <select
                                         className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 appearance-none cursor-pointer"
@@ -380,7 +380,7 @@ const Returns = ({ currentUser }) => {
                                         {(activeTab === 'sales' ? customers : vendors).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                                     </select>
                                 </div>
-                                <div className="space-y-1.5 col-span-2">
+                                <div className="space-y-1.5 sm:col-span-1 lg:col-span-6">
                                     <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Product</label>
                                     <div className="relative">
                                         <input
@@ -506,26 +506,28 @@ const Returns = ({ currentUser }) => {
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-1 space-y-1.5">
-                                        <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Qty</label>
-                                        <input
-                                            ref={qtyRef}
-                                            type="number"
-                                            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
-                                            value={qty}
-                                            onChange={(e) => setQty(e.target.value)}
-                                            placeholder="0"
-                                            onKeyDown={(e) => e.key === 'Enter' && addToCart()}
-                                        />
+                                <div className="sm:col-span-1 lg:col-span-3">
+                                    <div className="flex gap-2 items-end w-full">
+                                        <div className="flex-1 space-y-1.5 min-w-[70px]">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Qty</label>
+                                            <input
+                                                ref={qtyRef}
+                                                type="number"
+                                                className="w-full px-2 py-2 text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
+                                                value={qty}
+                                                onChange={(e) => setQty(e.target.value)}
+                                                placeholder="0"
+                                                onKeyDown={(e) => e.key === 'Enter' && addToCart()}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={addToCart}
+                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-all shrink-0 active:scale-95 flex items-center justify-center whitespace-nowrap shadow-sm tracking-tight"
+                                        >
+                                            <Plus size={20} />
+                                            <span className="ml-1">Add now</span>
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={addToCart}
-                                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-all shrink-0 active:scale-95 flex items-center justify-center whitespace-nowrap shadow-sm tracking-tight"
-                                    >
-                                        <Plus size={20} />
-                                        <span className="ml-1">Add now</span>
-                                    </button>
                                 </div>
                             </div>
 

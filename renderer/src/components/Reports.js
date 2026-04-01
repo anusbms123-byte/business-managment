@@ -457,9 +457,13 @@ const Reports = ({ currentUser }) => {
                                         {activeModule === 'sales' && selectedPaymentStatus !== 'all' && (
                                             <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-orange-100 text-orange-600'
+                                                : selectedPaymentStatus === 'partial'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : selectedPaymentStatus === 'received'
+                                                        ? 'bg-indigo-100 text-indigo-600'
+                                                        : 'bg-orange-100 text-orange-600'
                                                 }`}>
-                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit'}
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : selectedPaymentStatus === 'partial' ? 'Partial' : selectedPaymentStatus === 'received' ? 'Received' : 'Due'}
                                             </span>
                                         )}
                                         {activeModule === 'suppliers' && selectedVendor !== 'all' && (
@@ -470,9 +474,13 @@ const Reports = ({ currentUser }) => {
                                         {activeModule === 'suppliers' && selectedPaymentStatus !== 'all' && (
                                             <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-emerald-200 text-emerald-700'
+                                                : selectedPaymentStatus === 'partial'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : selectedPaymentStatus === 'received'
+                                                        ? 'bg-indigo-100 text-indigo-600'
+                                                        : 'bg-orange-100 text-orange-600'
                                                 }`}>
-                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : selectedPaymentStatus === 'partial' ? 'Partial' : selectedPaymentStatus === 'received' ? 'Received' : 'Due'}
                                             </span>
                                         )}
                                         {activeModule === 'customers' && selectedCustomer !== 'all' && (
@@ -480,12 +488,33 @@ const Reports = ({ currentUser }) => {
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Customer'}
                                             </span>
                                         )}
+                                        {activeModule === 'purchases' && selectedVendor !== 'all' && (
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
+                                                {vendors.find(v => v.id == selectedVendor)?.name || 'Supplier'}
+                                            </span>
+                                        )}
+                                        {activeModule === 'purchases' && selectedPaymentStatus !== 'all' && (
+                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
+                                                ? 'bg-emerald-100 text-emerald-600'
+                                                : selectedPaymentStatus === 'partial'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : selectedPaymentStatus === 'received'
+                                                        ? 'bg-indigo-100 text-indigo-600'
+                                                        : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : selectedPaymentStatus === 'partial' ? 'Partial' : selectedPaymentStatus === 'received' ? 'Received' : 'Due'}
+                                            </span>
+                                        )}
                                         {activeModule === 'customers' && selectedPaymentStatus !== 'all' && (
                                             <span className={`text-[9px] font-bold px-3 py-1 rounded-lg ${selectedPaymentStatus === 'paid'
                                                 ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-emerald-200 text-emerald-700'
+                                                : selectedPaymentStatus === 'partial'
+                                                    ? 'bg-blue-100 text-blue-600'
+                                                    : selectedPaymentStatus === 'received'
+                                                        ? 'bg-indigo-100 text-indigo-600'
+                                                        : 'bg-orange-100 text-orange-600'
                                                 }`}>
-                                                {selectedPaymentStatus === 'paid' ? 'Paid' : 'Credit / Due'}
+                                                {selectedPaymentStatus === 'paid' ? 'Paid' : selectedPaymentStatus === 'partial' ? 'Partial' : selectedPaymentStatus === 'received' ? 'Received' : 'Due'}
                                             </span>
                                         )}
                                         {(activeModule === 'netprofit' || activeModule === 'sales') && selectedCustomer !== 'all' && (
@@ -580,7 +609,8 @@ const Reports = ({ currentUser }) => {
                                     >
                                         <option value="all" className="dark:bg-slate-900">All status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid only</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit only</option>
+                                        <option value="due" className="dark:bg-slate-900">Due only</option>
+                                        <option value="partial" className="dark:bg-slate-900">Partial only</option>
                                     </select>
                                 </div>
                             </>
@@ -612,7 +642,8 @@ const Reports = ({ currentUser }) => {
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit</option>
+                                        <option value="due" className="dark:bg-slate-900">Due</option>
+                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -644,7 +675,8 @@ const Reports = ({ currentUser }) => {
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
+                                        <option value="due" className="dark:bg-slate-900">Due</option>
+                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -740,7 +772,8 @@ const Reports = ({ currentUser }) => {
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
+                                        <option value="due" className="dark:bg-slate-900">Due</option>
+                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -772,7 +805,8 @@ const Reports = ({ currentUser }) => {
                                     >
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
-                                        <option value="credit" className="dark:bg-slate-900">Credit / Due</option>
+                                        <option value="due" className="dark:bg-slate-900">Due</option>
+                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -1329,9 +1363,22 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                                                     <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID'
+                                                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                                                        : tx.paymentStatus?.toUpperCase() === 'PARTIAL'
+                                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                                            : tx.paymentStatus?.toUpperCase() === 'RECEIVED'
+                                                                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                                                                : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                                                         }`}>
-                                                        <div className={`w-1 h-1 rounded-full ${tx.paymentStatus?.toUpperCase() === 'PAID' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
+                                                        <div className={`w-1 h-1 rounded-full ${tx.paymentStatus?.toUpperCase() === 'PAID'
+                                                            ? 'bg-emerald-500'
+                                                            : tx.paymentStatus?.toUpperCase() === 'PARTIAL'
+                                                                ? 'bg-blue-500'
+                                                                : tx.paymentStatus?.toUpperCase() === 'RECEIVED'
+                                                                    ? 'bg-indigo-500'
+                                                                    : 'bg-orange-500'
+                                                            }`} />
                                                         {tx.paymentStatus || 'DUE'}
                                                     </span>
                                                 </td>

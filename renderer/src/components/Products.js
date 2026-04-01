@@ -790,9 +790,9 @@ const Products = ({ currentUser }) => {
                                          </div>
                                          <div className="space-y-2">
                                              <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Sell price *
+                                                 Sell price
                                              </label>
-                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell price" />
+                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell price" />
                                          </div>
                                          <div className="space-y-2">
                                              <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">

@@ -33,6 +33,7 @@ const Sales = ({ currentUser }) => {
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [notes, setNotes] = useState('');
     const [previousBalance, setPreviousBalance] = useState(0);
+    const [price, setPrice] = useState('');
     const [returnChange, setReturnChange] = useState(true);
     const [productSearch, setProductSearch] = useState('');
     const [isProductListVisible, setIsProductListVisible] = useState(false);
@@ -47,6 +48,7 @@ const Sales = ({ currentUser }) => {
     // Refs for keyboard navigation
     const customerRef = useRef(null);
     const productRef = useRef(null);
+    const priceRef = useRef(null);
     const qtyRef = useRef(null);
     const addBtnRef = useRef(null);
     const productListRef = useRef(null);
@@ -134,23 +136,25 @@ const Sales = ({ currentUser }) => {
             return;
         }
 
-        const existingItem = cart.find(item => item.productId === product.id);
+        const currentPrice = parseFloat(price) || 0;
+        const existingItem = cart.find(item => item.productId === product.id && item.price === currentPrice);
         if (existingItem) {
-            setCart(cart.map(item => item.productId === product.id ? {
+            setCart(cart.map(item => (item.productId === product.id && item.price === currentPrice) ? {
                 ...item,
                 quantity: item.quantity + parseInt(qty),
-                total: (item.quantity + parseInt(qty)) * product.sellPrice
+                total: (item.quantity + parseInt(qty)) * currentPrice
             } : item));
         } else {
             setCart([...cart, {
                 productId: product.id,
                 name: product.name,
-                price: product.sellPrice,
+                price: currentPrice,
                 quantity: parseInt(qty),
-                total: parseInt(qty) * product.sellPrice
+                total: parseInt(qty) * currentPrice
             }]);
         }
         setQty(1);
+        setPrice('');
         setSelectedProduct('');
         setProductSearch('');
 
@@ -165,9 +169,10 @@ const Sales = ({ currentUser }) => {
     const handleProductSelect = (product) => {
         setSelectedProduct(product.id);
         setProductSearch(product.name);
+        setPrice(product.sellPrice || '');
         setIsProductListVisible(false);
         setTimeout(() => {
-            qtyRef.current?.focus();
+            priceRef.current?.focus();
         }, 50);
     };
 
@@ -672,14 +677,14 @@ const Sales = ({ currentUser }) => {
 
                         {/* Left: Product Selection */}
                         <div className="flex-1 p-4 md:p-6 min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20">
-                            <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end mb-6">
-                                <div className="space-y-1.5">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end mb-6">
+                                <div className="space-y-1.5 md:col-span-2">
                                     <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Customer</label>
                                     <div className="relative">
-                                        <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                                        <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                         <select
                                             ref={customerRef}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none appearance-none cursor-pointer text-black dark:text-slate-100"
+                                            className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none appearance-none cursor-pointer text-black dark:text-slate-100"
                                             value={selectedCustomer}
                                             onChange={(e) => {
                                                 const cid = e.target.value;
@@ -711,15 +716,15 @@ const Sales = ({ currentUser }) => {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-1.5 md:col-span-4">
                                     <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Search product</label>
                                     <div className="relative">
-                                        <Package size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                                        <Package size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                                         <input
                                             ref={productRef}
                                             type="text"
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100"
-                                            placeholder="Search here..."
+                                            className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100"
+                                            placeholder="Search product..."
                                             value={productSearch}
                                             onChange={(e) => {
                                                 setProductSearch(e.target.value);
@@ -728,7 +733,6 @@ const Sales = ({ currentUser }) => {
                                             }}
                                             onFocus={() => setIsProductListVisible(true)}
                                             onBlur={() => {
-                                                // Delay blur to allow clicking on the list
                                                 setTimeout(() => setIsProductListVisible(false), 200);
                                             }}
                                             onKeyDown={(e) => {
@@ -751,7 +755,7 @@ const Sales = ({ currentUser }) => {
                                                         e.preventDefault();
                                                         handleProductSelect(filteredProducts[highlightedIndex]);
                                                     } else {
-                                                        handleKeyDown(e, qtyRef);
+                                                        handleKeyDown(e, priceRef);
                                                     }
                                                 } else if (e.key === 'Escape') {
                                                     setIsProductListVisible(false);
@@ -776,17 +780,15 @@ const Sales = ({ currentUser }) => {
                                                     >
                                                         <div>
                                                             <div className="font-semibold text-sm text-black dark:text-slate-100">{p.name}</div>
-                                                            <div className="text-sm text-black dark:text-slate-400 font-semibold tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            <div className="text-xs text-black dark:text-slate-400 font-semibold tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
                                                         </div>
                                                         <div className="font-semibold text-black dark:text-slate-200 text-sm">PKR {p.sellPrice}</div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-
-                                        {/* Product Hover Detail Card */}
                                         {isProductListVisible && hoveredProduct && (
-                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
+                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800">
                                                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
                                                     <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                                         <Package size={20} />
@@ -796,9 +798,7 @@ const Sales = ({ currentUser }) => {
                                                         <div className="text-sm text-black dark:text-slate-500 font-semibold tracking-tight">SKU: {hoveredProduct.sku || 'N/A'}</div>
                                                     </div>
                                                 </div>
-
                                                 <div className="space-y-4">
-                                                    {/* Attributes Grid */}
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
                                                             <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-0.5">Color</p>
@@ -819,10 +819,7 @@ const Sales = ({ currentUser }) => {
                                                             </p>
                                                         </div>
                                                     </div>
-
-                                                    {/* Pricing & Stock */}
                                                     <div className="space-y-2">
-
                                                         <div className="flex justify-between items-center py-1.5 border-b border-slate-50 dark:border-slate-800">
                                                             <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Sale price</span>
                                                             <span className="text-sm font-medium text-black dark:text-slate-100">PKR {hoveredProduct.sellPrice?.toLocaleString()}</span>
@@ -832,40 +829,51 @@ const Sales = ({ currentUser }) => {
                                                             <span className="text-sm font-medium text-black dark:text-slate-200">{hoveredProduct.stockQty} {hoveredProduct.unit}</span>
                                                         </div>
                                                     </div>
-
-                                                    {/* Footer Info */}
-                                                    <div className="flex justify-between items-center pt-2 text-sm font-semibold tracking-tight">
-                                                        <span className="text-black dark:text-slate-500">Brand: <span className="text-black dark:text-slate-200 font-medium">{hoveredProduct.brand?.name || 'Local'}</span></span>
-                                                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-blue-900/40 text-black dark:text-blue-400 rounded-md truncate max-w-[100px]">{hoveredProduct.category?.name}</span>
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-1.5 md:col-span-2">
+                                    <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Sell price</label>
+                                    <input
+                                        ref={priceRef}
+                                        type="number"
+                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none text-center text-black dark:text-slate-100"
+                                        value={price || ''}
+                                        placeholder="0.00"
+                                        onChange={(e) => setPrice(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                qtyRef.current?.focus();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5 md:col-span-2">
                                     <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Qty</label>
                                     <input
                                         ref={qtyRef}
                                         type="number"
                                         min="1"
-                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-semibold text-sm outline-none text-center text-black dark:text-slate-100"
+                                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-sm outline-none text-center text-black dark:text-slate-100"
                                         value={qty || ''}
                                         placeholder="0"
                                         onChange={(e) => setQty(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
-                                                addBtnRef.current?.focus();
+                                                addToCart();
                                             }
                                         }}
                                     />
                                 </div>
-                                <div>
+                                <div className="md:col-span-2">
                                     <button
                                         ref={addBtnRef}
                                         onClick={addToCart}
-                                        className="w-full py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 text-sm disabled:opacity-50 shadow-sm"
+                                        className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all active:scale-95 text-xs disabled:opacity-50 shadow-sm whitespace-nowrap"
                                     >
                                         Add to cart
                                     </button>
@@ -876,51 +884,67 @@ const Sales = ({ currentUser }) => {
                             <div className="flex-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0 transition-colors duration-300">
                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                     <table className="w-full text-left min-w-[600px]">
-                                    <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-sm font-semibold text-black dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                                        <tr>
-                                            <th className="px-6 py-4">Name</th>
-                                            <th className="px-6 py-4 text-center">Price</th>
-                                            <th className="px-6 py-4 text-center">Qty</th>
-                                            <th className="px-6 py-4 text-right">Total</th>
-                                            <th className="px-6 py-4 text-right"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                        {cart.map((item, idx) => (
-                                            <tr key={idx} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                                                <td className="px-6 py-4">
-                                                    <div className="font-semibold text-black dark:text-slate-100 text-sm">{item.name}</div>
-                                                    <div className="text-sm text-black dark:text-slate-400 font-semibold tracking-tight">SKU: {item.sku || 'N/A'}</div>
-                                                </td>
-                                                <td className="px-6 py-4 text-center font-medium text-black dark:text-slate-200 text-sm">PKR {(item.price || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="w-16 mx-auto px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-center font-medium text-sm text-black dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                                                        {item.quantity}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-semibold text-black dark:text-slate-200 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {cart.length === 0 && (
+                                        <thead className="bg-slate-50/80 dark:bg-slate-800/80 text-sm font-semibold text-black dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
                                             <tr>
-                                                <td colSpan="5" className="px-6 py-12 md:py-20 text-center">
-                                                    <div className="w-12 md:w-16 h-12 md:h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 dark:border-slate-700">
-                                                        <ShoppingCart size={24} className="text-slate-300 dark:text-slate-600" />
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Cart is empty</p>
-                                                </td>
+                                                <th className="px-6 py-4">Name</th>
+                                                <th className="px-6 py-4 text-center">Sell price</th>
+                                                <th className="px-6 py-4 text-center">Qty</th>
+                                                <th className="px-6 py-4 text-right">Total</th>
+                                                <th className="px-6 py-4 text-right"></th>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            {cart.map((item, idx) => (
+                                                <tr key={idx} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-semibold text-black dark:text-slate-100 text-sm">{item.name}</div>
+                                                        <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">SKU: {item.sku || 'N/A'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <input
+                                                            type="number"
+                                                            className="w-24 px-2 py-1 mx-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-center font-bold text-sm text-black dark:text-slate-200 outline-none focus:border-blue-500 transition-all"
+                                                            value={item.price || 0}
+                                                            onChange={(e) => {
+                                                                const newPrice = parseFloat(e.target.value) || 0;
+                                                                setCart(cart.map((c, i) => i === idx ? { ...c, price: newPrice, total: newPrice * c.quantity } : c));
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <input
+                                                            type="number"
+                                                            className="w-16 px-2 py-1 mx-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-center font-bold text-sm text-black dark:text-slate-200 outline-none focus:border-blue-500 transition-all"
+                                                            value={item.quantity || 1}
+                                                            onChange={(e) => {
+                                                                const newQty = parseInt(e.target.value) || 0;
+                                                                setCart(cart.map((c, i) => i === idx ? { ...c, quantity: newQty, total: c.price * newQty } : c));
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-bold text-black dark:text-slate-200 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {cart.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" className="px-6 py-12 md:py-20 text-center">
+                                                        <div className="w-12 md:w-16 h-12 md:h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-200 dark:border-slate-700">
+                                                            <ShoppingCart size={24} className="text-slate-300 dark:text-slate-600" />
+                                                        </div>
+                                                        <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Cart is empty</p>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                         {/* Right: Summary & Checkout */}
                         <div className="w-full lg:w-[400px] p-4 md:p-6 flex flex-col bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-slate-800 shrink-0 overflow-y-auto custom-scrollbar transition-colors duration-300 relative z-10">

@@ -1003,6 +1003,9 @@ app.post('/api/purchases', async (req, res) => {
     try {
         const { companyId, vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, discount, tax, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
 
+        // Normalize vendorId
+        const vid = (vendorId && vendorId !== "" && vendorId !== "null") ? vendorId : null;
+
         const finalTotal = parseFloat(totalAmount);
         const finalPaid = parseFloat(paidAmount) || 0;
 
@@ -1039,7 +1042,7 @@ app.post('/api/purchases', async (req, res) => {
                 await tx.purchase.update({
                     where: { id: existingPurchase.id },
                     data: {
-                        vendorId,
+                        vendorId: vid,
                         totalAmount: finalTotal,
                         discount: parseFloat(discount) || 0,
                         tax: parseFloat(tax) || 0,
@@ -1071,15 +1074,15 @@ app.post('/api/purchases', async (req, res) => {
                 }
 
                 // 5. Apply new vendor balance
-                if (vendorId) {
+                if (vid) {
                     const newBal = finalTotal - finalPaid;
                     if (newBal !== 0) {
-                        const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+                        const vendor = await tx.vendor.findUnique({ where: { id: vid } });
                         const currentBalance = vendor?.balance || 0;
                         const actualIncrement = newBal < 0 ? Math.max(newBal, -currentBalance) : newBal;
                         if (actualIncrement !== 0) {
                             await tx.vendor.update({
-                                where: { id: vendorId },
+                                where: { id: vid },
                                 data: { balance: { increment: actualIncrement } }
                             });
                         }
@@ -1095,7 +1098,7 @@ app.post('/api/purchases', async (req, res) => {
             const p = await tx.purchase.create({
                 data: {
                     companyId,
-                    vendorId,
+                    vendorId: vid,
                     invoiceNo,
                     totalAmount: finalTotal,
                     discount: parseFloat(discount) || 0,
@@ -1125,13 +1128,13 @@ app.post('/api/purchases', async (req, res) => {
             }
 
             const balanceToIncr = finalTotal - finalPaid;
-            if (balanceToIncr !== 0) {
-                const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+            if (vid && balanceToIncr !== 0) {
+                const vendor = await tx.vendor.findUnique({ where: { id: vid } });
                 const currentBalance = vendor?.balance || 0;
                 const actualIncrement = balanceToIncr < 0 ? Math.max(balanceToIncr, -currentBalance) : balanceToIncr;
                 if (actualIncrement !== 0) {
                     await tx.vendor.update({
-                        where: { id: vendorId },
+                        where: { id: vid },
                         data: { balance: { increment: actualIncrement } }
                     });
                 }
@@ -1194,6 +1197,9 @@ app.put('/api/purchases/:id', async (req, res) => {
         const { vendorId, invoiceNo, totalAmount, paidAmount, shippingCost, discount, tax, paymentMethod, paymentStatus, dueDate, notes, items } = req.body;
         const purchaseId = req.params.id;
 
+        // Normalize vendorId
+        const vid = (vendorId && vendorId !== "" && vendorId !== "null") ? vendorId : null;
+
         const finalTotal = parseFloat(totalAmount);
         const finalPaid = parseFloat(paidAmount) || 0;
 
@@ -1235,7 +1241,9 @@ app.put('/api/purchases/:id', async (req, res) => {
             };
 
             // Only include optional fields if they have values
-            if (vendorId) updateData.vendorId = vendorId;
+            if (vid) updateData.vendorId = vid;
+            else updateData.vendorId = null;
+
             if (invoiceNo) updateData.invoiceNo = invoiceNo;
             if (notes) updateData.notes = notes;
 
@@ -1293,16 +1301,16 @@ app.put('/api/purchases/:id', async (req, res) => {
 
             // 6. Apply New Vendor Balance (Increase what we owe)
             // 6. Apply New Vendor Balance (Increase what we owe)
-            if (vendorId) {
+            if (vid) {
                 const newBalanceChange = finalTotal - finalPaid;
                 if (newBalanceChange !== 0) {
-                    const vendor = await tx.vendor.findUnique({ where: { id: vendorId } });
+                    const vendor = await tx.vendor.findUnique({ where: { id: vid } });
                     const currentBalance = vendor?.balance || 0;
                     const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
 
                     if (actualIncrement !== 0) {
                         await tx.vendor.update({
-                            where: { id: vendorId },
+                            where: { id: vid },
                             data: { balance: { increment: actualIncrement } }
                         });
                     }
@@ -2036,6 +2044,9 @@ app.post('/api/sales', async (req, res) => {
             paymentMethod, paymentType, paymentStatus, amountPaid, paidAmount, notes, items
         } = req.body;
 
+        // Normalize customerId
+        const cid = (customerId && customerId !== "" && customerId !== "null") ? customerId : null;
+
         const finalGrandTotal = parseFloat(grandTotal || 0);
         const finalPaidAmount = parseFloat(amountPaid || paidAmount || 0);
         const finalPaymentType = paymentType || paymentMethod || 'CASH';
@@ -2074,7 +2085,7 @@ app.post('/api/sales', async (req, res) => {
                 await tx.sale.update({
                     where: { id: existingSale.id },
                     data: {
-                        customerId,
+                        customerId: cid,
                         subTotal: parseFloat(subTotal),
                         discount: parseFloat(discount) || 0,
                         tax: parseFloat(tax) || 0,
@@ -2106,15 +2117,15 @@ app.post('/api/sales', async (req, res) => {
                 }
 
                 // 5. Apply new customer balance
-                if (customerId) {
+                if (cid) {
                     const newBalanceChange = finalGrandTotal - finalPaidAmount;
                     if (newBalanceChange !== 0) {
-                        const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                        const customer = await tx.customer.findUnique({ where: { id: cid } });
                         const currentBalance = customer?.balance || 0;
                         const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
                         if (actualIncrement !== 0) {
                             await tx.customer.update({
-                                where: { id: customerId },
+                                where: { id: cid },
                                 data: { balance: { increment: actualIncrement } }
                             });
                         }
@@ -2130,7 +2141,7 @@ app.post('/api/sales', async (req, res) => {
             const s = await tx.sale.create({
                 data: {
                     companyId,
-                    customerId,
+                    customerId: cid,
                     userId,
                     invoiceNo,
                     subTotal: parseFloat(subTotal),
@@ -2162,10 +2173,10 @@ app.post('/api/sales', async (req, res) => {
             }
 
             // Update Customer Balance
-            if (customerId) {
+            if (cid) {
                 const balanceChange = finalGrandTotal - finalPaidAmount;
                 if (balanceChange !== 0) {
-                    const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                    const customer = await tx.customer.findUnique({ where: { id: cid } });
                     const currentBalance = customer?.balance || 0;
                     const actualIncrement = balanceChange < 0
                         ? Math.max(balanceChange, -currentBalance)
@@ -2173,7 +2184,7 @@ app.post('/api/sales', async (req, res) => {
 
                     if (actualIncrement !== 0) {
                         await tx.customer.update({
-                            where: { id: customerId },
+                            where: { id: cid },
                             data: { balance: { increment: actualIncrement } }
                         });
                     }
@@ -2241,6 +2252,10 @@ app.put('/api/sales/:id', async (req, res) => {
         } = req.body;
 
         const saleId = req.params.id;
+
+        // Normalize customerId
+        const cid = (customerId && customerId !== "" && customerId !== "null") ? customerId : null;
+
         const finalGrandTotal = parseFloat(grandTotal || 0);
         const finalPaidAmount = parseFloat(amountPaid || paidAmount || 0);
         const finalPaymentType = paymentType || paymentMethod || 'CASH';
@@ -2277,7 +2292,7 @@ app.put('/api/sales/:id', async (req, res) => {
             await tx.sale.update({
                 where: { id: saleId },
                 data: {
-                    customerId,
+                    customerId: cid,
                     subTotal: parseFloat(subTotal),
                     discount: parseFloat(discount) || 0,
                     tax: parseFloat(tax) || 0,
@@ -2313,16 +2328,16 @@ app.put('/api/sales/:id', async (req, res) => {
             }
 
             // 7. Apply New Customer Balance (Increase by new amount owed)
-            if (customerId) {
+            if (cid) {
                 const newBalanceChange = finalGrandTotal - finalPaidAmount;
                 if (newBalanceChange !== 0) {
-                    const customer = await tx.customer.findUnique({ where: { id: customerId } });
+                    const customer = await tx.customer.findUnique({ where: { id: cid } });
                     const currentBalance = customer?.balance || 0;
                     const actualIncrement = newBalanceChange < 0 ? Math.max(newBalanceChange, -currentBalance) : newBalanceChange;
 
                     if (actualIncrement !== 0) {
                         await tx.customer.update({
-                            where: { id: customerId },
+                            where: { id: cid },
                             data: { balance: { increment: actualIncrement } }
                         });
                     }
