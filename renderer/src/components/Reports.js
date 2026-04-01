@@ -415,6 +415,7 @@ const Reports = ({ currentUser }) => {
                 title: 'Profit Report', icon: CreditCard, color: '#059669', dataKey: 'profit',
                 miniStats: [
                     { label: 'Total revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Sales returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: RotateCcw, color: 'text-rose-600' },
                     { label: 'Gross profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
                     { label: 'Operating costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-emerald-600' },
                     { label: 'Net profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },

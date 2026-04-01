@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, TrendingUp, FolderKanban, Wallet, UserPlus } from 'lucide-react';
+import { MoreVertical, TrendingUp, FolderKanban, Wallet, UserPlus, RotateCcw } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import {
     AreaChart,
@@ -119,6 +119,10 @@ const PerformanceChart = ({ data }) => {
                             <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
                             <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                         </linearGradient>
+                        <linearGradient id="colorReturns" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                     <XAxis
@@ -176,6 +180,17 @@ const PerformanceChart = ({ data }) => {
                         dot={false}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
+                    <Area
+                        type="monotone"
+                        dataKey="returns"
+                        name="Sales Returns"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorReturns)"
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
                 </AreaChart>
             </ResponsiveContainer>
         </div>
@@ -183,7 +198,7 @@ const PerformanceChart = ({ data }) => {
 };
 
 const Dashboard = ({ currentUser }) => {
-    const [summary, setSummary] = useState({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+    const [summary, setSummary] = useState({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, totalSalesReturns: 0, recentDays: [] });
     const [recentSales, setRecentSales] = useState([]);
     const [topCustomers, setTopCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -210,7 +225,7 @@ const Dashboard = ({ currentUser }) => {
                 window.electronAPI.getCustomers(currentUser.company_id)
             ]);
 
-            const summaryData = (reportData && reportData.success !== false) ? reportData : { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] };
+            const summaryData = (reportData && reportData.success !== false) ? reportData : { totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, totalSalesReturns: 0, recentDays: [] };
             setSummary(summaryData);
             setRecentSales(Array.isArray(salesData) ? salesData.slice(0, 5) : []);
             setTopCustomers(Array.isArray(customersData) ? customersData.slice(0, 4) : []);
@@ -221,7 +236,7 @@ const Dashboard = ({ currentUser }) => {
 
         } catch (err) {
             console.error('Error loading dashboard:', err);
-            setSummary({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, recentDays: [] });
+            setSummary({ totalSales: 0, totalPurchases: 0, totalExpenses: 0, netProfit: 0, totalSalesReturns: 0, recentDays: [] });
             setRecentSales([]);
             setTopCustomers([]);
         }
@@ -278,7 +293,7 @@ const Dashboard = ({ currentUser }) => {
         </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 <StatCard
                     title="Total Sales"
                     value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
@@ -305,6 +320,15 @@ const Dashboard = ({ currentUser }) => {
                     percentage={summary.totalExpenses > 0 ? 100 : 0}
                     color="#845EF7"
                     icon={Wallet}
+                />
+                <StatCard
+                    title="Sales Return"
+                    value={`PKR ${summary.totalSalesReturns?.toLocaleString() ?? '0'}`}
+                    change="Auto"
+                    changeType="down"
+                    percentage={summary.totalSalesReturns > 0 ? 100 : 0}
+                    color="#FF6B6B"
+                    icon={RotateCcw}
                 />
                 <StatCard
                     title="Net Profit"
@@ -334,6 +358,10 @@ const Dashboard = ({ currentUser }) => {
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                 <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Profit</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Returns</span>
                             </div>
                         </div>
                     </div>

@@ -3316,8 +3316,8 @@ ipcMain.handle("get-report-summary", async (e, params) => {
                 expenses: dailyOps,
                 salaries: dSal?.t || 0,
                 cogs: dCogsVal,
-                returns: dailyReturns,
-                profit: ((dS?.t || 0) - (dailyReturns)) - (dailyOps + dCogsVal),
+                returns: dSR?.t || 0,
+                profit: ((dS?.t || 0) - (dSR?.t || 0)) - (dailyOps + dCogsVal),
                 payables: dPay?.t || 0,
                 receivables: dRec?.t || 0,
                 inventory: dInvVal?.cost_val || 0
