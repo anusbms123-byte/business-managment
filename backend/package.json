@@ -1,6 +1,6 @@
 {
   "name": "BizNex",
-  "version": "1.0.59",
+  "version": "1.0.60",
   "description": "Business Management Desktop Application",
   "main": "main.js",
   "author": "Huzaifa",
@@ -59,8 +59,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "huzaifabusiness80-droid",
-        "repo": "businessdevelopment"
+        "owner": "anusbms123-byte",
+        "repo": "business-managment"
       }
     ]
   }
