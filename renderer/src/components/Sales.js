@@ -196,13 +196,13 @@ const Sales = ({ currentUser }) => {
 
     // invoiceTotal = The actual total of the current sale items/costs
     const invoiceTotal = subTotal + (Number(shippingCost) || 0) + taxValue - discountValue;
-    
+
     // grandTotal = For UI display of the invoice itself
     const grandTotal = invoiceTotal;
 
     // netBalance = Customer's final balance (Previous + This Sale - Paid)
-    const netBalance = returnChange ? 
-        Math.max(0, (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0)) : 
+    const netBalance = returnChange ?
+        Math.max(0, (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0)) :
         (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0);
 
     // Change should only be offered if the payment exceeds BOTH the invoice and ANY previous debt
@@ -238,8 +238,8 @@ const Sales = ({ currentUser }) => {
         setPaymentMethod(sale.paymentMethod || sale.payment_method || 'CASH');
         setNotes(sale.notes || '');
 
-        const cust = customers.find(c => 
-            String(c.id) === String(cid) || 
+        const cust = customers.find(c =>
+            String(c.id) === String(cid) ||
             (c.global_id && String(c.global_id) === String(cid))
         );
 

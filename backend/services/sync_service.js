@@ -940,6 +940,9 @@ class SyncService {
                     payload.discount = parseFloat(record.discount ?? 0);
                     payload.tax = parseFloat(record.tax_amount ?? 0);
                     payload.shippingCost = parseFloat(record.shipping_cost ?? 0);
+                    payload.paymentMethod = record.payment_method || "CASH";
+                    payload.paymentStatus = record.payment_status || "PAID";
+                    payload.notes = record.notes || "";
                     const rawDate = record.sale_date || record.date;
                     payload.date = rawDate ? new Date(rawDate).toISOString() : new Date().toISOString();
 

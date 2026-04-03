@@ -134,6 +134,56 @@ async function recordDeletion(tableName, globalId) {
     }
 }
 
+// Helper: Automatically mark previous DUE/PARTIAL sales as PAID if customer balance is cleared
+async function checkAndMarkSalesAsPaid(customerId) {
+    if (!customerId) return;
+    try {
+        const customer = await db.asyncGet("SELECT current_balance, global_id FROM customers WHERE id = ? OR global_id = ?", [customerId, customerId]);
+        if (customer && (customer.current_balance || 0) <= 0) {
+            const now = new Date().toISOString();
+            // Find all possible representations of this customer's ID (local ID and Global ID)
+            const customerLocalId = await db.asyncGet("SELECT id FROM customers WHERE id = ? OR global_id = ?", [customerId, customerId]);
+            const localIdStr = customerLocalId ? String(customerLocalId.id) : null;
+            const globalId = customer.global_id;
+
+            await db.asyncRun(
+                `UPDATE sales SET payment_status = 'PAID', sync_status = 'pending', updated_at = ? 
+                 WHERE (customer_id = ? OR (customer_id = ? AND ? IS NOT NULL)) 
+                 AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`,
+                [now, localIdStr, globalId, globalId]
+            );
+            console.log(`[PAYMENT-SYNC] Auto-marked sales for customer ${customerId} as PAID (Balance: ${customer.current_balance})`);
+        }
+    } catch (err) {
+        console.error("[PAYMENT-SYNC] Error marking sales as paid:", err.message);
+    }
+}
+
+// Helper: Automatically mark previous DUE/PARTIAL purchases as RECEIVED if vendor balance is cleared
+async function checkAndMarkPurchasesAsReceived(vendorId) {
+    if (!vendorId) return;
+    try {
+        const vendor = await db.asyncGet("SELECT current_balance, global_id FROM vendors WHERE id = ? OR global_id = ?", [vendorId, vendorId]);
+        if (vendor && (vendor.current_balance || 0) <= 0) {
+            const now = new Date().toISOString();
+            // Find all possible representations of this vendor's ID (local ID and Global ID)
+            const vendorLocalId = await db.asyncGet("SELECT id FROM vendors WHERE id = ? OR global_id = ?", [vendorId, vendorId]);
+            const localIdStr = vendorLocalId ? String(vendorLocalId.id) : null;
+            const globalId = vendor.global_id;
+
+            await db.asyncRun(
+                `UPDATE purchases SET payment_status = 'RECEIVED', sync_status = 'pending', updated_at = ? 
+                 WHERE (vendor_id = ? OR (vendor_id = ? AND ? IS NOT NULL)) 
+                 AND (LOWER(payment_status) = 'due' OR LOWER(payment_status) = 'partial')`,
+                [now, localIdStr, globalId, globalId]
+            );
+            console.log(`[PURCHASE-SYNC] Auto-marked purchases for vendor ${vendorId} as RECEIVED (Balance: ${vendor.current_balance})`);
+        }
+    } catch (err) {
+        console.error("[PURCHASE-SYNC] Error marking purchases as received:", err.message);
+    }
+}
+
 // Global variable to track currently logged-in company for auto-sync (undefined = not logged in, null = Super Admin)
 let currentLoggedCompany = undefined;
 let currentLoggedRole = null;
@@ -1306,6 +1356,7 @@ ipcMain.handle("add-sale", async (e, data) => {
         if (customer_id) {
             const balanceChange = grand_total - amount_paid;
             await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [balanceChange, customer_id, customer_id]);
+            await checkAndMarkSalesAsPaid(customer_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -1380,6 +1431,7 @@ ipcMain.handle("update-sale", async (e, data) => {
         if (customer_id) {
             const newDiff = grand_total - amount_paid;
             await db.asyncRun("UPDATE customers SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, new Date().toISOString(), customer_id, customer_id]);
+            await checkAndMarkSalesAsPaid(customer_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -1414,6 +1466,7 @@ ipcMain.handle("delete-sale", async (e, id) => {
         if (sale.customer_id) {
             const diff = sale.grand_total - sale.amount_paid;
             await db.asyncRun("UPDATE customers SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, new Date().toISOString(), sale.customer_id, sale.customer_id]);
+            await checkAndMarkSalesAsPaid(sale.customer_id);
         }
 
         // 3. Mark Sale as Deleted
@@ -1537,6 +1590,11 @@ ipcMain.handle("update-customer", async (e, data) => {
         params.push(id, id);
 
         await db.asyncRun(query, params);
+
+        if (balance !== undefined) {
+            await checkAndMarkSalesAsPaid(id);
+        }
+
         syncService.syncPendingRecords('customers', '/customers');
         return { success: true, message: "Customer updated locally." };
     } catch (err) {
@@ -1667,6 +1725,11 @@ ipcMain.handle("update-vendor", async (e, data) => {
         params.push(id, id);
 
         await db.asyncRun(query, params);
+
+        if (bal !== undefined && bal !== "") {
+            await checkAndMarkPurchasesAsReceived(id);
+        }
+
         syncService.syncPendingRecords('vendors', '/vendors');
         return { success: true, message: "Vendor updated locally." };
     } catch (err) {
@@ -1852,7 +1915,7 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
     try {
         const finalCid = companyId || currentLoggedCompany;
         const ids = await resolveCompanyIds(finalCid);
-        
+
         // Use COALESCE for robustness against different schema versions (payment_status vs status)
         const query = `
             SELECT p.*, 
@@ -1965,6 +2028,7 @@ ipcMain.handle("add-purchase", async (e, data) => {
         if (vendor_id) {
             const balanceChange = total_amount - paid_amount;
             await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=? OR global_id=?`, [balanceChange, vendor_id, vendor_id]);
+            await checkAndMarkPurchasesAsReceived(vendor_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -2041,6 +2105,7 @@ ipcMain.handle("update-purchase", async (e, data) => {
         if (vendor_id) {
             const newDiff = total_amount - paid_amount;
             await db.asyncRun("UPDATE vendors SET current_balance = current_balance + ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [newDiff, new Date().toISOString(), vendor_id, vendor_id]);
+            await checkAndMarkPurchasesAsReceived(vendor_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -2075,6 +2140,7 @@ ipcMain.handle("delete-purchase", async (e, id) => {
         if (purchase.vendor_id) {
             const diff = purchase.total_amount - purchase.paid_amount;
             await db.asyncRun("UPDATE vendors SET current_balance = current_balance - ?, sync_status='pending', updated_at=? WHERE id=? OR global_id=?", [diff, new Date().toISOString(), purchase.vendor_id, purchase.vendor_id]);
+            await checkAndMarkPurchasesAsReceived(purchase.vendor_id);
         }
 
         // 3. Mark Purchase as Deleted
@@ -2175,6 +2241,7 @@ ipcMain.handle("add-sale-return", async (e, data) => {
         // Update Customer Balance (Decrease Receivable)
         if (customer_id) {
             await db.asyncRun(`UPDATE customers SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
+            await checkAndMarkSalesAsPaid(customer_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -2308,6 +2375,7 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
         // Update Vendor Balance (Decrease Payable)
         if (vendor_id) {
             await db.asyncRun(`UPDATE vendors SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
+            await checkAndMarkPurchasesAsReceived(vendor_id);
         }
 
         await db.asyncRun("COMMIT");
@@ -2342,6 +2410,7 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
         // 2. Reverse Vendor Balance (Increase Payable, as we are cancelling the debit note)
         if (vendor_id) {
             await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
+            await checkAndMarkPurchasesAsReceived(vendor_id);
         }
 
         // 3. Mark as Deleted
