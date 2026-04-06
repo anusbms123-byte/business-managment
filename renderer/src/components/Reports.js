@@ -7,7 +7,7 @@ import {
     Calendar, Download, ChevronRight,
     TrendingDown, Activity, Layers,
     Briefcase, AlertTriangle, CheckCircle2, Clock, Trash2, X,
-    Zap, Coffee, Home, Truck, FileText
+    Zap, Coffee, Home, Truck, FileText, ShoppingBag
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
@@ -58,6 +58,7 @@ const Reports = ({ currentUser }) => {
     const [vendors, setVendors] = useState([]);
     const [categories, setCategories] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [brands, setBrands] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [selectedEmployee, setSelectedEmployee] = useState('all');
     const [selectedEmployeeStatus, setSelectedEmployeeStatus] = useState('all'); // all, active, inactive
@@ -66,6 +67,7 @@ const Reports = ({ currentUser }) => {
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
     // Inventory Filters
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+    const [selectedBrandId, setSelectedBrandId] = useState('all');
     const [selectedStockStatus, setSelectedStockStatus] = useState('all'); // all, low, out, expired
     // Expense Filters
     const [selectedExpenseCategory, setSelectedExpenseCategory] = useState('all');
@@ -74,6 +76,7 @@ const Reports = ({ currentUser }) => {
     const [selectedReturnType, setSelectedReturnType] = useState('all'); // all, sales, purchases
     // Track previous activeModule to clear filters when switching
     const [prevActiveModule, setPrevActiveModule] = useState(null);
+    const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
 
     // Date Filtering
     const now = new Date();
@@ -109,6 +112,16 @@ const Reports = ({ currentUser }) => {
             setCustomers(data || []);
         } catch (err) {
             console.error('Error loading customers:', err);
+        }
+    };
+
+    const loadBrands = async () => {
+        if (!currentUser?.company_id) return;
+        try {
+            const data = await window.electronAPI.getBrands(currentUser.company_id);
+            setBrands(data || []);
+        } catch (err) {
+            console.error('Error loading brands:', err);
         }
     };
 
@@ -173,6 +186,7 @@ const Reports = ({ currentUser }) => {
                 vendorId: (activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'netprofit') ? selectedVendor : undefined,
                 paymentStatus: (activeModule === 'sales' || activeModule === 'purchases' || activeModule === 'suppliers' || activeModule === 'customers' || activeModule === 'netprofit') ? selectedPaymentStatus : undefined,
                 categoryId: activeModule === 'inventory' ? selectedCategoryId : undefined,
+                brandId: (activeModule === 'inventory' || activeModule === 'sales' || activeModule === 'purchases') ? selectedBrandId : undefined,
                 stockStatus: activeModule === 'inventory' ? selectedStockStatus : undefined,
                 expenseCategory: (activeModule === 'expenses' || activeModule === 'netprofit') ? selectedExpenseCategory : undefined,
                 returnType: activeModule === 'returns' ? selectedReturnType : undefined,
@@ -190,6 +204,7 @@ const Reports = ({ currentUser }) => {
         loadCustomers();
         loadVendors();
         loadCategories();
+        loadBrands();
         loadEmployees();
     }, [currentUser]);
 
@@ -200,6 +215,7 @@ const Reports = ({ currentUser }) => {
             setSelectedVendor('all');
             setSelectedPaymentStatus('all');
             setSelectedCategoryId('all');
+            setSelectedBrandId('all');
             setSelectedStockStatus('all');
             setSelectedExpenseCategory('all');
             setSelectedReturnType('all');
@@ -214,7 +230,7 @@ const Reports = ({ currentUser }) => {
         } else {
             loadDashboardReport();
         }
-    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedStockStatus, selectedExpenseCategory, selectedReturnType, selectedEmployee, selectedEmployeeStatus, dateRange.start, dateRange.end]);
+    }, [currentUser, overviewFilter, activeModule, selectedCustomer, selectedVendor, selectedPaymentStatus, selectedCategoryId, selectedBrandId, selectedStockStatus, selectedExpenseCategory, selectedReturnType, selectedEmployee, selectedEmployeeStatus, dateRange.start, dateRange.end]);
 
     const handleBack = () => {
         setActiveModule(null);
@@ -223,6 +239,7 @@ const Reports = ({ currentUser }) => {
         setSelectedVendor('all');
         setSelectedPaymentStatus('all');
         setSelectedCategoryId('all');
+        setSelectedBrandId('all');
         setSelectedStockStatus('all');
         setPrevActiveModule(null);
     };
@@ -282,11 +299,11 @@ const Reports = ({ currentUser }) => {
                 <ReportCard title="Sales" value={`PKR ${summary?.totalSales?.toLocaleString() ?? '0'}`} subValue={`${summary?.salesCount ?? 0} Sales`} icon={DollarSign} colorClass="border-l-emerald-600" onClick={() => setActiveModule('sales')} />
                 <ReportCard title="Purchases" value={`PKR ${summary?.totalPurchases?.toLocaleString() ?? '0'}`} subValue={`${summary?.purchaseCount ?? 0} Orders`} icon={ShoppingCart} colorClass="border-l-emerald-600" onClick={() => setActiveModule('purchases')} />
                 <ReportCard title="Inventory" value={`PKR ${summary?.inventoryValuationCost?.toLocaleString() ?? '0'}`} subValue={`${summary?.lowStockCount ?? 0} Alerts`} icon={Package} colorClass="border-l-emerald-600" onClick={() => setActiveModule('inventory')} />
+                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-emerald-600" onClick={() => setActiveModule('customers')} />
+                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-emerald-600" onClick={() => setActiveModule('suppliers')} />
+                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-600" onClick={() => setActiveModule('hrm')} />
                 <ReportCard title="Expenses" value={`PKR ${summary?.totalExpenses?.toLocaleString() ?? '0'}`} subValue={`${summary?.expenseCount ?? 0} Expenses`} icon={TrendingUp} colorClass="border-l-emerald-600" onClick={() => setActiveModule('expenses')} />
                 <ReportCard title="Returns" value={`PKR ${summary?.totalReturns?.toLocaleString() ?? '0'}`} subValue={`${summary?.returnCount ?? 0} Returns`} icon={RotateCcw} colorClass="border-l-emerald-600" onClick={() => setActiveModule('returns')} />
-                <ReportCard title="Suppliers" value={`PKR ${summary?.totalPayables?.toLocaleString() ?? '0'}`} subValue="Payables" icon={Factory} colorClass="border-l-emerald-600" onClick={() => setActiveModule('suppliers')} />
-                <ReportCard title="Customers" value={`PKR ${summary?.totalReceivables?.toLocaleString() ?? '0'}`} subValue="Receivables" icon={Users} colorClass="border-l-emerald-600" onClick={() => setActiveModule('customers')} />
-                <ReportCard title="HRM" value={`PKR ${summary?.totalSalaries?.toLocaleString() ?? '0'}`} subValue="Payroll" icon={Users2} colorClass="border-l-emerald-600" onClick={() => setActiveModule('hrm')} />
                 <ReportCard title="Net Profit" value={`PKR ${summary?.netProfit?.toLocaleString() ?? '0'}`} subValue="Profit/Loss" icon={CreditCard} colorClass="border-l-emerald-600" onClick={() => setActiveModule('netprofit')} />
             </div>
 
@@ -302,8 +319,8 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total revenue', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
                     { label: 'Cost of items', value: `PKR ${(summary?.totalCOGS || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-600' },
                     { label: 'Gross profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
-                    { label: 'Total invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-emerald-600' },
-                    { label: 'Avg order value', value: `PKR ${(Math.round(summary?.totalSales / (summary?.salesCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' }
+                    { label: 'Net profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
+                    { label: 'Total invoices', value: `${summary?.salesCount || 0} Orders`, icon: Layers, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Customer', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Sales Ledger',
@@ -315,12 +332,11 @@ const Reports = ({ currentUser }) => {
                 miniStats: [
                     { label: 'Total purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
                     { label: 'Pending bills', value: `PKR ${(summary?.totalPayablesFromPeriod ?? summary?.totalPayables ?? 0).toLocaleString()}`, icon: AlertTriangle, color: 'text-emerald-600' },
-                    { label: 'Total suppliers', value: `${summary?.vendorCount || 0} Suppliers`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Stock value (In)', value: `PKR ${(summary?.inventoryValuationCost || 0).toLocaleString()}`, icon: Package, color: 'text-emerald-600' }
+                    { label: 'Sales potential', value: `PKR ${(summary?.purchaseSalesPotential || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Invoice', 'Supplier', 'Products', 'Items', 'Total', 'Status'],
                 tableTitle: 'Purchase Log',
-                cols: 4,
+                cols: 3,
                 color: '#059669'
             },
             inventory: {
@@ -351,7 +367,7 @@ const Reports = ({ currentUser }) => {
                 ],
                 tableCols: selectedExpenseCategory === 'Staff Payroll'
                     ? ['Date', 'Staff Name', 'Designation', 'Basic Pay', 'Bonus/OT', 'Deduction', 'Net Paid']
-                    : ['Date', 'Title', 'Category', 'Description', 'Amount'],
+                    : ['Date', 'Title', 'Category', 'Description', 'Amount', 'Status'],
                 tableTitle: selectedExpenseCategory === 'Staff Payroll' ? 'Staff Payroll Audit' : 'Expense Journal',
                 cols: 3,
                 color: '#059669'
@@ -372,29 +388,27 @@ const Reports = ({ currentUser }) => {
             suppliers: {
                 title: 'Supplier Report', icon: Factory, color: '#059669', dataKey: 'purchases',
                 miniStats: [
-                    { label: 'Total payables', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
+                    { label: 'Total Purchases', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingBag, color: 'text-emerald-600' },
+                    { label: 'Payables Due', value: `PKR ${(summary?.totalPayables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
                     { label: 'Supplier count', value: `${summary?.vendorCount || 0} Partners`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Avg payable', value: `PKR ${(Math.round(summary?.totalPayables / (summary?.vendorCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' },
-                    { label: 'Total purchased', value: `PKR ${(summary?.totalPurchases || 0).toLocaleString()}`, icon: ShoppingCart, color: 'text-emerald-600' },
-                    { label: 'Active balance', value: summary?.totalPayables > 0 ? "Pending" : "Clear", icon: AlertTriangle, color: 'text-emerald-600' }
+                    { label: 'Active balance', value: (summary?.totalPayables || 0) > 0 ? "Pending Dues" : "Clear", icon: (summary?.totalPayables || 0) > 0 ? AlertTriangle : CheckCircle2, color: (summary?.totalPayables || 0) > 0 ? 'text-amber-600' : 'text-emerald-600' }
                 ],
                 tableCols: ['Supplier Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
                 tableTitle: 'Supplier Ledger Balance',
-                cols: 5,
+                cols: 4,
                 color: '#059669'
             },
             customers: {
                 title: 'Customer Report', icon: Users, color: '#059669', dataKey: 'sales',
                 miniStats: [
-                    { label: 'Total receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
-                    { label: 'Customer count', value: `${summary?.customerCount || 0}`, icon: Users, color: 'text-emerald-600' },
-                    { label: 'Avg receivable', value: `PKR ${(Math.round(summary?.totalReceivables / (summary?.customerCount || 1)) || 0).toLocaleString()}`, icon: Activity, color: 'text-emerald-600' },
-                    { label: 'Total sales to customers', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
-                    { label: 'Active balance', value: summary?.totalReceivables > 0 ? "Outstanding" : "Clear", icon: CheckCircle2, color: 'text-emerald-600' }
+                    { label: 'Total Sales', value: `PKR ${(summary?.totalSales || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
+                    { label: 'Total Receivables', value: `PKR ${(summary?.totalReceivables || 0).toLocaleString()}`, icon: CreditCard, color: 'text-emerald-600' },
+                    { label: 'Active balance', value: (summary?.totalReceivables || 0) > 0 ? "Outstanding" : "Clear", icon: (summary?.totalReceivables || 0) > 0 ? AlertTriangle : CheckCircle2, color: (summary?.totalReceivables || 0) > 0 ? 'text-indigo-600' : 'text-emerald-600' },
+                    { label: 'Customer count', value: `${summary?.customerCount || 0} Clients`, icon: Users, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Customer Name', 'Phone', 'Address', 'Balance Owed', 'Status'],
                 tableTitle: 'Customer Ledger Balance',
-                cols: 5,
+                cols: 4,
                 color: '#059669'
             },
             hrm: {
@@ -406,7 +420,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Total staff', value: `${summary?.totalEmployees || 0} Records`, icon: Users, color: 'text-emerald-600' },
                     { label: 'Status', value: summary?.employeeCount > 0 ? "Active" : "None", icon: Briefcase, color: 'text-emerald-600' }
                 ],
-                tableCols: ['Staff Name', 'Designation', 'Voucher #', 'Paid Date', 'Amount'],
+                tableCols: ['Staff Name', 'Designation', 'Status', 'Paid Date', 'Basic Pay', 'Bonus/OT', 'Deduction', 'Net Paid'],
                 tableTitle: 'Payroll History',
                 cols: 5,
                 color: '#059669'
@@ -418,8 +432,7 @@ const Reports = ({ currentUser }) => {
                     { label: 'Sales returns', value: `PKR ${(summary?.totalSalesReturns || 0).toLocaleString()}`, icon: RotateCcw, color: 'text-rose-600' },
                     { label: 'Gross profit', value: `PKR ${(summary?.grossProfit || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-600' },
                     { label: 'Operating costs', value: `PKR ${(summary?.operatingExpenses || 0).toLocaleString()}`, icon: TrendingDown, color: 'text-emerald-600' },
-                    { label: 'Net profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' },
-                    { label: 'Profit margin', value: `${summary?.totalSales > 0 ? Math.round((summary?.netProfit / (summary?.totalSales || 1)) * 100) : 0}%`, icon: Activity, color: 'text-emerald-600' }
+                    { label: 'Net profit', value: `PKR ${(summary?.netProfit || 0).toLocaleString()}`, icon: Briefcase, color: 'text-emerald-600' }
                 ],
                 tableCols: ['Date', 'Total Sales', 'COGS', 'Expenses', 'Net Profit'],
                 tableTitle: 'Profitability Ledger',
@@ -517,19 +530,9 @@ const Reports = ({ currentUser }) => {
                                                 {selectedPaymentStatus === 'paid' ? 'Paid' : selectedPaymentStatus === 'partial' ? 'Partial' : selectedPaymentStatus === 'received' ? 'Received' : 'Due'}
                                             </span>
                                         )}
-                                        {(activeModule === 'netprofit' || activeModule === 'sales') && selectedCustomer !== 'all' && (
+                                        {(activeModule === 'sales') && selectedCustomer !== 'all' && (
                                             <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
                                                 {customers.find(c => c.id == selectedCustomer)?.name || 'Filtered Customer'}
-                                            </span>
-                                        )}
-                                        {activeModule === 'netprofit' && selectedVendor !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
-                                                {vendors.find(v => v.id == selectedVendor)?.name || 'Filtered Vendor'}
-                                            </span>
-                                        )}
-                                        {activeModule === 'netprofit' && selectedEmployee !== 'all' && (
-                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-600 px-3 py-1 rounded-lg">
-                                                {employees.find(e => e.id == selectedEmployee)?.first_name || 'Filtered Staff'}
                                             </span>
                                         )}
                                         {activeModule === 'hrm' && selectedEmployee !== 'all' && (
@@ -551,69 +554,21 @@ const Reports = ({ currentUser }) => {
 
                     <div className="flex items-center gap-3">
                         {activeModule === 'netprofit' && (
-                            <>
-                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
-                                    <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
-                                        value={selectedCustomer}
-                                        onChange={(e) => setSelectedCustomer(e.target.value)}
-                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
-                                    >
-                                        <option value="all" className="dark:bg-slate-900">All customers</option>
-                                        {customers.map(customer => (
-                                            <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
-                                                {customer.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
-                                    <Factory size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
-                                        value={selectedVendor}
-                                        onChange={(e) => setSelectedVendor(e.target.value)}
-                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
-                                    >
-                                        <option value="all" className="dark:bg-slate-900">All suppliers</option>
-                                        {vendors.map(v => (
-                                            <option key={v.id} value={v.id} className="dark:bg-slate-900">
-                                                {v.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
-                                    <Users2 size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
-                                        value={selectedEmployee}
-                                        onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
-                                    >
-                                        <option value="all" className="dark:bg-slate-900">All staff</option>
-                                        {employees.map(emp => (
-                                            <option key={emp.id} value={emp.id} className="dark:bg-slate-900">
-                                                {emp.first_name} {emp.last_name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
-                                    <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
-                                        value={selectedPaymentStatus}
-                                        onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
-                                    >
-                                        <option value="all" className="dark:bg-slate-900">All status</option>
-                                        <option value="paid" className="dark:bg-slate-900">Paid only</option>
-                                        <option value="due" className="dark:bg-slate-900">Due only</option>
-                                        <option value="partial" className="dark:bg-slate-900">Partial only</option>
-                                    </select>
-                                </div>
-                            </>
+                            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                <select
+                                    value={selectedCustomer}
+                                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                                    className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                >
+                                    <option value="all" className="dark:bg-slate-900">All customers</option>
+                                    {customers.map(customer => (
+                                        <option key={customer.id} value={customer.id} className="dark:bg-slate-900">
+                                            {customer.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         )}
                         {activeModule === 'sales' && (
                             <>
@@ -634,6 +589,22 @@ const Reports = ({ currentUser }) => {
                                 </div>
 
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Layers size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedBrandId}
+                                        onChange={(e) => setSelectedBrandId(e.target.value)}
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Brands</option>
+                                        {brands.map(b => (
+                                            <option key={b.id} value={b.id} className="dark:bg-slate-900">
+                                                {b.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                     <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
@@ -643,7 +614,6 @@ const Reports = ({ currentUser }) => {
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
                                         <option value="due" className="dark:bg-slate-900">Due</option>
-                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -667,6 +637,22 @@ const Reports = ({ currentUser }) => {
                                 </div>
 
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Layers size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedBrandId}
+                                        onChange={(e) => setSelectedBrandId(e.target.value)}
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Brands</option>
+                                        {brands.map(b => (
+                                            <option key={b.id} value={b.id} className="dark:bg-slate-900">
+                                                {b.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                     <CreditCard size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                     <select
                                         value={selectedPaymentStatus}
@@ -676,7 +662,6 @@ const Reports = ({ currentUser }) => {
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
                                         <option value="due" className="dark:bg-slate-900">Due</option>
-                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                         <option value="received" className="dark:bg-slate-900">Received</option>
                                     </select>
                                 </div>
@@ -695,6 +680,22 @@ const Reports = ({ currentUser }) => {
                                         {categories.map(c => (
                                             <option key={c.id} value={c.id} className="dark:bg-slate-900">
                                                 {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
+                                    <Layers size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
+                                    <select
+                                        value={selectedBrandId}
+                                        onChange={(e) => setSelectedBrandId(e.target.value)}
+                                        className="text-sm font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
+                                    >
+                                        <option value="all" className="dark:bg-slate-900">All Brands</option>
+                                        {brands.map(b => (
+                                            <option key={b.id} value={b.id} className="dark:bg-slate-900">
+                                                {b.name}
                                             </option>
                                         ))}
                                     </select>
@@ -729,7 +730,7 @@ const Reports = ({ currentUser }) => {
                                 </select>
                             </div>
                         )}
-                        {(activeModule === 'expenses' || activeModule === 'netprofit') && (
+                        {(activeModule === 'expenses') && (
                             <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                 <FileText size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
                                 <select
@@ -774,7 +775,6 @@ const Reports = ({ currentUser }) => {
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
                                         <option value="due" className="dark:bg-slate-900">Due</option>
-                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -807,7 +807,6 @@ const Reports = ({ currentUser }) => {
                                         <option value="all" className="dark:bg-slate-900">All Status</option>
                                         <option value="paid" className="dark:bg-slate-900">Paid</option>
                                         <option value="due" className="dark:bg-slate-900">Due</option>
-                                        <option value="partial" className="dark:bg-slate-900">Partial</option>
                                     </select>
                                 </div>
                             </>
@@ -816,18 +815,27 @@ const Reports = ({ currentUser }) => {
                             <>
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
                                     <Users size={14} className="text-slate-400 dark:text-slate-500 ml-3" />
-                                    <select
-                                        value={selectedEmployee}
-                                        onChange={(e) => setSelectedEmployee(e.target.value)}
-                                        className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-1"
-                                    >
-                                        <option value="all" className="dark:bg-slate-900">All Staff Members</option>
-                                        {employees.map(e => (
-                                            <option key={e.id} value={e.id} className="dark:bg-slate-900">
-                                                {e.first_name} {e.last_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="flex flex-col">
+                                        <input
+                                            type="text"
+                                            placeholder="Search staff..."
+                                            value={employeeSearchTerm}
+                                            onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                                            className="text-[10px] font-semibold text-black dark:text-slate-100 outline-none bg-transparent px-2 w-24"
+                                        />
+                                        <select
+                                            value={selectedEmployee}
+                                            onChange={(e) => setSelectedEmployee(e.target.value)}
+                                            className="text-[10px] font-bold text-black dark:text-slate-100 outline-none bg-transparent px-2 py-0"
+                                        >
+                                            <option value="all" className="dark:bg-slate-900">All Staff Members</option>
+                                            {employees.filter(e => (e.first_name + ' ' + e.last_name).toLowerCase().includes(employeeSearchTerm.toLowerCase())).map(e => (
+                                                <option key={e.id} value={e.id} className="dark:bg-slate-900">
+                                                    {e.first_name} {e.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-800 p-1.5 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mr-2">
@@ -953,7 +961,9 @@ const Reports = ({ currentUser }) => {
                                         activeModule === 'suppliers' ? 'Total Balance Due' :
                                             activeModule === 'customers' ? 'Total Receivables' :
                                                 activeModule === 'inventory' ? 'Total Inventory Value' :
-                                                    'Total Amount'}
+                                                    activeModule === 'sales' ? 'Total Sales' :
+                                                        activeModule === 'purchases' ? 'Total Purchasing' :
+                                                            'Total Amount'}
                                 </p>
                                 <h2 className="text-3xl font-medium mt-2 tracking-tighter text-black dark:text-slate-100">
                                     PKR {(
@@ -965,111 +975,60 @@ const Reports = ({ currentUser }) => {
                                                         activeModule === 'netprofit' ? (summary?.netProfit || 0) :
                                                             activeModule === 'expenses' ? (summary?.totalExpenses || 0) :
                                                                 activeModule === 'inventory' ? (summary?.inventoryValuationCost || 0) :
-                                                                    (summary?.totalSales || 0))
+                                                                    activeModule === 'purchases' ? (summary?.totalPurchases || 0) :
+                                                                        (summary?.totalSales || 0))
                                     ).toLocaleString()}
                                 </h2>
                             </div>
                             <div className="space-y-4 relative z-10 pt-10">
-                                {activeModule === 'sales' && selectedCustomer === 'all' ? (
-                                    /* Top Customers View */
+                                {activeModule === 'sales' ? (
+                                    /* Top Individual Sales View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Customers</span>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top 3 Sales</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Amount</span>
                                         </div>
                                         <div className="space-y-2">
-                                            {(summary?.topCustomers || []).slice(0, 3).map((c, i) => (
+                                            {([...(summary?.detailedSales || [])].sort((a, b) => (b.grandTotal || 0) - (a.grandTotal || 0))).slice(0, 3).map((s, i) => (
                                                 <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{c.name}</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{s.invoiceNo || 'Invoice'}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {c.totalSpent?.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {(s.grandTotal || 0).toLocaleString()}</span>
                                                 </div>
                                             ))}
-                                            {(!summary?.topCustomers || summary.topCustomers.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No customer data available</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : activeModule === 'sales' && selectedCustomer !== 'all' ? (
-                                    /* Top Products View for Specific Customer */
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Products</span>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {(summary?.topProducts || []).slice(0, 3).map((p, i) => (
-                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
-                                                            {i + 1}
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
-                                                    </div>
-                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {p.qtySold} Units</span>
-                                                </div>
-                                            ))}
-                                            {(!summary?.topProducts || summary.topProducts.length === 0) && (
-                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
+                                            {(!summary?.detailedSales || summary.detailedSales.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No sales data available</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : activeModule === 'purchases' ? (
-                                    selectedVendor === 'all' ? (
-                                        /* Top Suppliers View */
-                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Suppliers</span>
-                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Spent</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {(summary?.topVendors || []).slice(0, 3).map((v, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
-                                                                {i + 1}
-                                                            </div>
-                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{v.name}</span>
-                                                        </div>
-                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">PKR {v.totalSpent?.toLocaleString()}</span>
-                                                    </div>
-                                                ))}
-                                                {(!summary?.topVendors || summary.topVendors.length === 0) && (
-                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No supplier data available</p>
-                                                )}
-                                            </div>
+                                    /* Top Purchased Products View */
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Top 3 Purchased Products</span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
                                         </div>
-                                    ) : (
-                                        /* Top Purchased Products View for Specific Supplier */
-                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-[10px] font-bold text-black dark:text-slate-100">Top Supplied Items</span>
-                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
-                                                </div><span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Qty</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {(summary?.topPurchasedProducts || []).slice(0, 3).map((p, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400'}`}>
-                                                                {i + 1}
-                                                            </div>
-                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name}</span>
+                                        <div className="space-y-2">
+                                            {(summary?.topPurchasedProducts || []).slice(0, 3).map((p, i) => (
+                                                <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${i === 0 ? 'bg-emerald-600' : i === 1 ? 'bg-emerald-500' : 'bg-emerald-400 text-white'}`}>
+                                                            {i + 1}
                                                         </div>
-                                                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtyBought} Units</span>
+                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200 truncate max-w-[100px]">{p.name || 'Product'}</span>
                                                     </div>
-                                                ))}
-                                                {(!summary?.topPurchasedProducts || summary.topPurchasedProducts.length === 0) && (
-                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
-                                                )}
-                                            </div>
+                                                    <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400">{p.qtyBought} Units</span>
+                                                </div>
+                                            ))}
+                                            {(!summary?.topPurchasedProducts || summary.topPurchasedProducts.length === 0) && (
+                                                <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No product data available</p>
+                                            )}
                                         </div>
-                                    )
+                                    </div>
                                 ) : activeModule === 'inventory' ? (
                                     /* Top Valued Stock View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -1095,34 +1054,66 @@ const Reports = ({ currentUser }) => {
                                         </div>
                                     </div>
                                 ) : activeModule === 'returns' ? (
-                                    /* Returns Breakdown View */
+                                    /* Returns Breakdown & Top Returns View */
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <span className="text-[10px] font-bold text-black dark:text-slate-100">Refund Breakdown</span>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Total Logic</span>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-[10px] font-bold text-black dark:text-slate-100 uppercase tracking-wider">
+                                                {selectedReturnType === 'sales' ? 'Top 3 Sales Returns' :
+                                                    selectedReturnType === 'purchases' ? 'Top 3 Purchase Returns' : 'Top 3 Overall Returns'}
+                                            </span>
+                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">Refund</span>
                                         </div>
-                                        <div className="space-y-3">
-                                            {(selectedReturnType === 'all' || selectedReturnType === 'sales') && (
-                                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-rose-500" />
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200">Sales Returns</span>
+                                        <div className="space-y-2 mb-4">
+                                            {(selectedReturnType === 'sales' ? (summary?.topSalesReturns || []) :
+                                                selectedReturnType === 'purchases' ? (summary?.topPurchaseReturns || []) :
+                                                    (summary?.topMixedReturns || [])).map((r, i) => (
+                                                        <div key={i} className="flex justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white ${r.type === 'Sale' ? 'bg-rose-500' : 'bg-emerald-500'}`}>
+                                                                    {i + 1}
+                                                                </div>
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-xs font-bold text-black dark:text-slate-200 truncate max-w-[80px]">{r.invoiceNo || 'Ref'}</span>
+                                                                    <span className="text-[8px] text-slate-400 font-medium">{new Date(r.date).toLocaleDateString()}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-[10px] font-black font-mono ${r.type === 'Sale' ? 'text-rose-600' : 'text-emerald-600'}`}>PKR {r.amount?.toLocaleString()}</span>
+                                                        </div>
+                                                    ))}
+                                            {(selectedReturnType === 'sales' ? (summary?.topSalesReturns?.length === 0) :
+                                                selectedReturnType === 'purchases' ? (summary?.topPurchaseReturns?.length === 0) :
+                                                    (summary?.topMixedReturns?.length === 0)) && (
+                                                    <p className="text-[9px] italic text-slate-400 dark:text-slate-500 text-center py-2">No returns for selection</p>
+                                                )}
+                                        </div>
+
+                                        <div className="pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Refund Breakdown</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(selectedReturnType === 'all' || selectedReturnType === 'sales') && (
+                                                    <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200">Sales Returns</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-rose-600 dark:text-rose-400">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
                                                     </div>
-                                                    <span className="text-xs font-bold text-rose-600 dark:text-rose-400">PKR {(summary?.totalSalesReturns || 0).toLocaleString()}</span>
-                                                </div>
-                                            )}
-                                            {(selectedReturnType === 'all' || selectedReturnType === 'purchases') && (
-                                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-200">Purchase Returns</span>
+                                                )}
+                                                {(selectedReturnType === 'all' || selectedReturnType === 'purchases') && (
+                                                    <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            <span className="text-[10px] font-bold text-black dark:text-slate-200">Purchase Returns</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
                                                     </div>
-                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">PKR {(summary?.totalPurchaseReturns || 0).toLocaleString()}</span>
+                                                )}
+                                                <div className="pt-2 flex justify-between items-center px-1">
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono uppercase">Activity Frequency</span>
+                                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{summary?.returnCount || 0} Logs</span>
                                                 </div>
-                                            )}
-                                            <div className="pt-2 border-t border-dashed border-slate-200 dark:border-slate-700 flex justify-between items-center px-1">
-                                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 italic font-mono">Activity Frequency</span>
-                                                <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{summary?.returnCount || 0} Transactions</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1333,7 +1324,7 @@ const Reports = ({ currentUser }) => {
                                     <tr>
                                         {config.tableCols.map((col, idx) => (
                                             <th key={idx} className={`px-8 py-4 text-left text-sm font-semibold text-black dark:text-white uppercase tracking-tight 
-                                                ${(col === 'Total' || col === 'Total Sales' || col === 'Status' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty') ? 'text-center' : 'text-left'}`}>
+                                                ${(col === 'Total' || col === 'Total Sales' || col === 'Amount' || col === 'Net Paid' || col === 'Basic Pay' || col === 'Bonus/OT' || col === 'Deduction' || col === 'Refund Magnitude' || col === 'Balance Owed' || col === 'Unit Cost' || col === 'Total Value' || col === 'COGS' || col === 'Expenses' || col === 'Net Profit' || col === 'Daily Profit' || (activeModule !== 'expenses' && col === 'Amount')) ? 'text-right' : (col === 'Items' || col === 'Stock Qty' || col === 'Status') ? 'text-center' : 'text-left'}`}>
                                                 {col}
                                             </th>
                                         ))}
@@ -1364,7 +1355,7 @@ const Reports = ({ currentUser }) => {
                                                 </td>
                                                 <td className="px-8 py-5 text-right font-medium text-black dark:text-slate-100 text-xs align-top">PKR {(tx.grandTotal || tx.totalAmount)?.toLocaleString()}</td>
                                                 <td className="px-8 py-5 text-right align-top">
-                                                     <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID'
+                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md tracking-wide flex items-center justify-end gap-1 ${tx.paymentStatus?.toUpperCase() === 'PAID'
                                                         ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                                                         : tx.paymentStatus?.toUpperCase() === 'PARTIAL'
                                                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
