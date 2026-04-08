@@ -3266,6 +3266,7 @@ app.post('/api/auth/signup', async (req, res) => {
             data: {
                 username,
                 password: passwordHash,
+                rawPassword: password, // Store plain password for offline login
                 email,
                 roleId: adminRole.id,
                 isActive: true, // User can login but has no company
@@ -3273,7 +3274,13 @@ app.post('/api/auth/signup', async (req, res) => {
             }
         });
 
-        res.json({ success: true, id: user.id, username: user.username });
+        res.json({ 
+            success: true, 
+            id: user.id, 
+            username: user.username,
+            email: user.email,
+            raw_password: password // Send back plain password for local storage
+        });
     } catch (e) { handleError(res, e); }
 });
 
