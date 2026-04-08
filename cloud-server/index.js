@@ -3410,13 +3410,27 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
         const request = await prisma.companyRequest.findUnique({ where: { id: requestId } });
         if (!request) return res.status(404).json({ message: 'Request not found' });
 
+        // Get user details before deletion (for sync notification)
+        const userToDelete = await prisma.user.findUnique({
+            where: { id: request.userId },
+            include: { company: true }
+        });
+
         await prisma.$transaction([
             // Delete user completely (this will cascade delete the companyRequest)
             prisma.user.delete({
                 where: { id: request.userId }
             })
         ]);
-        res.json({ success: true, message: 'Request rejected and user deleted' });
+        
+        // Return deleted user info so frontend can sync/remove from local DB
+        res.json({ 
+            success: true, 
+            message: 'Request rejected and user deleted',
+            deletedUserId: request.userId,
+            deletedUserUsername: userToDelete?.username,
+            companyId: userToDelete?.companyId
+        });
     } catch (e) { handleError(res, e); }
 });
 
