@@ -3411,13 +3411,9 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
         if (!request) return res.status(404).json({ message: 'Request not found' });
 
         await prisma.$transaction([
-            // Delete user completely
+            // Delete user completely (this will cascade delete the companyRequest)
             prisma.user.delete({
                 where: { id: request.userId }
-            }),
-            // Delete company request
-            prisma.companyRequest.delete({
-                where: { id: requestId }
             })
         ]);
         res.json({ success: true, message: 'Request rejected and user deleted' });
