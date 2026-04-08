@@ -1578,19 +1578,14 @@ const Reports = ({ currentUser }) => {
                                                 <td className="px-8 py-5 text-sm whitespace-nowrap font-semibold text-black dark:text-slate-200">
                                                     {new Date(row.date).toLocaleDateString()}
                                                 </td>
-                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200 text-right">
                                                     {activeModule === 'netprofit' ? 'Cumulative record' : `Metric ${row.date}`}
                                                 </td>
-                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200">
+                                                <td className="px-8 py-5 text-sm font-semibold text-black dark:text-slate-200 text-right">
                                                     System activity
                                                 </td>
-                                                <td className="px-8 py-5 text-sm text-slate-500 dark:text-slate-400 font-semibold max-w-xs truncate">
-                                                    Aggregated data log for selected period
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <span className="text-sm font-semibold text-black dark:text-slate-100">
-                                                        -
-                                                    </span>
+                                                <td className="px-8 py-5 text-sm text-slate-500 dark:text-slate-400 font-semibold text-right">
+                                                    Aggregated data
                                                 </td>
                                                 <td className="px-8 py-5 text-right text-sm font-semibold text-black dark:text-slate-100">
                                                     PKR {row[config.dataKey]?.toLocaleString()}

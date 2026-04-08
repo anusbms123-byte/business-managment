@@ -124,4 +124,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     forceSync: (companyId) => ipcRenderer.invoke('force-sync', companyId),
     getSyncLogs: () => ipcRenderer.invoke('get-sync-logs'),
     setActiveSession: (data) => ipcRenderer.invoke('set-active-session', data),
+
+    // Search for Returns
+    getSaleByInvoice: (invoiceNo, companyId) => ipcRenderer.invoke('get-sale-by-invoice', invoiceNo, companyId),
+    getPurchaseByInvoice: (invoiceNo, companyId) => ipcRenderer.invoke('get-purchase-by-invoice', invoiceNo, companyId),
 });

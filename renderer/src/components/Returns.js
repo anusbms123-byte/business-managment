@@ -7,7 +7,7 @@ import { canCreate, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
 
 const Returns = ({ currentUser }) => {
-    const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'purchases'
+    const [activeTab, setActiveTab] = useState('sales');
     const [saleReturns, setSaleReturns] = useState([]);
     const [purchaseReturns, setPurchaseReturns] = useState([]);
     const [customers, setCustomers] = useState([]);
@@ -21,7 +21,7 @@ const Returns = ({ currentUser }) => {
     const [selectedReturnDetail, setSelectedReturnDetail] = useState(null);
 
     // Form State
-    const [selectedEntityId, setSelectedEntityId] = useState(''); // customerId or vendorId
+    const [selectedEntityId, setSelectedEntityId] = useState('');
     const [selectedProductId, setSelectedProductId] = useState('');
     const [invoiceNo, setInvoiceNo] = useState('');
     const [qty, setQty] = useState('');
@@ -32,6 +32,12 @@ const Returns = ({ currentUser }) => {
     const [isProductListVisible, setIsProductListVisible] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [hoveredProduct, setHoveredProduct] = useState(null);
+
+    // Search Original Sale/Purchase
+    const [originalInvoiceNo, setOriginalInvoiceNo] = useState('');
+    const [searchingInvoice, setSearchingInvoice] = useState(false);
+    const [foundOriginalItems, setFoundOriginalItems] = useState([]);
+    const [originalSaleId, setOriginalSaleId] = useState(null);
 
     const { showAlert, showConfirm, showError } = useDialog();
 
@@ -87,7 +93,7 @@ const Returns = ({ currentUser }) => {
                 name: product.name,
                 sku: product.sku,
                 price: price,
-                unitCost: price, // For purchase matching
+                unitCost: price,
                 quantity: parseInt(qty),
                 total: parseInt(qty) * price
             }]);
@@ -107,7 +113,6 @@ const Returns = ({ currentUser }) => {
         );
     }, [products, productSearch]);
 
-    // Scroll highlighted product into view
     useEffect(() => {
         if (isProductListVisible && productListRef.current) {
             const container = productListRef.current;
@@ -115,7 +120,6 @@ const Returns = ({ currentUser }) => {
             if (highlightedItem) {
                 const containerRect = container.getBoundingClientRect();
                 const itemRect = highlightedItem.getBoundingClientRect();
-
                 if (itemRect.bottom > containerRect.bottom) {
                     container.scrollTop += (itemRect.bottom - containerRect.bottom);
                 } else if (itemRect.top < containerRect.top) {
@@ -125,7 +129,6 @@ const Returns = ({ currentUser }) => {
         }
     }, [highlightedIndex, isProductListVisible]);
 
-    // Update hovered product when highlightedIndex changes from keyboard
     useEffect(() => {
         if (isProductListVisible && filteredProducts[highlightedIndex]) {
             setHoveredProduct(filteredProducts[highlightedIndex]);
@@ -136,9 +139,7 @@ const Returns = ({ currentUser }) => {
         setSelectedProductId(product.id);
         setProductSearch(product.name);
         setIsProductListVisible(false);
-        setTimeout(() => {
-            qtyRef.current?.focus();
-        }, 50);
+        setTimeout(() => { qtyRef.current?.focus(); }, 50);
     };
 
     const removeFromCart = (id) => {
@@ -149,8 +150,76 @@ const Returns = ({ currentUser }) => {
     const taxValue = parseFloat(tax) || 0;
     const totalAmount = subTotal + taxValue;
 
+    const searchOriginalInvoice = async () => {
+        if (!originalInvoiceNo) return;
+        setSearchingInvoice(true);
+        try {
+            let res;
+            if (activeTab === 'sales') {
+                res = await window.electronAPI.getSaleByInvoice(originalInvoiceNo, currentUser.company_id);
+                if (res.success) {
+                    const sale = res.sale;
+                    setOriginalSaleId(sale.global_id || sale.id);
+                    setSelectedEntityId(sale.customer_id || '');
+                    setFoundOriginalItems(Array.isArray(sale.items) ? sale.items : []);
+                    showAlert("Sale found! Select items to return.");
+                } else {
+                    showError(res.message || "Sale not found");
+                    setFoundOriginalItems([]);
+                }
+            } else {
+                res = await window.electronAPI.getPurchaseByInvoice(originalInvoiceNo, currentUser.company_id);
+                if (res.success) {
+                    const purchase = res.purchase;
+                    setOriginalSaleId(purchase.global_id || purchase.id);
+                    setSelectedEntityId(purchase.vendor_id || '');
+                    setFoundOriginalItems(Array.isArray(purchase.items) ? purchase.items : []);
+                    showAlert("Purchase found! Select items to return.");
+                } else {
+                    showError(res.message || "Purchase not found");
+                    setFoundOriginalItems([]);
+                }
+            }
+        } catch (err) {
+            console.error("Search error:", err);
+            showError("Error searching invoice.");
+        } finally {
+            setSearchingInvoice(false);
+        }
+    };
+
+    const addOriginalItemToReturn = (item) => {
+        const productId = item.product_id || item.productId;
+        const existingInCart = cart.find(c => c.productId === productId);
+        const maxQty = item.quantity;
+
+        if (existingInCart) {
+            if (existingInCart.quantity >= maxQty) {
+                showAlert(`Cannot return more than originally sold (${maxQty})`);
+                return;
+            }
+            setCart(cart.map(c => c.productId === productId
+                ? { ...c, quantity: c.quantity + 1, total: (c.quantity + 1) * c.price }
+                : c
+            ));
+        } else {
+            const price = activeTab === 'sales'
+                ? (item.price || item.unit_price || 0)
+                : (item.unitCost || item.unit_cost || 0);
+            setCart([...cart, {
+                productId: productId,
+                name: item.name,
+                sku: item.sku,
+                price: price,
+                unitCost: price,
+                quantity: 1,
+                total: price
+            }]);
+        }
+    };
+
     const handleSave = async () => {
-        if (cart.length === 0) return alert('Return cart is empty');
+        if (cart.length === 0) return;
         setSaving(true);
         try {
             const data = {
@@ -160,7 +229,9 @@ const Returns = ({ currentUser }) => {
                 tax: taxValue,
                 totalAmount,
                 notes,
-                items: cart
+                items: cart,
+                saleId: originalSaleId,
+                sale_id: originalSaleId
             };
 
             let res;
@@ -201,6 +272,9 @@ const Returns = ({ currentUser }) => {
         setSelectedProductId('');
         setProductSearch('');
         setQty('');
+        setOriginalInvoiceNo('');
+        setFoundOriginalItems([]);
+        setOriginalSaleId(null);
     };
 
     const handleDelete = async (id) => {
@@ -225,27 +299,26 @@ const Returns = ({ currentUser }) => {
     };
 
     const filteredData = (activeTab === 'sales' ? saleReturns : purchaseReturns).filter(item => {
-        const entityName = (activeTab === 'sales' ? item.customer?.name : item.vendor?.name) || `Walk-in ${activeTab === 'sales' ? 'Customer' : 'Supplier'}`;
+        const entityName = (activeTab === 'sales' ? item.customer?.name : item.vendor?.name) || '';
         return (
             item.invoiceNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            entityName?.toLowerCase().includes(searchTerm.toLowerCase())
+            entityName.toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
 
     return (
         <div className="relative animate-in fade-in duration-500">
 
-
-
-            {/* Filters & Table */}
+            {/* ── Main Table ── */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                {/* Toolbar */}
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                         <input
                             type="text"
                             placeholder="Search here..."
-                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-semibold text-black dark:text-slate-100 placeholder:text-slate-400"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -278,6 +351,7 @@ const Returns = ({ currentUser }) => {
                     </div>
                 </div>
 
+                {/* Table */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -292,11 +366,11 @@ const Returns = ({ currentUser }) => {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium">Loading returns...</td>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-400 font-medium">Loading returns...</td>
                                 </tr>
                             ) : filteredData.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium">No return records found</td>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-slate-400 font-medium">No return records found</td>
                                 </tr>
                             ) : filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0">
@@ -311,7 +385,7 @@ const Returns = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-medium text-black dark:text-slate-400">
-                                            {item.items?.length || 0} items
+                                            {item.items?.reduce((sum, i) => sum + (i.quantity || 0), 0) || 0} items
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -343,43 +417,83 @@ const Returns = ({ currentUser }) => {
                 </div>
             </div>
 
+            {/* ── Add Return Modal ── */}
             {isModalOpen && (
-                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
-                    {/* Full-Page Modal Header */}
-                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-50 bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl">
+
+                    {/* Header */}
+                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <RefreshCcw size={22} />
                             </div>
-                            <div>
-                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">{activeTab === 'sales' ? 'Add sale return' : 'Add purchase return'}</h2>
-                            </div>
+                            <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">
+                                {activeTab === 'sales' ? 'Add sale return' : 'Add purchase return'}
+                            </h2>
                         </div>
                         <button
                             onClick={() => setIsModalOpen(false)}
-                            className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
+                            className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-sm font-semibold tracking-tight hidden md:block">Close</span>
+                            <span className="text-sm font-semibold hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
 
+                    {/* Invoice Search Strip */}
+                    <div className="px-8 py-3 bg-slate-50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4 shrink-0">
+                        <div className="flex-1 max-w-md relative">
+                            <input
+                                type="text"
+                                placeholder={`Enter original ${activeTab === 'sales' ? 'sale' : 'purchase'} invoice #...`}
+                                className="w-full pl-4 pr-12 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-black dark:text-white"
+                                value={originalInvoiceNo}
+                                onChange={(e) => setOriginalInvoiceNo(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && searchOriginalInvoice()}
+                            />
+                            <button
+                                onClick={searchOriginalInvoice}
+                                disabled={searchingInvoice || !originalInvoiceNo}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-all"
+                            >
+                                {searchingInvoice
+                                    ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    : <Search size={16} />
+                                }
+                            </button>
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hidden md:block">
+                            Step 1: Find original invoice to pre-fill items
+                        </p>
+                    </div>
 
-                    <div className="flex-1 flex overflow-hidden min-h-0 bg-slate-50/30 dark:bg-slate-900">
-                        {/* Left: Product Selection & Cart */}
-                        <div className="flex-1 p-6 border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20 overflow-visible">
+                    {/* Body */}
+                    <div className="flex-1 flex overflow-hidden min-h-0">
+
+                        {/* Left: Product picker + cart */}
+                        <div className="flex-1 p-6 border-r border-slate-200 dark:border-slate-800 flex flex-col relative z-20 overflow-y-auto">
+
+                            {/* Controls row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 mb-6 items-end relative z-[150]">
+
+                                {/* Customer / Supplier */}
                                 <div className="space-y-1.5 lg:col-span-3">
-                                    <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</label>
+                                    <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                        {activeTab === 'sales' ? 'Customer' : 'Supplier'}
+                                    </label>
                                     <select
                                         className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 appearance-none cursor-pointer"
                                         value={selectedEntityId}
                                         onChange={(e) => setSelectedEntityId(e.target.value)}
                                     >
                                         <option value="">Walk-in {activeTab === 'sales' ? 'Customer' : 'Supplier'}</option>
-                                        {(activeTab === 'sales' ? customers : vendors).map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                                        {(activeTab === 'sales' ? customers : vendors).map(e => (
+                                            <option key={e.id} value={e.id}>{e.name}</option>
+                                        ))}
                                     </select>
                                 </div>
+
+                                {/* Product search */}
                                 <div className="space-y-1.5 sm:col-span-1 lg:col-span-6">
                                     <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Product</label>
                                     <div className="relative">
@@ -395,227 +509,224 @@ const Returns = ({ currentUser }) => {
                                                 setHighlightedIndex(0);
                                             }}
                                             onFocus={() => setIsProductListVisible(true)}
-                                            onBlur={() => {
-                                                setTimeout(() => setIsProductListVisible(false), 200);
-                                            }}
+                                            onBlur={() => setTimeout(() => setIsProductListVisible(false), 200)}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'ArrowDown') {
                                                     e.preventDefault();
-                                                    setHighlightedIndex(prev => {
-                                                        const next = Math.min(prev + 1, filteredProducts.length - 1);
-                                                        setHoveredProduct(filteredProducts[next]);
-                                                        return next;
-                                                    });
+                                                    setHighlightedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
                                                 } else if (e.key === 'ArrowUp') {
                                                     e.preventDefault();
-                                                    setHighlightedIndex(prev => {
-                                                        const next = Math.max(prev - 1, 0);
-                                                        setHoveredProduct(filteredProducts[next]);
-                                                        return next;
-                                                    });
-                                                } else if (e.key === 'Enter') {
-                                                    if (isProductListVisible && filteredProducts[highlightedIndex]) {
-                                                        e.preventDefault();
-                                                        handleProductSelect(filteredProducts[highlightedIndex]);
-                                                    }
+                                                    setHighlightedIndex(prev => Math.max(prev - 1, 0));
+                                                } else if (e.key === 'Enter' && isProductListVisible && filteredProducts[highlightedIndex]) {
+                                                    e.preventDefault();
+                                                    handleProductSelect(filteredProducts[highlightedIndex]);
                                                 } else if (e.key === 'Escape') {
                                                     setIsProductListVisible(false);
                                                 }
                                             }}
                                         />
+
+                                        {/* Dropdown list */}
                                         {isProductListVisible && filteredProducts.length > 0 && (
-                                            <div ref={productListRef} className="absolute z-[110] w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                            <div ref={productListRef} className="absolute z-[110] w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                                                 {filteredProducts.map((p, index) => (
                                                     <div
                                                         key={p.id}
                                                         className={`px-4 py-2.5 cursor-pointer flex justify-between items-center border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors ${highlightedIndex === index ? 'bg-emerald-50 dark:bg-emerald-900/30' : ''}`}
                                                         onMouseDown={(e) => { e.preventDefault(); handleProductSelect(p); }}
-                                                        onMouseEnter={() => {
-                                                            setHoveredProduct(p);
-                                                            setHighlightedIndex(index);
-                                                        }}
+                                                        onMouseEnter={() => { setHoveredProduct(p); setHighlightedIndex(index); }}
                                                         onMouseLeave={() => setHoveredProduct(null)}
                                                     >
                                                         <div>
                                                             <div className="font-semibold text-sm text-black dark:text-slate-200 tracking-tight">{p.name}</div>
-                                                            <div className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-tight">SKU: {p.sku || 'N/A'} - Stock: {p.stockQty}</div>
+                                                            <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-tight">
+                                                                SKU: {p.sku || 'N/A'} · Stock: {p.stock_quantity ?? p.stockQty ?? 0}
+                                                            </div>
                                                         </div>
-                                                        <div className="font-semibold text-black dark:text-slate-100 text-sm tracking-tight">{activeTab === 'sales' ? 'Price' : 'Cost'}: PKR {((activeTab === 'sales' ? p.sellPrice : p.costPrice) || 0).toLocaleString()}</div>
+                                                        <div className="font-semibold text-black dark:text-slate-100 text-sm tracking-tight">
+                                                            PKR {((activeTab === 'sales' ? p.sellPrice : p.costPrice) || 0).toLocaleString()}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
 
-                                        {/* Product Hover Detail Card */}
+                                        {/* Hover detail card */}
                                         {isProductListVisible && hoveredProduct && (
-                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-5 border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-300">
-                                                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-50 dark:border-slate-800">
-                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                                        <Package size={20} />
+                                            <div className="absolute left-full ml-4 top-0 z-[1000] w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 border border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                                        <Package size={18} />
                                                     </div>
-                                                    <div className="overflow-hidden">
-                                                        <div className="font-bold text-sm text-black dark:text-slate-100 tracking-tight truncate">{hoveredProduct.name}</div>
-                                                        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">SKU: {hoveredProduct.sku || 'N/A'}</div>
+                                                    <div>
+                                                        <div className="font-bold text-sm text-black dark:text-slate-100 truncate">{hoveredProduct.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-bold">SKU: {hoveredProduct.sku || 'N/A'}</div>
                                                     </div>
                                                 </div>
-
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div className="p-2.5 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                            <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Color</p>
-                                                            <p className="text-xs font-bold text-black dark:text-slate-200 uppercase">{hoveredProduct.color || '-'}</p>
-                                                        </div>
-                                                        <div className="p-2.5 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                            <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Size</p>
-                                                            <p className="text-xs font-bold text-black dark:text-slate-200 uppercase">{hoveredProduct.size || '-'}</p>
-                                                        </div>
-                                                        <div className="p-2.5 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Grade</p>
-                                                            <p className="text-xs font-bold text-black dark:text-slate-200 uppercase">{hoveredProduct.grade || '-'}</p>
-                                                        </div>
-                                                        <div className="p-2.5 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                                            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Status</p>
-                                                            <p className={`text-xs font-bold ${hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'text-rose-500' : 'text-emerald-500'} uppercase tracking-tight`}>
-                                                                {hoveredProduct.stockQty <= 0 ? 'Out of Stock' : hoveredProduct.stockQty <= (hoveredProduct.alertQty || 5) ? 'Low Stock' : 'In Stock'}
-                                                            </p>
-                                                        </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                                        <p className="text-[8px] font-bold text-slate-400 mb-1">COLOR</p>
+                                                        <p className="text-xs font-bold text-black dark:text-slate-200 uppercase">{hoveredProduct.color || '-'}</p>
                                                     </div>
-
-                                                    <div className="space-y-2.5 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                                        <div className="flex justify-between items-center text-[10px] font-bold">
-                                                            <span className="text-slate-400 dark:text-slate-500 uppercase">Cost Price</span>
-                                                            <span className="text-black dark:text-slate-200 font-mono font-medium tracking-tight">PKR {Number(hoveredProduct.costPrice || 0).toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center text-[10px] font-bold">
-                                                            <span className="text-slate-400 dark:text-slate-500 uppercase">Sale Price</span>
-                                                            <span className="text-blue-600 dark:text-blue-400 font-mono font-medium tracking-tight">PKR {Number(hoveredProduct.sellPrice || 0).toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="h-px bg-slate-200 dark:bg-slate-800"></div>
-                                                        <div className="flex justify-between items-center pt-1 text-[10px] font-bold">
-                                                            <span className="text-slate-400 dark:text-slate-500 uppercase">Stock Avail</span>
-                                                            <span className="text-black dark:text-slate-100 text-xs">{hoveredProduct.stockQty} {hoveredProduct.unit || 'kg'}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex justify-between items-center px-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">BRAND: <span className="text-black dark:text-slate-200 uppercase">{hoveredProduct.brand?.name || 'Excel'}</span></span>
-                                                        <span className="px-2 py-0.5 bg-blue-100/50 dark:bg-blue-900/30 rounded text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter">{hoveredProduct.category?.name || 'Oil'}</span>
+                                                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                                        <p className="text-[8px] font-bold text-slate-400 mb-1">SIZE</p>
+                                                        <p className="text-xs font-bold text-black dark:text-slate-200 uppercase">{hoveredProduct.size || '-'}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="sm:col-span-1 lg:col-span-3">
-                                    <div className="flex gap-2 items-end w-full">
-                                        <div className="flex-1 space-y-1.5 min-w-[70px]">
-                                            <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Qty</label>
-                                            <input
-                                                ref={qtyRef}
-                                                type="number"
-                                                className="w-full px-2 py-2 text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100 placeholder:text-slate-400"
-                                                value={qty}
-                                                onChange={(e) => setQty(e.target.value)}
-                                                placeholder="0"
-                                                onKeyDown={(e) => e.key === 'Enter' && addToCart()}
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={addToCart}
-                                            className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-all shrink-0 active:scale-95 flex items-center justify-center whitespace-nowrap shadow-sm tracking-tight"
-                                        >
-                                            <Plus size={20} />
-                                            <span className="ml-1">Add now</span>
-                                        </button>
-                                    </div>
+
+                                {/* Qty */}
+                                <div className="space-y-1.5 lg:col-span-2">
+                                    <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">Qty</label>
+                                    <input
+                                        ref={qtyRef}
+                                        type="number"
+                                        className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                        placeholder="0"
+                                        value={qty}
+                                        onChange={(e) => setQty(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addToCart()}
+                                    />
+                                </div>
+
+                                {/* Add button */}
+                                <div className="lg:col-span-1">
+                                    <button
+                                        onClick={addToCart}
+                                        className="w-full h-10 bg-emerald-600 text-white rounded-lg flex items-center justify-center hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Cart Table */}
-                            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0">
-                                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                    <table className="w-full">
-                                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                        <tr>
-                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-left tracking-tight">Name</th>
-                                            <th className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-300 text-center tracking-tight">Price</th>
-                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-center tracking-tight">Qty</th>
-                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Total</th>
-                                            <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                        {cart.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                <td className="px-6 py-4">
-                                                    <div className="text-sm font-semibold text-black dark:text-slate-200 tracking-tight">{item.name}</div>
-                                                    <div className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-tight">SKU: {item.sku || 'N/A'}</div>
-                                                </td>
-                                                <td className="px-6 py-4 text-center font-medium text-black dark:text-slate-400 text-sm tracking-tight">PKR {(item.price || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-black dark:text-slate-300 tracking-tight">{item.quantity}</span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-semibold text-black dark:text-slate-200 text-sm tracking-tight">PKR {(item.total || 0).toLocaleString()}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </td>
-                                            </tr>
+                            {/* Original items picker */}
+                            {foundOriginalItems.length > 0 && (
+                                <div className="mb-6 p-4 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20">
+                                    <h4 className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-3">
+                                        Items from original transaction — click to add to return cart
+                                    </h4>
+                                    <div className="flex flex-wrap gap-3">
+                                        {foundOriginalItems.map((item, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => addOriginalItemToReturn(item)}
+                                                className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-500 transition-all text-left group shadow-sm active:scale-95"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600">
+                                                    <Package size={16} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-black dark:text-slate-100">{item.name}</div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                                        Qty: {item.quantity} · PKR {(item.price || item.unit_price || item.unitCost || 0).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                                <Plus size={14} className="ml-2 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+                                            </button>
                                         ))}
-                                        {cart.length === 0 && (
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Cart table */}
+                            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-h-0">
+                                <div className="flex-1 overflow-y-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
                                             <tr>
-                                                <td colSpan="5" className="px-6 py-20 text-center">
-                                                    <ShoppingCart size={40} className="mx-auto text-slate-100 dark:text-slate-800 mb-3 opacity-50" />
-                                                    <p className="text-xs font-bold text-black dark:text-slate-600 tracking-widest">Return cart is empty</p>
-                                                </td>
+                                                <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-left tracking-tight">Name</th>
+                                                <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-center tracking-tight">Price</th>
+                                                <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-center tracking-tight">Qty</th>
+                                                <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Total</th>
+                                                <th className="px-6 py-3 text-sm font-semibold text-black dark:text-slate-500 text-right tracking-tight">Del</th>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            {cart.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="px-6 py-20 text-center">
+                                                        <ShoppingCart size={40} className="mx-auto text-slate-200 dark:text-slate-800 mb-3" />
+                                                        <p className="text-xs font-bold text-slate-400 tracking-widest">Return cart is empty</p>
+                                                    </td>
+                                                </tr>
+                                            ) : cart.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-semibold text-black dark:text-slate-200 tracking-tight">{item.name}</div>
+                                                        <div className="text-[11px] text-slate-400 font-semibold uppercase">SKU: {item.sku || 'N/A'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm text-black dark:text-slate-400 font-medium">
+                                                        PKR {(item.price || 0).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-black dark:text-slate-300">
+                                                            {item.quantity}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-semibold text-black dark:text-slate-200 text-sm">
+                                                        PKR {(item.total || 0).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button
+                                                            onClick={() => removeFromCart(item.productId)}
+                                                            className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                        {/* Right: Summary */}
-                        <div className="w-[350px] p-6 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0 relative z-10 transition-all">
+                        {/* Right: Summary panel */}
+                        <div className="w-80 p-6 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
                             <div className="space-y-6 flex-1 overflow-y-auto">
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Return invoice #</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
-                                            value={invoiceNo}
-                                            onChange={(e) => setInvoiceNo(e.target.value)}
-                                            placeholder="ex. RET-889"
-                                        />
-                                    </div>
+
+                                {/* Invoice # */}
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Return invoice #</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-sm outline-none focus:border-emerald-500 transition-all text-black dark:text-slate-100"
+                                        value={invoiceNo}
+                                        onChange={(e) => setInvoiceNo(e.target.value)}
+                                        placeholder="e.g. RET-001"
+                                    />
                                 </div>
 
+                                {/* Totals */}
                                 <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
+                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400">
                                         <span>Subtotal</span>
-                                        <span className="text-black dark:text-slate-200 font-semibold">PKR {(subTotal || 0).toLocaleString()}</span>
+                                        <span className="text-black dark:text-slate-200">PKR {subTotal.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400 tracking-tight">
-                                        <span>Handling / tax</span>
+                                    <div className="flex justify-between items-center text-sm font-semibold text-black dark:text-slate-400">
+                                        <span>Tax / Handling</span>
                                         <input
                                             type="number"
-                                            className="w-24 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-black dark:text-slate-100 focus:border-emerald-500 outline-none transition-all text-sm"
+                                            className="w-24 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-right font-semibold text-black dark:text-slate-100 focus:border-emerald-500 outline-none text-sm"
                                             value={tax}
                                             onChange={(e) => setTax(e.target.value)}
                                             placeholder="0"
                                         />
                                     </div>
-                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-                                        <span className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Total amount</span>
+                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-1">
+                                        <span className="text-sm font-semibold text-black dark:text-slate-500">Total amount</span>
                                         <span className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tighter">
-                                            PKR {(totalAmount || 0).toLocaleString()}
+                                            PKR {totalAmount.toLocaleString()}
                                         </span>
                                     </div>
                                 </div>
 
+                                {/* Notes */}
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1">Notes</label>
                                     <textarea
@@ -627,6 +738,7 @@ const Returns = ({ currentUser }) => {
                                 </div>
                             </div>
 
+                            {/* Save button */}
                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                                 <button
                                     onClick={handleSave}
@@ -634,12 +746,12 @@ const Returns = ({ currentUser }) => {
                                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-semibold text-lg hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 tracking-tight"
                                 >
                                     {saving ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             <span>Saving...</span>
-                                        </div>
+                                        </>
                                     ) : (
-                                        <span>Save now</span>
+                                        <span>Save return</span>
                                     )}
                                 </button>
                             </div>
@@ -648,38 +760,44 @@ const Returns = ({ currentUser }) => {
                 </div>
             )}
 
+            {/* ── Detail Modal ── */}
             {isDetailModalOpen && selectedReturnDetail && (
-                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
+                <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl">
+
                     {/* Header */}
-                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
+                    <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <Eye size={22} />
                             </div>
-                            <div>
-                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">Return detail: {selectedReturnDetail.invoiceNo}</h2>
-                            </div>
+                            <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">
+                                Return detail: {selectedReturnDetail.invoiceNo}
+                            </h2>
                         </div>
                         <button
                             onClick={() => setIsDetailModalOpen(false)}
-                            className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
+                            className="p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 border border-transparent hover:border-rose-100"
                         >
-                            <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
+                            <span className="text-sm font-semibold hidden md:block">Close</span>
                             <X size={20} />
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-800/20 p-4 md:p-8">
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto bg-slate-50/30 dark:bg-slate-800/20 p-4 md:p-8">
                         <div className="max-w-7xl mx-auto space-y-8">
-                            {/* Return Overview Cards */}
+
+                            {/* Overview cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                         <Calendar size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Date & Time</p>
-                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">{new Date(selectedReturnDetail.date).toLocaleString()}</h3>
+                                        <p className="text-[10px] font-bold text-slate-400 mb-1">Date & Time</p>
+                                        <h3 className="text-sm font-bold text-black dark:text-slate-100">
+                                            {selectedReturnDetail.date ? new Date(selectedReturnDetail.date).toLocaleString() : 'N/A'}
+                                        </h3>
                                     </div>
                                 </div>
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -687,7 +805,7 @@ const Returns = ({ currentUser }) => {
                                         <User size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 mb-1">{activeTab === 'sales' ? 'Customer' : 'Supplier'}</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100">
                                             {(activeTab === 'sales' ? selectedReturnDetail.customer?.name : selectedReturnDetail.vendor?.name) || `Walk-in ${activeTab === 'sales' ? 'Customer' : 'Supplier'}`}
                                         </h3>
@@ -698,118 +816,112 @@ const Returns = ({ currentUser }) => {
                                         <RefreshCcw size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500 mb-1">Return Type</p>
+                                        <p className="text-[10px] font-bold text-slate-400 mb-1">Return Type</p>
                                         <h3 className="text-sm font-bold text-black dark:text-slate-100 uppercase tracking-tight">{activeTab} RETURN</h3>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Totals Section */}
+                            {/* Financial summary */}
                             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                    <h3 className="text-xs font-bold text-black dark:text-slate-400">Financial Summary</h3>
+                                    <h3 className="text-xs font-bold text-slate-400">Financial Summary</h3>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500">Subtotal</p>
-                                        <p className="text-lg font-bold text-black dark:text-slate-100">PKR {selectedReturnDetail.subTotal?.toLocaleString()}</p>
+                                        <p className="text-[10px] font-bold text-slate-400">Subtotal</p>
+                                        <p className="text-lg font-bold text-black dark:text-slate-100">
+                                            PKR {(selectedReturnDetail.subTotal || 0).toLocaleString()}
+                                        </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500">Tax / Handling</p>
-                                        <p className="text-lg font-bold text-black dark:text-slate-100">PKR {selectedReturnDetail.tax?.toLocaleString() || '0'}</p>
+                                        <p className="text-[10px] font-bold text-slate-400">Tax / Handling</p>
+                                        <p className="text-lg font-bold text-black dark:text-slate-100">
+                                            PKR {(selectedReturnDetail.tax || 0).toLocaleString()}
+                                        </p>
                                     </div>
-                                    <div className="space-y-1 text-center md:text-left">
-                                        <p className="text-[10px] font-bold text-black dark:text-slate-500">Total Return Amount</p>
-                                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {selectedReturnDetail.totalAmount?.toLocaleString()}</p>
+                                    <div className="col-span-2 space-y-1 bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500">Total Refunded</p>
+                                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                                            PKR {(selectedReturnDetail.totalAmount || 0).toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
-                                {selectedReturnDetail.notes && (
-                                    <div className="px-8 pb-8 pt-2">
-                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                                            <p className="text-[9px] font-bold text-black dark:text-slate-500 mb-2">Internal Notes</p>
-                                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 italic">"{selectedReturnDetail.notes}"</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
-                            {/* Item Details Heading */}
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                                <h3 className="text-[11px] font-bold text-black dark:text-slate-500">Items Details ({selectedReturnDetail.items?.length})</h3>
-                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                            </div>
-
-                            {/* Items Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
-                                {selectedReturnDetail.items?.map((item, idx) => {
-                                    // Find full product info from state to show all details
-                                    const fullProduct = products.find(p => p.id === (item.productId || item.product_id || item.product?.id));
-                                    const displayProduct = fullProduct || item.product || item;
-
-                                    return (
-                                        <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">
-                                            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
-                                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                                    <Package size={24} />
+                            {/* Returned items */}
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                    <h3 className="text-xs font-bold text-slate-400">Returned Items</h3>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {Array.isArray(selectedReturnDetail.items) && selectedReturnDetail.items.map((item, index) => {
+                                        const displayProduct = products.find(p => p.id === (item.product_id || item.productId)) || {};
+                                        return (
+                                            <div key={index} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-bl-full -mr-10 -mt-10 group-hover:scale-110 transition-all" />
+                                                <div className="flex items-center gap-4 mb-4 relative z-10">
+                                                    <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-lg font-bold">
+                                                        {index + 1}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-black dark:text-slate-100">{item.name}</h4>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SKU: {item.sku || 'N/A'}</p>
+                                                    </div>
+                                                    <div className="ml-auto text-right">
+                                                        <span className="text-xs font-bold text-slate-400 block">Qty</span>
+                                                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{item.quantity}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="overflow-hidden">
-                                                    <div className="font-bold text-base text-black dark:text-slate-100 uppercase tracking-tight truncate">{displayProduct.name || item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">SKU: {displayProduct.sku || item.sku || 'N/A'}</div>
-                                                </div>
-                                                <div className="ml-auto text-right">
-                                                    <span className="text-xs font-bold text-black dark:text-slate-500 block">Qty</span>
-                                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{item.quantity}</span>
+
+                                                <div className="space-y-3">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {[
+                                                            { label: 'Color', val: displayProduct.color },
+                                                            { label: 'Size', val: displayProduct.size },
+                                                            { label: 'Grade', val: displayProduct.grade },
+                                                            { label: 'Category', val: displayProduct.category?.name },
+                                                        ].map(({ label, val }) => (
+                                                            <div key={label} className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                                <p className="text-[8px] font-bold text-slate-400 mb-1">{label}</p>
+                                                                <p className="text-xs font-bold text-black dark:text-slate-200 uppercase truncate">{val || '-'}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="space-y-2 p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[10px] font-bold text-slate-400">Unit Price</span>
+                                                            <span className="text-xs font-bold text-black dark:text-slate-200">
+                                                                PKR {Number(item.price || item.unitCost || item.unit_price || 0).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-px bg-slate-200 dark:bg-slate-700" />
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[10px] font-bold text-slate-400">Item Total</span>
+                                                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                                                PKR {Number(item.total || 0).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-center pt-1">
+                                                        <span className="text-[9px] font-bold text-slate-400 tracking-[0.2em]">
+                                                            BRAND: <span className="text-black dark:text-slate-200">{displayProduct.brand?.name || 'GENERAL'}</span>
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            <div className="space-y-4">
-                                                {/* Attributes Grid */}
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Color</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.color || '-'}</p>
-                                                    </div>
-                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Size</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.size || '-'}</p>
-                                                    </div>
-                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Grade</p>
-                                                        <p className="text-sm font-bold text-black dark:text-slate-200 uppercase">{displayProduct.grade || '-'}</p>
-                                                    </div>
-                                                    <div className="p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                        <p className="text-[8px] font-bold text-black dark:text-slate-500 mb-1">Category</p>
-                                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase truncate">{displayProduct.category?.name || 'Local'}</p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Pricing & Total */}
-                                                <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800">
-                                                    <div className="flex justify-between items-center py-1">
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-500">Unit Price</span>
-                                                        <span className="text-xs font-bold text-black dark:text-slate-200">PKR {Number(item.price || item.unitCost || item.unit_price || 0).toLocaleString()}</span>
-                                                    </div>
-                                                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50"></div>
-                                                    <div className="flex justify-between items-center py-2">
-                                                        <span className="text-[10px] font-bold text-black dark:text-slate-500">Item Total</span>
-                                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {Number(item.total || 0).toLocaleString()}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Brand Footer */}
-                                                <div className="flex justify-center pt-2">
-                                                    <span className="text-[9px] font-bold text-black dark:text-slate-500 tracking-[0.2em]">BRAND: <span className="text-black dark:text-slate-200">{displayProduct.brand?.name || 'GENERAL'}</span></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

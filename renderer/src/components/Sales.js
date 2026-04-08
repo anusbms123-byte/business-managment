@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import {
     Plus, Search, X, ShoppingCart,
     Trash2, Package, User, Printer,
-    Eye, Calendar, CreditCard, ChevronDown, ChevronUp, Clock, DollarSign, Tag, Layers, AlertTriangle
+    Eye, Calendar, CreditCard, ChevronDown, ChevronUp, Clock, DollarSign, Tag, Layers, AlertTriangle, RefreshCcw
 } from 'lucide-react';
 import { canView, canCreate, canEdit, canDelete } from '../utils/permissions';
 import { useDialog } from '../context/DialogContext';
@@ -19,6 +19,8 @@ const Sales = ({ currentUser }) => {
     const [editingId, setEditingId] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedSaleDetail, setSelectedSaleDetail] = useState(null);
+    const [selectedSaleDetailId, setSelectedSaleDetailId] = useState(null);
+    const [saleDetailReturns, setSaleDetailReturns] = useState([]);
     // New Sale Cart State
     const [cart, setCart] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState('');
@@ -201,9 +203,7 @@ const Sales = ({ currentUser }) => {
     const grandTotal = invoiceTotal;
 
     // netBalance = Customer's final balance (Previous + This Sale - Paid)
-    const netBalance = returnChange ?
-        Math.max(0, (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0)) :
-        (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0);
+    const netBalance = (Number(previousBalance) || 0) + invoiceTotal - (Number(amountPaid) || 0);
 
     // Change should only be offered if the payment exceeds BOTH the invoice and ANY previous debt
     const totalDue = invoiceTotal + (previousBalance > 0 ? previousBalance : 0);
@@ -257,6 +257,8 @@ const Sales = ({ currentUser }) => {
 
     const handleShowDetail = (sale) => {
         setSelectedSaleDetail(sale);
+        setSelectedSaleDetailId(sale.id);
+        setSaleDetailReturns([]);
         setIsDetailModalOpen(true);
     };
 
@@ -360,6 +362,30 @@ const Sales = ({ currentUser }) => {
             .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     }, [sales, searchTerm]);
 
+    // Always show LIVE sale data in the detail modal (auto-syncs when sales state updates after a return)
+    const liveSaleDetail = useMemo(() => {
+        if (!selectedSaleDetailId) return selectedSaleDetail;
+        return sales.find(s => s.id === selectedSaleDetailId || String(s.global_id) === String(selectedSaleDetailId)) || selectedSaleDetail;
+    }, [sales, selectedSaleDetailId, selectedSaleDetail]);
+
+    // Re-fetch linked returns whenever the detail modal opens or the sales data refreshes
+    useEffect(() => {
+        if (!isDetailModalOpen || !liveSaleDetail || !currentUser?.company_id) return;
+        window.electronAPI.getSaleReturns(currentUser.company_id)
+            .then(allReturns => {
+                const arr = Array.isArray(allReturns) ? allReturns : [];
+                const sId = liveSaleDetail.global_id || String(liveSaleDetail.id);
+                const linked = arr.filter(r =>
+                    String(r.saleId) === sId ||
+                    String(r.sale_id) === sId ||
+                    String(r.saleId) === String(liveSaleDetail.id) ||
+                    String(r.sale_id) === String(liveSaleDetail.id)
+                );
+                setSaleDetailReturns(linked);
+            })
+            .catch(() => setSaleDetailReturns([]));
+    }, [isDetailModalOpen, liveSaleDetail, sales, currentUser?.company_id]);
+
     const handleDeleteSale = async (id) => {
         showConfirm("Are you sure you want to delete this sale? This will restore stock and reverse any customer balance changes.", async () => {
             try {
@@ -428,7 +454,7 @@ const Sales = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold">
                                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-semibold text-slate-600 dark:text-slate-400 tracking-tight">
-                                            {sale.items?.length || 0} items
+                                            {sale.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0} items
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold text-black dark:text-slate-200">PKR {(sale.totalAmount || sale.grandTotal)?.toLocaleString()}</td>
@@ -506,7 +532,7 @@ const Sales = ({ currentUser }) => {
                 </div>
             </div>
 
-            {isDetailModalOpen && selectedSaleDetail && (
+            {isDetailModalOpen && liveSaleDetail && (
                 <div className="fixed top-20 left-0 lg:left-72 right-0 bottom-0 z-[100] bg-white dark:bg-slate-900 animate-in slide-in-from-right-5 duration-300 flex flex-col shadow-2xl transition-all">
                     {/* Header */}
                     <div className="px-4 md:px-8 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
@@ -515,29 +541,35 @@ const Sales = ({ currentUser }) => {
                                 <Eye size={22} />
                             </div>
                             <div>
-                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">Sale Detail: {selectedSaleDetail.invoiceNo}</h2>
+                                <h2 className="text-sm md:text-xl font-semibold text-black dark:text-slate-100 tracking-tight">Sale Detail: {liveSaleDetail.invoiceNo}</h2>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setIsDetailModalOpen(false)}
-                            className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
-                        >
-                            <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
-                            <X size={20} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <span className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-tight border ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(liveSaleDetail.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' : liveSaleDetail.paymentStatus === 'PARTIAL' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(liveSaleDetail.paymentStatus)) ? 'bg-emerald-500' : liveSaleDetail.paymentStatus === 'PARTIAL' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                {liveSaleDetail.paymentStatus || 'DUE'}
+                            </span>
+                            <button
+                                onClick={() => setIsDetailModalOpen(false)}
+                                className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900"
+                            >
+                                <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-800/20 p-4 md:p-8">
                         <div className="max-w-7xl mx-auto space-y-8">
                             {/* Sale Overview Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                         <Calendar size={24} />
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-1">Date & time</p>
-                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{new Date(selectedSaleDetail.date).toLocaleString()}</h3>
+                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{new Date(liveSaleDetail.date).toLocaleString()}</h3>
                                     </div>
                                 </div>
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -546,7 +578,7 @@ const Sales = ({ currentUser }) => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-1">Customer</p>
-                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{selectedSaleDetail.customer?.name || 'Walk-in Customer'}</h3>
+                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{liveSaleDetail.customer?.name || 'Walk-in Customer'}</h3>
                                     </div>
                                 </div>
                                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
@@ -555,7 +587,16 @@ const Sales = ({ currentUser }) => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-1">Payment method</p>
-                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{selectedSaleDetail.paymentMethod || 'CASH'}</h3>
+                                        <h3 className="text-sm font-medium text-black dark:text-slate-100">{liveSaleDetail.paymentMethod || 'CASH'}</h3>
+                                    </div>
+                                </div>
+                                <div className={`p-6 rounded-2xl border shadow-sm flex items-center gap-4 ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(liveSaleDetail.paymentStatus)) ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50' : liveSaleDetail.paymentStatus === 'PARTIAL' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/50' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-900/50'}`}>
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(liveSaleDetail.paymentStatus)) ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600' : liveSaleDetail.paymentStatus === 'PARTIAL' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-600'}`}>
+                                        <DollarSign size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-1">Status (Live)</p>
+                                        <h3 className={`text-sm font-bold tracking-tight ${(['PAID', 'RECEIVED', 'SUCCESS'].includes(liveSaleDetail.paymentStatus)) ? 'text-emerald-600 dark:text-emerald-400' : liveSaleDetail.paymentStatus === 'PARTIAL' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>{liveSaleDetail.paymentStatus || 'DUE'}</h3>
                                     </div>
                                 </div>
                             </div>
@@ -568,46 +609,82 @@ const Sales = ({ currentUser }) => {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8">
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Subtotal</p>
-                                        <p className="text-lg font-semibold text-black dark:text-slate-100">PKR {selectedSaleDetail.subTotal?.toLocaleString()}</p>
+                                        <p className="text-lg font-semibold text-black dark:text-slate-100">PKR {liveSaleDetail.subTotal?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Discount</p>
-                                        <p className="text-lg font-semibold text-rose-500">-PKR {selectedSaleDetail.discount?.toLocaleString()}</p>
+                                        <p className="text-lg font-semibold text-rose-500">-PKR {liveSaleDetail.discount?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Grand total</p>
-                                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {(selectedSaleDetail.totalAmount || selectedSaleDetail.grandTotal)?.toLocaleString()}</p>
+                                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {(liveSaleDetail.totalAmount || liveSaleDetail.grandTotal)?.toLocaleString()}</p>
                                     </div>
                                     <div className="space-y-1 text-right">
                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Amount paid</p>
-                                        <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">PKR {(selectedSaleDetail.paidAmount || selectedSaleDetail.amountPaid || 0).toLocaleString()}</p>
+                                        <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">PKR {(liveSaleDetail.paidAmount || liveSaleDetail.amountPaid || 0).toLocaleString()}</p>
                                     </div>
                                 </div>
-                                {selectedSaleDetail.notes && (
+                                {liveSaleDetail.notes && (
                                     <div className="px-8 pb-8 pt-2">
                                         <div className="p-4 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                                             <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-2">Notes</p>
-                                            <p className="text-sm font-medium text-black dark:text-slate-300 italic">"{selectedSaleDetail.notes}"</p>
+                                            <p className="text-sm font-medium text-black dark:text-slate-300 italic">"{liveSaleDetail.notes}"</p>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
+                            {/* Returns Section */}
+                            {saleDetailReturns.length > 0 && (
+                                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-rose-100 dark:border-rose-900/30 shadow-sm overflow-hidden">
+                                    <div className="p-6 bg-rose-50/50 dark:bg-rose-900/10 border-b border-rose-100 dark:border-rose-900/30 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
+                                                <RefreshCcw size={20} />
+                                            </div>
+                                            <h3 className="text-sm font-bold text-rose-600 dark:text-rose-400 tracking-tight">Sale Returns Linked</h3>
+                                        </div>
+                                        <span className="px-3 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-lg text-xs font-bold tracking-tight uppercase">
+                                            {saleDetailReturns.length} Returns
+                                        </span>
+                                    </div>
+                                    <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        {saleDetailReturns.map((ret, idx) => (
+                                            <div key={idx} className="p-6 flex items-center justify-between group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all">
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-bold text-black dark:text-slate-100 tracking-tight">{ret.invoiceNo || ret.invoice_no}</p>
+                                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                                                        <Calendar size={12} />
+                                                        {new Date(ret.date || ret.createdAt).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Return</p>
+                                                    <p className="text-base font-bold text-rose-500 tracking-tight">PKR {(ret.totalAmount || ret.total_amount || 0).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="p-6 bg-rose-50/30 dark:bg-rose-900/20 flex items-center justify-between border-t border-rose-100 dark:border-rose-900/30">
+                                        <span className="text-sm font-bold text-rose-600">Total Returned Amount</span>
+                                        <span className="text-xl font-bold text-rose-600 tracking-tight">
+                                            PKR {saleDetailReturns.reduce((sum, r) => sum + (r.totalAmount || r.total_amount || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Item Details Heading */}
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                                <h3 className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Items details ({selectedSaleDetail.items?.length})</h3>
+                                <h3 className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Items details ({liveSaleDetail.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0})</h3>
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                             </div>
 
                             {/* Items Grid with Detailed Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
-                                {selectedSaleDetail.items?.map((item, idx) => {
-                                    // item.product is already enriched by the backend DB JOIN with
-                                    // real-time category, brand, color, size, grade, condition data.
-                                    // Do NOT re-lookup from products state — IDs may be mixed types (int vs UUID).
+                                {liveSaleDetail.items?.map((item, idx) => {
                                     const displayProduct = item.product || item;
-
                                     return (
                                         <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 relative group overflow-hidden transition-all hover:scale-[1.02]">
                                             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-50 dark:border-slate-800">
@@ -935,7 +1012,7 @@ const Sales = ({ currentUser }) => {
                                                         <input
                                                             type="number"
                                                             className="w-16 px-2 py-1 mx-auto bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-center font-bold text-sm text-black dark:text-slate-200 outline-none focus:border-blue-500 transition-all"
-                                                            value={item.quantity || 1}
+                                                            value={item.quantity ?? 1}
                                                             onChange={(e) => {
                                                                 const newQty = parseInt(e.target.value) || 0;
                                                                 setCart(cart.map((c, i) => i === idx ? { ...c, quantity: newQty, total: c.price * newQty } : c));
@@ -944,8 +1021,11 @@ const Sales = ({ currentUser }) => {
                                                     </td>
                                                     <td className="px-6 py-4 text-right font-bold text-black dark:text-slate-200 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button onClick={() => removeFromCart(item.productId)} className="p-1.5 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 rounded-lg lg:opacity-0 group-hover:opacity-100 transition-all">
-                                                            <Trash2 size={14} />
+                                                        <button 
+                                                            onClick={() => removeFromCart(item.productId)} 
+                                                            className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
                                                         </button>
                                                     </td>
                                                 </tr>

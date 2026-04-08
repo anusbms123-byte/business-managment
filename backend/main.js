@@ -1311,6 +1311,52 @@ ipcMain.handle("get-sales", async (e, companyId) => {
     }
 });
 
+ipcMain.handle("get-sale-by-invoice", async (e, invoiceNo, companyId) => {
+    try {
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
+        const query = `
+            SELECT s.*, 
+                   c.name as customerName,
+                   s.inv_number as invoiceNo,
+                   s.grand_total as grandTotal
+            FROM sales s
+            LEFT JOIN customers c ON s.customer_id = c.id OR s.customer_id = c.global_id
+            WHERE (s.inv_number = ?) AND (s.company_id = ? OR s.company_id = ? OR s.company_id = ?)
+            AND (s.sync_status != 'deleted' OR s.sync_status IS NULL)
+            LIMIT 1
+        `;
+        const row = await db.asyncGet(query, [invoiceNo, ids.localId, ids.globalId, String(ids.localId)]);
+        if (!row) return { success: false, message: "Sale not found" };
+
+        const items = await db.asyncAll(`
+            SELECT si.*, 
+                   si.unit_price as price, 
+                   si.total_price as total,
+                   p.name, p.code as sku
+            FROM sale_items si
+            LEFT JOIN products p ON si.product_id = p.id OR si.product_id = p.global_id
+            WHERE si.sale_id = ? OR si.sale_id = ?
+        `, [row.global_id, String(row.id)]);
+
+        return {
+            success: true,
+            sale: {
+                ...row,
+                items: items.map(item => ({
+                    ...item,
+                    productId: item.product_id,
+                    price: item.unit_price,
+                    total: item.total_price
+                }))
+            }
+        };
+    } catch (err) {
+        console.error("get-sale-by-invoice Error:", err.message);
+        return { success: false, message: err.message };
+    }
+});
+
 ipcMain.handle("add-sale", async (e, data) => {
     try {
         const customer_id = data.customer_id || data.customerId;
@@ -1986,12 +2032,58 @@ ipcMain.handle("get-purchases", async (e, companyId) => {
     }
 });
 
+ipcMain.handle("get-purchase-by-invoice", async (e, invoiceNo, companyId) => {
+    try {
+        const finalCid = companyId || currentLoggedCompany;
+        const ids = await resolveCompanyIds(finalCid);
+        const query = `
+            SELECT p.*, 
+                   v.name as vendorName,
+                   p.ref_number as invoiceNo,
+                   p.total_amount as totalAmount
+            FROM purchases p
+            LEFT JOIN vendors v ON p.vendor_id = v.id OR p.vendor_id = v.global_id
+            WHERE (p.ref_number = ?) AND (p.company_id = ? OR p.company_id = ? OR p.company_id = ?)
+            AND (p.sync_status != 'deleted' OR p.sync_status IS NULL)
+            LIMIT 1
+        `;
+        const row = await db.asyncGet(query, [invoiceNo, ids.localId, ids.globalId, String(ids.localId)]);
+        if (!row) return { success: false, message: "Purchase not found" };
+
+        const items = await db.asyncAll(`
+            SELECT pi.*, 
+                   pi.unit_cost as unitCost,
+                   pi.total_cost as total,
+                   p.name, p.code as sku
+            FROM purchase_items pi
+            LEFT JOIN products p ON pi.product_id = p.id OR pi.product_id = p.global_id
+            WHERE pi.purchase_id = ? OR pi.purchase_id = ?
+        `, [row.global_id, String(row.id)]);
+
+        return {
+            success: true,
+            purchase: {
+                ...row,
+                items: items.map(item => ({
+                    ...item,
+                    productId: item.product_id,
+                    unitCost: item.unit_cost,
+                    total: item.total_cost
+                }))
+            }
+        };
+    } catch (err) {
+        console.error("get-purchase-by-invoice Error:", err.message);
+        return { success: false, message: err.message };
+    }
+});
+
 ipcMain.handle("add-purchase", async (e, data) => {
     try {
         const vendor_id = data.vendor_id || data.vendorId;
         const total_amount = data.total_amount || data.totalAmount || data.grandTotal || 0;
         const paid_amount = data.paid_amount || data.paidAmount || 0;
-        const ref_number = data.ref_number || data.refNumber || data.invoiceNo || `PUR-${Date.now()}`;
+        const ref_number = data.ref_number || data.refNumber || data.invoiceNo || `PUR-${Math.floor(Math.random() * 90000) + 10000}`;
         const shipping_cost = data.shipping_cost || data.shippingCost || 0;
         const discount = data.discount || 0;
         const tax_amount = data.tax_amount || data.tax || 0;
@@ -2008,9 +2100,9 @@ ipcMain.handle("add-purchase", async (e, data) => {
         const purchase_date = data.date || data.purchaseDate || data.purchase_date || new Date().toISOString().split('T')[0];
 
         const result = await db.asyncRun(
-            `INSERT INTO purchases (global_id, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, company_id, sync_status, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
-            [tempId, vendor_id, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, new Date().toISOString()]
+            `INSERT INTO purchases (global_id, vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, company_id, sync_status, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+            [tempId, vendor_id, ref_number, total_amount, paid_amount, shipping_cost, discount, tax_amount, notes, payment_method, payment_status, due_date, purchase_date, companyId, new Date().toISOString()]
         );
 
         if (items && Array.isArray(items)) {
@@ -2201,7 +2293,7 @@ ipcMain.handle("get-sale-returns", async (e, companyId) => {
 ipcMain.handle("add-sale-return", async (e, data) => {
     try {
         const customer_id = data.customer_id || data.customerId;
-        const sale_id = data.sale_id || data.saleId;
+        const sale_id = data.sale_id || data.saleId || data.purchase_id || data.purchaseId;
         const invoice_no = data.invoice_no || data.invoiceNo || `SR-${Date.now()}`;
         const sub_total = data.sub_total || data.subTotal || 0;
         const tax = data.tax || 0;
@@ -2211,17 +2303,22 @@ ipcMain.handle("add-sale-return", async (e, data) => {
         const companyId = data.companyId || data.company_id;
         const tempId = randomUUID();
 
+        const saleRow = await db.asyncGet("SELECT global_id, id FROM sales WHERE id = ? OR global_id = ? OR inv_number = ?", [sale_id, sale_id, sale_id]);
+        if (!saleRow) return { success: false, message: "Original sale not found" };
+        const targetSaleGid = saleRow.global_id;
+
         await db.asyncRun("BEGIN TRANSACTION");
 
         const result = await db.asyncRun(
             `INSERT INTO sale_returns (global_id, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, ?)`,
-            [tempId, customer_id, sale_id, invoice_no, sub_total, tax, total_amount, notes, companyId, new Date().toISOString()]
+            [tempId, customer_id, targetSaleGid, invoice_no, sub_total, tax, total_amount, notes, companyId, new Date().toISOString()]
         );
 
         const returnId = result.lastID;
+        const nowStr = new Date().toISOString();
 
-        // Add items and Update Stock
+        // 1. Add items, Update Stock, and Update Original Sale Items
         if (items && Array.isArray(items)) {
             for (const item of items) {
                 const pid = item.productId || item.product_id;
@@ -2233,12 +2330,34 @@ ipcMain.handle("add-sale-return", async (e, data) => {
                     `INSERT INTO sale_return_items (global_id, return_id, product_id, quantity, price, total) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, price, total]
                 );
+
                 // For Sale Return, Stock INCREASES
                 await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+
+                // Update Original Sale Item (Decrease sold quantity)
+                await db.asyncRun(`UPDATE sale_items SET quantity = quantity - ?, total_price = total_price - ? WHERE (sale_id = ? OR sale_id = ?) AND (product_id = ? OR product_id = (SELECT global_id FROM products WHERE id = ?))`, [qty, total, targetSaleGid, String(saleRow.id), pid, pid]);
             }
         }
 
-        // Update Customer Balance (Decrease Receivable)
+        // 2. Update Original Sale (Decrease grand total and recalculate status)
+        if (targetSaleGid) {
+            await db.asyncRun(`UPDATE sales SET grand_total = grand_total - ?, total_amount = total_amount - ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, sub_total, nowStr, targetSaleGid, targetSaleGid]);
+            
+            // Recalculate status
+            const sale = await db.asyncGet("SELECT grand_total, amount_paid FROM sales WHERE id = ? OR global_id = ?", [targetSaleGid, targetSaleGid]);
+            if (sale) {
+                const total = sale.grand_total;
+                const paid = sale.amount_paid;
+                let newStatus = 'PAID';
+                if (paid < total) {
+                    if (paid <= 0) newStatus = 'DUE';
+                    else newStatus = 'PARTIAL';
+                }
+                await db.asyncRun("UPDATE sales SET payment_status = ?, updated_at = ?, sync_status = 'pending' WHERE id = ? OR global_id = ?", [newStatus, nowStr, targetSaleGid, targetSaleGid]);
+            }
+        }
+
+        // 3. Update Customer Balance (Decrease Receivable)
         if (customer_id) {
             await db.asyncRun(`UPDATE customers SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
             await checkAndMarkSalesAsPaid(customer_id);
@@ -2246,7 +2365,10 @@ ipcMain.handle("add-sale-return", async (e, data) => {
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sale_returns', '/returns/sales');
-        return { success: true, id: returnId, global_id: tempId, message: "Sale return recorded locally, stock updated, and balance adjusted." };
+        syncService.syncPendingRecords('sales', '/sales');
+        syncService.syncPendingRecords('customers', '/customers');
+        syncService.syncPendingRecords('products', '/products');
+        return { success: true, id: returnId, global_id: tempId, message: "Sale return recorded, original sale updated, and balance adjusted." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
         console.error("add-sale-return Error:", err.message);
@@ -2260,30 +2382,60 @@ ipcMain.handle("delete-sale-return", async (e, id) => {
         if (!row) return { success: false, message: "Sale return not found" };
         const gid = row.global_id;
         const customer_id = row.customer_id;
+        const sale_id = row.sale_id;
         const total_amount = row.total_amount || 0;
+        const sub_total = row.sub_total || 0;
+        const nowStr = new Date().toISOString();
 
         const items = await db.asyncAll("SELECT * FROM sale_return_items WHERE return_id = ? OR return_id = ?", [gid, String(row.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
-        // 1. Reverse Stock (Decrease Stock, as we are cancelling the return)
+        // 1. Reverse Stock and Original Sale Items
         if (items && items.length > 0) {
             for (const item of items) {
+                // Return stock (Decrease stock as return is cancelled)
                 await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+
+                // Restore Original Sale Item (Increase sold quantity)
+                if (sale_id) {
+                    await db.asyncRun(`UPDATE sale_items SET quantity = quantity + ?, total_price = total_price + ? WHERE (sale_id = ? OR sale_id = (SELECT global_id FROM sales WHERE id = ?)) AND (product_id = ? OR product_id = (SELECT global_id FROM products WHERE id = ?))`, [item.quantity, item.total, sale_id, sale_id, item.product_id, item.product_id]);
+                }
             }
         }
 
-        // 2. Reverse Customer Balance (Increase Receivable, as we are cancelling the credit)
+        // 2. Reverse Original Sale (Increase grand total and restore status)
+        if (sale_id) {
+            await db.asyncRun(`UPDATE sales SET grand_total = grand_total + ?, total_amount = total_amount + ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, sub_total, nowStr, sale_id, sale_id]);
+
+            // Recalculate status
+            const sale = await db.asyncGet("SELECT grand_total, amount_paid FROM sales WHERE id = ? OR global_id = ?", [sale_id, sale_id]);
+            if (sale) {
+                const total = sale.grand_total;
+                const paid = sale.amount_paid;
+                let newStatus = 'PAID';
+                if (paid < total) {
+                    if (paid <= 0) newStatus = 'DUE';
+                    else newStatus = 'PARTIAL';
+                }
+                await db.asyncRun("UPDATE sales SET payment_status = ?, updated_at = ?, sync_status = 'pending' WHERE id = ? OR global_id = ?", [newStatus, nowStr, sale_id, sale_id]);
+            }
+        }
+
+        // 3. Reverse Customer Balance (Increase Receivable)
         if (customer_id) {
             await db.asyncRun(`UPDATE customers SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, customer_id, customer_id]);
         }
 
-        // 3. Mark as Deleted
+        // 4. Mark as Deleted
         await db.asyncRun("UPDATE sale_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('sale_returns', '/returns/sales');
-        return { success: true, message: "Sale return deleted, stock and balance reverted." };
+        syncService.syncPendingRecords('sales', '/sales');
+        syncService.syncPendingRecords('customers', '/customers');
+        syncService.syncPendingRecords('products', '/products');
+        return { success: true, message: "Sale return deleted, original sale and balance restored." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
         console.error("delete-sale-return Error:", err.message);
@@ -2335,7 +2487,7 @@ ipcMain.handle("get-purchase-returns", async (e, companyId) => {
 ipcMain.handle("add-purchase-return", async (e, data) => {
     try {
         const vendor_id = data.vendor_id || data.vendorId || null;
-        const purchase_id = data.purchase_id || data.purchaseId;
+        const purchase_id = data.purchase_id || data.purchaseId || data.sale_id || data.saleId;
         const invoice_no = data.invoice_no || data.invoiceNo || `PR-${Date.now()}`;
         const sub_total = data.sub_total || data.subTotal || 0;
         const tax = data.tax || 0;
@@ -2345,17 +2497,22 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
         const companyId = data.companyId || data.company_id;
         const tempId = randomUUID();
 
+        const purchaseRow = await db.asyncGet("SELECT global_id, id FROM purchases WHERE id = ? OR global_id = ? OR ref_number = ?", [purchase_id, purchase_id, purchase_id]);
+        if (!purchaseRow) return { success: false, message: "Original purchase not found" };
+        const targetPurchaseGid = purchaseRow.global_id;
+
         await db.asyncRun("BEGIN TRANSACTION");
 
         const result = await db.asyncRun(
             `INSERT INTO purchase_returns (global_id, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, company_id, sync_status, date, updated_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-            [tempId, vendor_id, purchase_id, invoice_no, sub_total, tax, total_amount, notes, companyId]
+            [tempId, vendor_id, targetPurchaseGid, invoice_no, sub_total, tax, total_amount, notes, companyId]
         );
 
         const returnId = result.lastID;
+        const nowStr = new Date().toISOString();
 
-        // Add items and Update Stock
+        // 1. Add items, Update Stock, and Update Original Purchase Items
         if (items && Array.isArray(items)) {
             for (const item of items) {
                 const pid = item.productId || item.product_id;
@@ -2367,12 +2524,34 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
                     `INSERT INTO purchase_return_items (global_id, return_id, product_id, quantity, unit_cost, total) VALUES (?, ?, ?, ?, ?, ?)`,
                     [randomUUID(), tempId, pid, qty, uCost, total]
                 );
+
                 // For Purchase Return, Stock DECREASES
                 await db.asyncRun(`UPDATE products SET stock_quantity = stock_quantity - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [qty, pid, pid]);
+
+                // Update Original Purchase Item (Decrease bought quantity)
+                await db.asyncRun(`UPDATE purchase_items SET quantity = quantity - ?, total_cost = total_cost - ? WHERE (purchase_id = ? OR purchase_id = ?) AND (product_id = ? OR product_id = (SELECT global_id FROM products WHERE id = ?))`, [qty, total, targetPurchaseGid, String(purchaseRow.id), pid, pid]);
             }
         }
 
-        // Update Vendor Balance (Decrease Payable)
+        // 2. Update Original Purchase (Decrease total amount)
+        if (targetPurchaseGid) {
+            await db.asyncRun(`UPDATE purchases SET total_amount = total_amount - ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, nowStr, targetPurchaseGid, targetPurchaseGid]);
+
+            // Recalculate status
+            const purchase = await db.asyncGet("SELECT total_amount, paid_amount FROM purchases WHERE id = ? OR global_id = ?", [targetPurchaseGid, targetPurchaseGid]);
+            if (purchase) {
+                const total = purchase.total_amount;
+                const paid = purchase.paid_amount;
+                let newStatus = 'RECEIVED';
+                if (paid < total) {
+                    if (paid <= 0) newStatus = 'DUE';
+                    else newStatus = 'PARTIAL';
+                }
+                await db.asyncRun("UPDATE purchases SET payment_status = ?, updated_at = ?, sync_status = 'pending' WHERE id = ? OR global_id = ?", [newStatus, nowStr, targetPurchaseGid, targetPurchaseGid]);
+            }
+        }
+
+        // 3. Update Vendor Balance (Decrease Payable)
         if (vendor_id) {
             await db.asyncRun(`UPDATE vendors SET current_balance = current_balance - ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
             await checkAndMarkPurchasesAsReceived(vendor_id);
@@ -2380,7 +2559,10 @@ ipcMain.handle("add-purchase-return", async (e, data) => {
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchase_returns', '/returns/purchases');
-        return { success: true, id: returnId, global_id: tempId, message: "Purchase return recorded locally, stock updated, and balance adjusted." };
+        syncService.syncPendingRecords('purchases', '/purchases');
+        syncService.syncPendingRecords('vendors', '/vendors');
+        syncService.syncPendingRecords('products', '/products');
+        return { success: true, id: returnId, global_id: tempId, message: "Purchase return recorded, original purchase updated." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
         console.error("add-purchase-return Error:", err.message);
@@ -2394,31 +2576,61 @@ ipcMain.handle("delete-purchase-return", async (e, id) => {
         if (!row) return { success: false, message: "Purchase return not found" };
         const gid = row.global_id;
         const vendor_id = row.vendor_id;
+        const purchase_id = row.purchase_id;
         const total_amount = row.total_amount || 0;
+        const sub_total = row.sub_total || 0;
+        const nowStr = new Date().toISOString();
 
         const items = await db.asyncAll("SELECT * FROM purchase_return_items WHERE return_id = ? OR return_id = ?", [gid, String(row.id)]);
 
         await db.asyncRun("BEGIN TRANSACTION");
 
-        // 1. Reverse Stock (Increase Stock, as we are cancelling the return)
+        // 1. Reverse Stock and Original Purchase Items
         if (items && items.length > 0) {
             for (const item of items) {
+                // Return stock (Increase stock as purchase return is cancelled)
                 await db.asyncRun("UPDATE products SET stock_quantity = stock_quantity + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id=? OR global_id=?", [item.quantity, item.product_id, item.product_id]);
+
+                // Restore Original Purchase Item (Increase bought quantity)
+                if (purchase_id) {
+                    await db.asyncRun(`UPDATE purchase_items SET quantity = quantity + ?, total_cost = total_cost + ? WHERE (purchase_id = ? OR purchase_id = (SELECT global_id FROM purchases WHERE id = ?)) AND (product_id = ? OR product_id = (SELECT global_id FROM products WHERE id = ?))`, [item.quantity, item.total, purchase_id, purchase_id, item.product_id, item.product_id]);
+                }
             }
         }
 
-        // 2. Reverse Vendor Balance (Increase Payable, as we are cancelling the debit note)
+        // 2. Reverse Original Purchase (Increase total amount and restore status)
+        if (purchase_id) {
+            await db.asyncRun(`UPDATE purchases SET total_amount = total_amount + ?, sync_status = 'pending', updated_at = ? WHERE id = ? OR global_id = ?`, [total_amount, nowStr, purchase_id, purchase_id]);
+
+            // Recalculate status
+            const purchase = await db.asyncGet("SELECT total_amount, paid_amount FROM purchases WHERE id = ? OR global_id = ?", [purchase_id, purchase_id]);
+            if (purchase) {
+                const total = purchase.total_amount;
+                const paid = purchase.paid_amount;
+                let newStatus = 'RECEIVED';
+                if (paid < total) {
+                    if (paid <= 0) newStatus = 'DUE';
+                    else newStatus = 'PARTIAL';
+                }
+                await db.asyncRun("UPDATE purchases SET payment_status = ?, updated_at = ?, sync_status = 'pending' WHERE id = ? OR global_id = ?", [newStatus, nowStr, purchase_id, purchase_id]);
+            }
+        }
+
+        // 3. Reverse Vendor Balance (Increase Payable)
         if (vendor_id) {
             await db.asyncRun(`UPDATE vendors SET current_balance = current_balance + ?, sync_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? OR global_id = ?`, [total_amount, vendor_id, vendor_id]);
             await checkAndMarkPurchasesAsReceived(vendor_id);
         }
 
-        // 3. Mark as Deleted
+        // 4. Mark as Deleted
         await db.asyncRun("UPDATE purchase_returns SET sync_status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE global_id = ?", [gid]);
 
         await db.asyncRun("COMMIT");
         syncService.syncPendingRecords('purchase_returns', '/returns/purchases');
-        return { success: true, message: "Purchase return deleted, stock and balance reverted." };
+        syncService.syncPendingRecords('purchases', '/purchases');
+        syncService.syncPendingRecords('vendors', '/vendors');
+        syncService.syncPendingRecords('products', '/products');
+        return { success: true, message: "Purchase return deleted, original purchase and balance restored." };
     } catch (err) {
         await db.asyncRun("ROLLBACK").catch(() => { });
         console.error("delete-purchase-return Error:", err.message);

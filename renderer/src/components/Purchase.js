@@ -612,7 +612,7 @@ const Purchase = ({ currentUser }) => {
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold">
                                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-sm font-semibold text-slate-600 dark:text-slate-400 tracking-tight">
-                                            {p.items?.length || 0} items
+                                            {p.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0} items
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 font-semibold text-sm text-black dark:text-slate-100">PKR {(p.totalAmount || 0).toLocaleString()}</td>
@@ -1478,7 +1478,7 @@ const Purchase = ({ currentUser }) => {
                             {/* Item Details Heading */}
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
-                                <h3 className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Items details ({selectedPurchaseDetail.items?.length})</h3>
+                                <h3 className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Items details ({selectedPurchaseDetail.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0})</h3>
                                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                             </div>
 
