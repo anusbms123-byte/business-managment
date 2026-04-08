@@ -434,11 +434,38 @@ ipcMain.handle("get-company-requests", async (e, filters) => {
 });
 
 ipcMain.handle("approve-company-request", async (e, id) => {
-    return await apiCall('post', `/company-requests/${id}/approve`);
+    const result = await apiCall('post', `/company-requests/${id}/approve`);
+    
+    // If approval successful and server signals to sync immediately
+    if (result.success && result.forceSync) {
+        console.log('[COMPANY-REQUEST] Approval success! Triggering immediate data sync...');
+        // Trigger async sync without blocking the response
+        setTimeout(() => {
+            syncService.pullAllData(null); // Pull all data for Super Admin
+        }, 100);
+    }
+    
+    return result;
 });
 
 ipcMain.handle("reject-company-request", async (e, id, notes) => {
-    return await apiCall('post', `/company-requests/${id}/reject`, { notes });
+    const result = await apiCall('post', `/company-requests/${id}/reject`, { notes });
+    
+    // If rejection successful and server signals to sync immediately
+    if (result.success && result.forceSync) {
+        console.log('[COMPANY-REQUEST] Rejection success! Triggering immediate data sync...');
+        // Trigger async sync without blocking the response
+        setTimeout(() => {
+            if (result.syncTables && result.syncTables.length > 0) {
+                // Sync specific tables mentioned in response
+                syncService.pullAllData(null); // For now pull all, but can be optimized per table
+            } else {
+                syncService.pullAllData(null);
+            }
+        }, 100);
+    }
+    
+    return result;
 });
 
 ipcMain.handle("create-company", async (e, data) => {

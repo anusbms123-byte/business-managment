@@ -291,6 +291,16 @@ app.get('/api/users', async (req, res) => {
         }
         // In global view (no companyId), we return ALL users including Super Admins
 
+        // Get all pending company requests to exclude those users
+        const pendingRequests = await prisma.companyRequest.findMany({
+            where: { status: 'PENDING' },
+            select: { userId: true }
+        });
+        const pendingUserIds = pendingRequests.map(r => r.userId);
+
+        if (pendingUserIds.length > 0) {
+            where.id = { notIn: pendingUserIds };
+        }
 
         const users = await prisma.user.findMany({
             where,
@@ -3397,7 +3407,17 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
             // Assuming 'Admin' role is global system role, which user already has.
         });
 
-        res.json({ success: true, message: 'Company approved and created' });
+        res.json({ 
+            success: true, 
+            message: 'Company approved and created',
+            approvedUserId: request.userId,
+            approvedUsername: request.user?.username,
+            companyId: company.id,
+            companyName: company.name,
+            action: 'COMPANY_APPROVED',
+            forceSync: true, // Signal: Pull fresh data from cloud immediately!
+            syncTables: ['users', 'companies', 'roles'] // Tables to refresh
+        });
     } catch (e) { handleError(res, e); }
 });
 
@@ -3429,7 +3449,10 @@ app.post('/api/company-requests/:id/reject', async (req, res) => {
             message: 'Request rejected and user deleted',
             deletedUserId: request.userId,
             deletedUserUsername: userToDelete?.username,
-            companyId: userToDelete?.companyId
+            companyId: userToDelete?.companyId,
+            forceSync: true, // Signal: Pull fresh data from cloud immediately!
+            syncTables: ['users'], // Users table will be refreshed, deleted user gone
+            action: 'FORCE_USERS_REFRESH' // Super Admin should immediately refresh users list
         });
     } catch (e) { handleError(res, e); }
 });
