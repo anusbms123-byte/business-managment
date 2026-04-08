@@ -3369,50 +3369,61 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
         const requestId = req.params.id;
 
         const request = await prisma.companyRequest.findUnique({ where: { id: requestId }, include: { user: true } });
-        if (!request) return res.status(404).json({ message: 'Request not found' });
-        if (request.status !== 'PENDING') return res.status(400).json({ message: 'Request already processed' });
-
-        // Transaction: Create Company, Update User, Update Request
-        await prisma.$transaction(async (tx) => {
-            // 1. Create Company
-            const company = await tx.company.create({
-                data: {
-                    name: request.companyName,
-                    email: request.companyEmail,
-                    phone: request.companyPhone,
-                    address: request.companyAddress,
-                    officePhone: request.officePhone,
-                    privatePhone: request.privatePhone,
-                    website: request.website,
-                    secondaryAddress: request.secondaryAddress,
-                    city: request.city,
-                    state: request.state,
-                    zipCode: request.zipCode,
-                    country: request.country,
-                    referralCode: request.referralCode,
-                    currency: 'PKR' // Default
-                }
+        if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+        
+        console.log(`[APPROVE] Request ID: ${requestId}, Current Status: ${request.status}`);
+        
+        if (request.status !== 'PENDING') {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Request already processed. Current status: ${request.status}`,
+                currentStatus: request.status
             });
+        }
 
-            // 2. Update User (Link to company)
-            await tx.user.update({
-                where: { id: request.userId },
-                data: {
-                    companyId: company.id,
-                    isActive: true
-                }
+        let company;
+        try {
+            // Transaction: Create Company, Update User, Update Request
+            await prisma.$transaction(async (tx) => {
+                // 1. Create Company
+                company = await tx.company.create({
+                    data: {
+                        name: request.companyName,
+                        email: request.companyEmail,
+                        phone: request.companyPhone,
+                        address: request.companyAddress,
+                        officePhone: request.officePhone,
+                        privatePhone: request.privatePhone,
+                        website: request.website,
+                        secondaryAddress: request.secondaryAddress,
+                        city: request.city,
+                        state: request.state,
+                        zipCode: request.zipCode,
+                        country: request.country,
+                        referralCode: request.referralCode,
+                        currency: 'PKR' // Default
+                    }
+                });
+
+                // 2. Update User (Link to company)
+                await tx.user.update({
+                    where: { id: request.userId },
+                    data: {
+                        companyId: company.id,
+                        isActive: true
+                    }
+                });
+
+                // 3. Update Request Status
+                await tx.companyRequest.update({
+                    where: { id: requestId },
+                    data: { status: 'APPROVED' }
+                });
             });
-
-            // 3. Update Request Status
-            await tx.companyRequest.update({
-                where: { id: requestId },
-                data: { status: 'APPROVED' }
-            });
-
-            // 4. (Optional) Create Default Roles/Data for new company if needed? 
-            // The system seems to share roles or have system roles. 
-            // Assuming 'Admin' role is global system role, which user already has.
-        });
+        } catch (txError) {
+            console.error('[APPROVE] Transaction Error:', txError.message);
+            throw txError;
+        }
 
         res.json({ 
             success: true, 
@@ -3425,7 +3436,10 @@ app.post('/api/company-requests/:id/approve', async (req, res) => {
             forceSync: true, // Signal: Pull fresh data from cloud immediately!
             syncTables: ['users', 'companies', 'roles'] // Tables to refresh
         });
-    } catch (e) { handleError(res, e); }
+    } catch (e) { 
+        console.error('[APPROVE] Error:', e.message);
+        handleError(res, e); 
+    }
 });
 
 // 7.6 Reject Request
