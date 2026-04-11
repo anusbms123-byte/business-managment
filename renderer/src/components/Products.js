@@ -657,7 +657,7 @@ const Products = ({ currentUser }) => {
                                             {product.category?.name || 'Uncategorized'}
                                         </span>
                                     </td>
-                                     <td className="px-14 py-4 border-b border-slate-50 dark:border-slate-800">
+                                    <td className="px-14 py-4 border-b border-slate-50 dark:border-slate-800">
                                         <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded text-sm font-semibold border ${product.stockQty > (product.alertQty || 5) ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50' :
                                             product.stockQty > 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/50' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
                                             }`}>
@@ -728,132 +728,132 @@ const Products = ({ currentUser }) => {
                                 <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                                     {/* Basic Info & SKU & Classification */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Name *
-                                             </label>
-                                             <input required type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Enter Product Name" />
-                                         </div>
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 ID
-                                             </label>
-                                             <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="ID" />
-                                         </div>
-                                         <CreatableSelect
-                                             label="Category"
-                                             icon={Box}
-                                             value={formData.category_name}
-                                             options={categories}
-                                             onChange={(val) => setFormData({ ...formData, category_name: val })}
-                                             onDeleteOption={(opt) => handleDeleteCategory(opt.id)}
-                                             placeholder="Category name"
-                                         />
-                                         <CreatableSelect
-                                             label="Brand"
-                                             icon={Tag}
-                                             value={formData.brand_name}
-                                             options={brands}
-                                             onChange={(val) => setFormData({ ...formData, brand_name: val })}
-                                             onDeleteOption={(opt) => handleDeleteBrand(opt.id)}
-                                             placeholder="Brand name"
-                                         />
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Unit
-                                             </label>
-                                             <select className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none appearance-none cursor-pointer text-black dark:text-slate-100" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
-                                                 <option value="pcs">Pieces (pcs)</option>
-                                                 <option value="kg">Kilogram (kg)</option>
-                                                 <option value="gram">Gram (g)</option>
-                                                 <option value="ltr">Liter (ltr)</option>
-                                                 <option value="mtr">Meter (m)</option>
-                                                 <option value="box">Box</option>
-                                                 <option value="pkt">Packet</option>
-                                             </select>
-                                         </div>
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Weight (kg)
-                                             </label>
-                                             <input type="number" step="0.01" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
-                                         </div>
-                                     </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Name *
+                                            </label>
+                                            <input required type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Enter Product Name" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                ID
+                                            </label>
+                                            <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} placeholder="ID" />
+                                        </div>
+                                        <CreatableSelect
+                                            label="Category"
+                                            icon={Box}
+                                            value={formData.category_name}
+                                            options={categories}
+                                            onChange={(val) => setFormData({ ...formData, category_name: val })}
+                                            onDeleteOption={(opt) => handleDeleteCategory(opt.id)}
+                                            placeholder="Category name"
+                                        />
+                                        <CreatableSelect
+                                            label="Brand"
+                                            icon={Tag}
+                                            value={formData.brand_name}
+                                            options={brands}
+                                            onChange={(val) => setFormData({ ...formData, brand_name: val })}
+                                            onDeleteOption={(opt) => handleDeleteBrand(opt.id)}
+                                            placeholder="Brand name"
+                                        />
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Unit
+                                            </label>
+                                            <select className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none appearance-none cursor-pointer text-black dark:text-slate-100" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })}>
+                                                <option value="pcs">Pieces (pcs)</option>
+                                                <option value="kg">Kilogram (kg)</option>
+                                                <option value="gram">Gram (g)</option>
+                                                <option value="ltr">Liter (ltr)</option>
+                                                <option value="mtr">Meter (m)</option>
+                                                <option value="box">Box</option>
+                                                <option value="pkt">Packet</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Weight (kg)
+                                            </label>
+                                            <input type="number" step="0.01" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.weight || ''} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
+                                        </div>
+                                    </div>
 
-                                     {/* Pricing & Stock */}
-                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Cost price
-                                             </label>
-                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="Cost price" />
-                                         </div>
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Sell price
-                                             </label>
-                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell price" />
-                                         </div>
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Stock *
-                                             </label>
-                                             <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.stock_qty || ''} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
-                                         </div>
-                                         <div className="space-y-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Alert
-                                             </label>
-                                             <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.alert_qty || ''} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
-                                         </div>
-                                         <div className="space-y-2 md:col-span-2">
-                                             <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                 Expiry date
-                                             </label>
-                                             <input type="date" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
-                                         </div>
-                                     </div>
+                                    {/* Pricing & Stock */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Cost price
+                                            </label>
+                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-emerald-500 dark:focus:border-emerald-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.cost_price || ''} onChange={e => setFormData({ ...formData, cost_price: e.target.value })} placeholder="Cost price" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Sell price
+                                            </label>
+                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.sell_price || ''} onChange={e => setFormData({ ...formData, sell_price: e.target.value })} placeholder="Sell price" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Stock *
+                                            </label>
+                                            <input required type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.stock_qty || ''} onChange={e => setFormData({ ...formData, stock_qty: e.target.value })} placeholder="0" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Alert
+                                            </label>
+                                            <input type="number" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.alert_qty || ''} onChange={e => setFormData({ ...formData, alert_qty: e.target.value })} placeholder="5" />
+                                        </div>
+                                        <div className="space-y-2 md:col-span-2">
+                                            <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                Expiry date
+                                            </label>
+                                            <input type="date" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100" value={formData.expiry_date} onChange={e => setFormData({ ...formData, expiry_date: e.target.value })} />
+                                        </div>
+                                    </div>
 
 
 
-                                     {/* Optional Fields Toggle */}
-                                     <div className="pt-4">
-                                         <button
-                                             type="button"
-                                             onClick={() => setShowOptional(!showOptional)}
-                                             className="flex items-center gap-2 text-sm font-semibold text-black dark:text-slate-300 tracking-tight hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-100 dark:border-slate-700"
-                                         >
-                                             {showOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                             {showOptional ? 'Hide' : 'Show'} optional specifications
-                                         </button>
-                                     </div>
+                                    {/* Optional Fields Toggle */}
+                                    <div className="pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowOptional(!showOptional)}
+                                            className="flex items-center gap-2 text-sm font-semibold text-black dark:text-slate-300 tracking-tight hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-100 dark:border-slate-700"
+                                        >
+                                            {showOptional ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                            {showOptional ? 'Hide' : 'Show'} optional specifications
+                                        </button>
+                                    </div>
 
-                                     {showOptional && (
-                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 animate-in slide-in-from-top-2 duration-200">
-                                             <div className="space-y-2">
-                                                 <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Color/variation</label>
-                                                 <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} placeholder="e.g. Sierra Blue" />
-                                             </div>
-                                             <div className="space-y-2">
-                                                 <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Size/dimensions</label>
-                                                 <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} placeholder="e.g. 6.7 inch" />
-                                             </div>
-                                             <div className="space-y-2">
-                                                 <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Product grade</label>
-                                                 <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })} placeholder="e.g. Grade A+" />
-                                             </div>
-                                             <div className="space-y-2">
-                                                 <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Condition</label>
-                                                 <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} placeholder="e.g. New" />
-                                             </div>
+                                    {showOptional && (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 animate-in slide-in-from-top-2 duration-200">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Color/variation</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} placeholder="e.g. Sierra Blue" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Size/dimensions</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.size} onChange={e => setFormData({ ...formData, size: e.target.value })} placeholder="e.g. 6.7 inch" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Product grade</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })} placeholder="e.g. Grade A+" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-300 tracking-tight ml-1">Condition</label>
+                                                <input type="text" className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 transition-all font-semibold text-sm outline-none text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.condition} onChange={e => setFormData({ ...formData, condition: e.target.value })} placeholder="e.g. New" />
+                                            </div>
 
-                                             <div className="space-y-2 md:col-span-3">
-                                                 <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
-                                                     Description
-                                                 </label>
-                                                 <textarea className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none min-h-[100px] text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
-                                             </div>
-                                         </div>
+                                            <div className="space-y-2 md:col-span-3">
+                                                <label className="text-sm font-semibold text-black dark:text-slate-400 tracking-tight ml-1">
+                                                    Description
+                                                </label>
+                                                <textarea className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-750 focus:border-blue-500 dark:focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all font-semibold text-sm outline-none min-h-[100px] text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Additional product details..." />
+                                            </div>
+                                        </div>
                                     )}
                                     <div className="pt-6 sticky bottom-0 bg-white dark:bg-slate-900 pb-8 transition-colors duration-300">
                                         <button type="submit" disabled={saving} className="w-full py-4 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-sm tracking-tight disabled:opacity-70">

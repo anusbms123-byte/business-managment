@@ -41,6 +41,7 @@ const Sales = ({ currentUser }) => {
     const [isProductListVisible, setIsProductListVisible] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [hoveredProduct, setHoveredProduct] = useState(null);
+    const [companyInfo, setCompanyInfo] = useState(null);
 
     const { showAlert, showConfirm, showError } = useDialog();
 
@@ -70,6 +71,9 @@ const Sales = ({ currentUser }) => {
                 if (fetchedSales?.success === false) console.error("Sales Error:", fetchedSales.message);
                 if (fetchedProducts?.success === false) console.error("Product Error:", fetchedProducts.message);
                 if (fetchedCustomers?.success === false) console.error("Customer Error:", fetchedCustomers.message);
+
+                const fetchedCompany = await window.electronAPI.getCompany(currentUser.company_id);
+                setCompanyInfo(fetchedCompany);
 
             } catch (err) {
                 console.error('Error in fetchData:', err);
@@ -144,12 +148,14 @@ const Sales = ({ currentUser }) => {
             setCart(cart.map(item => (item.productId === product.id && item.price === currentPrice) ? {
                 ...item,
                 quantity: item.quantity + parseInt(qty),
-                total: (item.quantity + parseInt(qty)) * currentPrice
+                total: (item.quantity + parseInt(qty)) * currentPrice,
+                sku: product.sku
             } : item));
         } else {
             setCart([...cart, {
                 productId: product.id,
                 name: product.name,
+                sku: product.sku,
                 price: currentPrice,
                 quantity: parseInt(qty),
                 total: parseInt(qty) * currentPrice
@@ -286,7 +292,7 @@ const Sales = ({ currentUser }) => {
         setPrintReceiptData(saleData);
         setTimeout(() => {
             window.print();
-        }, 100);
+        }, 500); // Increased delay to ensure React renders the print section
     };
 
     const handleSaveSale = async () => {
@@ -319,18 +325,19 @@ const Sales = ({ currentUser }) => {
                 tax: taxValue,
                 totalAmount: grandTotal,
                 grandTotal: grandTotal,
-                shippingCost: parseFloat(shippingCost),
-                paidAmount: parseFloat(effectivePaidAmount),
-                amountPaid: parseFloat(effectivePaidAmount),
-                amount_paid: parseFloat(effectivePaidAmount),
-                actual_received: parseFloat(amountPaid),
+                shippingCost: parseFloat(shippingCost || 0),
+                paidAmount: parseFloat(effectivePaidAmount || 0),
+                amountPaid: parseFloat(effectivePaidAmount || 0),
+                amount_paid: parseFloat(effectivePaidAmount || 0),
+                actual_received: parseFloat(amountPaid || 0),
                 paymentMethod,
                 paymentStatus,
                 notes,
                 items: cart,
                 customerName: cust?.name || 'Walk-in Customer',
                 date: new Date(),
-                prevBalance: Number(previousBalance) || 0
+                prevBalance: Number(previousBalance) || 0,
+                returnChange: returnChange
             };
 
             const result = editingId
@@ -1021,8 +1028,8 @@ const Sales = ({ currentUser }) => {
                                                     </td>
                                                     <td className="px-6 py-4 text-right font-bold text-black dark:text-slate-200 text-sm">PKR {(item.total || 0).toLocaleString()}</td>
                                                     <td className="px-6 py-4 text-right">
-                                                        <button 
-                                                            onClick={() => removeFromCart(item.productId)} 
+                                                        <button
+                                                            onClick={() => removeFromCart(item.productId)}
                                                             className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
                                                         >
                                                             <Trash2 size={16} />
@@ -1224,51 +1231,212 @@ const Sales = ({ currentUser }) => {
                 </div>
             )}
 
-            {/* Hidden Thermal Receipt Print Section */}
-            <div className="hidden print:block print:fixed print:inset-0 print:bg-white print:z-[9999] print:p-0">
+            {/* Thermal Receipt Print Section */}
+            <div className="print-container">
                 <style>{`
+                    .print-container { display: none; }
                     @media print {
-                        body * { visibility: hidden; }
-                        #receipt-print-section, #receipt-print-section * { visibility: visible; }
-                        #receipt-print-section {
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%; /* Adapts to page size (80mm/58mm) */
-                            max-width: 80mm; /* Constraint for larger pages */
-                            font-family: 'Courier New', Courier, monospace;
-                            font-size: 11px;
-                            color: #000;
-                            padding: 0;
+                        @page { 
+                            size: A4 portrait; 
                             margin: 0;
                         }
-                        .print-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
-                        .print-divider { border-bottom: 1px dashed #000; margin: 5px 0; }
-                        .print-header { text-align: center; margin-bottom: 10px; }
-                        .print-bold { font-weight: bold; }
-                        .print-center { text-align: center; }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            visibility: hidden !important;
+                        }
+                        .print-container, .print-container * {
+                            visibility: visible !important;
+                        }
+                        .print-container {
+                            display: block !important;
+                            position: absolute !important;
+                            top: 0 !important;
+                            left: 0 !important;
+                            width: 210mm !important;
+                            min-height: 297mm !important;
+                            padding: 15mm 10mm !important;
+                            background: #fff !important;
+                            z-index: 9999999 !important;
+                        }
+                        .inv-wrap { width: 100%; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000; background: #fff; }
+                        .inv-header { text-align: center; padding-bottom: 12px; border-bottom: 2px solid #000; margin-bottom: 14px; }
+                        .inv-company-name { font-size: 20px; font-weight: 700; text-transform: uppercase; color: #000; letter-spacing: 1px; margin-bottom: 4px; }
+                        .inv-company-sub { font-size: 11px; color: #000; line-height: 1.6; }
+                        .inv-title-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+                        .inv-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #000; }
+                        .inv-status { font-size: 10px; font-weight: 700; border: 1px solid #000; padding: 2px 10px; text-transform: uppercase; }
+                        .inv-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #000; }
+                        .inv-meta-item { display: flex; flex-direction: column; }
+                        .inv-meta-item.right { text-align: right; }
+                        .inv-meta-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-bottom: 2px; }
+                        .inv-meta-value { font-size: 12px; font-weight: 600; color: #000; }
+                        .inv-table { width: 100%; border-collapse: collapse; }
+                        .inv-table thead tr { border-top: 1px solid #000; border-bottom: 1px solid #000; }
+                        .inv-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 7px 4px; color: #000; text-align: left; }
+                        .inv-table thead th.r { text-align: right; }
+                        .inv-table thead th.c { text-align: center; }
+                        .inv-table tbody tr { border-bottom: 1px solid #e0e0e0; }
+                        .inv-table tbody td { padding: 8px 4px; font-size: 11px; color: #000; vertical-align: top; }
+                        .inv-table tbody td.r { text-align: right; }
+                        .inv-table tbody td.c { text-align: center; }
+                        .inv-item-name { font-weight: 600; color: #000; }
+                        .inv-item-sku { font-size: 9px; color: #555; margin-top: 2px; }
+                        .inv-totals-wrap { display: flex; justify-content: flex-end; margin-top: 14px; padding-top: 8px; border-top: 1px solid #000; }
+                        .inv-totals { width: 260px; }
+                        .inv-total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; color: #000; border-bottom: 1px solid #ebebeb; }
+                        .inv-total-row:last-child { border-bottom: none; }
+                        .inv-total-grand { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; font-weight: 700; color: #000; border-top: 2px solid #000; border-bottom: 2px solid #000; margin-top: 4px; }
+                        .inv-total-label { font-weight: 600; }
+                        .inv-notes { margin-top: 20px; padding: 8px 10px; border: 1px solid #ccc; font-size: 11px; color: #000; }
+                        .inv-notes-label { font-weight: 700; font-size: 10px; text-transform: uppercase; margin-bottom: 3px; }
+                        .inv-footer { margin-top: 30px; text-align: center; padding-top: 12px; border-top: 1px solid #ccc; font-size: 11px; color: #000; }
+                        .inv-footer-tagline { font-weight: 600; margin-bottom: 12px; }
+                        .inv-biznex { font-size: 9px; color: #999; letter-spacing: 1px; text-transform: uppercase; }
                     }
                 `}</style>
 
                 {printReceiptData && (
-                    <div id="receipt-print-section">
-                        {/* Header */}
-                        <div className="print-header">
-                            <div className="print-bold" style={{ fontSize: '14px' }}>BMS STORE</div>
-                            <div>Gulshan-e-Iqbal, Karachi</div>
-                            <div>Phone: 0312-3456789</div>
-                        </div>
+                    <div className="inv-wrap">
+                        {(() => {
+                            const items = printReceiptData.items || [];
+                            const subTotalVal = printReceiptData.subTotal ?? printReceiptData.sub_total ?? printReceiptData.subtotal ?? items.reduce((sum, item) => sum + (Number(item.total ?? item.total_price ?? item.totalPrice ?? ( (item.price ?? item.unitPrice ?? item.unit_price ?? 0) * (item.quantity ?? 0) )) || 0), 0);
+                            const discountVal = Number(printReceiptData.discount ?? printReceiptData.discount_amount ?? 0) || 0;
+                            const taxVal = Number(printReceiptData.tax ?? printReceiptData.tax_amount ?? 0) || 0;
+                            const shippingVal = Number(printReceiptData.shippingCost ?? printReceiptData.shipping_cost ?? 0) || 0;
+                            const totalVal = Number(printReceiptData.totalAmount ?? printReceiptData.total_amount ?? printReceiptData.grandTotal ?? 0) || 0;
+                            
+                            // Robust fallbacks for paid amount
+                            const paidVal = Number(printReceiptData.actual_received ?? printReceiptData.amount_paid ?? printReceiptData.paid_amount ?? printReceiptData.paidAmount ?? printReceiptData.amountPaid ?? 0) || 0;
+                            const appliedVal = Number(printReceiptData.paidAmount ?? printReceiptData.paid_amount ?? printReceiptData.amountPaid ?? printReceiptData.amount_paid ?? 0) || 0;
+                            
+                            const balanceVal = Math.max(0, totalVal - appliedVal);
+                            const changeVal = Math.max(0, paidVal - totalVal);
 
-                        {/* Invoice Info */}
-                        <div className="print-divider"></div>
-                        <div className="print-row">
-                            <span>Inv #: {printReceiptData.invoiceNo}</span>
-                            <span>{new Date(printReceiptData.date || new Date()).toLocaleDateString()}</span>
-                        </div>
-                        <div className="print-row">
-                            <span>Cust: {printReceiptData.customerName || ((printReceiptData.customer?.name) ? printReceiptData.customer.name : 'Walk-in')}</span>
-                            <span>{new Date(printReceiptData.date || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+                            return (
+                                <>
+                                    <div className="inv-header">
+                                        <div className="inv-company-name">{companyInfo?.name || 'Company Name'}</div>
+                                        <div className="inv-company-sub">
+                                            {companyInfo?.address && <span>{companyInfo.address}</span>}
+                                            {companyInfo?.phone && <span> &nbsp;|&nbsp; Tel: {companyInfo.phone}</span>}
+                                            {companyInfo?.email && <span> &nbsp;|&nbsp; {companyInfo.email}</span>}
+                                        </div>
+                                    </div>
+
+                                    <div className="inv-title-bar">
+                                        <div className="inv-title">Sales Invoice</div>
+                                        <div className="inv-status">{printReceiptData.paymentStatus || 'DUE'}</div>
+                                    </div>
+
+                                    <div className="inv-meta">
+                                        <div className="inv-meta-item">
+                                            <span className="inv-meta-label">Invoice No.</span>
+                                            <span className="inv-meta-value">{printReceiptData.invoiceNo}</span>
+                                        </div>
+                                        <div className="inv-meta-item right">
+                                            <span className="inv-meta-label">Date &amp; Time</span>
+                                            <span className="inv-meta-value">
+                                                {new Date(printReceiptData.date || new Date()).toLocaleString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="inv-meta-item">
+                                            <span className="inv-meta-label">Customer</span>
+                                            <span className="inv-meta-value">{printReceiptData.customerName || 'Walk-in Customer'}</span>
+                                        </div>
+                                        <div className="inv-meta-item right">
+                                            <span className="inv-meta-label">Payment Method</span>
+                                            <span className="inv-meta-value">{printReceiptData.paymentMethod || 'Cash'}</span>
+                                        </div>
+                                    </div>
+
+                                    <table className="inv-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '15%' }}>SKU</th>
+                                                <th style={{ width: '35%' }}>Item Description</th>
+                                                <th className="c" style={{ width: '10%' }}>Qty</th>
+                                                <th className="r" style={{ width: '20%' }}>Unit Price</th>
+                                                <th className="r" style={{ width: '20%' }}>Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td>{item.product?.sku || item.sku || '-'}</td>
+                                                    <td>
+                                                        <div className="inv-item-name">{item.product?.name || item.name || 'Unknown Item'}</div>
+                                                    </td>
+                                                    <td className="c">{item.quantity}</td>
+                                                    <td className="r">PKR {Number(item.price ?? item.unitPrice ?? item.unit_price ?? 0).toLocaleString()}</td>
+                                                    <td className="r">PKR {Number(item.total ?? item.total_price ?? item.totalPrice ?? ( (item.price ?? item.unitPrice ?? item.unit_price ?? 0) * (item.quantity ?? 0) )).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    <div className="inv-totals-wrap">
+                                        <div className="inv-totals">
+                                            <div className="inv-total-row">
+                                                <span className="inv-total-label">Subtotal</span>
+                                                <span>PKR {Number(subTotalVal).toLocaleString()}</span>
+                                            </div>
+                                            {discountVal > 0 && (
+                                                <div className="inv-total-row">
+                                                    <span className="inv-total-label">Discount</span>
+                                                    <span>- PKR {Number(discountVal).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {taxVal > 0 && (
+                                                <div className="inv-total-row">
+                                                    <span className="inv-total-label">Tax</span>
+                                                    <span>PKR {Number(taxVal).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {shippingVal > 0 && (
+                                                <div className="inv-total-row">
+                                                    <span className="inv-total-label">Shipping</span>
+                                                    <span>PKR {Number(shippingVal).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            <div className="inv-total-grand">
+                                                <span>GRAND TOTAL</span>
+                                                <span>PKR {Number(totalVal).toLocaleString()}</span>
+                                            </div>
+                                            <div className="inv-total-row" style={{ paddingTop: '6px' }}>
+                                                <span className="inv-total-label">Amount Paid</span>
+                                                <span>PKR {Number(paidVal).toLocaleString()}</span>
+                                            </div>
+                                            {changeVal > 0 && (
+                                                <div className="inv-total-row">
+                                                    <span className="inv-total-label">
+                                                        {printReceiptData.returnChange ? 'Change Return' : 'Added to Balance'}
+                                                    </span>
+                                                    <span>PKR {Number(changeVal).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                            {balanceVal > 0 && (
+                                                <div className="inv-total-row" style={{ fontWeight: '700' }}>
+                                                    <span>Balance Due</span>
+                                                    <span>PKR {Number(balanceVal).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {printReceiptData.notes && (
+                                        <div className="inv-notes">
+                                            <div className="inv-notes-label">Notes</div>
+                                            <div>{printReceiptData.notes}</div>
+                                        </div>
+                                    )}
+
+                                    <div className="inv-footer">
+                                        <div className="inv-biznex">Powered by bizNex</div>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 )}
             </div>

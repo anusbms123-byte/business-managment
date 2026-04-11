@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Package, Grid, BarChart2, AlertTriangle, Printer,
     Plus, Search, Edit, Trash2, Image, X,
@@ -90,31 +90,51 @@ const Inventory = ({ currentUser }) => {
 
 const StockTracking = ({ currentUser }) => {
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filterType, setFilterType] = useState('all'); // all, in_stock, low_stock, out_of_stock, alerts, expiring_soon, expired
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Detailed Filter States
+    const [filterUnit, setFilterUnit] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterBrand, setFilterBrand] = useState('');
+    const [filterColor, setFilterColor] = useState('');
+    const [filterSize, setFilterSize] = useState('');
+    const [filterGrade, setFilterGrade] = useState('');
+    const [filterStockStatus, setFilterStockStatus] = useState('all'); // all, in_stock, low_stock, out_of_stock, expiring_soon, expired
 
     useEffect(() => {
-        const fetchStock = async () => {
+        const fetchAllData = async () => {
             if (currentUser?.company_id) {
+                setLoading(true);
                 try {
-                    const fetched = await window.electronAPI.getProducts(currentUser.company_id);
-                    setProducts(Array.isArray(fetched) ? fetched : []);
+                    const [fetchedProducts, fetchedCategories, fetchedBrands] = await Promise.all([
+                        window.electronAPI.getProducts(currentUser.company_id),
+                        window.electronAPI.getCategories(currentUser.company_id),
+                        window.electronAPI.getBrands(currentUser.company_id)
+                    ]);
+
+                    setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
+                    setCategories(Array.isArray(fetchedCategories) ? fetchedCategories : []);
+                    setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
                 } catch (err) {
-                    console.error('Error fetching stock:', err);
+                    console.error('Error fetching inventory data:', err);
                     setProducts([]);
+                    setCategories([]);
+                    setBrands([]);
                 }
                 setLoading(false);
             }
         };
-        fetchStock();
+        fetchAllData();
     }, [currentUser]);
 
-    const stats = {
+    const stats = useMemo(() => ({
         total: products.length,
         inStock: products.filter(p => p.stockQty > (p.alertQty || 5)).length,
         outOfStock: products.filter(p => p.stockQty <= 0).length,
-        alerts: products.filter(p => p.stockQty <= (p.alertQty || 5)).length,
-        // Expiring Soon: Not expired yet, but expires within 30 days
+        alerts: products.filter(p => p.stockQty > 0 && p.stockQty <= (p.alertQty || 5)).length,
         expiringSoon: products.filter(p => {
             if (!p.expiryDate) return false;
             const today = new Date();
@@ -123,29 +143,54 @@ const StockTracking = ({ currentUser }) => {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return diffDays >= 0 && diffDays <= 30;
         }).length,
-        // Expired: Date is in the past
-        expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length
-    };
+        expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date()).length,
+        uniqueColors: [...new Set(products.map(p => p.color).filter(Boolean))],
+        uniqueSizes: [...new Set(products.map(p => p.size).filter(Boolean))],
+        uniqueGrades: [...new Set(products.map(p => p.grade).filter(Boolean))]
+    }), [products]);
 
-    const getFilteredProducts = () => {
-        switch (filterType) {
-            case 'in_stock': return products.filter(p => p.stockQty > (p.alertQty || 5));
-            case 'out_of_stock': return products.filter(p => p.stockQty <= 0);
-            case 'alerts': return products.filter(p => p.stockQty <= (p.alertQty || 5));
-            case 'expiring_soon': return products.filter(p => {
-                if (!p.expiryDate) return false;
-                const today = new Date();
-                const exp = new Date(p.expiryDate);
-                const diffTime = exp - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays >= 0 && diffDays <= 30;
-            });
-            case 'expired': return products.filter(p => p.expiryDate && new Date(p.expiryDate) < new Date());
-            default: return products;
-        }
-    };
+    const filtered = useMemo(() => {
+        return products.filter(p => {
+            // Search logic
+            const lowerSearch = searchTerm.toLowerCase();
+            const matchesSearch = !searchTerm ||
+                p.name.toLowerCase().includes(lowerSearch) ||
+                p.sku?.toLowerCase().includes(lowerSearch) ||
+                p.brand?.name?.toLowerCase().includes(lowerSearch) ||
+                p.color?.toLowerCase().includes(lowerSearch) ||
+                p.size?.toLowerCase().includes(lowerSearch) ||
+                p.unit?.toLowerCase().includes(lowerSearch) ||
+                p.grade?.toLowerCase().includes(lowerSearch);
 
-    const filtered = getFilteredProducts();
+            // Detailed filter logic
+            const matchesUnit = !filterUnit || p.unit === filterUnit;
+            const matchesCategory = !filterCategory || p.category?.id == filterCategory;
+            const matchesBrand = !filterBrand || p.brand?.id == filterBrand;
+            const matchesColor = !filterColor || p.color === filterColor;
+            const matchesSize = !filterSize || p.size === filterSize;
+            const matchesGrade = !filterGrade || p.grade === filterGrade;
+
+            // Stock status filter logic
+            let matchesStock = true;
+            if (filterStockStatus === 'in_stock') matchesStock = p.stockQty > (p.alertQty || 5);
+            else if (filterStockStatus === 'low_stock') matchesStock = p.stockQty > 0 && p.stockQty <= (p.alertQty || 5);
+            else if (filterStockStatus === 'alerts') matchesStock = p.stockQty <= (p.alertQty || 5);
+            else if (filterStockStatus === 'out_of_stock') matchesStock = p.stockQty <= 0;
+            else if (filterStockStatus === 'expiring_soon') {
+                if (!p.expiryDate) matchesStock = false;
+                else {
+                    const today = new Date();
+                    const exp = new Date(p.expiryDate);
+                    const diffTime = exp - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    matchesStock = diffDays >= 0 && diffDays <= 30;
+                }
+            }
+            else if (filterStockStatus === 'expired') matchesStock = p.expiryDate && new Date(p.expiryDate) < new Date();
+
+            return matchesSearch && matchesUnit && matchesCategory && matchesBrand && matchesColor && matchesSize && matchesGrade && matchesStock;
+        }).sort((a, b) => (b.id || 0) - (a.id || 0));
+    }, [products, searchTerm, filterUnit, filterCategory, filterBrand, filterColor, filterSize, filterGrade, filterStockStatus]);
 
     return (
         <div className="animate-in fade-in duration-500">
@@ -155,121 +200,246 @@ const StockTracking = ({ currentUser }) => {
                     value={stats.total}
                     icon={Package}
                     color="gray"
-                    isActive={filterType === 'all'}
-                    onClick={() => setFilterType('all')}
+                    isActive={filterStockStatus === 'all'}
+                    onClick={() => setFilterStockStatus('all')}
                 />
                 <StatCard
                     title="In Stock"
                     value={stats.inStock}
                     icon={Check}
                     color="emerald"
-                    isActive={filterType === 'in_stock'}
-                    onClick={() => setFilterType('in_stock')}
+                    isActive={filterStockStatus === 'in_stock'}
+                    onClick={() => setFilterStockStatus('in_stock')}
                 />
                 <StatCard
                     title="Stock alerts"
                     value={stats.alerts}
                     icon={AlertTriangle}
                     color="red"
-                    isActive={filterType === 'alerts'}
-                    onClick={() => setFilterType('alerts')}
+                    isActive={filterStockStatus === 'alerts'}
+                    onClick={() => setFilterStockStatus('alerts')}
                 />
                 <StatCard
                     title="Expiry alerts"
                     value={stats.expiringSoon}
                     icon={Clock}
                     color="orange"
-                    isActive={filterType === 'expiring_soon'}
-                    onClick={() => setFilterType('expiring_soon')}
+                    isActive={filterStockStatus === 'expiring_soon'}
+                    onClick={() => setFilterStockStatus('expiring_soon')}
                 />
                 <StatCard
                     title="Out of stock"
                     value={stats.outOfStock}
                     icon={X}
                     color="gray"
-                    isActive={filterType === 'out_of_stock'}
-                    onClick={() => setFilterType('out_of_stock')}
+                    isActive={filterStockStatus === 'out_of_stock'}
+                    onClick={() => setFilterStockStatus('out_of_stock')}
                 />
                 <StatCard
                     title="Expired"
                     value={stats.expired}
                     icon={Trash2}
                     color="red"
-                    isActive={filterType === 'expired'}
-                    onClick={() => setFilterType('expired')}
+                    isActive={filterStockStatus === 'expired'}
+                    onClick={() => setFilterStockStatus('expired')}
+                />
+            </div>
+
+            {/* Comprehensive Filters Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
+                {/* Category Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-bold"
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                    <option value="">Categories</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+
+                {/* Brand Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterBrand}
+                    onChange={(e) => setFilterBrand(e.target.value)}
+                >
+                    <option value="">Brands</option>
+                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+
+                {/* Unit Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterUnit}
+                    onChange={(e) => setFilterUnit(e.target.value)}
+                >
+                    <option value="">Units</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="gram">Gram (g)</option>
+                    <option value="ltr">Liter (ltr)</option>
+                    <option value="mtr">Meter (m)</option>
+                    <option value="box">Box</option>
+                    <option value="pkt">Packet</option>
+                </select>
+
+                {/* Color Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterColor}
+                    onChange={(e) => setFilterColor(e.target.value)}
+                >
+                    <option value="">Colors</option>
+                    {stats.uniqueColors.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+
+                {/* Size Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterSize}
+                    onChange={(e) => setFilterSize(e.target.value)}
+                >
+                    <option value="">Sizes</option>
+                    {stats.uniqueSizes.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+
+                {/* Grade Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterGrade}
+                    onChange={(e) => setFilterGrade(e.target.value)}
+                >
+                    <option value="">Grades</option>
+                    {stats.uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+
+                {/* Stock Filter */}
+                <select
+                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-black dark:text-slate-200 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 outline-none font-semibold"
+                    value={filterStockStatus}
+                    onChange={(e) => setFilterStockStatus(e.target.value)}
+                >
+                    <option value="all">Status</option>
+                    <option value="in_stock">In stock</option>
+                    <option value="low_stock">Low stock</option>
+                    <option value="out_of_stock">Out of stock</option>
+                    <option value="expiring_soon">Expiring soon</option>
+                    <option value="expired">Expired</option>
+                </select>
+
+                {/* Reset Filters Button */}
+                <button
+                    onClick={() => {
+                        setSearchTerm('');
+                        setFilterCategory('');
+                        setFilterBrand('');
+                        setFilterUnit('');
+                        setFilterColor('');
+                        setFilterSize('');
+                        setFilterGrade('');
+                        setFilterStockStatus('all');
+                    }}
+                    className="flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-sm rounded-lg p-2.5 transition-all font-bold group"
+                    title="Clear All Filters"
+                >
+                    <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="lg:hidden xl:inline">Reset</span>
+                </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative w-full md:w-80 mb-6">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
+                <input
+                    type="text"
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/5 transition-all font-semibold text-black dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    placeholder="Search stock items..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
 
 
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-300 font-sans">
-                <table className="w-full text-left">
-                    <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800">
-                        <tr>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Sku</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Name</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Brand</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Color</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Size</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Stock</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Alert</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight text-center">Expiry</th>
-                            <th className="px-14 py-4 text-sm font-bold text-black dark:text-white tracking-tight">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                        {filtered.length > 0 ? filtered.map((p) => {
-                            const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
-                            const isExpiringSoon = !isExpired && p.expiryDate && (() => {
-                                const today = new Date();
-                                const exp = new Date(p.expiryDate);
-                                const diffTime = exp - today;
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                return diffDays <= 30;
-                            })();
+                <div className="overflow-x-auto scrollbar-hide">
+                    <table className="w-full text-left min-w-max border-separate border-spacing-0">
+                        <thead className="bg-slate-100 dark:bg-slate-800 text-black dark:text-white font-bold text-sm tracking-tight border-b border-slate-200 dark:border-slate-800">
+                            <tr>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800">Sku</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800">Name</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800">Brand</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800">Category</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Color</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Size</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Grade</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Stock</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Alert</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-center">Expiry</th>
+                                <th className="px-14 py-4 border-b border-slate-200 dark:border-slate-800 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {filtered.length > 0 ? filtered.map((p) => {
+                                const isExpired = p.expiryDate && new Date(p.expiryDate) < new Date();
+                                const isExpiringSoon = !isExpired && p.expiryDate && (() => {
+                                    const today = new Date();
+                                    const exp = new Date(p.expiryDate);
+                                    const diffTime = exp - today;
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    return diffDays <= 30;
+                                })();
 
-                            return (
-                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
-                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.sku || '-'}</td>
-                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100 truncate max-w-[200px]">{p.name}</td>
-                                    <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.brand?.name || '-'}</td>
-                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.color || '-'}</td>
-                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.size || '-'}</td>
-                                    <td className={`px-14 py-4 text-center text-sm font-bold ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
-                                    <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.alertQty || 5}</td>
-                                    <td className={`px-14 py-4 text-center text-sm font-bold ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>
-                                        {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
-                                    </td>
-                                    <td className="px-14 py-4 text-right">
-                                        <div className="flex gap-2 justify-end">
-                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${p.stockQty <= 0 ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400' :
-                                                p.stockQty <= (p.alertQty || 5) ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40' :
-                                                    'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40'
-                                                }`}>
-                                                {p.stockQty <= 0 ? 'Out of stock' : p.stockQty <= (p.alertQty || 5) ? 'Low stock' : 'In stock'}
+                                return (
+                                    <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                        <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.sku || '-'}</td>
+                                        <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100 truncate max-w-[200px]">{p.name}</td>
+                                        <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">{p.brand?.name || '-'}</td>
+                                        <td className="px-14 py-4 text-sm font-bold text-black dark:text-slate-100">
+                                            <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded text-xs font-bold border border-emerald-100 dark:border-emerald-900">
+                                                {p.category?.name || 'Uncategorized'}
                                             </span>
-                                            {isExpired && (
-                                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-100 text-rose-600 dark:bg-rose-900/40">
-                                                    Expired
+                                        </td>
+                                        <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.color || '-'}</td>
+                                        <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.size || '-'}</td>
+                                        <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.grade || '-'}</td>
+                                        <td className={`px-14 py-4 text-center text-sm font-bold ${p.stockQty <= 0 ? 'text-rose-600 bg-rose-50/30 dark:bg-rose-900/10' : 'text-black dark:text-slate-100'}`}>{p.stockQty}</td>
+                                        <td className="px-14 py-4 text-center text-sm font-bold text-black dark:text-slate-100">{p.alertQty || 5}</td>
+                                        <td className={`px-14 py-4 text-center text-sm font-bold ${isExpired ? 'text-rose-600 dark:text-rose-400' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-black dark:text-slate-100'}`}>
+                                            {p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '-'}
+                                        </td>
+                                        <td className="px-14 py-4 text-right">
+                                            <div className="flex gap-2 justify-end">
+                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${p.stockQty <= 0 ? 'bg-rose-50/50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/50' :
+                                                    p.stockQty <= (p.alertQty || 5) ? 'bg-amber-50/50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/50' :
+                                                        'bg-emerald-50/50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/50'
+                                                    }`}>
+                                                    {p.stockQty <= 0 ? 'Out of Stock' : p.stockQty <= (p.alertQty || 5) ? 'Low Stock' : 'In Stock'}
                                                 </span>
-                                            )}
-                                            {isExpiringSoon && (
-                                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-amber-100 text-amber-600 dark:bg-amber-900/40">
-                                                    Expiring
-                                                </span>
-                                            )}
-                                        </div>
+                                                {isExpired && (
+                                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-50/50 text-rose-600 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/50">
+                                                        Expired
+                                                    </span>
+                                                )}
+                                                {isExpiringSoon && (
+                                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-50/50 text-amber-600 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/50">
+                                                        Expiring
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            }) : (
+                                <tr>
+                                    <td colSpan="11" className="px-6 py-20 text-center">
+                                        <Package size={40} className="mx-auto text-slate-100 dark:text-slate-800 mb-3" />
+                                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">No records found</p>
                                     </td>
                                 </tr>
-                            );
-                        }) : (
-                            <tr>
-                                <td colSpan="9" className="px-6 py-20 text-center">
-                                    <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">No records found</p>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

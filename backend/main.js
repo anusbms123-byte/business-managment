@@ -15,6 +15,10 @@ if (app.isPackaged) {
     console.log("[STARTUP] Console redirected to electron-log.");
 }
 
+// Windows Taskbar Icon Fix
+app.setAppUserModelId("com.biznex.bms");
+
+
 // Auto-updater events
 autoUpdater.on('checking-for-update', () => {
     log.info('Checking for update...');
@@ -4541,7 +4545,7 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1200,
         height: 800,
-        icon: path.join(__dirname, 'assets/icon.png'),
+        icon: path.join(__dirname, 'renderer/build/logo.png'),
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,

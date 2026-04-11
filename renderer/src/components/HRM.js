@@ -720,7 +720,7 @@ const Payroll = ({ employees, currentUser }) => {
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 text-left border border-slate-200 dark:border-slate-800">
                         <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
                             <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                     <DollarSign size={22} />
                                 </div>
                                 <h3 className="text-sm font-semibold text-black dark:text-slate-100 tracking-tight">{isEditing ? 'Edit payroll' : 'Add payroll'}</h3>
@@ -728,20 +728,20 @@ const Payroll = ({ employees, currentUser }) => {
                             <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"><X size={18} /></button>
                         </div>
                         <form onSubmit={handlePaySalary} className="p-8 space-y-6">
-                             <div className="grid grid-cols-2 gap-4 text-left">
-                                 <div>
-                                     <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Overtime hours</label>
-                                     <input type="number" step="0.5" value={paymentData.otHours} onChange={(e) => setPaymentData({ ...paymentData, otHours: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
-                                 </div>
-                                 <div>
-                                     <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Bonus (PKR)</label>
-                                     <input type="number" value={paymentData.bonus} onChange={(e) => setPaymentData({ ...paymentData, bonus: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
-                                 </div>
-                             </div>
-                             <div className="text-left">
-                                 <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Deductions (PKR)</label>
-                                 <input type="number" value={paymentData.deductions} onChange={(e) => setPaymentData({ ...paymentData, deductions: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
-                             </div>
+                            <div className="grid grid-cols-2 gap-4 text-left">
+                                <div>
+                                    <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Overtime hours</label>
+                                    <input type="number" step="0.5" value={paymentData.otHours} onChange={(e) => setPaymentData({ ...paymentData, otHours: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Bonus (PKR)</label>
+                                    <input type="number" value={paymentData.bonus} onChange={(e) => setPaymentData({ ...paymentData, bonus: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
+                                </div>
+                            </div>
+                            <div className="text-left">
+                                <label className="block text-sm font-semibold text-black dark:text-slate-500 tracking-tight ml-1 mb-1.5">Deductions (PKR)</label>
+                                <input type="number" value={paymentData.deductions} onChange={(e) => setPaymentData({ ...paymentData, deductions: e.target.value })} className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 outline-none font-semibold text-sm text-black dark:text-slate-100 transition-all" />
+                            </div>
 
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
                                 <div className="flex justify-between text-sm font-semibold text-black dark:text-slate-500 tracking-tight mb-2">
@@ -770,9 +770,9 @@ const Payroll = ({ employees, currentUser }) => {
                                     </div>
                                 </div>
                             </div>
-                             <button type="submit" disabled={saving} className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all text-sm active:scale-95 disabled:opacity-50 shadow-sm tracking-tight">
-                                 {saving ? 'Loading...' : 'Save now'}
-                             </button>
+                            <button type="submit" disabled={saving} className="w-full py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-all text-sm active:scale-95 disabled:opacity-50 shadow-sm tracking-tight">
+                                {saving ? 'Loading...' : 'Save now'}
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -796,7 +796,7 @@ const Payroll = ({ employees, currentUser }) => {
                             onClick={() => setViewingSlip(null)}
                             className="p-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all flex items-center gap-2 group border border-transparent hover:border-rose-100 dark:hover:border-rose-900/30"
                         >
-                             <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
+                            <span className="text-sm font-semibold hidden md:block text-slate-400 dark:text-slate-500 tracking-tight">Close</span>
                             <X size={20} />
                         </button>
                     </div>
@@ -809,10 +809,10 @@ const Payroll = ({ employees, currentUser }) => {
                                     <h2 className="text-2xl font-black tracking-tighter">Salary Slip</h2>
                                     <p className="text-emerald-200 dark:text-emerald-400 text-[10px] font-bold mt-1">Payment Record</p>
                                 </div>
-                                 <div className="text-right">
-                                     <p className="text-sm font-semibold text-slate-300 dark:text-slate-500 mb-1 tracking-tight">Payment status</p>
-                                     <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-semibold border border-emerald-500/30 tracking-tight">Confirmed paid</span>
-                                 </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-semibold text-slate-300 dark:text-slate-500 mb-1 tracking-tight">Payment status</p>
+                                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-semibold border border-emerald-500/30 tracking-tight">Confirmed paid</span>
+                                </div>
                             </div>
 
                             <div className="p-10 space-y-8">
@@ -820,36 +820,36 @@ const Payroll = ({ employees, currentUser }) => {
                                 <div className="grid grid-cols-2 gap-10">
                                     <div className="space-y-4">
                                         <div>
-                                             <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Employee details</p>
-                                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{viewingSlip.employee?.firstName} {viewingSlip.employee?.lastName}</p>
-                                             <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 tracking-tight">{viewingSlip.employee?.designation}</p>
+                                            <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Employee details</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{viewingSlip.employee?.firstName} {viewingSlip.employee?.lastName}</p>
+                                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 tracking-tight">{viewingSlip.employee?.designation}</p>
                                         </div>
                                     </div>
                                     <div className="text-right space-y-4">
-                                         <div>
-                                             <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Payment period</p>
-                                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{new Date(viewingSlip.month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-                                         </div>
-                                         <div>
-                                             <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Disbursement date</p>
-                                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{viewingSlip.paymentDate ? new Date(viewingSlip.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
-                                         </div>
-                                         <div>
-                                             <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Transaction ID</p>
-                                             <p className="text-sm font-mono font-semibold text-slate-500 dark:text-slate-400 tracking-tight">SLP-{viewingSlip.id.toString().slice(-8).toUpperCase()}</p>
-                                         </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Payment period</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{new Date(viewingSlip.month + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Disbursement date</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{viewingSlip.paymentDate ? new Date(viewingSlip.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Transaction ID</p>
+                                            <p className="text-sm font-mono font-semibold text-slate-500 dark:text-slate-400 tracking-tight">SLP-{viewingSlip.id.toString().slice(-8).toUpperCase()}</p>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Calculation Table */}
                                 <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                                     <table className="w-full">
-                                         <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
-                                             <tr>
-                                                 <th className="px-6 py-3 text-left text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Description</th>
-                                                 <th className="px-6 py-3 text-right text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Amount</th>
-                                             </tr>
-                                         </thead>
+                                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Description</th>
+                                                <th className="px-6 py-3 text-right text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Amount</th>
+                                            </tr>
+                                        </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                             <tr className="bg-white dark:bg-slate-900">
                                                 <td className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400">Basic Monthly Salary</td>
@@ -870,24 +870,24 @@ const Payroll = ({ employees, currentUser }) => {
                                                 <td className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-400">Total Deductions</td>
                                                 <td className="px-6 py-4 text-right text-xs font-bold text-slate-800 dark:text-slate-200">-PKR {viewingSlip.deductions?.toLocaleString()}</td>
                                             </tr>
-                                             <tr className="bg-slate-50/50 dark:bg-slate-800/50">
-                                                 <td className="px-6 py-6 text-sm font-semibold text-black dark:text-slate-200 tracking-tight">Net salary</td>
-                                                 <td className="px-6 py-6 text-right text-lg font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
-                                             </tr>
+                                            <tr className="bg-slate-50/50 dark:bg-slate-800/50">
+                                                <td className="px-6 py-6 text-sm font-semibold text-black dark:text-slate-200 tracking-tight">Net salary</td>
+                                                <td className="px-6 py-6 text-right text-lg font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {viewingSlip.netSalary?.toLocaleString()}</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
 
                                 {/* Footer */}
                                 <div className="flex items-start justify-between gap-10 pt-4 border-t border-slate-50 dark:border-slate-800">
-                                     <div className="flex-1">
-                                         <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Notes / remarks</p>
-                                         <p className="text-sm text-slate-500 dark:text-slate-400 italic leading-relaxed">{viewingSlip.notes || 'No special remarks for this period.'}</p>
-                                     </div>
-                                     <div className="text-center">
-                                         <div className="w-32 h-1 bg-slate-100 dark:bg-slate-800 mb-2 mx-auto"></div>
-                                         <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Authorized sign</p>
-                                     </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-black dark:text-slate-500 mb-1 tracking-tight">Notes / remarks</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 italic leading-relaxed">{viewingSlip.notes || 'No special remarks for this period.'}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="w-32 h-1 bg-slate-100 dark:bg-slate-800 mb-2 mx-auto"></div>
+                                        <p className="text-sm font-semibold text-black dark:text-slate-500 tracking-tight">Authorized sign</p>
+                                    </div>
                                 </div>
                             </div>
 

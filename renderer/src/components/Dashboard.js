@@ -40,22 +40,25 @@ const CircularProgress = ({ percentage, color }) => {
 
 // Stat Card Component
 const StatCard = ({ title, value, change, changeType, percentage, color, icon: Icon }) => (
-    <div className="bg-white dark:bg-slate-900 rounded-[24px] p-6 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-xl hover:-translate-y-1 duration-300">
-        <div className="flex items-center justify-between">
-            <div className="flex-1 space-y-1">
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{title}</p>
-                <p className="text-xl font-medium text-slate-800 dark:text-slate-100 uppercase tracking-tight">{value}</p>
-                <div className="mt-4">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${changeType === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                        {changeType === 'up' ? '+' : ''}{change}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold ml-1.5 uppercase tracking-tighter">From last Week</span>
+    <div className="group bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-[24px] p-5 md:p-6 border border-slate-100/50 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all hover:shadow-2xl hover:shadow-emerald-500/5 hover:-translate-y-1 duration-500">
+        <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0 space-y-1 md:space-y-1.5">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-[0.15em] truncate">{title}</p>
+                <div className="flex flex-col">
+                    <p className="text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100 uppercase tracking-tight truncate leading-tight">{value}</p>
+                    <div className="mt-3 md:mt-4 flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${changeType === 'up' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+                            {changeType === 'up' ? '↑' : '↓'} {change}%
+                        </span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-tighter whitespace-nowrap opacity-60">vs last week</span>
+                    </div>
                 </div>
             </div>
-            <div className="relative flex items-center justify-center ml-4">
+            <div className="relative flex items-center justify-center shrink-0">
+                <div className="absolute inset-x-0 inset-y-0 bg-slate-100 dark:bg-slate-800 rounded-full scale-[0.85] opacity-20"></div>
                 <CircularProgress percentage={percentage} color={color} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                    {Icon && <Icon size={18} style={{ color }} />}
+                    {Icon && <Icon size={18} className="transition-transform group-hover:scale-110 duration-500" style={{ color }} />}
                 </div>
             </div>
         </div>
@@ -244,48 +247,50 @@ const Dashboard = ({ currentUser }) => {
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-4 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-4 font-sans">
             <div>
-                <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard</h1>
+                <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight">Dashboard Overview</h1>
+                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mt-1">Real-time business analytics</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-                {/* Quick Filters */}
-                <div className="flex bg-white dark:bg-slate-900 p-1 rounded-[14px] shadow-sm border border-slate-100 dark:border-slate-800">
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                {/* Advanced Quick Filters */}
+                <div className="flex bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-1.5 rounded-[18px] shadow-sm border border-slate-200/50 dark:border-slate-800/50 overflow-x-auto no-scrollbar">
                     {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((p) => (
                         <button
                             key={p}
                             onClick={() => {
                                 setFilter(p);
-                                setDateRange({ start: '', end: '' }); // Clear custom dates when using quick filters
+                                setDateRange({ start: '', end: '' });
                             }}
-                            className={`px-5 py-2 rounded-[11px] text-[11px] font-black uppercase tracking-widest transition-all ${filter === p && !dateRange.start ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                            className={`px-6 py-2.5 rounded-[14px] text-[10px] md:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${filter === p && !dateRange.start ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 scale-[1.02]' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             {p}
                         </button>
                     ))}
                 </div>
 
-                {/* Custom Date Range */}
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-[14px] shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center px-3 gap-2">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">From</span>
+                {/* Date Picker Group */}
+                <div className="grid grid-cols-2 sm:flex items-center gap-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-1.5 rounded-[18px] shadow-sm border border-slate-200/50 dark:border-slate-800/50">
+                    <div className="flex flex-col px-3 gap-0.5">
+                        <span className="text-[7px] font-semibold text-slate-400 uppercase tracking-widest">From date</span>
                         <input 
                             type="date" 
                             value={dateRange.start}
                             onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                            className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 outline-none"
+                            className="bg-transparent text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none w-full sm:w-[110px]"
                         />
                     </div>
-                    <div className="w-px h-4 bg-slate-100 dark:bg-slate-800"></div>
-                    <div className="flex items-center px-3 gap-2">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">To</span>
+                    <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-800"></div>
+                    <div className="flex flex-col px-3 gap-0.5">
+                        <span className="text-[7px] font-semibold text-slate-400 uppercase tracking-widest">To date</span>
                         <input 
                             type="date" 
                             value={dateRange.end}
                             onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                            className="bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 outline-none"
+                            className="bg-transparent text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none w-full sm:w-[110px]"
                         />
                     </div>
                 </div>
@@ -293,7 +298,7 @@ const Dashboard = ({ currentUser }) => {
         </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
                 <StatCard
                     title="Total Sales"
                     value={`PKR ${summary.totalSales?.toLocaleString() ?? '0'}`}
@@ -344,24 +349,24 @@ const Dashboard = ({ currentUser }) => {
             {/* Main Content Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Overview Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-300">
-                    <div className="flex items-center justify-between mb-8">
+                <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[32px] p-6 md:p-8 border border-slate-100/50 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-300">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                         <div>
                             <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Sales & Profit</h2>
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Performance over time</p>
                         </div>
-                        <div className="flex items-center space-x-6">
+                        <div className="grid grid-cols-3 sm:flex items-center gap-3 sm:gap-6">
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Sales</span>
+                                <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Sales</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Profit</span>
+                                <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Profit</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Returns</span>
+                                <span className="text-[9px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Returns</span>
                             </div>
                         </div>
                     </div>
@@ -373,8 +378,8 @@ const Dashboard = ({ currentUser }) => {
                 </div>
 
                 {/* Best Selling Section */}
-                <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-colors duration-300">
-                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter mb-8">Best Selling</h2>
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[32px] p-6 md:p-8 border border-slate-100/50 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-colors duration-300">
+                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-[0.2em] mb-8">Best Selling</h2>
                     <div className="space-y-7">
                         {(!summary.topProducts || summary.topProducts.length === 0) ? (
                             <div className="text-center py-10 text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed">
@@ -413,9 +418,9 @@ const Dashboard = ({ currentUser }) => {
             </div>
 
             {/* Recent Sales Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden transition-colors duration-300">
-                <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tighter">Recent Sales</h2>
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[32px] border border-slate-100/50 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden transition-colors duration-300">
+                <div className="p-6 md:p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
+                    <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-[0.2em]">Recent Sales</h2>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latest Invoices</p>
                 </div>
                 <div className="overflow-x-auto">

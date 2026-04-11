@@ -1,6 +1,6 @@
 {
   "name": "BizNex",
-  "version": "1.0.66",
+  "version": "1.0.1",
   "description": "Business Management Desktop Application",
   "main": "main.js",
   "author": "Huzaifa",
@@ -25,7 +25,7 @@
     "electron-builder": "^26.4.0"
   },
   "build": {
-    "appId": "com.businessmanagementapp.bms",
+    "appId": "com.biznex.pro.bms",
     "productName": "BizNex",
     "directories": {
       "buildResources": "assets",
@@ -47,6 +47,7 @@
     },
     "nsis": {
       "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
